@@ -458,3 +458,43 @@ EP16 eager、tensor-MoE eager和所有graph测试均成功。
 因此目前能提交的是可复现的修正、算子数据和功能验证；最终TTFT/TPOT/吞吐误差以及
 “最优PD配比”是否与实测相符，仍需要同版本、同启动参数、同workload的服务结果。
 之前历史50组回放的误差仍大，不能用本轮测试通过数代替性能误差下降的证据。
+
+## 15. 新实测必须固定客户端负载
+
+固定镜像的 `python/sglang/benchmark/serving.py` 中，`--random-range-ratio` 默认是0，
+`datasets/common.py:56-64` 会在1到目标长度之间随机采样。只设置input/output长度，
+并不等于每条请求都是8192/1024。`--random-range-ratio 1` 才固定为目标长度。
+另外，文本decode后重新tokenize可能改变长度；`--tokenize-prompt` 直接发送token IDs。
+这不是在断言历史DOCX一定用了错误参数，而是新对照实验需要排除的歧义。
+
+在已启动并按第12节固定参数的真实服务客户端环境中，可执行：
+
+```bash
+python3 -m sglang.benchmark.serving \
+  --backend sglang --base-url http://127.0.0.1:30000 \
+  --model /mnt/raid/user/data/models/glm-q \
+  --tokenizer /mnt/raid/user/data/models/glm-q \
+  --dataset-name random-ids --tokenize-prompt \
+  --random-input-len 8192 --random-output-len 1024 --random-range-ratio 1 \
+  --num-prompts 128 --max-concurrency 8 --request-rate inf \
+  --warmup-requests 1 --seed 910 --output-details \
+  --output-file baseline-eager-8k1k-c8.jsonl
+```
+
+将base URL改成实际router地址；32K实验把input长度改成32768并更换输出文件。
+这个版本SGLang generate客户端默认发送 `ignore_eos=true`，不要加 `--disable-ignore-eos`。
+保留默认streaming，不能加 `--disable-stream` 后仍按同样方式解读TTFT/TPOT。
+离线侧对应 `traffic.stop.requests: 128`、并发8、固定input/output长度以及
+P/D `scheduler.ignore_eos: true`。预热请求不计入这128条；prefix cache关闭时不会引入预热命中。
+
+同时保存P/D和router完整启动命令、镜像digest、解析后的max-running/chunk/max-prefill参数、
+每rank `max_total_num_tokens`、请求实际input/output tokens和完整结果JSONL。
+尤其核对profile采集使用的 `TASK_QUEUE_ENABLE=0`、CPU亲和性及共享专家多流设置。
+`random-ids`是便于复现长度的合成负载，不保证真实专家路由与balanced profile完全相同。
+
+客户端源码SHA和直接执行原始长度生成函数的结果保存于
+`production/eager-padding-node20-20261030/benchmark-client-contract.json`。
+截至2026-10-30，本机运行镜像已经更新为源码 `e53c91d3` 的schema30版本，
+安装后的公开predict和PD搜索均通过；最终二进制两套parity共390通过、原生边界5通过，
+最后一次准入边界修改另有84项SGLang调度回归通过。运行包身份与全部证据位于同目录
+`runtime-publication.json`。这些结果验证实现与安装状态，准确性状态仍为未验收。

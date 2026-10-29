@@ -621,6 +621,14 @@
           "scope": "collection",
           "sha256": "54ab154fe96ce89292ad8fcd8c4690978279337c806507c134d3c92224937a8f"
         },
+        "benchmark_client_contract_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/eager-padding-node20-20261030/benchmark-client-contract.json",
+          "scope": "validation",
+          "sha256": "084f8d53db1228941e90504f345a3e592dfcd45694ac27a665b4f900aa7ee9d5"
+        },
         "bmm_native_validation": {
           "archived": true,
           "context_sha256": "0e538551d055423298a0a3db1125cecd26b8d08279220467115f14736f660c32",
@@ -958,7 +966,7 @@
           "sha256": "8e874ba7f9ef3b29f9a61ffac533650929b421b7d17cb5f376eca75b1c475e97"
         },
         "eager_attention_refresh_20261030": {
-          "archived": false,
+          "archived": true,
           "context_sha256": "2b816747f6f871a818618e6dd7d7b49d90f29e88180b3d25f9ad45c011d0f30d",
           "kind": "file",
           "path": "production/eager-padding-node20-20261030/publication-v2/merged/ascend_attention_perf.parquet",
@@ -988,6 +996,14 @@
           "path": "production/eager-padding-node20-20261030/collection-validation.json",
           "scope": "validation",
           "sha256": "22df52c861c89474c0d674a6f8ae1855501b810d4e1ef615190b9e0cb33b0727"
+        },
+        "eager_padding_planes_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/eager-padding-node20-20261030/padding-plane-publication-validation.json",
+          "scope": "validation",
+          "sha256": "8a8793a5a5702105647577962db67a51f8b1e16534c5bb1b63d77db23bcb5ab8"
         },
         "fixed_output_admission_oracle_20261030": {
           "archived": false,
@@ -1549,6 +1565,22 @@
           "scope": "collection",
           "sha256": "3df27dfe34f78b5f9cd3da74513e034f8b0d0e8cd01cdf3bd599826c980d159c"
         },
+        "runtime_alignment_evidence_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/eager-padding-node20-20261030/runtime-validation-evidence.tar.gz",
+          "scope": "validation",
+          "sha256": "588a03698f6c96f5264761e7d6350d414ebf9246be85ed8d898e6f1838a8828d"
+        },
+        "runtime_alignment_release_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/eager-padding-node20-20261030/runtime-publication.json",
+          "scope": "validation",
+          "sha256": "2894442d893b10b14ec08f8c636bbca90694fbef74920b4fa12c01b4fada12d6"
+        },
         "runtime_topology_constraints": {
           "archived": true,
           "context_sha256": "0e538551d055423298a0a3db1125cecd26b8d08279220467115f14736f660c32",
@@ -1880,10 +1912,11 @@
       },
       "progress": {
         "blockers": [
-          "Finish broad batch coverage, then update production wheel/image.",
-          "Serving accuracy awaits a matching graph/overlap-disabled reference."
+          "Full-forward and serving accuracy not qualified: matching graph/overlap-disabled measurements absent.",
+          "Nonuniform DP shape synchronization and PD transfer contention/release boundaries still need alignment and trace verification.",
+          "EP32 eager DeepEP axis and DCP eager profiles incomplete."
         ],
-        "next_action": "Validate every batch1..32, add missing eagerpadding coordinates, publish final runtime with reproducible smoke.",
+        "next_action": "Use matched fixed-length streaming baseline from auditsection15; capture per-rank actualbatch/KVcapacity/forward times, then align nonuniform DP andtransfer lifecycle before validating PD/parallel rankings.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2715,6 +2748,7 @@
       "status": "ready and bounded request validation passed"
     },
     "sglang_pinned_scheduler_alignment": {
+      "benchmark_client_contract": "Pinned benchmark default random_range_ratio0 sampleslengths1..target. Use ratio1,tokenize-prompt,default ignore_eos true,streaming and identical concurrency/requestcounts for controlled comparison. Sourcehashes and original function executions captured in benchmark-client-contract.json.",
       "changes": [
         "Expose SGLang global chunked_prefill_size and per-rank max_prefill_tokens through predict, recommend, sample, saved YAML and native payload.",
         "Baseline runtime mode maps global64 max-running at ADP2 to32per-rank, chunk16384 and max-prefill32768. Legacy mode preserves former budgets.",
@@ -2738,6 +2772,7 @@
       ],
       "results": "50/50historical replays completed; zero readmissions. Median absolute relative error TTFT55.805195%,TPOT96.973060%,throughput42.295147%. No overall accuracy improvement established. Comparison archive preserves original and headroom-only controls.",
       "routing_finding": "Historical DOCX specifies prefill-policy cache_aware and decode-policy round_robin; rank balancing is round_robin on both P and D in the recorded flags and pinned defaults. Native PD currently round-robins over flattened ranks. This differs from replica routing followed by each replica's local rank rotation at low concurrency; requires explicit selectable routing and matching real baseline policies.",
+      "runtime_publication": "Installedsha256:ad6c9516f492ea933fdd083c0d5f5ec38d1cc5c2f908b8382e0e260a3b325937 frome53c91d3812700e633ce108f5a85d7050a130928;schema30;2159packagedfiles matchcommittedsource. Public installedpredict andsixratiosearch pass. Finalbinary390parities+5nativecontracttests;finalscheduler84regressions. Eagerattention2943newrows,6739total. Fullbatch1..32probe2394/2560 success;all166failuresEP32eagerDeepEPaxis. Accuracyunqualified; native DPuniform shape approximation andtransfer/hostdetails remain.",
       "search_feasibility": "Use known single-turn synthetic ISL+OSL only for KV preflight; preserve runtime context180000 and saved role limits. 8K12candidates and32K6legalPDcandidates completed. Both saved top candidates reproduce completed requests,TTFT,TPOT,throughput exactly. 32KTP4ADP4 is genuinely KV-infeasible; independent parallel axes correctly prune >64device combinations.",
       "search_validation": "Focusedsearch45passed;broader205passed5failedbecauseofflinecontainercannotdownloadHuggingFacemetadata. Short8requestreplays validate pipeline only,notservingaccuracyorsteadystateoptimum.",
       "status": "in_progress",
@@ -2830,7 +2865,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 81,
+  "revision": 82,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

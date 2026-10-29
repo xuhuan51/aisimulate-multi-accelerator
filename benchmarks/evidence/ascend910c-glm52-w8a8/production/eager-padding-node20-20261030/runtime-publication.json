@@ -1,0 +1,137 @@
+{
+  "status": "runtime_installed_and_functionally_validated_accuracy_unqualified",
+  "published_image": {
+    "tag": "aisimulate-910c:glm52-w8a8",
+    "id": "sha256:ad6c9516f492ea933fdd083c0d5f5ec38d1cc5c2f908b8382e0e260a3b325937",
+    "created": "2026-10-29T20:39:28.068715876Z",
+    "previous_image_tag": "aisimulate-910c:before-scheduler-alignment-20261030"
+  },
+  "native_identity": {
+    "source_revision": "e53c91d3812700e633ce108f5a85d7050a130928",
+    "sha256": "cedd55acd6da88648de200e43186b0be4ffe7df7b6e3d3d609fc12aca3f24a36",
+    "wheel": "aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl",
+    "wheel_sha256": "aedcaf6b2eb239e7ac2aa256f98e6823d1034400435954cc8f7f6ef0d45981d5",
+    "engine_spec_schema": 30,
+    "target": "aarch64-unknown-linux-gnu",
+    "profile": "release",
+    "cargo_features": [
+      "extension-module"
+    ],
+    "build_command": "python3 -m maturin build --release --locked --offline --auditwheel skip --interpreter /usr/local/python3.12.13/bin/python3",
+    "maturin": "1.15.0",
+    "rustc": "1.94.0",
+    "python_abi": "abi3-py311",
+    "packaged_ascend_tables_checked": [
+      "aisimulate_core/systems/data/ascend910c/attention/sglang/0.5.22/ascend_attention_perf.parquet",
+      "aisimulate_core/systems/data/ascend910c/attention/sglang/0.5.22/ascend_dcp_attention_perf.parquet",
+      "aisimulate_core/systems/data/ascend910c/comm/hccl/9.1.0-b243-drv26.1.1-nodes31-32-v3/hccl_perf.parquet",
+      "aisimulate_core/systems/data/ascend910c/gemm/sglang/0.5.22/ascend_linear_perf.parquet",
+      "aisimulate_core/systems/data/ascend910c/kv_transfer/sglang/0.5.22/ascend_pd_perf.parquet",
+      "aisimulate_core/systems/data/ascend910c/mla_bmm/sglang/0.5.22/ascend_bmm_perf.parquet",
+      "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_deepep_perf.parquet",
+      "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_moe_chain_perf.parquet",
+      "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_moe_tensor_perf.parquet",
+      "aisimulate_core/systems/data/ascend910c/vector/sglang/0.5.22/ascend_vector_perf.parquet"
+    ],
+    "source_tree_note": "All2159 packaged source/data files checked byte-for-byte against committed checkout; prior runtime archived in build/scheduler-audit-20261030/pre-alignment-runtime-backup."
+  },
+  "commands": {
+    "environment": {
+      "SUDO_UID": "5034",
+      "SUDO_GID": "5034",
+      "AISIMULATE_910C_MODEL": "/tgm_rent_data/data/youxingye/aisimulate-910c/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata",
+      "AISIMULATE_910C_CPUSET": "280-295"
+    },
+    "jobs": [
+      {
+        "name": "predict",
+        "command": [
+          "bash",
+          "scripts/run-ascend910c.sh",
+          "predict",
+          "--stack",
+          "engine",
+          "--config",
+          "examples/cli/ascend910c-glm52-pd-eager-8k1k.yaml",
+          "--set",
+          "engine.model=/tgm_rent_data/data/youxingye/aisimulate-910c/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata",
+          "--set",
+          "traffic.source.output_tokens=32",
+          "--set",
+          "traffic.stop.requests=2",
+          "--set",
+          "traffic.load.concurrency=2",
+          "--output-dir",
+          "aisimulate-output/published-eager-predict-20261030"
+        ],
+        "returncode": 0
+      },
+      {
+        "name": "search",
+        "command": [
+          "bash",
+          "scripts/run-ascend910c.sh",
+          "recommend",
+          "--stack",
+          "engine",
+          "--config",
+          "examples/cli/ascend910c-glm52-pd-eager-search.yaml",
+          "--set",
+          "engine.model=/tgm_rent_data/data/youxingye/aisimulate-910c/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata",
+          "--set",
+          "traffic.source.input_tokens=32768",
+          "--set",
+          "traffic.source.output_tokens=32",
+          "--set",
+          "traffic.stop.requests=2",
+          "--set",
+          "traffic.load.concurrency=2",
+          "--set",
+          "optimizer.parallelism=2",
+          "--output-dir",
+          "aisimulate-output/published-eager-search-20261030"
+        ],
+        "returncode": 0
+      }
+    ]
+  },
+  "validation": {
+    "final_binary_parity_passed": 390,
+    "final_binary_native_boundary_tests_passed": 5,
+    "final_scheduler_cap_regressions_passed": 84,
+    "installed_predict_completed_requests": 2,
+    "installed_search": {
+      "cache_hits": 0,
+      "evaluated": 6,
+      "failed": 0,
+      "feasible": 6,
+      "infeasible": 0,
+      "resource_limited": 0,
+      "timed_out": 0,
+      "unsupported": 0
+    },
+    "compile_and_lint": "Rust fmt,ruff check/format,packaged legal checks pass"
+  },
+  "full_batch_probe": {
+    "attempted": 2560,
+    "successful": 2394,
+    "failed": 166,
+    "failure_scope": "EP32 eager DeepEP senttokens beyond measured1..3; all other probe identities succeeded"
+  },
+  "attention_table": {
+    "rows": 6739,
+    "new_eager_decode_rows": 2943,
+    "preserved_graph_prefill_rows": 3796,
+    "sha256": "62d360b8400211f16eb4b330f239967125fd7f1bcff8a4c791fdee475235aad1"
+  },
+  "evidence_archive": "runtime-validation-evidence.tar.gz",
+  "evidence_archive_sha256": "588a03698f6c96f5264761e7d6350d414ebf9246be85ed8d898e6f1838a8828d",
+  "accuracy_status": "No matched graph/overlap-disabled whole-forward or serving measurements; historical graph baseline errors do not validate eager predictions.",
+  "remaining": [
+    "Nonuniform attention-DP shapes and MAX_LEN/SUM_LEN accounting",
+    "PD concurrent transfers and precise resource release boundaries",
+    "Matching CPU/HTTP/tokenization overhead",
+    "EP32 eager DeepEP and DCP eager profile gaps",
+    "Matched real serving comparison and configuration ranking validation"
+  ]
+}

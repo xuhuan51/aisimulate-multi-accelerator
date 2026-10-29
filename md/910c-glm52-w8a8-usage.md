@@ -80,6 +80,12 @@ AISIMULATE_910C_MODEL="$model_metadata" bash scripts/run-ascend910c.sh recommend
 当前EP32覆盖不全、DCP eager未采集，不应把graph记录混入这些候选。
 元数据快照仅足够离线预测；真实部署仍需要完整模型权重。
 
+2026-10-30已重建本机 `aisimulate-910c:glm52-w8a8`，打包源码为 `e53c91d3`、EngineSpec schema30。
+安装后的镜像已执行8K输入predict和32K输入PD搜索短回归，六种配比均完成。
+旧镜像保留为 `aisimulate-910c:before-scheduler-alignment-20261030`；仅回放旧结果时才使用该标签。
+运行包、算子表、镜像SHA及回归记录见 `production/eager-padding-node20-20261030/runtime-publication.json`。
+本机没有默认权重路径时，使用上面的 `model_metadata` 参数即可进行离线预测。
+
 只想检查环境和命令是否可用，可以先运行65输入、32输出的两条请求：
 
 ```bash
