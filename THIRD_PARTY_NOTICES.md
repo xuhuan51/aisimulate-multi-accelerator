@@ -701,7 +701,8 @@ The Ascend eager decode padding rules in
 `crates/core/src/perfmodel/operators/ascend_attention.rs`, with their independently
 written regression tests, reimplement and modify the behavioral contract in
 `python/sglang/srt/model_executor/forward_batch_info.py` and
-`python/sglang/srt/hardware_backend/npu/attention/ascend_backend.py` at the same
+`python/sglang/srt/hardware_backend/npu/attention/ascend_backend.py`, and
+`python/sglang/srt/utils/common.py` at the same
 immutable revision `baa9befa381511cd4d56f83980951e5a45fffc6d`.
 Source: https://github.com/sgl-project/sglang/tree/baa9befa381511cd4d56f83980951e5a45fffc6d/python/sglang/srt
 Copyright 2023-2026 SGLang Team and SGLang contributors; Apache-2.0.

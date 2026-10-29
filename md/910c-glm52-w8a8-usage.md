@@ -56,7 +56,9 @@ sudo bash scripts/run-ascend910c.sh recommend \
 若实测将关闭overlap调度和graph，使用新增的eager示例，并让实际P、D入口和各副本内部都使用round-robin。
 它显式设置固定输出准入、两级PD路由、无prefix cache及0.5.22调度预算。
 已有graph示例保留。关闭graph不代表预测误差已经校准，详见
-[对齐说明第9～12节](910c-glm52-w8a8-baseline-alignment.md)。
+[对齐说明第9～13节](910c-glm52-w8a8-baseline-alignment.md)。
+eager仍按attention TP补齐token；例如TP8/ADP2的单请求decode使用8行矩阵输入，
+但只有1条有效KV序列。算子级预测已区分这两种shape；更新时需要同时重建原生库和运行镜像。
 
 ```bash
 model_metadata="$PWD/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata"

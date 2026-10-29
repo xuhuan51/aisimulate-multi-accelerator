@@ -48,8 +48,9 @@ impl AscendAttentionKey {
         }
     }
 
-    fn partition(&self, padded_batch: u32) -> u32 {
-        if self.phase == "prefill" || self.execution_mode == "graph" {
+    fn partition(&self, active_batch: u32, padded_batch: u32) -> u32 {
+        if self.phase == "prefill" || self.execution_mode == "graph" || padded_batch != active_batch
+        {
             padded_batch
         } else {
             0
@@ -275,11 +276,7 @@ impl AscendAttentionTable {
             partitions,
             key.phase == "prefill",
             active,
-            if key.execution_mode == "eager" && key.phase == "decode" {
-                0
-            } else {
-                padded
-            },
+            key.partition(active, padded),
             sequence,
             prefix,
             &|batch, tokens, past| {
@@ -381,7 +378,6 @@ impl AscendAttentionTable {
             || padded < active
             || (key.phase == "prefill" && padded != active)
             || (key.phase == "decode" && prefix != 0)
-            || (key.execution_mode == "eager" && padded != active)
         {
             return Err(AicError::InvalidEngineConfig(
                 "unmeasured Ascend attention batch/sequence layout".into(),
@@ -393,11 +389,13 @@ impl AscendAttentionTable {
         if key.phase == "prefill" && key.execution_mode == "eager" {
             return query_prefill_batch(partitions, active, prefix, sequence);
         }
-        let plane = partitions.get(&key.partition(padded)).ok_or_else(|| {
-            AicError::PerfDatabase(format!(
-                "unmeasured Ascend attention tuple: {key:?}, padded_batch={padded}"
-            ))
-        })?;
+        let plane = partitions
+            .get(&key.partition(active, padded))
+            .ok_or_else(|| {
+                AicError::PerfDatabase(format!(
+                    "unmeasured Ascend attention tuple: {key:?}, padded_batch={padded}"
+                ))
+            })?;
         if key.phase == "prefill" {
             plane.query(prefix, sequence)
         } else {
@@ -497,7 +495,6 @@ fn load(path: &Path) -> Result<Grids, AicError> {
             || active_batch == 0
             || length == 0
             || padded_batch < active_batch
-            || (key.execution_mode == "eager" && padded_batch != active_batch)
             || !measured.is_finite()
             || measured <= 0.0
             || !cv.is_finite()
@@ -524,7 +521,7 @@ fn load(path: &Path) -> Result<Grids, AicError> {
                 "Ascend attention grid mixes runtime identities".into(),
             ));
         }
-        let partition = key.partition(padded_batch);
+        let partition = key.partition(active_batch, padded_batch);
         if raw
             .entry(key)
             .or_default()
@@ -657,6 +654,44 @@ mod tests {
     }
 
     #[test]
+    fn eager_padding_uses_its_own_measured_plane() {
+        let root = tempfile::tempdir().unwrap();
+        let mut eager = key();
+        eager.execution_mode = "eager".into();
+        for padded in [true, false] {
+            let path = root.path().join(if padded {
+                "padded.parquet"
+            } else {
+                "unpadded.parquet"
+            });
+            let mut data = columns();
+            data[3] = Col::Str("execution_mode", vec!["eager"; 4]);
+            data[14] = Col::Str("execution_verification", vec!["eager_invocation"; 4]);
+            if !padded {
+                data[4] = Col::I64("tokens", vec![1, 1, 5, 5]);
+                data[6] = Col::I64("padded_batch", vec![1, 1, 5, 5]);
+            }
+            write_parquet(&path, &data);
+            let table = AscendAttentionTable::new(Some(path));
+            let selected = if padded { 8 } else { 3 };
+            let other = if padded { 3 } else { 8 };
+            assert_eq!(table.query(&eager, 3, selected, 576, 0).unwrap(), 4.0);
+            assert!(
+                table
+                    .query(&eager, 3, other, 576, 0)
+                    .unwrap_err()
+                    .is_missing_perf_data()
+            );
+            assert!(
+                table
+                    .query(&eager, 3, 16, 576, 0)
+                    .unwrap_err()
+                    .is_missing_perf_data()
+            );
+        }
+    }
+
+    #[test]
     fn prefill_uses_tokens_and_prefix_without_decode_padding() {
         let root = tempfile::tempdir().unwrap();
         let path = root.path().join(BASENAME);
@@ -774,6 +809,7 @@ mod tests {
             scale_factor: 1.0,
             key: key(),
             graph_buckets: vec![8, 16, 24, 32],
+            eager_token_multiple: 1,
         };
         assert_eq!(op.padded_batch(5).unwrap(), 8);
         assert_eq!(op.padded_batch(9).unwrap(), 16);
@@ -783,6 +819,13 @@ mod tests {
         op.key.execution_mode = "eager".into();
         op.graph_buckets.clear();
         assert_eq!(op.padded_batch(5).unwrap(), 5);
+        op.eager_token_multiple = 4;
+        assert_eq!(op.padded_batch(5).unwrap(), 8);
+        assert_eq!(op.padded_batch(9).unwrap(), 12);
+        assert_eq!(op.padded_batch(0).unwrap(), 0);
+        assert!(op.padded_batch(u32::MAX).is_err());
+        op.eager_token_multiple = 0;
+        assert!(op.validate().is_err());
     }
 
     #[test]

@@ -257,9 +257,10 @@ def test_eager_decode_uses_eager_profiles_and_preserves_partitioning(model_path)
     ops = flattened(model.generation_ops)
     assert all(spec["key"]["execution_mode"] == "eager" for _, spec in ops.values())
     assert ops["generation_attention"][1]["graph_buckets"] == []
-    assert ops["generation_qkv_a"][1]["token_multiple"] == 1
-    assert ops["generation_dense_gate_up"][1]["token_multiple"] == 2
-    assert ops["generation_moe_dispatch"][1]["input_token_multiple"] == 1
+    assert ops["generation_attention"][1]["eager_token_multiple"] == 8
+    assert ops["generation_qkv_a"][1]["token_multiple"] == 8
+    assert ops["generation_dense_gate_up"][1]["token_multiple"] == 16
+    assert ops["generation_moe_dispatch"][1]["input_token_multiple"] == 8
     assert ops["generation_shared_gate_up"][1]["token_split"] == 8
     assert ops["generation_dense_input_gather"][1]["elements_per_token"] == 6144
     assert ops["generation_dense_input_gather"][1]["token_split"] == 8
@@ -274,6 +275,25 @@ def test_eager_decode_rejects_unmeasured_dcp_profiles(model_path):
     )
     with pytest.raises(InvalidEngineConfigurationError, match="eager DCP profiles"):
         get_model(model_path, config, "sglang")
+
+
+@pytest.mark.parametrize(
+    "local_tp,attention_dp,tensor_moe,alignment",
+    [(2, 8, False, 2), (4, 4, False, 4), (8, 2, True, 8), (16, 1, False, 16), (16, 1, True, 1)],
+)
+def test_eager_alignment_follows_mlp_sync_requirement(model_path, local_tp, attention_dp, tensor_moe, alignment):
+    config = configuration()
+    config.tp_size, config.attention_dp_size = local_tp, attention_dp
+    config.moe_tp_size, config.moe_ep_size = (16, 1) if tensor_moe else (1, 16)
+    config.op_level_config = OpLevelCompileConfig(
+        {"ascend": {"decode_execution_mode": "eager"}}, system="ascend910c", backend="sglang"
+    )
+    model = get_model(model_path, config, "sglang")
+    ops = flattened(model.generation_ops)
+    assert model.execution_assumptions["decode_eager_token_multiple"] == alignment
+    assert ops["generation_attention"][1]["eager_token_multiple"] == alignment
+    assert ops["generation_qkv_a"][1]["token_multiple"] == alignment
+    assert ops["generation_attention"][1]["graph_buckets"] == []
 
 
 def test_anchored_shape_policy_survives_model_and_engine_identity(model_path):

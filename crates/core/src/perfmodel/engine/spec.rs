@@ -873,6 +873,7 @@ mod tests {
                     execution_mode: "graph".into(),
                 },
                 graph_buckets: vec![8, 16, 24, 32],
+                eager_token_multiple: 8,
             }),
             OpSpec::AscendBmm(crate::operators::AscendBmmOp {
                 name: "ascend_query_bmm".into(),

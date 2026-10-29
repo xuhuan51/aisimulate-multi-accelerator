@@ -144,6 +144,7 @@ def configure_ascend_glm52(model, raw_config):
     model._gpus_per_node = 16
     model._mtp_scale_factor = 1.0
     graph_buckets = [batch for batch in (8, 16, 24, 32) if batch % local_tp == 0] if decode_mode == "graph" else []
+    eager_alignment = local_tp if attention_dp > 1 or not tensor_moe else 1
     model.execution_assumptions = {
         "routing": settings["routing"],
         "shared_expert_overlap": settings["shared_expert_overlap"],
@@ -151,6 +152,7 @@ def configure_ascend_glm52(model, raw_config):
         "attention_dp_load": "uniform",
         "decode_graph_buckets": graph_buckets,
         "decode_execution_mode": decode_mode,
+        "decode_eager_token_multiple": eager_alignment,
         "kv_pool_tokens": 53248,
         "kv_pool_scope": "operator timing reference; capacity is resolved separately by the native memory model",
         "kv_page_size": 128,
@@ -168,7 +170,7 @@ def configure_ascend_glm52(model, raw_config):
 
     for context in (True, False):
         phase, mode = ("context", "eager") if context else ("generation", decode_mode)
-        padding = min(graph_buckets) if mode == "graph" else 1
+        padding = 1 if context else min(graph_buckets) if mode == "graph" else eager_alignment
         entries = []
 
         def linear(
@@ -220,7 +222,7 @@ def configure_ascend_glm52(model, raw_config):
                 return None
             elements = width * (attention_dp if global_tokens else 1)
             split = local_tp if shard else 1
-            if mode == "graph":
+            if not context:
                 elements *= padding // split
                 split = padding
             return {
@@ -253,6 +255,7 @@ def configure_ascend_glm52(model, raw_config):
                         "execution_mode": mode,
                     },
                     "graph_buckets": [] if context else graph_buckets,
+                    "eager_token_multiple": 1 if context else eager_alignment,
                 }
             }
 

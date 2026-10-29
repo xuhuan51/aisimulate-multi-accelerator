@@ -416,3 +416,17 @@ Python配置与搜索473通过、runner513通过，两套必须的parity测试�
 旧数据和失败记录保留在 `production/eager-padding-node20-20261030`，不会混入同一测量协议。
 新采集覆盖context128～132096、active batch1～32、attention TP1/2/4/8/16，
 包括8K/1K、32K/1K对应的KV长度端点。未采集坐标仍受measured/anchored策略约束。
+
+原生模型现已区分eager TP对齐与graph bucket，并将对齐后的形状传给线性层、BMM、向量、
+HCCL、MoE和attention/indexer。Tensor-MoE且ADP1、无A2A时不进入MLP同步，仍用未补齐eager行数。
+attention的未补齐曲线与padded曲线分开保存；不会把实际请求数增加为补齐后的行数。
+新增算子字段使EngineSpec二进制schema升级为30，旧原生库需要随Python代码一起重建。
+
+第一批发布用1871条新eager decode记录替换419条旧协议记录，3796条graph/prefill原始记录逐项保持不变。
+Rust全量2073通过、1忽略，必须的两套parity390通过，模型与接口检查38通过。
+TP8/ADP2/EP16下两种workload各6种PD组合均完成；保存的最佳候选重新predict，
+TTFT、TPOT、吞吐、完成请求数和模拟总时长均与搜索结果逐项相同。
+这是8条请求、并发8的功能回归，不能作为稳态性能排名或实测准确性证据。
+
+进一步扫描发现TP2等布局仍缺少某些中间batch对应的padded曲线，正在补采。
+因此不能把仅检查batch1/4/16/32成功，解读为全部batch都已经覆盖。

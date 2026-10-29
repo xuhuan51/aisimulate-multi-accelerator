@@ -949,6 +949,22 @@
           "scope": "collection",
           "sha256": "ed1dc6e355bd0042de4b32f1057f186ffa9ced114ec92b77c51283b6dda1f7a5"
         },
+        "eager_alignment_validation_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/eager-padding-node20-20261030/eager-alignment-validation.json",
+          "scope": "validation",
+          "sha256": "8e874ba7f9ef3b29f9a61ffac533650929b421b7d17cb5f376eca75b1c475e97"
+        },
+        "eager_attention_refresh_20261030": {
+          "archived": false,
+          "context_sha256": "2b816747f6f871a818618e6dd7d7b49d90f29e88180b3d25f9ad45c011d0f30d",
+          "kind": "file",
+          "path": "production/eager-padding-node20-20261030/publication-v2/merged/ascend_attention_perf.parquet",
+          "scope": "collection",
+          "sha256": "a61fbd310637bf2ebe7efb0ef2a2f34c14edf21bb0460ef4f9822a9b8cb93603"
+        },
         "eager_execution_probe_20261030": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -1864,10 +1880,10 @@
       },
       "progress": {
         "blockers": [
-          "Corrected eager runtime and1871qualified profiles require native integration/rebuild; oneprofile coordinate remains unqualified.",
-          "No matching whole-forward/serving reference yet."
+          "Finish broad batch coverage, then update production wheel/image.",
+          "Serving accuracy awaits a matching graph/overlap-disabled reference."
         ],
-        "next_action": "Commit collector, publish separate eager decode curves with complete provenance, test native prediction/search, and rebuild production runtime.",
+        "next_action": "Validate every batch1..32, add missing eagerpadding coordinates, publish final runtime with reproducible smoke.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2707,6 +2723,7 @@
       "checkpoint_path_note": "Restored the launch-script reference string from committed revision72 after /workspace container normalization shortened its leading parents and invalidated unrelated contexts. No artifact hashes or approvals changed. Further checkpoint commands use the repository at its host absolute path.",
       "comparison_runtime": "v0.5.20-cann9.0.0-a3 / local image commit94602c9c2b7cbdb8efd5c52802dac6a1c180089e; RepoDigest unavailable",
       "date": "2026-10-30",
+      "eager_alignment_validation": "EngineSpec30 carries eager attention alignment; all relevant operator shapes use TP-aligned rows when MLP sync applies; tensor-MoEADP1 remains unpadded.1871new eager rows replace419old rows,3796other rows unchanged. Rust2073pass1ignored,parity390,Python38.8K/32Ksix PD ratios each,save/replayprimarymetrics exactlyequal. Additional1072padded cases collecting to close batch3/7etc holes; broadprofile readiness not assumed.",
       "eager_collection": "Node20 pinned image:306initial padding cases,65CV rejects. Found CPU numerical verification interrupts warmup before first timing sample. Collector now warms timing execution/events after verification. Recollected complete1872 eager decode cases:allnumerical checks pass,1835CVqualified;onepredefined serial remeasure37 adds36qualified,onegap retained. Original graph/prefill datasets remain unchanged; eager decode data will be replaced by the complete audited campaign, not mixed across collector protocols.",
       "eager_mode": "Explicit decode_execution_mode=eager removes graph padding and queries eager records only. Native Rust defaults remain graph. DCP eager is rejected because its profiles are unavailable. Graph probes160/160,eager144/160;16EP32DeepEP queries exceed the measured sent-token range. No new serving accuracy acceptance.",
       "eager_tp_padding_finding": "Pinned model_runner eager prepare calls prepare_mlp_sync_batch: per-DP counts align to attention TP, MAX_LEN or SUM_LEN selected, decode tensors padded. Previous eager composition omitted this alignment. Need measured eager attention active/padded profiles and corrected operators before publication. Node20 currently has no NPU processes; pinned collection image available.",
@@ -2813,7 +2830,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 80,
+  "revision": 81,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

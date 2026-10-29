@@ -1,0 +1,135 @@
+{
+  "scope": "TP-aligned eager operator composition, qualified profile refresh, native scheduling/search regression; accuracy not qualified",
+  "native_schema": 30,
+  "native_sha256": "509774c9c41569fac3bd781b3794c7f86778e82edcacc8365decd2b5f414d2c6",
+  "rust_tests": {
+    "passed": 2073,
+    "ignored": 1
+  },
+  "mandatory_parity_tests_passed": 390,
+  "python_model_contract_tests_passed": 38,
+  "publication": {
+    "old_rows": 4215,
+    "retained_rows_unchanged": 3796,
+    "replaced_eager_decode_rows": 419,
+    "fresh_eager_decode_rows": 1871,
+    "rows": 5667,
+    "whole_curves_replaced": [
+      [
+        "lightning_indexer",
+        "decode",
+        32,
+        "eager"
+      ],
+      [
+        "sparse_attention",
+        "decode",
+        4,
+        "eager"
+      ],
+      [
+        "sparse_attention",
+        "decode",
+        8,
+        "eager"
+      ],
+      [
+        "sparse_attention",
+        "decode",
+        16,
+        "eager"
+      ],
+      [
+        "sparse_attention",
+        "decode",
+        32,
+        "eager"
+      ],
+      [
+        "sparse_attention",
+        "decode",
+        64,
+        "eager"
+      ]
+    ],
+    "source_revision": "5130d51a9af10a4f23b85141804b53d0d8b45ad0",
+    "table_sha256": "a61fbd310637bf2ebe7efb0ef2a2f34c14edf21bb0460ef4f9822a9b8cb93603"
+  },
+  "forward_probe": {
+    "attempted": 320,
+    "successful": 304,
+    "failed": 16,
+    "failure_scope": "unmeasured EP32 eager DeepEP sent-token range; only batches1/4/16/32 checked here"
+  },
+  "search_replay": {
+    "scope": "8 requests atconcurrency8; functional save/replay validation only, not steady-state ranking or accuracy",
+    "results": [
+      {
+        "input_tokens": 8192,
+        "counts": {
+          "cache_hits": 0,
+          "evaluated": 6,
+          "failed": 0,
+          "feasible": 6,
+          "infeasible": 0,
+          "resource_limited": 0,
+          "timed_out": 0,
+          "unsupported": 0
+        },
+        "top_candidate": "candidate-000004",
+        "parallelism": {
+          "decode_attention_dp": 2,
+          "decode_replicas": 2,
+          "decode_tp": 8,
+          "prefill_attention_dp": 2,
+          "prefill_replicas": 2,
+          "prefill_tp": 8
+        },
+        "metrics": {
+          "mean_ttft_ms": 3964.6852441259507,
+          "mean_tpot_ms": 201.26095730351952,
+          "output_throughput_tok_s": 38.79478444317389,
+          "completed_requests": 8.0,
+          "duration_ms": 211162.4054001264
+        },
+        "saved_prediction_exact_match": true
+      },
+      {
+        "input_tokens": 32768,
+        "counts": {
+          "cache_hits": 0,
+          "evaluated": 6,
+          "failed": 0,
+          "feasible": 6,
+          "infeasible": 0,
+          "resource_limited": 0,
+          "timed_out": 0,
+          "unsupported": 0
+        },
+        "top_candidate": "candidate-000004",
+        "parallelism": {
+          "decode_attention_dp": 2,
+          "decode_replicas": 2,
+          "decode_tp": 8,
+          "prefill_attention_dp": 2,
+          "prefill_replicas": 2,
+          "prefill_tp": 8
+        },
+        "metrics": {
+          "mean_ttft_ms": 119017.88050718988,
+          "mean_tpot_ms": 201.11873303323557,
+          "output_throughput_tok_s": 18.918449462937215,
+          "completed_requests": 8.0,
+          "duration_ms": 433016.459200253
+        },
+        "saved_prediction_exact_match": true
+      }
+    ]
+  },
+  "archive_sha256": "7d53906e7d9ad5497816b3d79a633219afbeba91542a63449a656182e553c4b9",
+  "outstanding": [
+    "Broaderbatch1..32 coverage probe and padded-plane collection in progress.",
+    "Production image not installed yet.",
+    "Nonuniform DP synchronization shapes,host overhead,PD contention and measured serving accuracy not fully qualified."
+  ]
+}

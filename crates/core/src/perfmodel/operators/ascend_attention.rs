@@ -13,6 +13,12 @@ pub struct AscendAttentionOp {
     pub scale_factor: f64,
     pub key: AscendAttentionKey,
     pub graph_buckets: Vec<u32>,
+    #[serde(default = "default_eager_token_multiple")]
+    pub eager_token_multiple: u32,
+}
+
+fn default_eager_token_multiple() -> u32 {
+    1
 }
 
 impl AscendAttentionOp {
@@ -21,6 +27,7 @@ impl AscendAttentionOp {
         let graph_decode = self.key.phase == "decode" && self.key.execution_mode == "graph";
         if !self.scale_factor.is_finite()
             || self.scale_factor < 0.0
+            || self.eager_token_multiple == 0
             || graph_decode == self.graph_buckets.is_empty()
             || self.graph_buckets.iter().any(|value| *value == 0)
             || self.graph_buckets.windows(2).any(|pair| pair[0] >= pair[1])
@@ -43,6 +50,13 @@ impl AscendAttentionOp {
                     AicError::PerfDatabase(format!(
                         "Ascend attention batch={batch} exceeds graph buckets"
                     ))
+                })
+        } else if self.key.phase == "decode" {
+            batch
+                .div_ceil(self.eager_token_multiple)
+                .checked_mul(self.eager_token_multiple)
+                .ok_or_else(|| {
+                    AicError::InvalidEngineConfig("Ascend attention padding overflow".into())
                 })
         } else {
             Ok(batch)
