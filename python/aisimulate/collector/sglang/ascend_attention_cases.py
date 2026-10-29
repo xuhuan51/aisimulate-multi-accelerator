@@ -67,6 +67,11 @@ def get_ascend_attention_cases(model_path, case_root=None):
             else [geometry["num_attention_heads"] // parallel for parallel in geometry["tensor_parallel_sizes"]]
         )
         for heads in head_counts:
+            eager_alignments = (
+                geometry["tensor_parallel_sizes"]
+                if operation == "lightning_indexer"
+                else [geometry["num_attention_heads"] // heads]
+            )
             for mode in base["execution_modes"]:
                 for tokens in base["prefill_tokens"]:
                     for active in base["prefill_batches"]:
@@ -88,7 +93,7 @@ def get_ascend_attention_cases(model_path, case_root=None):
                     padded_batches = (
                         sorted({next(value for value in buckets if value >= active) for buckets in bucket_sets})
                         if mode == "graph"
-                        else [active]
+                        else sorted({active, *((active + size - 1) // size * size for size in eager_alignments)})
                     )
                     for padded in padded_batches:
                         for length in base["context_lengths"]:
@@ -106,6 +111,8 @@ def get_ascend_attention_cases(model_path, case_root=None):
             "SGLang baa9befa381511cd4d56f83980951e5a45fffc6d; "
             "operator-input-state-node31-20261022-attempt2 confirms TND/PA_BSND, "
             "128page_size,2048topk,zero-length padding and decode blocktable width1407; "
-            "operator-input-state-node32-20261022-tp16-adp1-20261024 also confirms decode buckets16/32."
+            "operator-input-state-node32-20261022-tp16-adp1-20261024 also confirms decode buckets16/32; "
+            "model_executor/forward_batch_info.py:1663-1908 pads eager MLP-sync decode tokens to attention TP; "
+            "hardware_backend/npu/attention/ascend_backend.py:1074-1075 uses zero KV length for padded rows."
         ),
     }

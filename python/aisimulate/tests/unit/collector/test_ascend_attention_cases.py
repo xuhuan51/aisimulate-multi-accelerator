@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from collector.sglang.ascend_attention_cases import get_ascend_attention_cases
 
 pytestmark = pytest.mark.unit
@@ -95,3 +94,29 @@ def test_larger_minimum_graph_bucket_covers_tp16_without_duplicate_work(model):
             ]
             assert len(matching) == 1
     assert len(cases) == len({json.dumps(case, sort_keys=True) for case in cases})
+
+
+def test_eager_decode_keeps_tp_padding_distinct_from_active_requests(model):
+    cases = get_ascend_attention_cases(model)["cases"]
+    for heads, active, expected in ((8, 1, {1, 8}), (16, 5, {5, 8}), (4, 17, {17, 32}), (64, 5, {5})):
+        matching = [
+            case
+            for case in cases
+            if case["operation"] == "sparse_attention"
+            and case["local_heads"] == heads
+            and case["phase"] == "decode"
+            and case["execution_mode"] == "eager"
+            and case["active_batch"] == active
+            and case["sequence_length"] == 9216
+        ]
+        assert {case["padded_batch"] for case in matching} == expected
+        assert all(case["tokens"] == case["padded_batch"] for case in matching)
+    indexer = {
+        case["padded_batch"]
+        for case in cases
+        if case["operation"] == "lightning_indexer"
+        and case["phase"] == "decode"
+        and case["execution_mode"] == "eager"
+        and case["active_batch"] == 1
+    }
+    assert indexer == {1, 2, 4, 8, 16}

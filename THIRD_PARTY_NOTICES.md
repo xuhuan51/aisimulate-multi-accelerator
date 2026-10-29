@@ -695,6 +695,21 @@ evidence tree records the source hashes and reference admission outcomes.
 The generator and Rust comparison tests are independently written; neither
 the runtime source nor NPU execution is bundled into this oracle.
 
+The Ascend eager decode padding rules in
+`python/aisimulate/collector/sglang/ascend_attention_cases.py`,
+`python/aisimulate/src/aisimulate_core/sdk/models/ascend_glm52.py`, and
+`crates/core/src/perfmodel/operators/ascend_attention.rs`, with their independently
+written regression tests, reimplement and modify the behavioral contract in
+`python/sglang/srt/model_executor/forward_batch_info.py` and
+`python/sglang/srt/hardware_backend/npu/attention/ascend_backend.py` at the same
+immutable revision `baa9befa381511cd4d56f83980951e5a45fffc6d`.
+Source: https://github.com/sgl-project/sglang/tree/baa9befa381511cd4d56f83980951e5a45fffc6d/python/sglang/srt
+Copyright 2023-2026 SGLang Team and SGLang contributors; Apache-2.0.
+The model distinguishes active requests from TP-aligned padded rows and models
+uniform attention-DP load; it does not copy runtime implementation code.
+Frozen collector copies and generated plans in the eager-padding evidence
+archive retain this same attribution through this notice.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

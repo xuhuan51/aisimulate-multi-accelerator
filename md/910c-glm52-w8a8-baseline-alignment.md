@@ -397,3 +397,22 @@ Python配置与搜索473通过、runner513通过，两套必须的parity测试�
 随后源码审计发现 eager 仍会按attention TP对齐token数；此前eager建模漏掉了该padding，
 这些搜索结果仅作为修正前的功能证据保存，不能用来选择实际部署的最优配比。
 正在补齐对应的算子shape与测量，详见后续修正记录。
+
+## 13. Eager decode 的 TP 对齐与补采
+
+固定0.5.22源码的 `prepare_mlp_sync_batch` 先将各rank的token数向上对齐attention TP，
+然后选择MAX_LEN/SUM_LEN；关闭graph不会取消这层对齐。
+例如TP8、ADP2、每rank一个decode请求，矩阵输入仍有8行，attention只有1条有效KV序列，
+另外7行的KV长度为0。实际请求数、补齐后的token数和分片后的MoE输入必须分别建模。
+新增eager decode采集case覆盖这种active/padded组合，复用现有列定义，保留未补齐case。
+
+2026-10-30在空闲的node20使用原固定镜像采集首轮306个case，全部通过数值检查，
+其中65个因计时CV超过10%而未通过质量门槛。原采集器先预热再做CPU数值校验，
+计时前经历较长的CPU校验，首个样本普遍偏高。修正为数值校验后再执行完整计时预热，
+并预热计时事件；没有删除首个实测样本，也没有降低10%的门槛。
+修正后的全量eager decode计划为1872个case，全部执行并通过数值检查，1835个通过CV门槛。
+对37个CV不合格点预先约定只做一次串行复测，36个通过，合计1871个合格点。
+剩余1点为local-heads4、active/padded8/8、KV长度16384；保留原始异常样本，不纳入性能表。
+旧数据和失败记录保留在 `production/eager-padding-node20-20261030`，不会混入同一测量协议。
+新采集覆盖context128～132096、active batch1～32、attention TP1/2/4/8/16，
+包括8K/1K、32K/1K对应的KV长度端点。未采集坐标仍受measured/anchored策略约束。

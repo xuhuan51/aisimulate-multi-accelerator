@@ -68,6 +68,7 @@ def main():
         "plan_sha256": hashlib.sha256(args.plan.read_bytes()).hexdigest(),
         "collector_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "protocol": protocol,
+        "measurement_warmup": "after_numerical_verification_with_timing_events",
         "selected_plan_indices": [index for index, _ in selected],
         "cases": [],
         "failures": [],
@@ -266,9 +267,15 @@ def main():
             }
 
         checks = [verify()]
+        begin, end = torch.npu.Event(enable_timing=True), torch.npu.Event(enable_timing=True)
+        for _ in range(protocol["warmup"]):
+            begin.record()
+            result = execute()
+            end.record()
+            end.synchronize()
+            del result
         values, wall = [], []
         for _ in range(protocol["repeats"]):
-            begin, end = torch.npu.Event(enable_timing=True), torch.npu.Event(enable_timing=True)
             started = time.perf_counter()
             begin.record()
             result = execute()
