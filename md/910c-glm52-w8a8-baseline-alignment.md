@@ -663,3 +663,7 @@ AISIMULATE_910C_MODEL="$model_metadata" bash scripts/run-ascend910c.sh recommend
 多路PD通信竞争、chunk KV发送与计算的重叠、host开销等误差来源。
 当前真实部署的完整权重路径在node19/20均不可用，匹配的关闭graph/overlap实测仍需补齐。
 因此准确率尚未验收，旧DOCX的误差数字也没有被本轮功能测试取代。
+
+本机镜像现已安装提交`0d3ce2e0`的数据和代码。安装后重复上述完整1024输出的两组搜索，
+每组两个候选的完成请求数、总时长、TTFT、TPOT、吞吐均与源码运行结果完全一致。
+实际镜像、wheel和算子表身份保存在本节目录的`runtime-publication.json`。

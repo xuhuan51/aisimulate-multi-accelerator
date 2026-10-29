@@ -81,11 +81,11 @@ EP32 balanced eager通信的1～32 token查询范围已补齐，见对齐说明�
 DCP eager仍未采集，不应把graph记录混入这些候选。
 元数据快照仅足够离线预测；真实部署仍需要完整模型权重。
 
-2026-10-30已重建本机 `aisimulate-910c:glm52-w8a8`，打包源码为 `56d40b26`、EngineSpec schema31，
-包括按各DP rank实际batch推导算子shape，以及新增3354条eager注意力补齐数据。
-安装后的镜像已执行8K输入predict和32K输入PD搜索短回归，六种配比均完成。
-更新前的schema30镜像保留为 `aisimulate-910c:before-dp-synchronization-20261030`；仅回放旧结果时使用。
-运行包、算子表、镜像SHA及回归记录见 `production/eager-padding-node20-20261030/dp-runtime-publication.json`。
+2026-10-30已重建本机 `aisimulate-910c:glm52-w8a8`，打包源码为 `0d3ce2e0`、EngineSpec schema31，
+包括真实DP batch形状、新增3354条eager注意力数据，以及EP32 eager通信扩展。
+安装后已验证8K/1K、32K/1K的EP32解码实例搜索；各候选的主要指标与源码运行结果完全一致。
+上一版镜像保留为 `aisimulate-910c:before-ep32-eager-20261030`；仅回放旧结果时使用。
+运行包、算子表、镜像SHA及回归记录见 `production/deepep-eager-pair-20261030/runtime-publication.json`。
 本机没有默认权重路径时，使用上面的 `model_metadata` 参数即可进行离线预测。
 
 只想检查环境和命令是否可用，可以先运行65输入、32输出的两条请求：
