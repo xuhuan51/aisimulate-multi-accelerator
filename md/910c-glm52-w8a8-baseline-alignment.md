@@ -494,10 +494,10 @@ P/D `scheduler.ignore_eos: true`。预热请求不计入这128条；prefix cache
 
 客户端源码SHA和直接执行原始长度生成函数的结果保存于
 `production/eager-padding-node20-20261030/benchmark-client-contract.json`。
-截至2026-10-30，本机运行镜像已经更新为源码 `e53c91d3` 的schema30版本，
+第15节验证时，本机运行镜像更新为源码 `e53c91d3` 的schema30版本，
 安装后的公开predict和PD搜索均通过；最终二进制两套parity共390通过、原生边界5通过，
 最后一次准入边界修改另有84项SGLang调度回归通过。运行包身份与全部证据位于同目录
-`runtime-publication.json`。这些结果验证实现与安装状态，准确性状态仍为未验收。
+`runtime-publication.json`。后续schema31更新见第17节。这些结果验证实现与安装状态，准确性仍未验收。
 
 ## 16. 用真实DP batch推导算子shape
 
@@ -597,3 +597,10 @@ rank分别有1和3个decode请求时，均需按3行执行部分算子，而只�
 通信曲线范围不足。这不代表任意并行方式和任意shape均已覆盖：DCP eager、非均匀
 发送量的通信建模、真实服务准确性仍需后续验证。对旧DOCX的误差不能用本轮测试通过数
 或新增profile数量来替代衡量。
+
+本机公开运行镜像已更新至提交`56d40b26`，EngineSpec为schema31，原生库SHA256为
+`1e728bf4b37a5f1fd3328c44c688f7b597207efdd262c0e26d9f66bd515f7f99`。
+2278个打包源码、数据及collector文件与提交内容逐项一致；49项针对性测试、390项parity通过。
+安装后另外执行8K输入predict和32K输入、最多4节点的六种PD配比搜索；均成功。
+安装检查仅使用2请求、32输出token，不替代第16节完整1K输出的功能回放或真实准确性验证。
+运行包身份与命令记录见同级`dp-runtime-publication.json`。
