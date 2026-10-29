@@ -120,3 +120,18 @@ def test_eager_decode_keeps_tp_padding_distinct_from_active_requests(model):
         and case["active_batch"] == 1
     }
     assert indexer == {1, 2, 4, 8, 16}
+
+
+def test_eager_padding_planes_cover_every_decode_batch_up_to_thirty_two(model):
+    cases = get_ascend_attention_cases(model)["cases"]
+    for parallel in (2, 4, 8, 16):
+        planes = {
+            case["padded_batch"]
+            for case in cases
+            if case["phase"] == "decode"
+            and case["execution_mode"] == "eager"
+            and case["operation"] == "sparse_attention"
+            and case["local_heads"] == 64 // parallel
+            and case["padded_batch"] > case["active_batch"]
+        }
+        assert planes == set(range(parallel, 33, parallel))
