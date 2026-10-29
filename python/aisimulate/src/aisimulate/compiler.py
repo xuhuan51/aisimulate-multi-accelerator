@@ -41,6 +41,8 @@ def prediction_to_replay_spec(
 ) -> ReplaySpec:
     """Compile one concrete public prediction config."""
 
+    if config.engine.pd_routing is not None and (adapter_specs or execution_mode != "offline"):
+        raise ValueError("engine.pd_routing requires the offline engine stack without adapters")
     if (
         config.engine.speculation is not None
         and config.engine.speculation.kind == "ngram"
@@ -244,6 +246,7 @@ def _deployment(
         "backend": engine.backend,
         "backend_version": engine.backend_version or "",
         "tokenization": _tokenization(engine),
+        "pd_routing": engine.pd_routing,
     }
     if mode == "agg":
         assert engine.workers.aggregated is not None

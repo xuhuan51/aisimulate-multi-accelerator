@@ -95,7 +95,25 @@ Field tables on these pages use the following columns:
 | `engine.backend_version` | Latest data for the backend | fixed | Selects performance data only. It does not change scheduler behavior. Must be a queryable version for the hardware and backend: `current`, `previous` when configured, `next` when newer data is available, or a version one of those available aliases resolves to. See [backend versions](#backend-versions). |
 | `engine.context_length` | `max` | fixed | Positive prompt-plus-output token limit, or `max`. With a number, prompts at or above the limit are rejected and generation stops at the limit. `max` applies the model config's maximum on vLLM; SGLang and TensorRT-LLM then run without a limit. |
 | `engine.workers` | Required | Per mode | Role mappings; see [Worker roles](#worker-roles). A role may be `{}` to use all defaults. |
+| `engine.pd_routing` | Unset (`rank_round_robin`) | fixed | Offline engine PD only. `rank_round_robin` rotates over flattened attention-DP ranks; `replica_round_robin` selects a replica first, then rotates that replica's local ranks. |
 | `engine.tokenization` | Unset (off) | predict only | Optional `workers` (positive integer, default `1`), `base_ms` and `per_input_token_us` (finite and non-negative, default `0`). Tokenizes each request on its worker before the engine; see [Request tokenization](#tokenization). Aggregated and disaggregated token replay on `--stack engine` only; online replay, worker scaling, AFD and analytical EPD are rejected. |
+
+For a PD deployment with a round-robin external router and round-robin
+attention-DP balancing inside each server, set
+`engine.pd_routing: replica_round_robin`. Both P and D follow this policy,
+independently. With two replicas exposing ranks `[0, 1]` and `[2, 3]`, the
+first four placements become `[0, 2, 1, 3]`; the default rank-level policy
+produces `[0, 1, 2, 3]`. This matters at low concurrency because the default
+can put the first two requests on a single replica. Explicit preferred DP
+ranks remain honored. Saved recommendations preserve the policy.
+
+This option does not emulate a cache-aware, least-load, random or
+bootstrap-room router. Configure the corresponding real routing policies
+explicitly when comparing measurements. It is rejected for aggregated/AFD
+replay, online replay and adapter-owned routing. SDK `SearchSpace.pd_routing`
+and `BackendDeploymentSpec.pd_routing` carry the same fixed selection; native
+`ReplaySpec.adapters.placement.config.pd_routing` selects it under the
+`round_robin` provider.
 
 <a id="tokenization"></a>
 

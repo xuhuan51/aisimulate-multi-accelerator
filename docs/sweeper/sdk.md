@@ -106,6 +106,7 @@ spaces. Public config adapters and SDK providers are distinct contracts; see
 | `context_length` | `None` | Runtime prompt-plus-output token limit; conservative KV-feasibility limit when no safe single-turn synthetic workload bound is available. |
 | `prefill_context_length` | `None` | prefill role limit; overrides `context_length` |
 | `decode_context_length` | `None` | decode role limit; overrides `context_length` |
+| `pd_routing` | `None` | Offline engine PD placement: `rank_round_robin` or `replica_round_robin`. Fixed across candidates, retained in saved configurations. |
 | `parallel_configs` | `[]` | optional pinned parallel configurations |
 | `startup_time` | `None` | optional simulated worker startup time |
 | `aic_nextn` | `None` | optional speculative-decoding depth |

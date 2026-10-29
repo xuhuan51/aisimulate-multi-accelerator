@@ -1506,6 +1506,7 @@ def test_public_sglang_scheduler_limits_reach_native_execution_rank():
             "hardware": "h200_sxm",
             "backend": "sglang",
             "context_length": 4096,
+            "pd_routing": "replica_round_robin",
             "workers": {
                 role: {
                     "parallelism": {"attention_data": 2},
@@ -1514,6 +1515,7 @@ def test_public_sglang_scheduler_limits_reach_native_execution_rank():
                         "chunked_prefill_size": 16384,
                         "max_prefill_tokens": 32768,
                         "max_sequences": 32,
+                        "ignore_eos": True,
                     },
                     "kv_cache": {"block_size": 128, "capacity": {"type": "fixed", "blocks": 128}},
                     "timing": {"type": "fixed", "prefill_ms": 1.0, "decode_ms": 1.0},
@@ -1526,11 +1528,58 @@ def test_public_sglang_scheduler_limits_reach_native_execution_rank():
     public = CorePredictionConfig.model_validate(raw)
     EngineReplayRunnerFactory(runtime=runtime).create(0).run(prediction_to_replay_spec(public))
     assert runtime.execution_spec["spec"]["engine"]["decode"]["rank"]["sglang"]["decode_reserved_tokens"] == 512
+    assert runtime.execution_spec["spec"]["adapters"]["placement"]["config"] == {"pd_routing": "replica_round_robin"}
     for role in ("prefill", "decode"):
         rank = runtime.execution_spec["spec"]["engine"][role]["rank"]
         assert rank["sglang"]["chunked_prefill_size"] == 16384
         assert rank["sglang"]["max_prefill_tokens"] == 32768
         assert rank["max_num_seqs"] == 32
+        assert rank["sglang"]["ignore_eos"] is True
+
+
+@pytest.mark.parametrize(("policy", "expected_ranks"), [("rank_round_robin", {0, 1}), ("replica_round_robin", {0, 2})])
+def test_pd_replica_routing_places_low_concurrency_on_separate_replicas(policy, expected_ranks):
+    pytest.importorskip("aisimulate._runtime")
+    public = CorePredictionConfig.model_validate(
+        {
+            "traffic": {
+                "source": {"type": "synthetic", "input_tokens": 128, "output_tokens": 4},
+                "load": {"type": "concurrency", "concurrency": 2},
+                "stop": {"requests": 2},
+            },
+            "engine": {
+                "model": "example/model",
+                "hardware": "h200_sxm",
+                "backend": "sglang",
+                "mode": "disaggregated",
+                "context_length": 4096,
+                "pd_routing": policy,
+                "workers": {
+                    role: {
+                        "parallelism": {"replicas": 1 if role == "prefill" else 2, "attention_data": 2},
+                        "scheduler": {"ignore_eos": True},
+                        "kv_cache": {
+                            "block_size": 128,
+                            "prefix_caching": False,
+                            "capacity": {"type": "fixed", "blocks": 128},
+                        },
+                        "timing": {"type": "fixed", "prefill_ms": 1.0, "decode_ms": 1.0},
+                    }
+                    for role in ("prefill", "decode")
+                },
+            },
+        }
+    )
+    report = (
+        EngineReplayRunnerFactory()
+        .create(0)
+        .run(
+            prediction_to_replay_spec(public),
+            output_requirements=ReplayOutputRequirements(include_raw_report=True, capture_per_request=True),
+        )
+    )
+    assert report.metrics["completed_requests"] == 2
+    assert {row["decode_worker_idx"] for row in report.metadata["native_report"]["per_request"]} == expected_ranks
 
 
 @pytest.mark.parametrize(("chunk_size", "expected_ttft"), [(8192, 20.0), (16384, 10.0)])

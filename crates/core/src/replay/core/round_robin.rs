@@ -135,6 +135,7 @@ where
 #[derive(Debug)]
 pub struct PoolRoundRobinPlacement<Events: EngineEventBatch> {
     next: usize,
+    replica_counter: Option<AggregatedRoundRobin>,
     workers: BTreeMap<usize, Vec<usize>>,
     events: PhantomData<Events>,
 }
@@ -143,6 +144,7 @@ impl<Events: EngineEventBatch> PoolRoundRobinPlacement<Events> {
     pub fn new(workers: Vec<WorkerTopology>) -> Self {
         Self {
             next: 0,
+            replica_counter: None,
             workers: workers
                 .into_iter()
                 .map(|worker| (worker.worker_id, worker.scheduler_ids))
@@ -155,6 +157,16 @@ impl<Events: EngineEventBatch> PoolRoundRobinPlacement<Events> {
     pub(crate) fn new_starting_at(workers: Vec<WorkerTopology>, next: usize) -> Self {
         let mut placement = Self::new(workers);
         placement.next = next;
+        placement
+    }
+
+    pub fn new_by_replica(dp_size: u32, workers: Vec<WorkerTopology>) -> Self {
+        let mut counter = AggregatedRoundRobin::new(dp_size);
+        for worker in &workers {
+            counter.worker_ready(worker.worker_id);
+        }
+        let mut placement = Self::new(workers);
+        placement.replica_counter = Some(counter);
         placement
     }
 }
@@ -178,6 +190,28 @@ where
             .request_id()
             .ok_or_else(|| anyhow!("round-robin placement requires a request UUID"))?;
         let preferred_dp_rank = request.preferred_dp_rank().map(|rank| rank as usize);
+        if let Some(counter) = &mut self.replica_counter {
+            let scheduler_id = counter.next(
+                self.workers.keys().copied(),
+                request.preferred_dp_rank(),
+                |worker, rank| {
+                    self.workers
+                        .get(&worker)
+                        .and_then(|ranks| ranks.get(rank as usize))
+                        .copied()
+                },
+            )?;
+            return Ok(PlacementEffects {
+                decision: PlacementDecision::Immediate(Placement {
+                    request_id,
+                    scheduler_id,
+                    reported_overlap_tokens: 0,
+                    cache_sample: None,
+                    placement_replica_id: None,
+                }),
+                released: Vec::new(),
+            });
+        }
         let active_count = match preferred_dp_rank {
             Some(rank) => self
                 .workers
@@ -242,6 +276,9 @@ where
     }
 
     fn worker_ready(&mut self, worker: WorkerTopology, _now_ms: f64) -> Result<Vec<Placement>> {
+        if let Some(counter) = &mut self.replica_counter {
+            counter.worker_ready(worker.worker_id);
+        }
         self.workers.insert(worker.worker_id, worker.scheduler_ids);
         Ok(Vec::new())
     }
@@ -252,6 +289,9 @@ where
     }
 
     fn worker_removed(&mut self, worker: WorkerTopology, _now_ms: f64) -> Result<Vec<Placement>> {
+        if let Some(counter) = &mut self.replica_counter {
+            counter.worker_removed(worker.worker_id);
+        }
         self.workers.remove(&worker.worker_id);
         Ok(Vec::new())
     }
@@ -363,6 +403,58 @@ mod tests {
             panic!("round-robin placement must be immediate");
         };
         placement.scheduler_id
+    }
+
+    #[test]
+    fn replica_round_robin_rotates_each_replica_rank_independently() {
+        let topology = vec![
+            WorkerTopology {
+                worker_id: 0,
+                scheduler_ids: vec![10, 11],
+            },
+            WorkerTopology {
+                worker_id: 1,
+                scheduler_ids: vec![20, 21],
+            },
+        ];
+        let mut flat = PoolRoundRobinPlacement::<()>::new(topology.clone());
+        let mut replicas = PoolRoundRobinPlacement::<()>::new_by_replica(2, topology);
+        assert_eq!(
+            (1..=4)
+                .map(|ordinal| scheduler_id(&mut flat, ordinal))
+                .collect::<Vec<_>>(),
+            [10, 11, 20, 21]
+        );
+        assert_eq!(
+            (1..=8)
+                .map(|ordinal| scheduler_id(&mut replicas, ordinal))
+                .collect::<Vec<_>>(),
+            [10, 20, 11, 21, 10, 20, 11, 21]
+        );
+    }
+
+    #[test]
+    fn replica_round_robin_preserves_rank_rotation_when_another_replica_drains() {
+        let retired = WorkerTopology {
+            worker_id: 0,
+            scheduler_ids: vec![10, 11],
+        };
+        let mut policy = PoolRoundRobinPlacement::<()>::new_by_replica(
+            2,
+            vec![
+                retired.clone(),
+                WorkerTopology {
+                    worker_id: 1,
+                    scheduler_ids: vec![20, 21],
+                },
+            ],
+        );
+        assert_eq!(scheduler_id(&mut policy, 1), 10);
+        assert_eq!(scheduler_id(&mut policy, 2), 20);
+        PlacementPolicy::<TestRequest>::worker_draining(&mut policy, retired.clone(), 0.0).unwrap();
+        PlacementPolicy::<TestRequest>::worker_removed(&mut policy, retired, 0.0).unwrap();
+        assert_eq!(scheduler_id(&mut policy, 3), 21);
+        assert_eq!(scheduler_id(&mut policy, 4), 20);
     }
 
     #[test]

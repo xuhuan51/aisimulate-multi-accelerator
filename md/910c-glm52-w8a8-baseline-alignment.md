@@ -343,3 +343,57 @@ Rust逐项检查实际准入和chunk终点；103例全部相符。另有5项边�
 0.5.20的running-request offset仍使用自适应比例，与0.5.22存在源码差异。
 因此本开关明确采用0.5.22语义，不能用版本号字符串推断已经同时精确复现两个版本。
 当前开关是每role统一设置，未表示混合 `ignore_eos` 请求流，SWA、Mamba、DCP专用准入也不在这组oracle范围内。
+
+## 12. PD 路由需要与入口服务一致
+
+现有原生PD默认将全部副本的attention-DP rank展平再轮询。
+例如两个D副本、每副本ADP2，前四条请求落在rank `[0,1,2,3]`：
+前两条同时占用第一个副本。实际入口若先轮询D副本，再由各副本独立轮询内部rank，
+对应顺序应为 `[0,2,1,3]`。并发很小时，这会直接改变使用几个副本，影响PD搜索排名。
+
+新增固定配置 `engine.pd_routing: replica_round_robin`，P、D分别执行两级轮询。
+`rank_round_robin` 或省略字段可重现旧顺序；此字段随候选一起保存。
+它只适用于离线engine栈，不接管Dynamo等适配器的路由，不代表已模拟cache-aware路由。
+
+历史DOCX写明了P入口 `--prefill-policy cache_aware`、D入口 `--decode-policy round_robin`。
+P进程显式 `--load-balance-method round_robin`；所核验版本的D默认也解析为round_robin。
+因此历史P端的cache-aware行为尚未完全重现，不能宣称换了这个字段便完全等价于历史部署。
+为了建立可归因的新基线，建议实测时P、D入口都显式使用round_robin，
+P、D进程都显式使用 `--load-balance-method round_robin`，并关闭prefix cache。
+
+对应一组明确的预测设置为：
+
+```yaml
+engine:
+  pd_routing: replica_round_robin
+  estimator_config:
+    op_level:
+      ascend:
+        decode_execution_mode: eager
+        shape_policy: anchored
+        shared_expert_overlap: true
+  workers:
+    prefill:
+      scheduler: {chunked_prefill_size: 16384, max_prefill_tokens: 32768, max_sequences: 32, ignore_eos: true}
+      kv_cache: {prefix_caching: false}
+    decode:
+      scheduler: {max_sequences: 32, decode_reserved_tokens: 512, ignore_eos: true}
+      kv_cache: {prefix_caching: false}
+```
+
+这是对已有完整YAML的配置片段，不能单独作为完整输入。
+`max_sequences: 32` 对应全局max-running64、ADP2；改变ADP时需重算每rank上限。
+`ignore_eos: true` 对应客户端固定输出设置，shared-expert重叠开关仍须与实际设备流执行一致。
+
+0.5.22中关闭两阶段graph的显式参数为
+`--cuda-graph-backend-prefill disabled --cuda-graph-backend-decode disabled`；
+旧的 `--disable-cuda-graph` 已是兼容别名。P、D均加 `--disable-overlap-schedule`。
+这些开关应记录到最终启动命令，并从启动日志核对解析后的配置，而不只记录镜像标签。
+
+路由修正的验证：Rust库2072通过、1忽略，runtime/replay/artifact合同34通过，
+Python配置与搜索473通过、runner513通过，两套必须的parity测试合计390通过。
+真实原生引擎的双请求测试确认了两种不同的D rank顺序。
+8K/1K和32K/1K各6种PD组合也完成了功能搜索，但这不是准确性验收。
+随后源码审计发现 eager 仍会按attention TP对齐token数；此前eager建模漏掉了该padding，
+这些搜索结果仅作为修正前的功能证据保存，不能用来选择实际部署的最优配比。
+正在补齐对应的算子shape与测量，详见后续修正记录。

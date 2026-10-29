@@ -22,6 +22,7 @@ _DEPLOYMENT_PINNED = (
     "aic_nextn",
     "nextn_accepted",
     "enable_chunked_prefill",
+    "pd_routing",
     *ENGINE_MODEL_CONTROL_FIELDS,
 )
 

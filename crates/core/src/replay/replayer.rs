@@ -72,6 +72,22 @@ pub trait ReplayComposition {
         decode_topology: Vec<WorkerTopology>,
     ) -> AnyResult<(Self::DisaggregatedPlacement, Self::DisaggregatedPlacement)>;
 
+    fn create_disaggregated_placements_for_spec(
+        &mut self,
+        _spec: &ReplaySpec,
+        prefill_dp_size: u32,
+        prefill_topology: Vec<WorkerTopology>,
+        decode_dp_size: u32,
+        decode_topology: Vec<WorkerTopology>,
+    ) -> AnyResult<(Self::DisaggregatedPlacement, Self::DisaggregatedPlacement)> {
+        self.create_disaggregated_placements(
+            prefill_dp_size,
+            prefill_topology,
+            decode_dp_size,
+            decode_topology,
+        )
+    }
+
     /// Return the run-owned scaling policy, if this composition has one.
     fn take_scaling_policy(&mut self) -> AnyResult<Option<Box<dyn ReplayScalingPolicy>>> {
         Ok(None)
@@ -232,6 +248,43 @@ pub enum ReplayRuntimeInput {
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RoundRobinComposition;
 
+#[derive(Default, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum PdRouting {
+    #[default]
+    RankRoundRobin,
+    ReplicaRoundRobin,
+}
+
+#[derive(Default, serde::Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct RoundRobinConfig {
+    pd_routing: PdRouting,
+}
+
+fn round_robin_config(spec: &ReplaySpec) -> ReplayResult<RoundRobinConfig> {
+    if spec.adapters.placement.config.is_null()
+        || spec
+            .adapters
+            .placement
+            .config
+            .as_object()
+            .is_some_and(|config| config.is_empty())
+    {
+        return Ok(RoundRobinConfig::default());
+    }
+    let config: RoundRobinConfig = serde_json::from_value(spec.adapters.placement.config.clone())
+        .map_err(|error| {
+        ReplayError::InvalidSpec(format!("invalid round_robin placement config: {error}"))
+    })?;
+    if !matches!(spec.topology, ReplayTopology::Disaggregated { .. }) {
+        return Err(ReplayError::InvalidSpec(
+            "pd_routing requires disaggregated replay".into(),
+        ));
+    }
+    Ok(config)
+}
+
 impl ReplayComposition for RoundRobinComposition {
     type Metadata = NoReplayMetadata;
     type Observation = NoEngineEvents;
@@ -251,6 +304,7 @@ impl ReplayComposition for RoundRobinComposition {
                 spec.adapters.scaling.provider
             )));
         }
+        round_robin_config(spec)?;
         Ok(())
     }
 
@@ -273,6 +327,28 @@ impl ReplayComposition for RoundRobinComposition {
             PoolRoundRobinPlacement::new(prefill_topology),
             PoolRoundRobinPlacement::new(decode_topology),
         ))
+    }
+
+    fn create_disaggregated_placements_for_spec(
+        &mut self,
+        spec: &ReplaySpec,
+        prefill_dp_size: u32,
+        prefill_topology: Vec<WorkerTopology>,
+        decode_dp_size: u32,
+        decode_topology: Vec<WorkerTopology>,
+    ) -> AnyResult<(Self::DisaggregatedPlacement, Self::DisaggregatedPlacement)> {
+        match round_robin_config(spec)?.pd_routing {
+            PdRouting::RankRoundRobin => self.create_disaggregated_placements(
+                prefill_dp_size,
+                prefill_topology,
+                decode_dp_size,
+                decode_topology,
+            ),
+            PdRouting::ReplicaRoundRobin => Ok((
+                PoolRoundRobinPlacement::new_by_replica(prefill_dp_size, prefill_topology),
+                PoolRoundRobinPlacement::new_by_replica(decode_dp_size, decode_topology),
+            )),
+        }
     }
 }
 
@@ -563,7 +639,8 @@ impl<C: ReplayComposition> Replayer<C> {
                     false,
                     |prefill_dp, prefill_topology, decode_dp, decode_topology| {
                         self.composition
-                            .create_disaggregated_placements(
+                            .create_disaggregated_placements_for_spec(
+                                &self.spec,
                                 prefill_dp,
                                 prefill_topology,
                                 decode_dp,
@@ -1085,6 +1162,26 @@ mod generated_replay_tests {
         .unwrap()
         .into_json_line()
         .unwrap()
+    }
+
+    #[test]
+    fn pd_routing_configuration_is_strict_and_requires_disaggregation() {
+        let mut input = spec(Backend::Sglang, true, 2, false);
+        for policy in ["rank_round_robin", "replica_round_robin"] {
+            input.adapters.placement.config = serde_json::json!({"pd_routing": policy});
+            RoundRobinComposition.validate_spec(&input).unwrap();
+        }
+        for invalid in [
+            serde_json::json!({"pd_routing": "random"}),
+            serde_json::json!({"pd_routing": true}),
+            serde_json::json!({"typo": true}),
+        ] {
+            input.adapters.placement.config = invalid;
+            assert!(RoundRobinComposition.validate_spec(&input).is_err());
+        }
+        input.topology = ReplayTopology::aggregated(2);
+        input.adapters.placement.config = serde_json::json!({"pd_routing": "replica_round_robin"});
+        assert!(RoundRobinComposition.validate_spec(&input).is_err());
     }
 
     #[test]

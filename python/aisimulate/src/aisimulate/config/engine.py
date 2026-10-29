@@ -32,6 +32,7 @@ PositiveFloat = Annotated[float, Field(strict=True, gt=0, allow_inf_nan=False)]
 NonNegativeFloat = Annotated[float, Field(strict=True, ge=0, allow_inf_nan=False)]
 Fraction = Annotated[float, Field(strict=True, gt=0, le=1, allow_inf_nan=False)]
 EngineMode = Literal["aggregated", "disaggregated", "afd"]
+PdRouting = Literal["rank_round_robin", "replica_round_robin"]
 Backend = Literal["vllm", "sglang", "trtllm"]
 KvBytesPerToken = PositiveInt | Literal["auto"]
 AFDPhase = Literal["prefill", "decode", "both"]
@@ -608,6 +609,7 @@ class EnginePredictionConfig(EstimatorPolicyConfig):
     speculation: SpeculationConfig | None = None
     workers: WorkersPredictionConfig = Field(default_factory=WorkersPredictionConfig)
     kv_transfer: KvTransferConfig | None = None
+    pd_routing: PdRouting | None = None
     tokenization: TokenizationConfig | None = None
     afd: AFDTopologyPredictionConfig | None = None
 
@@ -627,6 +629,8 @@ class EnginePredictionConfig(EstimatorPolicyConfig):
 
     @model_validator(mode="after")
     def _validate_roles(self) -> EnginePredictionConfig:
+        if self.pd_routing is not None and self.mode != "disaggregated":
+            raise ValueError("engine.pd_routing requires mode=disaggregated")
         _validate_fpm_profile(self, {self.mode}, {self.backend})
         if self.decoder_replay:
             # Keep the pre-supervision configuration path lightweight. Import
@@ -834,6 +838,7 @@ class EngineRecommendationConfig(EstimatorPolicyConfig):
     speculation: NgramSpeculationConfig | None = None
     workers: WorkersRecommendationConfig = Field(default_factory=WorkersRecommendationConfig)
     kv_transfer: KvTransferConfig | None = None
+    pd_routing: PdRouting | None = None
     afd: AFDSearchRecommendationConfig | None = None
 
     @field_validator("model", "hardware")
@@ -846,6 +851,8 @@ class EngineRecommendationConfig(EstimatorPolicyConfig):
     @model_validator(mode="after")
     def _validate_roles(self) -> EngineRecommendationConfig:
         modes = set(self.mode.choices) if isinstance(self.mode, Choices) else {self.mode}
+        if self.pd_routing is not None and modes != {"disaggregated"}:
+            raise ValueError("engine.pd_routing requires mode=disaggregated")
         backends = set(self.backend.choices) if isinstance(self.backend, Choices) else {self.backend}
         _validate_fpm_profile(self, modes, backends)
         if self.workers.aggregated is not None and self.workers.aggregated.context_length is not None:

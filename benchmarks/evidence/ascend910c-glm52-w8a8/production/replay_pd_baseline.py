@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--decode-reserved-tokens", type=int, default=512)
     parser.add_argument("--scheduler-alignment", choices=("runtime", "legacy"), default="runtime")
     parser.add_argument("--ignore-eos", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--pd-routing", choices=("rank_round_robin", "replica_round_robin"))
     args = parser.parse_args()
     repository = Path(__file__).resolve().parents[4]
     template = yaml.safe_load((repository / "examples/cli/ascend910c-glm52-pd-8k1k.yaml").read_text())
@@ -44,6 +45,7 @@ def main():
         "decode_reserved_tokens": args.decode_reserved_tokens,
         "scheduler_alignment": args.scheduler_alignment,
         "ignore_eos": args.ignore_eos,
+        "pd_routing": args.pd_routing,
         "scheduler_limits": (
             {"chunked_prefill_size": 16384, "max_prefill_tokens": 32768, "global_max_running_requests": 64}
             if args.scheduler_alignment == "runtime"
@@ -90,6 +92,8 @@ def main():
             / "benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata"
         )
         engine["context_length"] = 180000
+        if args.pd_routing is not None:
+            engine["pd_routing"] = args.pd_routing
         prefill_count, decode_count = row["deployment"].replace("d", "").split("p")
         for role, count in (("prefill", int(prefill_count)), ("decode", int(decode_count))):
             worker = engine["workers"][role]

@@ -1,6 +1,6 @@
 # 910C + GLM-5.2 W8A8：离线预测与配置搜索
 
-更新时间：2026-10-25。本文面向当前仓库和32节点已安装的运行镜像。
+更新时间：2026-10-30。本文面向当前仓库和本机运行镜像；历史32节点命令仍可复用。
 适配原理、源码位置和与GPU版的区别见 [实现说明](910c-glm52-w8a8-implementation.md)。
 四节点固定64-device预算下的两组完整PD搜索已运行，结果见
 [8K/1K与32K/1K搜索报告](910c-glm52-w8a8-four-node-pd-results.md)。
@@ -23,9 +23,9 @@ KV容量推导 → 请求调度模拟 → PD传输 → 配置搜索。
 新增覆盖、DOCX对比和下一步工作见[shape扩充与实测偏差排查](910c-glm52-w8a8-baseline-alignment.md)。
 原始实测表不变；范围内沿用原始结果，范围外使用同身份测量锚点和计算/访存工作量模型。
 长度、并发仍须满足模型、KV容量和目标运行时限制，不代表任意硬件配置都能执行。
-完整服务的forward、TTFT、TPOT误差校准仍按本轮要求延后。
+当前正在对齐0.5.22调度和执行模式；完整forward、TTFT、TPOT仍需匹配部署的实测验收。
 
-## 1. 在32节点运行
+## 1. 在当前节点运行
 
 以下命令都在仓库根目录运行，需要本机Docker及已构建的
 `aisimulate-910c:glm52-w8a8` 镜像。使用新的输出目录保存每次实验。
@@ -52,6 +52,31 @@ sudo bash scripts/run-ascend910c.sh recommend \
 1800是该8K/1K示例的候选数量；改变负载、预算或并行范围后，应重新检查搜索空间与trial上限。
 快速尝试可加 `--set optimizer.max_trials=12`，但只探索部分候选；
 也可用 `--set optimizer.algorithm=bayesian`。
+
+若实测将关闭overlap调度和graph，使用新增的eager示例，并让实际P、D入口和各副本内部都使用round-robin。
+它显式设置固定输出准入、两级PD路由、无prefix cache及0.5.22调度预算。
+已有graph示例保留。关闭graph不代表预测误差已经校准，详见
+[对齐说明第9～12节](910c-glm52-w8a8-baseline-alignment.md)。
+
+```bash
+model_metadata="$PWD/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata"
+AISIMULATE_910C_MODEL="$model_metadata" bash scripts/run-ascend910c.sh predict \
+  --stack engine --config examples/cli/ascend910c-glm52-pd-eager-8k1k.yaml \
+  --set "engine.model=$model_metadata" \
+  --output-dir aisimulate-output/eager-pd-check
+
+AISIMULATE_910C_MODEL="$model_metadata" bash scripts/run-ascend910c.sh recommend \
+  --stack engine --config examples/cli/ascend910c-glm52-pd-eager-search.yaml \
+  --set "engine.model=$model_metadata" \
+  --set traffic.source.input_tokens=32768 \
+  --output-dir aisimulate-output/eager-pd-32k-search
+```
+
+第二条命令固定TP8/ADP2/EP16，搜索最多4节点内的6种P:D配比和并发8/16/32；
+先用这组已具备eager覆盖的配置核验调度。8K搜索改为8192输入即可。
+扩大TP/ADP/EP候选仍使用第3节的并行字段，缺失的eager shape会报错；
+当前EP32覆盖不全、DCP eager未采集，不应把graph记录混入这些候选。
+元数据快照仅足够离线预测；真实部署仍需要完整模型权重。
 
 只想检查环境和命令是否可用，可以先运行65输入、32输出的两条请求：
 

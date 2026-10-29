@@ -1187,6 +1187,8 @@ class Sweeper:
         """
         if top_n is not None and top_n < 1:
             raise ValueError(f"top_n must be positive or None, got {top_n}")
+        if config.search_space.pd_routing is not None and config.adapters:
+            raise ValueError("pd_routing requires the engine stack without adapters")
         retention = CandidateRetention(candidate_retention)
         runner_factory = self._runner_factory
         from functools import partial

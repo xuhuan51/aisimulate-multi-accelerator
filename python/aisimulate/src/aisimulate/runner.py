@@ -1106,6 +1106,14 @@ def _materialize_engine_execution_spec(
     if max_sim_time_ms is not None:
         max_sim_time_ms = _nonnegative_time(max_sim_time_ms, "max_sim_time_ms")
 
+    placement_config: dict[str, JSONValue] | None = None
+    if deployment.pd_routing is not None:
+        if deployment_mode != "disagg" or deployment.pd_routing not in {"rank_round_robin", "replica_round_robin"}:
+            raise ValueError("pd_routing requires disagg mode and a supported round-robin policy")
+        if spec.adapters:
+            raise ValueError("pd_routing requires the engine stack without adapters")
+        placement_config = {"pd_routing": deployment.pd_routing}
+
     execution_spec: dict[str, JSONValue] = {
         "version": 1,
         "topology": topology,
@@ -1113,7 +1121,7 @@ def _materialize_engine_execution_spec(
         "adapters": {
             "placement": {
                 "provider": "round_robin",
-                "config": None,
+                "config": placement_config,
             },
             "scaling": {
                 "provider": "none",
