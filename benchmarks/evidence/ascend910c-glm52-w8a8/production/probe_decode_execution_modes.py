@@ -48,7 +48,7 @@ def main():
                     except (ValueError, RuntimeError) as error:
                         construction_error = str(error)
                     for kv_tokens in (8193, 32769):
-                        for batch in (1, 4, 16, 32):
+                        for batch in range(1, 33):
                             record = {"config": config, "batch_per_rank": batch, "kv_tokens": kv_tokens}
                             if construction_error is not None:
                                 record["error"] = construction_error

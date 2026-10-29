@@ -428,5 +428,33 @@ TP8/ADP2/EP16下两种workload各6种PD组合均完成；保存的最佳候选�
 TTFT、TPOT、吞吐、完成请求数和模拟总时长均与搜索结果逐项相同。
 这是8条请求、并发8的功能回归，不能作为稳态性能排名或实测准确性证据。
 
-进一步扫描发现TP2等布局仍缺少某些中间batch对应的padded曲线，正在补采。
-因此不能把仅检查batch1/4/16/32成功，解读为全部batch都已经覆盖。
+随后补齐TP2等布局的中间batch所需padded曲线：新增1072个case，首次23个CV超标，
+一次串行复测全部通过。现有attention表共有6739条，其中本次新协议eager decode为2943条；
+原graph/prefill观测值保持不变。补采覆盖记录和原始样本分别保存在
+`padding-plane-collection-validation.json` 与 `padding-plane-raw-evidence.tar.gz`。
+
+扩大探针到所有batch1～32、KV长度8193/32769、两种MoE布局、全局宽度16/32、
+local TP1/2/4/8/16、graph/eager，共2560个整轮forward查询。
+2394个成功，166个失败全部属于EP32 eager DeepEP的sent-token轴超出实测1～3范围；
+EP16 eager、tensor-MoE eager和所有graph测试均成功。
+这是uniform DP batch的接口与覆盖验证，尚未证明非均匀DP负载、实际MoE路由或整轮耗时准确。
+
+## 14. 本轮对齐状态与未完成验收
+
+已修复：global chunk预算被遗漏、固定输出准入预留、PD两级轮询、
+搜索时误用完整180K context做workload可行性检查、eager TP padding与对应算子profile。
+另外将非固定输出模式的初始new-token ratio封顶为1，与0.5.22一致；
+此前提高schedule conservativeness可能预留超过请求输出上限的KV。默认参数不受该边界修正影响。
+
+以下仍不能仅凭源码修正宣称准确：
+
+- 原生attention-DP调度有同步屏障，但当前算子组合仍以uniform DP负载近似全局算子shape。
+  MAX_LEN/SUM_LEN在非均匀rank上的真实tensor/通信量仍需整轮trace核验。
+- 历史P router使用cache-aware，新基线选择round-robin；两者请求分布不完全相同。
+- PD多路同时传输的带宽竞争、真实发送结束与P释放资源的边界、CPU调度和HTTP开销尚需匹配实测。
+- EP32 eager DeepEP缺少完整sent-token曲线，DCP eager缺少实测profiles，不能借用graph时间。
+- 历史DOCX的overlap/graph及采样参数没有完全固定，不能作为关闭两者后的准确性验收。
+
+因此目前能提交的是可复现的修正、算子数据和功能验证；最终TTFT/TPOT/吞吐误差以及
+“最优PD配比”是否与实测相符，仍需要同版本、同启动参数、同workload的服务结果。
+之前历史50组回放的误差仍大，不能用本轮测试通过数代替性能误差下降的证据。

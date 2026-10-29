@@ -315,6 +315,26 @@ fn zero_output_request_completes_after_prefill() {
 }
 
 #[test]
+fn conservative_output_reservation_never_exceeds_the_output_limit() {
+    for (conservativeness, expected_initial, expected_minimum) in
+        [(0.0, 0.0, 0.0), (1.0, 0.7, 0.098), (2.0, 1.0, 0.14)]
+    {
+        let mut args = test_args(256, 1, 16);
+        args.sglang.as_mut().unwrap().schedule_conservativeness = Some(conservativeness);
+        let config = SglangConfig::from_args(&args);
+        assert!((config.init_new_token_ratio - expected_initial).abs() < 1e-12);
+        assert!((config.min_new_token_ratio - expected_minimum).abs() < 1e-12);
+        assert!(
+            (config.init_new_token_ratio
+                - 600.0 * config.new_token_ratio_decay_step
+                - expected_minimum)
+                .abs()
+                < 1e-12
+        );
+    }
+}
+
+#[test]
 fn interval_idle_ratio_distinguishes_a_busy_peer_from_global_idle() {
     let mut args = test_args(256, 1, 16);
     args.prefill_decode_interval = 2;

@@ -711,6 +711,14 @@ uniform attention-DP load; it does not copy runtime implementation code.
 Frozen collector copies and generated plans in the eager-padding evidence
 archive retain this same attribution through this notice.
 
+The upper bound on adaptive output reservation in
+`crates/core/src/engine/scheduler/sglang/config.rs` and its independent tests in
+`crates/core/src/engine/scheduler/sglang/tests.rs` follow
+`python/sglang/srt/managers/scheduler_components/new_token_ratio_tracker.py`
+at revision `baa9befa381511cd4d56f83980951e5a45fffc6d` in the same SGLang source.
+Copyright 2023-2026 SGLang Team and SGLang contributors; Apache-2.0.
+The Rust implementation is independently written and modified for native simulation.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

@@ -61,7 +61,8 @@ impl SglangConfig {
         let schedule_conservativeness = sglang
             .and_then(|s| s.schedule_conservativeness)
             .unwrap_or(1.0);
-        let init_new_token_ratio = DEFAULT_INIT_NEW_TOKEN_RATIO * schedule_conservativeness;
+        let init_new_token_ratio =
+            (DEFAULT_INIT_NEW_TOKEN_RATIO * schedule_conservativeness).min(1.0);
         let min_new_token_ratio = init_new_token_ratio * DEFAULT_MIN_NEW_TOKEN_RATIO_FACTOR;
         let decay_steps = DEFAULT_NEW_TOKEN_RATIO_DECAY_STEPS;
         let decay_step = (init_new_token_ratio - min_new_token_ratio) / decay_steps;
