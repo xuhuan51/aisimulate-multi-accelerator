@@ -279,3 +279,44 @@ AISIMULATE_910C_MODEL="$model_metadata" bash scripts/run-ascend910c.sh predict \
 
 关闭CPU overlap调度不等于关闭shared-expert算子多流重叠。
 `shared_expert_overlap` 需独立按实际部署设置；这里只切换graph/eager执行模式。
+
+## 10. 搜索使用 workload 长度做 KV 可行性检查
+
+修复了一个会直接阻止搜索的问题：模型配置允许180K上下文，
+不代表预测8K/1K时每个rank的KV池必须装得下180K请求。
+对单轮合成文本负载，现在按实际 `input_tokens + output_tokens` 筛选容量，
+保存配置和真实回放仍保留 `context_length=180000`。
+trace、多轮、多模态、AFD和直接FPM profile等无法安全确定长度的路径仍采用原来的保守检查。
+workload超过显式上下文限制时仍按原校验路径处理。
+
+修复后，8K/1K、C8、8请求的小规模eager搜索完成12个候选；
+第一名保存YAML重新预测后，完成请求数、TTFT、TPOT、吞吐与搜索报告完全相同。
+32K/1K也完成TP8/ADP2/EP16下、最多4节点的6种合法配比搜索。
+这些短回放只验证搜索、保存、重新执行连通，不能当作稳态吞吐基准或真实最优配比结论。
+
+两个实际使用时的区别：
+
+- 8K示例中的TP4/ADP4在当前内存预算下装不下32K请求；修改输入长度时须同步调整并行候选。
+- `parallelism.preset` 是显式承诺所有组合合法的清单；P、D各列1/2/3个副本会产生超过4节点的组合并报错。
+  希望按总节点预算自动筛选时，改用独立搜索轴：
+
+```yaml
+parallelism:
+  preset: false
+  tensor: 8
+  attention_data: 2
+  moe_tensor: 1
+  moe_expert: 16
+  pipeline: 1
+  replicas: {choices: [1, 2, 3]}
+```
+
+将该块分别用于P、D，并设置 `optimization.constraints.max_candidate_gpus: 64`，
+即可包含1P1D、1P2D、1P3D、2P1D、2P2D、3P1D。
+这里一个副本占16个模拟器device（一个910C节点）；64表示4节点。
+搜索目标、并发、请求数和SLA必须与实测一致，最大吞吐目标与每device吞吐目标可能给出不同排名。
+
+搜索相关205项测试通过；额外5项依赖HuggingFace模型元数据下载的测试在无网络容器中失败。
+独立运行本次修改的 `tests/sweeper/test_search.py` 为45/45通过。
+原始成功与失败回放、配置和一致性检查保存在
+`production/scheduler-audit-node20-20261030/search-validation-evidence.tar.gz`。

@@ -313,9 +313,15 @@ the final complete parallel configuration.
 `engine.workers.prefill.context_length` and
 `engine.workers.decode.context_length` map to SDK search-space fields
 `prefill_context_length` and `decode_context_length`. Both are fixed positive
-integers. Each role's KV-feasibility check uses its override, then shared
-`context_length`, then the resolved model maximum. Heterogeneous P/D workers
-and AFD companions use their own role's limit.
+integers. For a single-turn synthetic text workload, regular
+search checks that KV capacity can hold `input_tokens + output_tokens`, while
+preserving the declared role and shared context limits in every candidate.
+An engine advertising 180K context can therefore be considered for an 8K/1K
+workload when its KV pool holds that request but not a full 180K sequence.
+This bound is used only without adapters or a direct FPM profile. Trace,
+multi-turn, multimodal, AFD and direct-profile searches retain the conservative
+check against the role override, then shared `context_length`, then the
+resolved model maximum. Heterogeneous P/D workers use each role's own capacity.
 
 Candidate serialization and generated worker payloads preserve explicit role
 or shared limits. When neither is set, the payload leaves `max_model_len`

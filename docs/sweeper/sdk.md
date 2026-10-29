@@ -103,7 +103,7 @@ spaces. Public config adapters and SDK providers are distinct contracts; see
 | `systems_paths` | omitted | preserve configured SDK/environment discovery; an explicit list sets ordered request-scoped roots, with `default` selecting the packaged Core root |
 | `gpu_budget` | `32` | maximum GPUs per candidate |
 | `min_gpu_budget` | `None` | optional lower bound during enumeration |
-| `context_length` | `None` | optional KV-feasibility and runtime prompt-plus-output token limit |
+| `context_length` | `None` | Runtime prompt-plus-output token limit; conservative KV-feasibility limit when no safe single-turn synthetic workload bound is available. |
 | `prefill_context_length` | `None` | prefill role limit; overrides `context_length` |
 | `decode_context_length` | `None` | decode role limit; overrides `context_length` |
 | `parallel_configs` | `[]` | optional pinned parallel configurations |

@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 import aisimulate.sweeper.search as search_mod
-from aisimulate.sweeper.config import OptimizationGoal, SLATarget, SmartSearchConfig
+from aisimulate.sweeper.config import OptimizationGoal, SLATarget, SmartSearchConfig, Workload
 from aisimulate.sweeper.kv_load import KVLoadResolution
 from aisimulate.sweeper.parallel_enum import (
     DisaggParallelConfig,
@@ -49,6 +49,42 @@ def _config(gpu_budget=32, **sweep_overrides):
         sweep=sweep,
         goal={"target": "throughput"},
     )
+
+
+@pytest.mark.parametrize("input_tokens", [8192, 32768])
+def test_fixed_workload_feasibility_preserves_runtime_context(input_tokens):
+    config = _config()
+    config.search_space.context_length = 180000
+    config.search_space.prefill_context_length = 131072
+    config.search_space.decode_context_length = 180000
+    config.workload = Workload(isl=input_tokens, osl=1024, concurrency=4, request_count=4)
+    before = config.model_dump()
+    feasibility, required = search_mod._workload_feasibility_config(config)
+    assert required == input_tokens + 1024
+    assert feasibility.search_space.prefill_context_length == required
+    assert feasibility.search_space.decode_context_length == required
+    assert config.model_dump() == before
+    assert config.search_space.context_length == 180000
+
+
+@pytest.mark.parametrize("turns", [1, 2])
+def test_workload_feasibility_retains_unknown_or_multiturn_context(turns):
+    config = _config()
+    config.search_space.context_length = 180000
+    if turns == 2:
+        config.workload = Workload(isl=8192, osl=1024, concurrency=4, request_count=4, turns_per_session=2)
+    feasibility, required = search_mod._workload_feasibility_config(config)
+    assert feasibility is config
+    assert required == 180000
+
+
+def test_workload_feasibility_does_not_hide_invalid_runtime_limit():
+    config = _config()
+    config.search_space.context_length = 4096
+    config.workload = Workload(isl=8192, osl=1024, concurrency=4, request_count=4)
+    feasibility, required = search_mod._workload_feasibility_config(config)
+    assert feasibility is config
+    assert required == 4096
 
 
 def _run_sweep(

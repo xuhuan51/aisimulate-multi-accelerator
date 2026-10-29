@@ -1105,6 +1105,29 @@ def _worker_eval(spec: ReplaySpec) -> _ReplayEvaluation:
     return _run_replay_detailed(spec, _WORKER_CTX["runner"], _WORKER_CTX.get("output_requirements"))
 
 
+def _workload_feasibility_config(config: SmartSearchConfig) -> tuple[SmartSearchConfig, int | None]:
+    space, workload = config.search_space, config.workload
+    if (
+        config.adapters
+        or space.fpm_profile is not None
+        or set(space.deployment_mode) - {"agg", "disagg"}
+        or not workload.is_synthetic
+        or workload.images is not None
+        or workload.turns_per_session != 1
+        or workload.isl is None
+        or workload.osl is None
+    ):
+        return config, space.context_length
+    required_tokens = max(1, workload.isl + workload.osl)
+    limits = (space.context_length, space.prefill_context_length, space.decode_context_length)
+    if any(limit is not None and required_tokens > limit for limit in limits):
+        return config, space.context_length
+    feasibility_space = space.model_copy(
+        update={"prefill_context_length": required_tokens, "decode_context_length": required_tokens}
+    )
+    return config.model_copy(update={"search_space": feasibility_space}), required_tokens
+
+
 class Sweeper:
     """Compose and execute isolated backend-neutral configuration sweeps.
 
@@ -1187,9 +1210,10 @@ class Sweeper:
 
         # Preserve the legacy preflight order: reject an impossible backend/topology
         # search before adapters perform any potentially expensive preparation.
+        feasibility_config, required_tokens = _workload_feasibility_config(config)
         branches = enumerate_branches(
-            config,
-            max_seq_len=config.search_space.context_length,
+            feasibility_config,
+            max_seq_len=required_tokens,
             runner_capabilities=capabilities,
         )
         if encoder_catalog is not None:
