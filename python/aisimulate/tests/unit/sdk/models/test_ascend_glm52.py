@@ -238,9 +238,42 @@ def test_explicit_serial_shared_experts_survive_saved_engine_identity(model_path
     saved = json.loads(engine["extra"]["estimator_config"])
     assert saved["op_level"]["ascend"] == {
         "shared_expert_overlap": False,
+        "decode_execution_mode": "graph",
         "routing": "balanced",
         "kv_transfer_page_layout": "contiguous",
     }
+
+
+def test_eager_decode_uses_eager_profiles_and_preserves_partitioning(model_path):
+    config = configuration()
+    config.op_level_config = OpLevelCompileConfig(
+        {"ascend": {"decode_execution_mode": "eager"}}, system="ascend910c", backend="sglang"
+    )
+    model = get_model(model_path, config, "sglang")
+    baseline = get_model(model_path, configuration(), "sglang")
+    assert flattened(model.context_ops) == flattened(baseline.context_ops)
+    assert model.execution_assumptions["decode_execution_mode"] == "eager"
+    assert model.execution_assumptions["decode_graph_buckets"] == []
+    ops = flattened(model.generation_ops)
+    assert all(spec["key"]["execution_mode"] == "eager" for _, spec in ops.values())
+    assert ops["generation_attention"][1]["graph_buckets"] == []
+    assert ops["generation_qkv_a"][1]["token_multiple"] == 1
+    assert ops["generation_dense_gate_up"][1]["token_multiple"] == 2
+    assert ops["generation_moe_dispatch"][1]["input_token_multiple"] == 1
+    assert ops["generation_shared_gate_up"][1]["token_split"] == 8
+    assert ops["generation_dense_input_gather"][1]["elements_per_token"] == 6144
+    assert ops["generation_dense_input_gather"][1]["token_split"] == 8
+    assert model.get_resident_weights_bytes() == baseline.get_resident_weights_bytes()
+
+
+def test_eager_decode_rejects_unmeasured_dcp_profiles(model_path):
+    config = configuration()
+    config.dcp_size = 2
+    config.op_level_config = OpLevelCompileConfig(
+        {"ascend": {"decode_execution_mode": "eager"}}, system="ascend910c", backend="sglang"
+    )
+    with pytest.raises(InvalidEngineConfigurationError, match="eager DCP profiles"):
+        get_model(model_path, config, "sglang")
 
 
 def test_anchored_shape_policy_survives_model_and_engine_identity(model_path):

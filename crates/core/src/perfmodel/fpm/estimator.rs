@@ -31,6 +31,7 @@ pub struct OpLevelConfig {
 #[serde(default, deny_unknown_fields)]
 pub struct AscendOpLevelConfig {
     pub shared_expert_overlap: bool,
+    pub decode_execution_mode: AscendExecutionMode,
     pub routing: String,
     pub kv_transfer_page_layout: String,
     #[serde(
@@ -43,11 +44,19 @@ impl Default for AscendOpLevelConfig {
     fn default() -> Self {
         Self {
             shared_expert_overlap: true,
+            decode_execution_mode: AscendExecutionMode::Graph,
             routing: "balanced".into(),
             kv_transfer_page_layout: "contiguous".into(),
             shape_policy: Default::default(),
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AscendExecutionMode {
+    Eager,
+    Graph,
 }
 
 impl OpLevelConfig {
@@ -128,6 +137,34 @@ mod ascend_tests {
                 .is_err()
         );
         assert!(anchored.resolve_for("b300_sxm", "sglang").is_err());
+    }
+
+    #[test]
+    fn ascend_execution_mode_survives_serialization_and_rejects_unknown_modes() {
+        let mut options = OpLevelConfig::default();
+        options.resolve_for("ascend910c", "sglang").unwrap();
+        assert_eq!(
+            options.ascend.as_ref().unwrap().decode_execution_mode,
+            AscendExecutionMode::Graph
+        );
+        let eager: OpLevelConfig =
+            serde_json::from_str(r#"{"ascend":{"decode_execution_mode":"eager"}}"#).unwrap();
+        assert_eq!(
+            eager.ascend.as_ref().unwrap().decode_execution_mode,
+            AscendExecutionMode::Eager
+        );
+        assert_eq!(
+            serde_json::from_str::<OpLevelConfig>(&serde_json::to_string(&eager).unwrap()).unwrap(),
+            eager
+        );
+        for mode in ["auto", "off", "Graph"] {
+            assert!(
+                serde_json::from_value::<OpLevelConfig>(serde_json::json!({
+                    "ascend": {"decode_execution_mode": mode}
+                }))
+                .is_err()
+            );
+        }
     }
 }
 

@@ -208,6 +208,7 @@ explicit Ascend controls.
 | --- | --- | --- |
 | `routing` | `balanced` | Uses the measured synthetic balanced expert-count profile. Other distributions are not yet supported by the complete model composition. |
 | `shared_expert_overlap` | `true` | Overlaps the shared expert with routed work where the pinned runtime permits it. Tensor-MoE prefill stays serial; its decode and the DeepEP path may overlap. `false` adds the streams serially. |
+| `decode_execution_mode` | `graph` | `graph` selects captured decode profiles and padding buckets; `eager` selects eager profiles and removes graph padding. Missing eager identities fail explicitly. Prefill remains eager. This does not control scheduler overlap or CPU launch overhead. |
 | `kv_transfer_page_layout` | `contiguous` | Selects the measured PD page pattern: `contiguous` or `fragmented`. Both role models must agree; applies when `engine.kv_transfer.type: measured`. |
 | `shape_policy` | `measured` | `measured` requires measured interpolation brackets. `anchored` preserves covered queries and estimates missing numeric coordinates using same-identity boundary measurements and analytical work ratios. It never substitutes hardware, precision, kernel, topology or graph capture buckets. Both PD roles must agree. |
 
@@ -219,10 +220,22 @@ either global EP16/32 and MoE-TP1, or global MoE-TP16/32 and EP1. Attention-DP
 equals global width divided by local TP. PP1/CP1 and no speculation/EPLB remain
 required. Native memory checks filter infeasible layouts for each workload.
 Batch sizes are per attention-DP replica, with uniform load assumed across
-replicas. Decode uses qualified graph buckets from 8/16/24/32, divisible by
-local TP. DCP2/4/8/16 may divide local TP in aggregated prediction; it uses
+replicas. Graph decode uses qualified buckets from 8/16/24/32, divisible by
+local TP. Eager decode uses actual scheduled tokens, preserving the tensor and
+expert partitioning required by each operator. It never relabels captured
+measurements as eager measurements. DCP2/4/8/16 may divide local TP in aggregated prediction; it uses
 separately measured storage/attention/merge chains and logical KV blocks of
-`128 * dcp`. PD with DCP is unsupported by the pinned runtime.
+`128 * dcp`. Eager DCP decode has no qualified profiles and is rejected.
+PD with DCP is unsupported by the pinned runtime.
+
+For a graph-disabled reference run, set
+`estimator_config.op_level.ascend.decode_execution_mode: eager` and run SGLang
+with `--disable-cuda-graph --disable-overlap-schedule`. The latter matches the
+blocking native scheduler model; it does not disable shared-expert device
+stream overlap. Set `shared_expert_overlap: false` only when that device
+execution is also serialized in the reference deployment. Model execution
+mode selection alone does not qualify end-to-end accuracy or include unmeasured
+host launch overhead.
 
 These tables support workload-dependent shape queries, not just 8192-input,
 1024-output requests. The default `shape_policy: measured` interpolates only

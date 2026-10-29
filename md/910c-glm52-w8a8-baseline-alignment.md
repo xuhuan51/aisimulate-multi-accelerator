@@ -224,7 +224,7 @@ SGLang commit 为 `baa9befa381511cd4d56f83980951e5a45fffc6d`，与算子采集�
 
 仍需继续处理的差异：固定长度请求的 `ignore_eos` 准入规则、P/D 交接和路由、
 每轮真实 batch 与算子耗时组合，以及 graph/eager 执行模式和内存预算。
-现有 GLM decode 算子图固定选取 graph 数据；关闭 graph 的部署不能直接复用其预测并宣称已对齐。
+本节测试时 GLM decode 算子图仍固定选取 graph 数据；随后加入的显式 eager 模式见第 9 节。
 `--disable-overlap-schedule` 与 MoE shared-expert 多流重叠也是不同开关。
 新关闭 overlap/graph 实测到位前，本节只确认源码和调度配置修复，不声明 TTFT、TPOT、吞吐已达到准确率目标。
 
@@ -242,3 +242,40 @@ SGLang commit 为 `baa9befa381511cd4d56f83980951e5a45fffc6d`，与算子采集�
 6.305 s、52.47 ms；32K/1K、C1 为 10.671 s、108.58 ms，对照实测 12.918 s、53.80 ms。
 50 组逐项结果、参数及原始回放输出归档位于
 `benchmarks/evidence/ascend910c-glm52-w8a8/production/scheduler-comparison-node20-20261030/`。
+
+## 9. 显式选择关闭 graph 的预测
+
+设置 `engine.estimator_config.op_level.ascend.decode_execution_mode=eager` 后，
+decode 的线性、注意力、MoE 和通信使用 eager 性能记录，取消 graph batch bucket 填充。
+默认仍为 `graph`，保持既有报告可复现。Prefill 仍使用 eager 数据。
+没有对应 eager shape 时明确报错，不借用 graph 耗时冒充已覆盖。
+当前 DCP>1 没有 eager DCP 数据，因此该组合也明确拒绝。
+
+```bash
+AISIMULATE_910C_MODEL="$model_metadata" bash scripts/run-ascend910c.sh predict \
+  --stack engine \
+  --config examples/cli/ascend910c-glm52-pd-8k1k.yaml \
+  --set "engine.model=$model_metadata" \
+  --set engine.context_length=180000 \
+  --set engine.estimator_config.op_level.ascend.decode_execution_mode=eager \
+  --set engine.estimator_config.op_level.ascend.shape_policy=anchored \
+  --set traffic.load.concurrency=2 \
+  --set traffic.stop.requests=2 \
+  --output-dir aisimulate-output/my-eager-8k1k-check
+```
+
+对 TP1/2/4/8/16、全局规模16/32、EP或tensor-MoE、两种上下文、四种batch的
+320次统一预测器查询，graph为160/160成功，eager为144/160成功。
+16次失败均为EP32的DeepEP发送token数超出已测范围，错误原样保留。
+这只是该网格的可查询性，不表示覆盖任意shape，也不表示性能准确率。
+探针脚本及报告位于 `production/probe_decode_execution_modes.py` 和
+`production/scheduler-audit-node20-20261030/decode-mode-probe.json`（相对本模型的证据目录）。
+
+原生 eager PD 回放完成2条8K/1K请求，TTFT为2655.76ms、TPOT为200.52ms。
+这是预测值，尚无相同启动参数下的真实基线。eager微基准并不一定更快，
+也不能将原先开graph的52ms左右TPOT直接作为eager误差评价。
+本阶段通过2063项Rust单元测试（1项忽略）、390项双向parity测试和19项模型组成测试。
+旁侧KV测试中有一项仍期待DCP2不受支持，但旧镜像已支持；已单独复现为既存测试问题。
+
+关闭CPU overlap调度不等于关闭shared-expert算子多流重叠。
+`shared_expert_overlap` 需独立按实际部署设置；这里只切换graph/eager执行模式。

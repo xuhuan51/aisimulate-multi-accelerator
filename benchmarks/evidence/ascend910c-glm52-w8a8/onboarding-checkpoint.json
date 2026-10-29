@@ -949,6 +949,22 @@
           "scope": "collection",
           "sha256": "ed1dc6e355bd0042de4b32f1057f186ffa9ced114ec92b77c51283b6dda1f7a5"
         },
+        "eager_execution_probe_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/decode-mode-probe.json",
+          "scope": "validation",
+          "sha256": "9439986f64ff90213e1e80d894156570554df18e4fdc1629d3b7b00343913ead"
+        },
+        "eager_execution_validation_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/eager-validation-manifest.json",
+          "scope": "validation",
+          "sha256": "eb97b2e66ce554278e9c89b3bdcc011c56dfc75894bc074a4915758c57433586"
+        },
         "functional_delivery_manifest": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -1808,9 +1824,9 @@
       },
       "progress": {
         "blockers": [
-          "Full forward and serving accuracy unqualified. New overlap/graph-disabled reference serving measurements still pending."
+          "Full forward and serving accuracy unqualified. New overlap/graph-disabled reference serving measurements still pending. EP32 and DCP eager coverage incomplete."
         ],
-        "next_action": "Continue pinned-runtime scheduler audit and implement explicit eager decode timing selection; compare forward composition and native scheduling independently.",
+        "next_action": "Finish workload-aware search preflight validation, then audit fixed-length admission and pinned PD/runtime timing boundaries. Publish a rebuilt wheel and container.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2650,6 +2666,7 @@
       "checkpoint_path_note": "Restored the launch-script reference string from committed revision72 after /workspace container normalization shortened its leading parents and invalidated unrelated contexts. No artifact hashes or approvals changed. Further checkpoint commands use the repository at its host absolute path.",
       "comparison_runtime": "v0.5.20-cann9.0.0-a3 / local image commit94602c9c2b7cbdb8efd5c52802dac6a1c180089e; RepoDigest unavailable",
       "date": "2026-10-30",
+      "eager_mode": "Explicit decode_execution_mode=eager removes graph padding and queries eager records only. Native Rust defaults remain graph. DCP eager is rejected because its profiles are unavailable. Graph probes160/160,eager144/160;16EP32DeepEP queries exceed the measured sent-token range. No new serving accuracy acceptance.",
       "primary_digest": "sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443",
       "primary_runtime": "v0.5.22-cann9.1.0-a3 / baa9befa381511cd4d56f83980951e5a45fffc6d",
       "remaining": [
@@ -2659,7 +2676,7 @@
       ],
       "results": "50/50historical replays completed; zero readmissions. Median absolute relative error TTFT55.805195%,TPOT96.973060%,throughput42.295147%. No overall accuracy improvement established. Comparison archive preserves original and headroom-only controls.",
       "status": "in_progress",
-      "validation": "911 config/runner/sweeper tests passed; 2 additional real-native fixed-time chunk tests passed; focused Ruff passed."
+      "validation": "Rust2063passed1ignored;bothparitysuites390passed;GLMmodel19passed. Prior DCP2negativeKVtest reproduced as obsolete on unchanged old installed wheel. Native eager2requestPDreplaycompleted."
     },
     "sglang_simulator_bridge": {
       "archive": "build/sglang-simulator-deferred-20261029/experimental-bridge.tar.gz",
@@ -2748,7 +2765,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 75,
+  "revision": 76,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

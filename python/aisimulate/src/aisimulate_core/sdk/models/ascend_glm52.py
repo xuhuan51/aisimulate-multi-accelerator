@@ -132,19 +132,25 @@ def configure_ascend_glm52(model, raw_config):
     if config.op_level_config is None:
         config.op_level_config = OpLevelCompileConfig(None, system=config.system, backend=model._backend_name)
     settings = config.op_level_config.options["ascend"]
+    decode_mode = settings["decode_execution_mode"]
+    if dcp > 1 and decode_mode == "eager":
+        raise InvalidEngineConfigurationError(
+            "Ascend DCP eager decode requires eager DCP profiles, which are unavailable"
+        )
     if tensor_moe and settings["routing"] != "balanced":
         raise InvalidEngineConfigurationError("Ascend tensor-MoE currently requires measured balanced top8 routing")
     model.raw_config = raw_config
     model._num_moe_layers = 75
     model._gpus_per_node = 16
     model._mtp_scale_factor = 1.0
-    graph_buckets = [batch for batch in (8, 16, 24, 32) if batch % local_tp == 0]
+    graph_buckets = [batch for batch in (8, 16, 24, 32) if batch % local_tp == 0] if decode_mode == "graph" else []
     model.execution_assumptions = {
         "routing": settings["routing"],
         "shared_expert_overlap": settings["shared_expert_overlap"],
         "batch_scope": "per_attention_dp_replica",
         "attention_dp_load": "uniform",
         "decode_graph_buckets": graph_buckets,
+        "decode_execution_mode": decode_mode,
         "kv_pool_tokens": 53248,
         "kv_pool_scope": "operator timing reference; capacity is resolved separately by the native memory model",
         "kv_page_size": 128,
@@ -161,8 +167,8 @@ def configure_ascend_glm52(model, raw_config):
     fused_final_norm = tensor_moe or local_tp == 1
 
     for context in (True, False):
-        phase, mode = ("context", "eager") if context else ("generation", "graph")
-        padding = 1 if context else min(graph_buckets)
+        phase, mode = ("context", "eager") if context else ("generation", decode_mode)
+        padding = min(graph_buckets) if mode == "graph" else 1
         entries = []
 
         def linear(
@@ -214,7 +220,7 @@ def configure_ascend_glm52(model, raw_config):
                 return None
             elements = width * (attention_dp if global_tokens else 1)
             split = local_tp if shard else 1
-            if not context:
+            if mode == "graph":
                 elements *= padding // split
                 split = padding
             return {
