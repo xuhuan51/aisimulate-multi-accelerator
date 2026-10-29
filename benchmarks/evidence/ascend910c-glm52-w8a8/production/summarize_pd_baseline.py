@@ -74,7 +74,7 @@ def main():
                 },
             }
     with (args.output_dir / "comparison.csv").open("w", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(records[0]))
+        writer = csv.DictWriter(stream, fieldnames=list(records[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(records)
     figure, axes = plt.subplots(2, 3, figsize=(14, 8), constrained_layout=True)

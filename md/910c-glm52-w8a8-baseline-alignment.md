@@ -186,3 +186,59 @@ AISIMULATE_910C_MODEL="$model_metadata" bash scripts/run-ascend910c.sh predict \
 阶段提交：`73cbb896` 扩展采集与增量接入，`263c518b` 可选PD预算，
 `b39d8f57` 正式入库2,165点及归档原始证据。
 本次算子扩充已完成；完整 serving 准确率和正式 FPM onboarding 验收仍未完成。
+
+## 8. 2026-10-30：按固定 SGLang 版本修复调度对齐
+
+后续以 `v0.5.22-cann9.1.0-a3` 为主基线，参考 `v0.5.20-cann9.0.0-a3`。
+已查询官方镜像标签，并核对本地镜像的源码：前者 manifest digest 为
+`sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443`，
+SGLang commit 为 `baa9befa381511cd4d56f83980951e5a45fffc6d`，与算子采集版本一致。
+后者标签的 digest 为 `sha256:0756b534a0379863c435ec8b7896ba17a18fccda2c8889326fb1dc9453de9be4`，
+本地同名镜像源码 commit 为 `94602c9c2b7cbdb8efd5c52802dac6a1c180089e`；
+其本地镜像未记录 RepoDigest，因此不将标签查询单独作为本地二进制匹配证明。
+
+实验性的 SGLang Simulator 桥接已撤出运行代码，并保留在
+`build/sglang-simulator-deferred-20261029/experimental-bridge.tar.gz`。
+此前仅完成接口测试，完整调度进程未跑通，也未接管现有 PD 搜索。
+当前继续使用 AISimulate 的 Rust 调度、PD 事件和统一算子预测器。
+该选择避免先扩展单进程模拟器的多 P/D、多 DP orchestration，再重复维护现有搜索路径。
+没有“接入 SGLang Simulator 后准确率已提高”的测量结论。
+
+首轮修复覆盖配置入口到实际执行的传递：
+
+| 项目 | 修复前 | 本轮行为 |
+| --- | --- | --- |
+| SGLang chunk | 修改公开 `max_batched_tokens` 不改变 chunk，仍为全局 8192 | 新增 `scheduler.chunked_prefill_size`，显式传入全局值，由原生调度器按 ADP 除一次 |
+| Prefill 上限 | 公开配置不能传入 `max_prefill_tokens`，使用原生默认 16384 | 新增同名字段，可与启动命令的 32768 对齐 |
+| 最大请求数 | 基线脚本把全局 64 填成每 rank 64 | ADP2 时填每 rank 32；公开 `max_sequences` 的每 rank 含义不变 |
+| 推荐配置保存 | 无法保留上述显式调度预算 | 搜索候选、部署参数、保存 YAML、重新 `predict` 均保留 |
+| D 端准入预留 | 基线脚本默认 0，需手动指定 512 | 默认 512，与上述版本参数默认值一致；可显式指定 0 做消融 |
+
+`replay_pd_baseline.py --scheduler-alignment runtime` 使用修复后的预算。
+`--scheduler-alignment legacy --decode-reserved-tokens 0` 可重建旧脚本的预算设置。
+已有历史报告保持原样；新报告必须写入新目录。
+
+原生执行回归使用 ADP2、两条 8192-token 请求和固定每轮 prefill 10 ms：
+全局 chunk 8192 时 TTFT 为 20 ms，改成 16384 后为 10 ms，decode TPOT 均为 1 ms。
+这验证参数确实改变 Rust 调度轮数；它不是模型性能准确率测试。
+
+仍需继续处理的差异：固定长度请求的 `ignore_eos` 准入规则、P/D 交接和路由、
+每轮真实 batch 与算子耗时组合，以及 graph/eager 执行模式和内存预算。
+现有 GLM decode 算子图固定选取 graph 数据；关闭 graph 的部署不能直接复用其预测并宣称已对齐。
+`--disable-overlap-schedule` 与 MoE shared-expert 多流重叠也是不同开关。
+新关闭 overlap/graph 实测到位前，本节只确认源码和调度配置修复，不声明 TTFT、TPOT、吞吐已达到准确率目标。
+
+本轮 50/50 组历史 workload 回放均完成，decode readmission 总数为 0。
+按“每组相对误差绝对值再取中位数”统计：
+
+| 版本 | TTFT | TPOT | 输出吞吐 |
+| --- | ---: | ---: | ---: |
+| 原始已扩充 shape | 54.14% | 99.93% | 41.02% |
+| 仅 D 预留 512 | 55.58% | 96.97% | 42.66% |
+| 本轮再对齐 chunk、prefill 上限、每 rank 请求数 | 55.81% | 96.97% | 42.30% |
+
+这些结果说明配置修复没有消除主体误差，不能声称整体准确率改善。
+例如 1P1D、8K/1K、C1 的新预测 TTFT 2.564 s、TPOT 108.50 ms，历史实测仍为
+6.305 s、52.47 ms；32K/1K、C1 为 10.671 s、108.58 ms，对照实测 12.918 s、53.80 ms。
+50 组逐项结果、参数及原始回放输出归档位于
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/scheduler-comparison-node20-20261030/`。

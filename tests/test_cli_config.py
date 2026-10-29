@@ -1206,7 +1206,7 @@ def test_decode_headroom_rejects_invalid_prediction_configuration(backend, role,
         CorePredictionConfig.model_validate(raw)
 
 
-def test_decode_headroom_survives_search_candidate_yaml_and_predict():
+def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict():
     import yaml
 
     from aisimulate.compiler import prediction_to_replay_spec
@@ -1219,10 +1219,20 @@ def test_decode_headroom_survives_search_candidate_yaml_and_predict():
             timing={"type": "fixed", "prefill_ms": 1.0, "decode_ms": 1.0},
             kv_cache={"block_size": 128, "capacity": {"type": "fixed", "blocks": 128}},
         )
-    raw["engine"]["workers"]["decode"]["scheduler"] = {"decode_reserved_tokens": 512}
+    raw["engine"]["workers"]["prefill"]["scheduler"] = {
+        "chunked_prefill_size": 16384,
+        "max_prefill_tokens": 32768,
+    }
+    raw["engine"]["workers"]["decode"]["scheduler"] = {
+        "decode_reserved_tokens": 512,
+        "chunked_prefill_size": 4096,
+        "max_prefill_tokens": 8192,
+    }
     source = CoreRecommendationConfig.model_validate(raw)
     space = recommendation_to_sweeper(source).search_space
     assert space.decode_reserved_tokens == 512
+    assert space.prefill_chunked_prefill_size == 16384
+    assert space.prefill_max_prefill_tokens == 32768
     parallel = ReplicaParallelConfig(ParallelShape(tp=1, dp=1, moe_tp=1, moe_ep=1), replicas=1)
     sample = unroll_sample(
         search_space=space,
@@ -1237,14 +1247,44 @@ def test_decode_headroom_survives_search_candidate_yaml_and_predict():
         parallel_config=DisaggParallelConfig(prefill=parallel, decode=parallel),
     )
     deployment = build_backend_deployment(sample, backend_version="0.5.22")
-    assert deployment.decode_engine_args["sglang"]["decode_reserved_tokens"] == 512
+    assert deployment.decode_engine_args["sglang"] == {
+        "decode_reserved_tokens": 512,
+        "chunked_prefill_size": 4096,
+        "max_prefill_tokens": 8192,
+    }
     saved = _candidate_prediction(
         source, sample, ReplaySpec(backend_deployment=deployment, workload={}, goal={}), adapter_sections={}
     )
     restored = CorePredictionConfig.model_validate(yaml.safe_load(yaml.safe_dump(saved)))
     compiled = prediction_to_replay_spec(restored).backend_deployment
-    assert compiled.decode_engine_args["sglang"]["decode_reserved_tokens"] == 512
-    assert "sglang" not in compiled.prefill_engine_args
+    assert compiled.decode_engine_args["sglang"] == deployment.decode_engine_args["sglang"]
+    assert compiled.prefill_engine_args["sglang"] == {
+        "chunked_prefill_size": 16384,
+        "max_prefill_tokens": 32768,
+    }
+
+
+@pytest.mark.parametrize("field", ["chunked_prefill_size", "max_prefill_tokens"])
+@pytest.mark.parametrize("value", [0, -1, True, "8192"])
+@pytest.mark.parametrize("recommend", [False, True])
+def test_sglang_scheduler_limits_reject_invalid_values(field, value, recommend):
+    raw = _pd_hardware_config(recommend=recommend)
+    raw["engine"]["backend"] = "sglang"
+    raw["engine"]["workers"]["prefill"]["scheduler"] = {field: value}
+    config_type = CoreRecommendationConfig if recommend else CorePredictionConfig
+    with pytest.raises(ValueError, match=field):
+        config_type.model_validate(raw)
+
+
+@pytest.mark.parametrize("field", ["chunked_prefill_size", "max_prefill_tokens"])
+@pytest.mark.parametrize("recommend", [False, True])
+def test_sglang_scheduler_limits_reject_other_backends(field, recommend):
+    raw = _pd_hardware_config(recommend=recommend)
+    raw["engine"]["backend"] = "vllm"
+    raw["engine"]["workers"]["prefill"]["scheduler"] = {field: 8192}
+    config_type = CoreRecommendationConfig if recommend else CorePredictionConfig
+    with pytest.raises(ValueError, match=field):
+        config_type.model_validate(raw)
 
 
 @pytest.mark.parametrize("timing_mode", ["full_prompt", "destination_missing"])

@@ -44,6 +44,8 @@ engine:
 | `workers.<role>.parallelism.decode_context` | Unset (1) | predict only | Decode context parallelism (vLLM `-dcp`, SGLang `--dcp-size`). Must divide `tensor`; adds no GPUs. |
 | `workers.<role>.scheduler.max_batched_tokens` | `8192` | Prefill and aggregated: `{choices: [8192, 16384, 32768]}`; decode: fixed | Positive. Token budget for one scheduler pass on one attention-DP rank. See [SGLang note](#batch-limits). |
 | `workers.<role>.scheduler.max_sequences` | `256`; `1` for `prefill` | Prefill: `{choices: [1, 2, 4, 8, 16, 32, 64, 128, 256]}`; others: `{choices: [256, 512, 1024]}` | Positive. Maximum running requests on one attention-DP rank. |
+| `workers.<role>.scheduler.chunked_prefill_size` | Unset (native default: `8192`) | fixed | SGLang only. Positive global chunk budget, divided by `attention_data` inside the scheduler. |
+| `workers.<role>.scheduler.max_prefill_tokens` | Unset (native default: `16384`) | fixed | SGLang only. Positive prefill admission token budget on each attention-DP rank. |
 | `workers.<role>.scheduler.prefill_schedule_interval` | `1` | predict only | vLLM only. See [vLLM prefill schedule interval](#vllm-prefill-schedule-interval). |
 | `workers.<role>.scheduler.prefill_decode_interval` | `0` | predict only | SGLang only. See [SGLang prefill/decode interval](#sglang-prefilldecode-interval). |
 | `workers.decode.scheduler.decode_reserved_tokens` | `0` | fixed | SGLang PD only. Logical growth reserve per active decode request; set `512` for the qualified 0.5.22 Ascend runtime. Zero preserves the prior prompt-only admission behavior. |
@@ -137,9 +139,19 @@ to `max_sequences: 1`, so each prefill rank runs one request at a time unless
 you raise it.
 
 > **SGLang note.** The SGLang scheduler currently takes its per-pass prefill
-> budget from SGLang's default `chunked_prefill_size` (8192 tokens, divided by
-> `attention_data`), not from `max_batched_tokens`. Changing
-> `max_batched_tokens` does not change SGLang replay results.
+> budget from `chunked_prefill_size` (default 8192 tokens, divided by
+> `attention_data`), not from `max_batched_tokens`. Set
+> `scheduler.chunked_prefill_size` and `scheduler.max_prefill_tokens` to match
+> the target SGLang launch arguments. Both survive recommendation, saved
+> candidate YAML and replay. Changing `max_batched_tokens` does not change
+> SGLang replay results.
+
+For SGLang `--chunked-prefill-size 16384 --max-prefill-tokens 32768
+--max-running-requests 64` with `attention_data: 2`, set
+`chunked_prefill_size: 16384`, `max_prefill_tokens: 32768`, and
+`max_sequences: 32`. SGLang divides the global running-request limit by
+attention DP; AISimulate's `max_sequences` is already per rank and must not
+be divided again. The effective chunk is 8192 tokens per rank.
 
 With chunked prefill (the default), a long prompt is split across passes that
 each respect the token budget. With `enable_chunked_prefill: false` on vLLM, a

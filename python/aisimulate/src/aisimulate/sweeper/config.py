@@ -584,6 +584,8 @@ class SearchSpace(BaseModel):
     # prefill engine (disagg branch): scheduler batching capacity
     prefill_max_num_batched_tokens: list[int] = [8192, 16384, 32768]
     prefill_max_num_seqs: list[int] = [1, 2, 4, 8, 16, 32, 64, 128, 256]
+    prefill_chunked_prefill_size: int | None = Field(default=None, strict=True, gt=0)
+    prefill_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
     # pinned
     prefill_block_size: int | list[int] | None = 64
     prefill_gpu_memory_utilization: float | list[float] | None = 0.9
@@ -600,6 +602,8 @@ class SearchSpace(BaseModel):
     # decode engine (disagg branch): scheduler batching capacity
     decode_max_num_batched_tokens: list[int] = [8192]
     decode_max_num_seqs: list[int] = [256, 512, 1024]
+    decode_chunked_prefill_size: int | None = Field(default=None, strict=True, gt=0)
+    decode_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
     decode_reserved_tokens: int = Field(default=0, strict=True, ge=0)
     # pinned
     decode_block_size: int | list[int] | None = 64
@@ -617,6 +621,8 @@ class SearchSpace(BaseModel):
     # agg engine (agg branch): scheduler batching capacity
     agg_max_num_batched_tokens: list[int] = [8192, 16384, 32768]
     agg_max_num_seqs: list[int] = [256, 512, 1024]
+    agg_chunked_prefill_size: int | None = Field(default=None, strict=True, gt=0)
+    agg_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
     # pinned
     agg_block_size: int | list[int] | None = 64
     agg_gpu_memory_utilization: float | list[float] | None = 0.9
@@ -964,6 +970,10 @@ class SearchSpace(BaseModel):
 
     @model_validator(mode="after")
     def _validate_engine_controls(self):
+        for role in ("agg", "prefill", "decode"):
+            for field in ("chunked_prefill_size", "max_prefill_tokens"):
+                if getattr(self, f"{role}_{field}") is not None and set(self.backend) != {"sglang"}:
+                    raise ValueError(f"{role}_{field} requires backend=sglang")
         if self.enable_chunked_prefill is not None and any(
             mode not in {"agg", "disagg"} for mode in self.deployment_mode
         ):

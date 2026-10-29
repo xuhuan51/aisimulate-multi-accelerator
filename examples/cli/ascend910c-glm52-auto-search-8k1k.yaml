@@ -23,18 +23,18 @@ engine:
   workers:
     aggregated:
       parallelism: {preset: default}
-      scheduler: {max_batched_tokens: 4096, max_sequences: 32}
+      scheduler: {max_batched_tokens: 4096, max_sequences: 32, chunked_prefill_size: 16384, max_prefill_tokens: 32768}
       kv_cache: &kv_cache
         block_size: 128
         prefix_caching: false
         capacity: {type: default, memory_fraction: 0.90}
     prefill:
       parallelism: {preset: default}
-      scheduler: {max_batched_tokens: 4096, max_sequences: 1}
+      scheduler: {max_batched_tokens: 4096, max_sequences: 32, chunked_prefill_size: 16384, max_prefill_tokens: 32768}
       kv_cache: *kv_cache
     decode:
       parallelism: {preset: default}
-      scheduler: {max_batched_tokens: 8192, max_sequences: 32}
+      scheduler: {max_batched_tokens: 8192, max_sequences: 32, decode_reserved_tokens: 512}
       kv_cache: *kv_cache
 optimization:
   target: throughput_per_gpu

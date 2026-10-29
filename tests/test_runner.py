@@ -1498,7 +1498,7 @@ def test_runner_lowers_disaggregated_grouped_engines(backend):
     assert runtime.execution_spec["engine"]["decode"]["rank"]["backend"] == backend
 
 
-def test_public_decode_headroom_reaches_native_execution_rank():
+def test_public_sglang_scheduler_limits_reach_native_execution_rank():
     raw = {
         "engine": {
             "mode": "disaggregated",
@@ -1508,7 +1508,13 @@ def test_public_decode_headroom_reaches_native_execution_rank():
             "context_length": 4096,
             "workers": {
                 role: {
-                    "scheduler": {"decode_reserved_tokens": 512 if role == "decode" else 0},
+                    "parallelism": {"attention_data": 2},
+                    "scheduler": {
+                        "decode_reserved_tokens": 512 if role == "decode" else 0,
+                        "chunked_prefill_size": 16384,
+                        "max_prefill_tokens": 32768,
+                        "max_sequences": 32,
+                    },
                     "kv_cache": {"block_size": 128, "capacity": {"type": "fixed", "blocks": 128}},
                     "timing": {"type": "fixed", "prefill_ms": 1.0, "decode_ms": 1.0},
                 }
@@ -1520,6 +1526,48 @@ def test_public_decode_headroom_reaches_native_execution_rank():
     public = CorePredictionConfig.model_validate(raw)
     EngineReplayRunnerFactory(runtime=runtime).create(0).run(prediction_to_replay_spec(public))
     assert runtime.execution_spec["spec"]["engine"]["decode"]["rank"]["sglang"]["decode_reserved_tokens"] == 512
+    for role in ("prefill", "decode"):
+        rank = runtime.execution_spec["spec"]["engine"][role]["rank"]
+        assert rank["sglang"]["chunked_prefill_size"] == 16384
+        assert rank["sglang"]["max_prefill_tokens"] == 32768
+        assert rank["max_num_seqs"] == 32
+
+
+@pytest.mark.parametrize(("chunk_size", "expected_ttft"), [(8192, 20.0), (16384, 10.0)])
+def test_sglang_chunk_budget_changes_native_prefill_passes(chunk_size, expected_ttft):
+    pytest.importorskip("aisimulate._runtime")
+    public = CorePredictionConfig.model_validate(
+        {
+            "traffic": {
+                "source": {"type": "synthetic", "input_tokens": 8192, "output_tokens": 2},
+                "load": {"type": "concurrency", "concurrency": 2},
+                "stop": {"requests": 2},
+            },
+            "engine": {
+                "model": "example/model",
+                "hardware": "h200_sxm",
+                "backend": "sglang",
+                "mode": "aggregated",
+                "context_length": 16384,
+                "workers": {
+                    "aggregated": {
+                        "parallelism": {"attention_data": 2},
+                        "scheduler": {"chunked_prefill_size": chunk_size, "max_prefill_tokens": 32768},
+                        "kv_cache": {
+                            "block_size": 128,
+                            "prefix_caching": False,
+                            "capacity": {"type": "fixed", "blocks": 256},
+                        },
+                        "timing": {"type": "fixed", "prefill_ms": 10.0, "decode_ms": 1.0},
+                    }
+                },
+            },
+        }
+    )
+    report = EngineReplayRunnerFactory().create(0).run(prediction_to_replay_spec(public))
+    assert report.metrics["completed_requests"] == 2
+    assert report.metrics["mean_ttft_ms"] == pytest.approx(expected_ttft)
+    assert report.metrics["mean_tpot_ms"] == pytest.approx(1.0)
 
 
 @pytest.mark.parametrize(

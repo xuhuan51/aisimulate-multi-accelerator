@@ -1493,6 +1493,22 @@
           "scope": "validation",
           "sha256": "decbaa690be14014a475e9abf94b9741454d781dbae5075012d06baef15fb614"
         },
+        "scheduler_alignment_comparison_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-comparison-node20-20261030/report.json",
+          "scope": "validation",
+          "sha256": "4e8b19b5e1632ee020d5aaaa63fc1f847b197ac9714e0a1a070c28630dc8555d"
+        },
+        "scheduler_alignment_sources_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/source-identity.json",
+          "scope": "validation",
+          "sha256": "72459137c817ee14b5de844c8c99f12036262b936fe5f1b7da6d3cda5f5261f4"
+        },
         "serving_operator_validation": {
           "archived": true,
           "context_sha256": "93c820a3ea2bd86ef6d4ec4a64d06a0ab0103421a07394ab78ebafb64636d895",
@@ -1792,9 +1808,9 @@
       },
       "progress": {
         "blockers": [
-          "Direct-FPM profile not accepted. Operator-level shape functionality delivered and published; long-context high-concurrency replay timeout and whole-serving accuracy remain distinct outstanding work."
+          "Full forward and serving accuracy unqualified. New overlap/graph-disabled reference serving measurements still pending."
         ],
-        "next_action": "Investigate the retained64K high-concurrency diagnostic without changing measurement validity or candidate failure records.",
+        "next_action": "Continue pinned-runtime scheduler audit and implement explicit eager decode timing selection; compare forward composition and native scheduling independently.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2625,6 +2641,45 @@
       "limitations": "Not formal operator data, replay coverage, benchmark repeatability, or serving accuracy qualification.",
       "status": "ready and bounded request validation passed"
     },
+    "sglang_pinned_scheduler_alignment": {
+      "changes": [
+        "Expose SGLang global chunked_prefill_size and per-rank max_prefill_tokens through predict, recommend, sample, saved YAML and native payload.",
+        "Baseline runtime mode maps global64 max-running at ADP2 to32per-rank, chunk16384 and max-prefill32768. Legacy mode preserves former budgets.",
+        "Baseline helper defaults D admission reserve512, matching source; zero remains explicit ablation."
+      ],
+      "checkpoint_path_note": "Restored the launch-script reference string from committed revision72 after /workspace container normalization shortened its leading parents and invalidated unrelated contexts. No artifact hashes or approvals changed. Further checkpoint commands use the repository at its host absolute path.",
+      "comparison_runtime": "v0.5.20-cann9.0.0-a3 / local image commit94602c9c2b7cbdb8efd5c52802dac6a1c180089e; RepoDigest unavailable",
+      "date": "2026-10-30",
+      "primary_digest": "sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443",
+      "primary_runtime": "v0.5.22-cann9.1.0-a3 / baa9befa381511cd4d56f83980951e5a45fffc6d",
+      "remaining": [
+        "Audit ignore_eos fixed-length admission, PD handoff/routing, per-rank synchronization and output metric boundaries.",
+        "Add explicit eager decode model selection with corresponding coverage checks; DCP eager profiles are missing.",
+        "Validate full forward composition separately from scheduling before claiming serving accuracy."
+      ],
+      "results": "50/50historical replays completed; zero readmissions. Median absolute relative error TTFT55.805195%,TPOT96.973060%,throughput42.295147%. No overall accuracy improvement established. Comparison archive preserves original and headroom-only controls.",
+      "status": "in_progress",
+      "validation": "911 config/runner/sweeper tests passed; 2 additional real-native fixed-time chunk tests passed; focused Ruff passed."
+    },
+    "sglang_simulator_bridge": {
+      "archive": "build/sglang-simulator-deferred-20261029/experimental-bridge.tar.gz",
+      "archive_sha256": "ea66f43216ee7ed7cd5695d7a6b83ee783bae2e9fc09bc3280ad52b798a15229",
+      "date": "2026-10-30",
+      "docker": "quay.io/ascend/sglang@sha256:6341983f276d0c99a5a71614b271790d845aa70f2b5af3acf6ee07f948e6d07b",
+      "facts": [
+        "Latest official A3 image pulled; tag updated2026-10-28 01:56:43 Asia/Shanghai. Docker and current GitHub main simulator directories are byte-identical.",
+        "User explicitly accepts disabling overlap scheduling for subsequent real measurements.",
+        "Simulator reuses scheduler/cache but forces one runtime rank and does not supply complete PD/multi-replica orchestration.",
+        "Confirmed baseline chunk mismatch16384vs8192 and globalmaxrunning64->32perADPworker versus simulator64perworker.",
+        "Bridge must preserve actual scheduled chunk/KV geometry and exclude CPU predictor execution from simulated hardware time. Operator timing accuracy remains separately unvalidated."
+      ],
+      "github_main_commit": "9df3d27eed88d8c47a0b7f0cad9e4eafcbdcaed2",
+      "next": "No production bridge planned. Audit and fix native PD replay against pinned SGLang releases.",
+      "runtime_commit": "635430d07378e2b12381353781a23b0704969909",
+      "runtime_version": "0.5.23.dev1021+g635430d07",
+      "status": "withdrawn_and_archived",
+      "validation": "Initial interface tests passed, but upstream scheduler smoke failed at missing ARM CPU kernel initialization. No successful end-to-end bridge result or accuracy comparison. User explicitly authorizes withdrawal."
+    },
     "shape_extension": {
       "accuracy_probe": "Firstprototypeincorrectlyscaledfixedindexerlaunchcost;correctedusingonlyoriginalcalibrationminimum. Fresh42pointconfirmation absoluteerror median:max: indexerprefill7.31%:24.89%,indexerdecode3.96%:7.96%,sparseprefill1.72%:16.92%,sparsedecode2.48%:5.41%. Thisisboundedpointvalidation,notwhole-servingaccuracyqualification.",
       "cleanup": "Owned64kdiagnosticprocess tree stopped. AllownedNPUcollectors stopped32;19untouchedthisstageandotheruserservicekept.31notused. CPUvalidationcontainer remains available.",
@@ -2693,7 +2748,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 72,
+  "revision": 75,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

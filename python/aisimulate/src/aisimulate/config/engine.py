@@ -108,6 +108,8 @@ class ParallelismPredictionConfig(ParallelismPresetConfig):
 class SchedulerPredictionConfig(StrictModel):
     max_batched_tokens: PositiveInt = 8192
     max_sequences: PositiveInt = 256
+    chunked_prefill_size: PositiveInt | None = None
+    max_prefill_tokens: PositiveInt | None = None
     decode_reserved_tokens: NonNegativeInt = 0
     prefill_schedule_interval: PositiveInt = Field(
         default=1, description="vLLM only: admit prefill once every N attention-DP group passes."
@@ -726,6 +728,8 @@ class ParallelismRecommendationConfig(StrictModel):
 class SchedulerRecommendationConfig(StrictModel):
     max_batched_tokens: PositiveInt | Choices[PositiveInt] | IntegerRange | None = None
     max_sequences: PositiveInt | Choices[PositiveInt] | IntegerRange | None = None
+    chunked_prefill_size: PositiveInt | None = None
+    max_prefill_tokens: PositiveInt | None = None
     decode_reserved_tokens: NonNegativeInt = 0
 
 
@@ -863,6 +867,13 @@ class EngineRecommendationConfig(EstimatorPolicyConfig):
             if unknown:
                 raise ValueError(f"backend_version contains unconfigured backend(s): {unknown}")
         _validate_recommendation_host_offload(self)
+        for role in ("aggregated", "prefill", "decode"):
+            worker = getattr(self.workers, role)
+            if worker is None:
+                continue
+            for field in ("chunked_prefill_size", "max_prefill_tokens"):
+                if getattr(worker.scheduler, field) is not None and backends != {"sglang"}:
+                    raise ValueError(f"workers.{role}.scheduler.{field} requires backend=sglang")
         _validate_speculation(self, modes=modes, backends=backends)
         _validate_backend_block_sizes(backends=backends, modes=modes, workers=self.workers)
         return self
@@ -991,6 +1002,8 @@ def _validate_prediction_scheduler_backend(engine: EnginePredictionConfig) -> No
             ("prefill_schedule_interval", "vllm", 1),
             ("prefill_decode_interval", "sglang", 0),
             ("decode_reserved_tokens", "sglang", 0),
+            ("chunked_prefill_size", "sglang", None),
+            ("max_prefill_tokens", "sglang", None),
         ):
             if engine.backend != backend and getattr(worker.scheduler, field) != default:
                 raise ValueError(f"workers.{role}.scheduler.{field} is supported only for backend={backend}")

@@ -22,7 +22,7 @@ engine:
   workers:
     aggregated:
       parallelism: {tensor: 8, attention_data: 2, moe_tensor: 1, moe_expert: 16, decode_context: 2, replicas: 1}
-      scheduler: {max_batched_tokens: 4096, max_sequences: 32}
+      scheduler: {max_batched_tokens: 4096, max_sequences: 32, chunked_prefill_size: 16384, max_prefill_tokens: 32768}
       kv_cache:
         block_size: 256
         prefix_caching: false

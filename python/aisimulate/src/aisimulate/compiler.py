@@ -627,8 +627,15 @@ def _worker_engine_args(
         "enable_prefix_caching": cache.prefix_caching,
         "startup_time": worker.startup_seconds,
     }
+    sglang = {
+        name: value
+        for name in ("chunked_prefill_size", "max_prefill_tokens")
+        if (value := getattr(worker.scheduler, name)) is not None
+    }
     if worker.scheduler.decode_reserved_tokens:
-        payload["sglang"] = {"decode_reserved_tokens": worker.scheduler.decode_reserved_tokens}
+        sglang["decode_reserved_tokens"] = worker.scheduler.decode_reserved_tokens
+    if sglang:
+        payload["sglang"] = sglang
     if engine.speculation is not None:
         payload["speculation"] = engine.speculation.model_dump(mode="json")
     if engine.backend_version is not None:

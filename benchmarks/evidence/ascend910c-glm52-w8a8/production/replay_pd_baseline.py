@@ -24,7 +24,8 @@ def main():
     parser.add_argument("--baseline", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--parallelism", type=int, default=4)
-    parser.add_argument("--decode-reserved-tokens", type=int, default=0)
+    parser.add_argument("--decode-reserved-tokens", type=int, default=512)
+    parser.add_argument("--scheduler-alignment", choices=("runtime", "legacy"), default="runtime")
     args = parser.parse_args()
     repository = Path(__file__).resolve().parents[4]
     template = yaml.safe_load((repository / "examples/cli/ascend910c-glm52-pd-8k1k.yaml").read_text())
@@ -40,6 +41,12 @@ def main():
     tables = repository / "python/aisimulate/src/aisimulate_core/systems/data/ascend910c"
     manifest = {
         "decode_reserved_tokens": args.decode_reserved_tokens,
+        "scheduler_alignment": args.scheduler_alignment,
+        "scheduler_limits": (
+            {"chunked_prefill_size": 16384, "max_prefill_tokens": 32768, "global_max_running_requests": 64}
+            if args.scheduler_alignment == "runtime"
+            else {"chunked_prefill_size": 8192, "max_prefill_tokens": 16384, "max_sequences_per_rank": 64}
+        ),
         "source_baseline_sha256": hashlib.sha256(args.baseline.read_bytes()).hexdigest(),
         "runtime_source": subprocess.check_output(
             ["git", "-c", f"safe.directory={repository}", "rev-parse", "HEAD"], cwd=repository, text=True
@@ -57,9 +64,8 @@ def main():
             "Use each row's completed request count, fixed label-derived lengths, "
             "closed-loop concurrency and no cache reuse.",
             "P/D each use attention TP8, ADP2, DeepEP EP16; P memory fraction0.88 and D0.90; each replica is one node.",
-            "Use context180000 and scheduler max_sequences64. Public max_batched_tokens16384 "
-            "does not override SGLang's global chunk8192 (ADP2 ->4096/rank); "
-            "baseline global chunk16384 and max-prefill32768 are not aligned.",
+            "Use context180000; runtime mode aligns the declared global chunk16384, max-prefill32768 "
+            "and global max-running64 (ADP2 ->32/rank). Legacy mode retains the previous mismatched limits.",
             "Native round-robin routing does not reproduce the document's cache-aware prefill router "
             "or missing arrival trace.",
             "P TASK_QUEUE_ENABLE1 and historical eager/overlap details are not a separately calibrated table identity.",
@@ -86,7 +92,18 @@ def main():
         for role, count in (("prefill", int(prefill_count)), ("decode", int(decode_count))):
             worker = engine["workers"][role]
             worker["parallelism"]["replicas"] = count
-            worker["scheduler"]["max_sequences"] = 64
+            if args.scheduler_alignment == "runtime":
+                worker["scheduler"].update(
+                    chunked_prefill_size=16384,
+                    max_prefill_tokens=32768,
+                    max_sequences=64 // worker["parallelism"]["attention_data"],
+                )
+            else:
+                worker["scheduler"].update(
+                    chunked_prefill_size=8192,
+                    max_prefill_tokens=16384,
+                    max_sequences=64,
+                )
         engine["workers"]["prefill"]["scheduler"]["max_batched_tokens"] = 16384
         engine["workers"]["prefill"]["kv_cache"]["capacity"]["memory_fraction"] = 0.88
         engine["workers"]["decode"]["scheduler"]["decode_reserved_tokens"] = args.decode_reserved_tokens

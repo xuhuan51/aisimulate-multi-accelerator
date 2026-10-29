@@ -99,10 +99,17 @@ def _engine_args_payload(
         memory_fraction_field: float(memory_fraction),
         "enable_prefix_caching": bool(sample[f"{role}_enable_prefix_caching"]),
     }
+    sglang = {
+        name: sample[f"{role}_{name}"]
+        for name in ("chunked_prefill_size", "max_prefill_tokens")
+        if sample.get(f"{role}_{name}") is not None
+    }
     if role == "decode" and sample.get("decode_reserved_tokens", 0):
+        sglang["decode_reserved_tokens"] = sample["decode_reserved_tokens"]
+    if sglang:
         if backend != "sglang":
-            raise ValueError("decode_reserved_tokens requires backend=sglang")
-        payload["sglang"] = {"decode_reserved_tokens": sample["decode_reserved_tokens"]}
+            raise ValueError(f"SGLang scheduler controls {sorted(sglang)} require backend=sglang")
+        payload["sglang"] = sglang
     if sample.get("systems_paths") is not None and sample.get(f"{role}_timing_model") is not None:
         from .forward_pass_estimator import resolve_systems_paths
 
