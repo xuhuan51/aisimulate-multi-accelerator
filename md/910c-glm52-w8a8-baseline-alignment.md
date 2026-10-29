@@ -667,3 +667,22 @@ AISIMULATE_910C_MODEL="$model_metadata" bash scripts/run-ascend910c.sh recommend
 本机镜像现已安装提交`0d3ce2e0`的数据和代码。安装后重复上述完整1024输出的两组搜索，
 每组两个候选的完成请求数、总时长、TTFT、TPOT、吞吐均与源码运行结果完全一致。
 实际镜像、wheel和算子表身份保存在本节目录的`runtime-publication.json`。
+
+## 19. PD 传输完成后的 P 端资源释放（2026-10-30）
+
+固定版本的 SGLang `process_disagg_prefill_inflight_queue` 在 P 端轮询到
+`KVPoll.Success` 后就释放源 KV；D 端在自己的调度边界处理接收完成，两者独立。
+原模拟器等待 D 端激活成功才允许释放 P 端，因此 D 正在计算时会额外占用 P 端容量。
+关闭 overlap 调度不会消除这个时序差异。
+
+现已让 SGLang 的目的端激活和源端释放独立推进；两边操作仍分别等待本端调度边界。
+P 端路由中的请求计数在源释放时同步结束，整个交接仍需两端完成才结束。
+取消、重复确认和另一端尚未完成的情况保留独立的清理状态。
+VLLM/TRT 的既有源端优先交接次序不受这项 SGLang 修复影响。
+
+确定性用例设置 P 每轮1ms、D 每轮10ms，同时提交两个请求：第二个请求的 P KV 在2ms
+释放，D 要到11ms才激活。旧实现把 P 释放推迟到11ms。
+Rust 核心测试2083通过、1忽略；固定源码的7个轮询用例验证成功、等待和混合状态，
+并检查再次轮询不会重复释放。证据位于
+`production/scheduler-audit-node20-20261030/pd-release-validation.json`。
+这是调度因果顺序验证，不能视作整机准确性验收；运行包将在本轮调度修复完成后更新。

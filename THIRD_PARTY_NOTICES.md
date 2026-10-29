@@ -740,6 +740,17 @@ balanced routing; DeepEP timing uses the measured maximum-sender profile.
 The independently written `production/plan_dp_padding_extension.py` evidence
 planner and its frozen eager MAX_LEN collection archive retain this attribution.
 
+The SGLang handoff release behavior in `crates/core/src/replay/handoff.rs` and
+its independent regression tests in `crates/core/src/replay/disagg_tests.rs`
+follow `process_disagg_prefill_inflight_queue` in
+`python/sglang/srt/disaggregation/prefill.py` at the same immutable revision
+`baa9befa381511cd4d56f83980951e5a45fffc6d` (Copyright 2023-2026 SGLang Team
+and contributors; Apache-2.0). Source cleanup after transfer success does not
+wait for the decode scheduler to activate the request. This is an independent
+state-machine implementation; the upstream runtime source is not bundled.
+`production/check_pd_release.py` executes that hash-checked upstream poll body
+with transport/cache stubs and retains its source hash in the generated oracle.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

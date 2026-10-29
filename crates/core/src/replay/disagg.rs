@@ -1778,6 +1778,9 @@ where
                     &mut self.collector,
                     &mut self.stats,
                 )?;
+                if self.flow.handoff_order == HandoffOrder::DestinationFirst {
+                    self.complete_prefill_route(uuid)?;
+                }
             }
             HandoffAction::CancelSource { handoff_id } => {
                 let Some(worker_idx) = self.state(uuid)?.prefill_worker_idx() else {

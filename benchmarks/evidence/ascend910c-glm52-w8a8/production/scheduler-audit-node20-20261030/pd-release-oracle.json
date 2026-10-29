@@ -1,0 +1,203 @@
+{
+  "source_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+  "source_sha256": "386c5d007000eecead04f3527d2c780f26b14ca5e1e438346afa40eceba666d9",
+  "function": "process_disagg_prefill_inflight_queue",
+  "scope": "Original source poll body with stubbed transport/cache/telemetry; destination scheduler timing is covered by separate native integration tests",
+  "cases": [
+    {
+      "poll_states": [],
+      "completed": [],
+      "events": []
+    },
+    {
+      "poll_states": [
+        "waiting"
+      ],
+      "completed": [],
+      "events": [
+        {
+          "event": "stream_output",
+          "rids": []
+        },
+        {
+          "event": "stream_output",
+          "rids": []
+        }
+      ]
+    },
+    {
+      "poll_states": [
+        "transferring"
+      ],
+      "completed": [],
+      "events": [
+        {
+          "event": "stream_output",
+          "rids": []
+        },
+        {
+          "event": "stream_output",
+          "rids": []
+        }
+      ]
+    },
+    {
+      "poll_states": [
+        "success"
+      ],
+      "completed": [
+        "request-0"
+      ],
+      "events": [
+        {
+          "event": "release_kv",
+          "rid": "request-0",
+          "checkpoint": true
+        },
+        {
+          "event": "clear_sender",
+          "rid": "request-0"
+        },
+        {
+          "event": "stream_output",
+          "rids": [
+            "request-0"
+          ]
+        },
+        {
+          "event": "release_metadata",
+          "rid": "request-0"
+        }
+      ]
+    },
+    {
+      "poll_states": [
+        "success",
+        "transferring"
+      ],
+      "completed": [
+        "request-0"
+      ],
+      "events": [
+        {
+          "event": "release_kv",
+          "rid": "request-0",
+          "checkpoint": true
+        },
+        {
+          "event": "clear_sender",
+          "rid": "request-0"
+        },
+        {
+          "event": "stream_output",
+          "rids": [
+            "request-0"
+          ]
+        },
+        {
+          "event": "release_metadata",
+          "rid": "request-0"
+        },
+        {
+          "event": "stream_output",
+          "rids": []
+        }
+      ]
+    },
+    {
+      "poll_states": [
+        "transferring",
+        "success"
+      ],
+      "completed": [
+        "request-1"
+      ],
+      "events": [
+        {
+          "event": "release_kv",
+          "rid": "request-1",
+          "checkpoint": true
+        },
+        {
+          "event": "clear_sender",
+          "rid": "request-1"
+        },
+        {
+          "event": "stream_output",
+          "rids": [
+            "request-1"
+          ]
+        },
+        {
+          "event": "release_metadata",
+          "rid": "request-1"
+        },
+        {
+          "event": "stream_output",
+          "rids": []
+        }
+      ]
+    },
+    {
+      "poll_states": [
+        "success",
+        "success",
+        "success"
+      ],
+      "completed": [
+        "request-0",
+        "request-1",
+        "request-2"
+      ],
+      "events": [
+        {
+          "event": "release_kv",
+          "rid": "request-0",
+          "checkpoint": true
+        },
+        {
+          "event": "clear_sender",
+          "rid": "request-0"
+        },
+        {
+          "event": "release_kv",
+          "rid": "request-1",
+          "checkpoint": true
+        },
+        {
+          "event": "clear_sender",
+          "rid": "request-1"
+        },
+        {
+          "event": "release_kv",
+          "rid": "request-2",
+          "checkpoint": true
+        },
+        {
+          "event": "clear_sender",
+          "rid": "request-2"
+        },
+        {
+          "event": "stream_output",
+          "rids": [
+            "request-0",
+            "request-1",
+            "request-2"
+          ]
+        },
+        {
+          "event": "release_metadata",
+          "rid": "request-0"
+        },
+        {
+          "event": "release_metadata",
+          "rid": "request-1"
+        },
+        {
+          "event": "release_metadata",
+          "rid": "request-2"
+        }
+      ]
+    }
+  ]
+}

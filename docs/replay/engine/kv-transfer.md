@@ -100,6 +100,12 @@ Backends order the handoff differently:
 | vLLM, TensorRT-LLM | Source-first: the prefill side finishes and then the decode side reserves space. |
 | SGLang | Destination-first: the decode side reserves space before the transfer. |
 
+After a SGLang transfer completes, source KV release and destination activation
+proceed independently at each worker's next scheduler boundary. A busy decode
+worker can delay activation without keeping KV pinned on an idle prefill worker.
+The handoff completes after both actions finish. For vLLM and TensorRT-LLM,
+source release follows destination activation.
+
 TensorRT-LLM decode workers use `GUARANTEED_NO_EVICT` scheduling, which reserves
 room for the whole output while transferred KV is held.
 

@@ -485,19 +485,25 @@ impl HandoffCoordinatorCore {
                 delay_ms,
             })]);
         }
+        let mut ready = Vec::new();
         if self.transfer.completed && !self.destination.activation_issued {
             self.destination.activation_issued = true;
-            return Ok(vec![self.issue(HandoffAction::ActivateDestination {
+            ready.push(self.issue(HandoffAction::ActivateDestination {
                 handoff_id: self.handoff_id,
-            })]);
+            }));
         }
-        if self.destination.activation_applied && !self.source.release_issued {
+        let release_ready = self.destination.activation_applied
+            || (self.order == HandoffOrder::DestinationFirst && self.transfer.completed);
+        if release_ready && !self.source.release_issued {
             self.source.release_issued = true;
-            return Ok(vec![self.issue(HandoffAction::ReleaseSource {
+            ready.push(self.issue(HandoffAction::ReleaseSource {
                 handoff_id: self.handoff_id,
-            })]);
+            }));
         }
-        if self.source.cleanup_done {
+        if !ready.is_empty() {
+            return Ok(ready);
+        }
+        if self.source.cleanup_done && self.destination.activation_applied {
             return Ok(vec![self.complete()]);
         }
         Ok(Vec::new())
@@ -670,6 +676,109 @@ mod tests {
             HandoffAction::StartTransfer { delay_ms, .. } => Ok(delay_ms),
             action => panic!("expected transfer action, got {action:?}"),
         }
+    }
+
+    fn transferred_sglang_handoff() -> (HandoffCoordinatorCore, Vec<IssuedHandoffAction>) {
+        let handoff_id = HandoffId::new(Uuid::from_u128(2));
+        let mut coordinator =
+            HandoffCoordinatorCore::new(handoff_id, HandoffOrder::DestinationFirst);
+        let reserve = coordinator.start().unwrap().remove(0);
+        coordinator
+            .on_action_outcome(reserve.id, HandoffActionOutcome::Accepted)
+            .unwrap();
+        let submit = coordinator
+            .on_fact(HandoffFact::DestinationReserved {
+                handoff_id,
+                transferable_prompt_tokens: 128,
+            })
+            .unwrap()
+            .remove(0);
+        coordinator
+            .on_action_outcome(submit.id, HandoffActionOutcome::Submitted)
+            .unwrap();
+        let transfer = coordinator
+            .on_fact(HandoffFact::SourceHeld {
+                handoff_id,
+                transfer_timing: HandoffTransferTiming {
+                    mode: TransferTimingMode::FullPrompt,
+                    full_prompt_tokens: 128,
+                    kv_bytes_per_token: None,
+                    state_bytes: 0,
+                    bandwidth_gb_s: None,
+                },
+            })
+            .unwrap()
+            .remove(0);
+        coordinator
+            .on_action_outcome(transfer.id, HandoffActionOutcome::Scheduled)
+            .unwrap();
+        let ready = coordinator
+            .on_fact(HandoffFact::TransferCompleted { handoff_id })
+            .unwrap();
+        (coordinator, ready)
+    }
+
+    #[test]
+    fn sglang_transfer_completion_allows_independent_release_and_activation() {
+        for release_first in [false, true] {
+            let (mut coordinator, ready) = transferred_sglang_handoff();
+            assert_eq!(ready.len(), 2);
+            assert!(matches!(
+                ready[0].action,
+                HandoffAction::ActivateDestination { .. }
+            ));
+            assert!(matches!(
+                ready[1].action,
+                HandoffAction::ReleaseSource { .. }
+            ));
+            let (first, second) = if release_first { (1, 0) } else { (0, 1) };
+            assert!(
+                coordinator
+                    .on_action_outcome(ready[first].id, HandoffActionOutcome::Applied)
+                    .unwrap()
+                    .is_empty()
+            );
+            assert!(!coordinator.is_complete());
+            let completed = coordinator
+                .on_action_outcome(ready[second].id, HandoffActionOutcome::Applied)
+                .unwrap();
+            assert_eq!(completed.len(), 1);
+            assert!(matches!(
+                completed[0].action,
+                HandoffAction::Complete { .. }
+            ));
+            assert!(coordinator.is_complete());
+        }
+    }
+
+    #[test]
+    fn sglang_cancel_after_source_release_still_cleans_destination() {
+        let (mut coordinator, ready) = transferred_sglang_handoff();
+        coordinator
+            .on_action_outcome(ready[1].id, HandoffActionOutcome::Applied)
+            .unwrap();
+        let cleanup = coordinator
+            .on_fact(HandoffFact::Canceled {
+                handoff_id: HandoffId::new(Uuid::from_u128(2)),
+            })
+            .unwrap();
+        assert_eq!(cleanup.len(), 1);
+        assert!(matches!(
+            cleanup[0].action,
+            HandoffAction::CancelDestination { .. }
+        ));
+        assert!(!coordinator.is_complete());
+        let completed = coordinator
+            .on_action_outcome(cleanup[0].id, HandoffActionOutcome::Applied)
+            .unwrap();
+        assert_eq!(completed.len(), 1);
+        assert!(coordinator.is_complete());
+        assert!(
+            coordinator
+                .on_action_outcome(ready[0].id, HandoffActionOutcome::Applied)
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]

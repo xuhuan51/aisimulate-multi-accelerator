@@ -1889,7 +1889,7 @@ fn test_concurrency_backfill_waits_for_decode_completion() {
 }
 
 #[test]
-fn test_source_release_waits_for_destination_activation() {
+fn idle_workers_activate_destination_before_releasing_source() {
     for config in [disagg_config(), sglang_disagg_config()] {
         let (_, stats) = run_trace_collect(&config, vec![request(1, 128, 2, 0.0)], None, 1.0);
 
@@ -1911,6 +1911,56 @@ fn test_source_release_waits_for_destination_activation() {
         assert!(released_idx < free_idx);
         assert_eq!(stats.request_snapshots[&uuid].phase, DisaggPhase::Done);
     }
+}
+
+#[test]
+fn sglang_releases_source_kv_while_destination_finishes_a_decode_pass() {
+    let mut config = sglang_disagg_config();
+    config.num_prefill_workers = 1;
+    config.num_decode_workers = 1;
+    config.prefill_args.max_num_seqs = 1;
+    for args in [&mut config.prefill_args, &mut config.decode_args] {
+        args.speedup_ratio = 1.0;
+        args.decode_speedup_ratio = 1.0;
+        args.enable_prefix_caching = false;
+        args.timing_model = crate::engine::TimingModelConfig::Fixed {
+            prefill_ms: 1.0,
+            decode_ms: 10.0,
+        };
+    }
+    let pending = crate::replay::normalize_trace_requests(
+        vec![request(1, 128, 4, 0.0), request(2, 128, 4, 0.0)],
+        1.0,
+    )
+    .unwrap();
+    let (collector, stats) =
+        DisaggRuntime::from_requests(&config, None, None, pending, ReplayMode::Trace)
+            .unwrap()
+            .with_per_request_records(true)
+            .run()
+            .unwrap();
+    let report = collector.finish();
+    let second = report
+        .per_request
+        .iter()
+        .find(|record| record.uuid == Uuid::from_u128(2).to_string())
+        .unwrap();
+    assert_eq!(second.source_held_ms, Some(2.0));
+    assert_eq!(second.source_released_ms, Some(2.0));
+    assert_eq!(second.destination_activated_ms, Some(11.0));
+    assert!(second.first_token_ms.unwrap() >= second.destination_activated_ms.unwrap());
+    let uuid = Uuid::from_u128(2);
+    assert!(
+        transition_index(
+            &stats.transition_log,
+            DisaggTransition::PrefillFree { uuid }
+        ) < transition_index(
+            &stats.transition_log,
+            DisaggTransition::DestinationActivated { uuid }
+        )
+    );
+    assert_eq!(report.request_counts.completed_requests, 2);
+    assert_eq!(report.request_counts.total_output_tokens, 8);
 }
 
 #[test]
@@ -2085,10 +2135,12 @@ fn per_request_handoff_detail_preserves_backend_causality_and_stage_reuse() {
             assert!(prefill_admit <= source_held);
             assert!(source_held <= source_released);
             assert!(destination_reserved <= destination_activated);
-            assert!(destination_activated <= source_released);
             assert!(destination_activated <= decode_admit);
             match engine_type {
-                EngineType::Vllm => assert!(source_held <= destination_reserved),
+                EngineType::Vllm => {
+                    assert!(source_held <= destination_reserved);
+                    assert!(destination_activated <= source_released);
+                }
                 EngineType::Sglang => assert!(destination_reserved <= prefill_admit),
                 EngineType::Trtllm => unreachable!(),
             }
