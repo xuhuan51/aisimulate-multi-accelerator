@@ -723,6 +723,7 @@ The Rust implementation is independently written and modified for native simulat
 The synchronized attention-DP shape model in
 `crates/core/src/perfmodel/engine/ascend_dp.rs`, the Ascend GLM operator
 composition in `python/aisimulate/src/aisimulate_core/sdk/models/ascend_glm52.py`,
+the case declaration in `python/aisimulate/collector/sglang/ascend_attention_cases.py`,
 and their independently written tests reimplement and modify the MAX_LEN /
 SUM_LEN behavioral contracts of `python/sglang/srt/layers/dp_attention.py`,
 `python/sglang/srt/model_executor/forward_batch_info.py`,
@@ -736,6 +737,8 @@ supplied, hash-checked source snapshot with pinned non-device settings.
 Its generated `production/scheduler-audit-node20-20261030/dp-padding-oracle.json`
 records source hashes, inputs, and outputs. Expert receive counts still assume
 balanced routing; DeepEP timing uses the measured maximum-sender profile.
+The independently written `production/plan_dp_padding_extension.py` evidence
+planner and its frozen eager MAX_LEN collection archive retain this attribution.
 
 ## DeepSeek model configuration files
 

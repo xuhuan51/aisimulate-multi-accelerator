@@ -177,7 +177,9 @@ pub(crate) fn estimate_attention_grid(
 ) -> Result<ShapeEstimate, AicError> {
     if !prefill {
         let plane = partitions.get(&padded).ok_or_else(|| {
-            AicError::PerfDatabase(format!("unmeasured Ascend graph bucket={padded}"))
+            AicError::PerfDatabase(format!(
+                "unmeasured Ascend attention padding bucket={padded}"
+            ))
         })?;
         return plane.estimate(active, sequence, &|batch, length| work(batch, length, 0));
     }

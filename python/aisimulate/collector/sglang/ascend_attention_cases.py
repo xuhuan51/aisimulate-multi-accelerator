@@ -89,15 +89,27 @@ def get_ascend_attention_cases(model_path, case_root=None):
                                 prefix,
                                 mode,
                             )
+                layouts = set()
                 for active in base["decode_batches"]:
                     padded_batches = (
                         sorted({next(value for value in buckets if value >= active) for buckets in bucket_sets})
                         if mode == "graph"
                         else sorted({active, *((active + size - 1) // size * size for size in eager_alignments)})
                     )
-                    for padded in padded_batches:
-                        for length in base["context_lengths"]:
-                            add(operation, heads, "decode", padded, active, padded, length, 0, mode)
+                    layouts.update((active, padded) for padded in padded_batches)
+                if mode == "eager" and base.get("eager_dp_max_len", False):
+                    maximum = max(base["decode_batches"])
+                    for alignment in eager_alignments:
+                        limit = (maximum + alignment - 1) // alignment * alignment
+                        for padded in range(alignment, limit + 1, alignment):
+                            layouts.update(
+                                (active, padded)
+                                for active in (1, (padded + 1) // 2, padded - 1)
+                                if 0 < active < padded and active <= maximum
+                            )
+                for active, padded in sorted(layouts):
+                    for length in base["context_lengths"]:
+                        add(operation, heads, "decode", padded, active, padded, length, 0, mode)
     return {
         "schema": "aisimulate-ascend-attention-plan/v1",
         "status": "experimental_collection_plan",

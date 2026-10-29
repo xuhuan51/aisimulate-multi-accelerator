@@ -98,7 +98,12 @@ def test_larger_minimum_graph_bucket_covers_tp16_without_duplicate_work(model):
 
 def test_eager_decode_keeps_tp_padding_distinct_from_active_requests(model):
     cases = get_ascend_attention_cases(model)["cases"]
-    for heads, active, expected in ((8, 1, {1, 8}), (16, 5, {5, 8}), (4, 17, {17, 32}), (64, 5, {5})):
+    for heads, active, expected in (
+        (8, 1, {1, 8, 16, 24, 32}),
+        (16, 5, {5, 8}),
+        (4, 17, {17, 32}),
+        (64, 5, {5, 6, 9, 10}),
+    ):
         matching = [
             case
             for case in cases
@@ -119,12 +124,12 @@ def test_eager_decode_keeps_tp_padding_distinct_from_active_requests(model):
         and case["execution_mode"] == "eager"
         and case["active_batch"] == 1
     }
-    assert indexer == {1, 2, 4, 8, 16}
+    assert indexer == set(range(1, 33))
 
 
 def test_eager_padding_planes_cover_every_decode_batch_up_to_thirty_two(model):
     cases = get_ascend_attention_cases(model)["cases"]
-    for parallel in (2, 4, 8, 16):
+    for parallel in (1, 2, 4, 8, 16):
         planes = {
             case["padded_batch"]
             for case in cases
@@ -134,4 +139,4 @@ def test_eager_padding_planes_cover_every_decode_batch_up_to_thirty_two(model):
             and case["local_heads"] == 64 // parallel
             and case["padded_batch"] > case["active_batch"]
         }
-        assert planes == set(range(parallel, 33, parallel))
+        assert planes == set(range(max(2, parallel), 33, parallel))
