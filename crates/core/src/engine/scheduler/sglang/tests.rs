@@ -556,6 +556,192 @@ fn committed_decode_membership_excludes_retracted_requests() {
 }
 
 #[test]
+fn ignore_eos_matches_pinned_runtime_admission_oracle() {
+    #[derive(serde::Deserialize)]
+    struct Case {
+        capacity: usize,
+        block_size: usize,
+        chunk: usize,
+        input_budget: usize,
+        running: Vec<[usize; 2]>,
+        waiting: Vec<[usize; 2]>,
+        continuation: Option<[usize; 3]>,
+        admitted_ends: Vec<usize>,
+    }
+    #[derive(serde::Deserialize)]
+    struct Oracle {
+        cases: Vec<Case>,
+    }
+    let oracle: Oracle = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../benchmarks/evidence/ascend910c-glm52-w8a8/production/",
+        "scheduler-audit-node20-20261030/fixed-output-oracle.json"
+    )))
+    .unwrap();
+    for (index, case) in oracle.cases.into_iter().enumerate() {
+        let mut config = SglangConfig::from_args(&test_args(
+            case.capacity / case.block_size,
+            case.block_size,
+            case.chunk,
+        ));
+        config.enable_prefix_caching = false;
+        config.ignore_eos = true;
+        config.max_prefill_tokens = case.input_budget;
+        let mut manager = SglangKvManager::new(
+            case.capacity,
+            case.block_size,
+            KvEventPublishers::default(),
+            0,
+        );
+        let mut running = Vec::new();
+        let mut waiting = WaitingQueue::default();
+        for [input_tokens, output_tokens] in case.running {
+            let mut request = SglangRequest::new(
+                direct_request(vec![index as u32; input_tokens], output_tokens),
+                case.block_size,
+                output_tokens,
+            );
+            let allocation = manager
+                .allocate_for_request(&request.sequence_tokens)
+                .unwrap();
+            request.kv_lease = allocation.lease;
+            request.materialized_tokens = input_tokens;
+            request.allocated_tokens = input_tokens.div_ceil(case.block_size) * case.block_size;
+            running.push(request);
+        }
+        if let Some([input_tokens, output_tokens, materialized]) = case.continuation {
+            let mut request = SglangRequest::new(
+                direct_request(vec![11; input_tokens], output_tokens),
+                case.block_size,
+                output_tokens,
+            );
+            let allocation = manager
+                .allocate_for_request(&request.sequence_tokens[..materialized])
+                .unwrap();
+            request.kv_lease = allocation.lease;
+            request
+                .kv_lease
+                .ensure_page_hashes(&request.sequence_tokens, case.block_size);
+            request.materialized_tokens = materialized;
+            request.allocated_tokens = materialized;
+            waiting.push_back(request);
+        }
+        for [input_tokens, output_tokens] in case.waiting {
+            waiting.push_back(SglangRequest::new(
+                direct_request(vec![22; input_tokens], output_tokens),
+                case.block_size,
+                output_tokens,
+            ));
+        }
+        let admitted =
+            get_new_batch_prefill(&mut waiting, &mut manager, &config, 0.1, &running, false);
+        assert_eq!(
+            admitted
+                .can_run
+                .iter()
+                .map(|request| request.materialized_tokens)
+                .collect::<Vec<_>>(),
+            case.admitted_ends,
+            "pinned SGLang admission case {index}"
+        );
+    }
+}
+
+#[test]
+fn ignore_eos_reserves_full_output_and_one_admission_page() {
+    for (capacity, ignore_eos, expected) in [(36, false, 1), (36, true, 0), (40, true, 1)] {
+        let mut config = SglangConfig::from_args(&test_args(capacity / 4, 4, 32));
+        config.enable_prefix_caching = false;
+        config.ignore_eos = ignore_eos;
+        let mut manager = SglangKvManager::new(capacity, 4, KvEventPublishers::default(), 0);
+        let mut waiting =
+            WaitingQueue::from([SglangRequest::new(direct_request(vec![1; 16], 16), 4, 16)]);
+        let admitted = get_new_batch_prefill(&mut waiting, &mut manager, &config, 0.1, &[], false);
+        assert_eq!(admitted.can_run.len(), expected);
+    }
+}
+
+#[test]
+fn ignore_eos_checks_full_prompt_before_starting_a_chunk() {
+    for ignore_eos in [false, true] {
+        let mut config = SglangConfig::from_args(&test_args(16, 4, 32));
+        config.enable_prefix_caching = false;
+        config.ignore_eos = ignore_eos;
+        let mut manager = SglangKvManager::new(64, 4, KvEventPublishers::default(), 0);
+        let mut waiting =
+            WaitingQueue::from([SglangRequest::new(direct_request(vec![1; 32], 16), 4, 16)]);
+        let running =
+            get_new_batch_prefill(&mut waiting, &mut manager, &config, 0.1, &[], false).can_run;
+        assert_eq!(running.len(), 1);
+        config.chunked_prefill_size = 8;
+        waiting.push_back(SglangRequest::new(direct_request(vec![2; 32], 1), 4, 1));
+        let admitted =
+            get_new_batch_prefill(&mut waiting, &mut manager, &config, 0.1, &running, false);
+        assert_eq!(admitted.can_run.len(), usize::from(!ignore_eos));
+    }
+}
+
+#[test]
+fn ignore_eos_admission_accounts_for_earlier_completions() {
+    for (running_output, expected) in [(4, 1), (25, 0)] {
+        let mut config = SglangConfig::from_args(&test_args(100, 1, 100));
+        config.enable_prefix_caching = false;
+        config.ignore_eos = true;
+        let mut manager = SglangKvManager::new(100, 1, KvEventPublishers::default(), 0);
+        let mut waiting = WaitingQueue::from([SglangRequest::new(
+            direct_request(vec![1; 60], running_output),
+            1,
+            running_output,
+        )]);
+        let running =
+            get_new_batch_prefill(&mut waiting, &mut manager, &config, 0.1, &[], false).can_run;
+        assert_eq!(running.len(), 1);
+        waiting.push_back(SglangRequest::new(direct_request(vec![2; 10], 30), 1, 30));
+        let admitted =
+            get_new_batch_prefill(&mut waiting, &mut manager, &config, 0.1, &running, false);
+        assert_eq!(admitted.can_run.len(), expected);
+    }
+}
+
+#[test]
+fn ignore_eos_chunk_continuations_reach_the_last_prompt_token() {
+    let mut config = SglangConfig::from_args(&test_args(16, 4, 8));
+    config.enable_prefix_caching = false;
+    config.ignore_eos = true;
+    let mut manager = SglangKvManager::new(64, 4, KvEventPublishers::default(), 0);
+    let mut waiting =
+        WaitingQueue::from([SglangRequest::new(direct_request(vec![1; 40], 16), 4, 16)]);
+    for chunk in 1..=5 {
+        let mut admitted =
+            get_new_batch_prefill(&mut waiting, &mut manager, &config, 0.1, &[], false);
+        assert_eq!(admitted.can_run.len(), 1);
+        assert_eq!(admitted.admissions.len(), usize::from(chunk == 1));
+        let request = admitted.can_run.pop().unwrap();
+        assert_eq!(request.materialized_tokens, chunk * 8);
+        if chunk < 5 {
+            waiting.push_back(request);
+        }
+    }
+}
+
+#[test]
+fn ignore_eos_allows_first_prefill_to_exceed_compute_budget() {
+    let mut config = SglangConfig::from_args(&test_args(16, 4, 32));
+    config.enable_prefix_caching = false;
+    config.ignore_eos = true;
+    config.max_prefill_tokens = 8;
+    let mut manager = SglangKvManager::new(64, 4, KvEventPublishers::default(), 0);
+    let mut waiting = WaitingQueue::from([
+        SglangRequest::new(direct_request(vec![1; 16], 4), 4, 4),
+        SglangRequest::new(direct_request(vec![2; 4], 1), 4, 1),
+    ]);
+    let admitted = get_new_batch_prefill(&mut waiting, &mut manager, &config, 0.1, &[], false);
+    assert_eq!(admitted.can_run.len(), 1);
+    assert_eq!(admitted.prefill_fpm[0].tokens_computed, 16);
+    assert_eq!(waiting.len(), 1);
+}
+
+#[test]
 fn fresh_prefill_tracks_cache_owned_prefix_pages_and_pressure_event() {
     let args = test_args(8, 4, 16);
     let config = SglangConfig::from_args(&args);

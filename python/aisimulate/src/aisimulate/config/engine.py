@@ -110,6 +110,7 @@ class SchedulerPredictionConfig(StrictModel):
     max_sequences: PositiveInt = 256
     chunked_prefill_size: PositiveInt | None = None
     max_prefill_tokens: PositiveInt | None = None
+    ignore_eos: StrictBool | None = None
     decode_reserved_tokens: NonNegativeInt = 0
     prefill_schedule_interval: PositiveInt = Field(
         default=1, description="vLLM only: admit prefill once every N attention-DP group passes."
@@ -730,6 +731,7 @@ class SchedulerRecommendationConfig(StrictModel):
     max_sequences: PositiveInt | Choices[PositiveInt] | IntegerRange | None = None
     chunked_prefill_size: PositiveInt | None = None
     max_prefill_tokens: PositiveInt | None = None
+    ignore_eos: StrictBool | None = None
     decode_reserved_tokens: NonNegativeInt = 0
 
 
@@ -871,7 +873,7 @@ class EngineRecommendationConfig(EstimatorPolicyConfig):
             worker = getattr(self.workers, role)
             if worker is None:
                 continue
-            for field in ("chunked_prefill_size", "max_prefill_tokens"):
+            for field in ("chunked_prefill_size", "max_prefill_tokens", "ignore_eos"):
                 if getattr(worker.scheduler, field) is not None and backends != {"sglang"}:
                     raise ValueError(f"workers.{role}.scheduler.{field} requires backend=sglang")
         _validate_speculation(self, modes=modes, backends=backends)
@@ -1004,6 +1006,7 @@ def _validate_prediction_scheduler_backend(engine: EnginePredictionConfig) -> No
             ("decode_reserved_tokens", "sglang", 0),
             ("chunked_prefill_size", "sglang", None),
             ("max_prefill_tokens", "sglang", None),
+            ("ignore_eos", "sglang", None),
         ):
             if engine.backend != backend and getattr(worker.scheduler, field) != default:
                 raise ValueError(f"workers.{role}.scheduler.{field} is supported only for backend={backend}")

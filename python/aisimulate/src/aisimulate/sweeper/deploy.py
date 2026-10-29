@@ -101,7 +101,7 @@ def _engine_args_payload(
     }
     sglang = {
         name: sample[f"{role}_{name}"]
-        for name in ("chunked_prefill_size", "max_prefill_tokens")
+        for name in ("chunked_prefill_size", "max_prefill_tokens", "ignore_eos")
         if sample.get(f"{role}_{name}") is not None
     }
     if role == "decode" and sample.get("decode_reserved_tokens", 0):

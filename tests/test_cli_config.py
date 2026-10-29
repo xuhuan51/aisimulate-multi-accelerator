@@ -1222,17 +1222,21 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict():
     raw["engine"]["workers"]["prefill"]["scheduler"] = {
         "chunked_prefill_size": 16384,
         "max_prefill_tokens": 32768,
+        "ignore_eos": True,
     }
     raw["engine"]["workers"]["decode"]["scheduler"] = {
         "decode_reserved_tokens": 512,
         "chunked_prefill_size": 4096,
         "max_prefill_tokens": 8192,
+        "ignore_eos": False,
     }
     source = CoreRecommendationConfig.model_validate(raw)
     space = recommendation_to_sweeper(source).search_space
     assert space.decode_reserved_tokens == 512
     assert space.prefill_chunked_prefill_size == 16384
     assert space.prefill_max_prefill_tokens == 32768
+    assert space.prefill_ignore_eos is True
+    assert space.decode_ignore_eos is False
     parallel = ReplicaParallelConfig(ParallelShape(tp=1, dp=1, moe_tp=1, moe_ep=1), replicas=1)
     sample = unroll_sample(
         search_space=space,
@@ -1251,6 +1255,7 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict():
         "decode_reserved_tokens": 512,
         "chunked_prefill_size": 4096,
         "max_prefill_tokens": 8192,
+        "ignore_eos": False,
     }
     saved = _candidate_prediction(
         source, sample, ReplaySpec(backend_deployment=deployment, workload={}, goal={}), adapter_sections={}
@@ -1261,7 +1266,30 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict():
     assert compiled.prefill_engine_args["sglang"] == {
         "chunked_prefill_size": 16384,
         "max_prefill_tokens": 32768,
+        "ignore_eos": True,
     }
+
+
+@pytest.mark.parametrize("value", [0, 1, "true", "false", [True]])
+@pytest.mark.parametrize("recommend", [False, True])
+def test_sglang_ignore_eos_requires_a_boolean(value, recommend):
+    raw = _pd_hardware_config(recommend=recommend)
+    raw["engine"]["backend"] = "sglang"
+    raw["engine"]["workers"]["prefill"]["scheduler"] = {"ignore_eos": value}
+    config_type = CoreRecommendationConfig if recommend else CorePredictionConfig
+    with pytest.raises(ValueError, match="ignore_eos"):
+        config_type.model_validate(raw)
+
+
+@pytest.mark.parametrize("value", [False, True])
+@pytest.mark.parametrize("recommend", [False, True])
+def test_sglang_ignore_eos_rejects_other_backends(value, recommend):
+    raw = _pd_hardware_config(recommend=recommend)
+    raw["engine"]["backend"] = "vllm"
+    raw["engine"]["workers"]["prefill"]["scheduler"] = {"ignore_eos": value}
+    config_type = CoreRecommendationConfig if recommend else CorePredictionConfig
+    with pytest.raises(ValueError, match="ignore_eos"):
+        config_type.model_validate(raw)
 
 
 @pytest.mark.parametrize("field", ["chunked_prefill_size", "max_prefill_tokens"])

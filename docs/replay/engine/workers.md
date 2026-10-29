@@ -46,6 +46,7 @@ engine:
 | `workers.<role>.scheduler.max_sequences` | `256`; `1` for `prefill` | Prefill: `{choices: [1, 2, 4, 8, 16, 32, 64, 128, 256]}`; others: `{choices: [256, 512, 1024]}` | Positive. Maximum running requests on one attention-DP rank. |
 | `workers.<role>.scheduler.chunked_prefill_size` | Unset (native default: `8192`) | fixed | SGLang only. Positive global chunk budget, divided by `attention_data` inside the scheduler. |
 | `workers.<role>.scheduler.max_prefill_tokens` | Unset (native default: `16384`) | fixed | SGLang only. Positive prefill admission token budget on each attention-DP rank. |
+| `workers.<role>.scheduler.ignore_eos` | Unset (native default: `false`) | fixed | SGLang only. Boolean; apply the pinned 0.5.22 fixed-output admission policy to every request on this role. Match the client's `ignore_eos` sampling setting. |
 | `workers.<role>.scheduler.prefill_schedule_interval` | `1` | predict only | vLLM only. See [vLLM prefill schedule interval](#vllm-prefill-schedule-interval). |
 | `workers.<role>.scheduler.prefill_decode_interval` | `0` | predict only | SGLang only. See [SGLang prefill/decode interval](#sglang-prefilldecode-interval). |
 | `workers.decode.scheduler.decode_reserved_tokens` | `0` | fixed | SGLang PD only. Logical growth reserve per active decode request; set `512` for the qualified 0.5.22 Ascend runtime. Zero preserves the prior prompt-only admission behavior. |
@@ -152,6 +153,20 @@ For SGLang `--chunked-prefill-size 16384 --max-prefill-tokens 32768
 `max_sequences: 32`. SGLang divides the global running-request limit by
 attention DP; AISimulate's `max_sequences` is already per rank and must not
 be divided again. The effective chunk is 8192 tokens per rank.
+
+For a fixed-length benchmark that sends `ignore_eos=true`, set
+`scheduler.ignore_eos: true` on the participating roles. Running requests reserve
+their full remaining output (up to the runtime reservation clip), rather than
+the adaptive early-EOS fraction. Without prefix caching, admission checks the
+whole pending prompt and the completion order of running and newly admitted
+requests before starting a chunk. The policy includes SGLang's additional page
+reservation and permits an individual prefill to cross the compute-token budget
+before ending the batch. Chunk continuations keep their owned KV allocation.
+This flag models a homogeneous request stream; mixed per-request sampling
+settings are not represented. It does not change the replay's supplied output
+length or introduce stochastic EOS generation. It selects the 0.5.22 policy;
+0.5.20 still applies the adaptive ratio in its running-request offset.
+Omitting the flag retains the previous admission behavior.
 
 With chunked prefill (the default), a long prompt is split across passes that
 each respect the token budget. With `enable_chunked_prefill: false` on vLLM, a

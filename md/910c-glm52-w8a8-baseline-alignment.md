@@ -320,3 +320,26 @@ parallelism:
 独立运行本次修改的 `tests/sweeper/test_search.py` 为45/45通过。
 原始成功与失败回放、配置和一致性检查保存在
 `production/scheduler-audit-node20-20261030/search-validation-evidence.tar.gz`。
+
+## 11. 固定输出长度的准入规则
+
+新增 `workers.<role>.scheduler.ignore_eos: true`，对齐固定版本0.5.22的同名请求语义。
+它仅在客户端确实发送 `ignore_eos=true` 时启用；未设置时保留旧行为。
+可以在P、D分别设置；基线回放脚本增加了 `--ignore-eos` / `--no-ignore-eos`。
+历史DOCX没有完整保存该采样参数，因此不自动把历史50组结果改成此模式。
+
+原来正在decode的请求统一按自适应比例估算剩余输出，
+这对固定1K输出的请求会低估后续KV需求。无prefix cache时，
+新路径还会在开始chunk之前检查整段待计算prompt，并按请求完成顺序估算KV释放；
+不是简单把所有请求的最长输出同时相加。额外的一页准入预留和首条prefill跨越计算预算的行为也已对齐。
+chunk续算保留原来已拥有的KV，避免将续算当成新请求重复匹配或重复记录准入。
+
+参考依据为镜像中的 `schedule_policy.py` 与 `mem_cache/prefill_budget.py`。
+`production/check_fixed_output_admission.py` 对这两个文件先校验SHA256，
+然后直接执行其中原始的准入方法，用确定性请求和单KV池对象生成103个参考案例。
+Rust逐项检查实际准入和chunk终点；103例全部相符。另有5项边界回归，
+完整Rust库为2069通过、1忽略。该oracle不启动NPU，不证明完整SGLang调度进程或实测性能完全等价。
+
+0.5.20的running-request offset仍使用自适应比例，与0.5.22存在源码差异。
+因此本开关明确采用0.5.22语义，不能用版本号字符串推断已经同时精确复现两个版本。
+当前开关是每role统一设置，未表示混合 `ignore_eos` 请求流，SWA、Mamba、DCP专用准入也不在这组oracle范围内。

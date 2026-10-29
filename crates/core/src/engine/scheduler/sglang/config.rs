@@ -31,6 +31,7 @@ pub(super) struct SglangConfig {
     pub(super) prefill_decode_interval: usize,
     pub(super) clip_max_new_tokens: usize,
     pub(super) decode_reserved_tokens: usize,
+    pub(super) ignore_eos: bool,
     pub(super) init_new_token_ratio: f64,
     pub(super) min_new_token_ratio: f64,
     pub(super) new_token_ratio_decay_step: f64,
@@ -92,6 +93,7 @@ impl SglangConfig {
                 .and_then(|s| s.clip_max_new_tokens)
                 .unwrap_or(DEFAULT_CLIP_MAX_NEW_TOKENS),
             decode_reserved_tokens: sglang.and_then(|s| s.decode_reserved_tokens).unwrap_or(0),
+            ignore_eos: sglang.and_then(|s| s.ignore_eos).unwrap_or(false),
             init_new_token_ratio,
             min_new_token_ratio,
             new_token_ratio_decay_step: decay_step,

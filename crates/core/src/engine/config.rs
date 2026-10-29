@@ -178,6 +178,7 @@ pub struct SglangConfig {
     #[serde(default = "default_clip_max_new_tokens")]
     pub clip_max_new_tokens: usize,
     pub decode_reserved_tokens: usize,
+    pub ignore_eos: bool,
     /// Multiplier applied to SGLang's adaptive output-reservation ratio.
     #[serde(default = "default_schedule_conservativeness")]
     pub schedule_conservativeness: f64,
@@ -191,6 +192,7 @@ impl Default for SglangConfig {
             chunked_prefill_size: default_chunked_prefill_size(),
             clip_max_new_tokens: default_clip_max_new_tokens(),
             decode_reserved_tokens: 0,
+            ignore_eos: false,
             schedule_conservativeness: default_schedule_conservativeness(),
         }
     }

@@ -629,7 +629,7 @@ def _worker_engine_args(
     }
     sglang = {
         name: value
-        for name in ("chunked_prefill_size", "max_prefill_tokens")
+        for name in ("chunked_prefill_size", "max_prefill_tokens", "ignore_eos")
         if (value := getattr(worker.scheduler, name)) is not None
     }
     if worker.scheduler.decode_reserved_tokens:

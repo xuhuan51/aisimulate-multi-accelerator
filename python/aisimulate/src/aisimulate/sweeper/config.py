@@ -586,6 +586,7 @@ class SearchSpace(BaseModel):
     prefill_max_num_seqs: list[int] = [1, 2, 4, 8, 16, 32, 64, 128, 256]
     prefill_chunked_prefill_size: int | None = Field(default=None, strict=True, gt=0)
     prefill_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
+    prefill_ignore_eos: bool | None = Field(default=None, strict=True)
     # pinned
     prefill_block_size: int | list[int] | None = 64
     prefill_gpu_memory_utilization: float | list[float] | None = 0.9
@@ -604,6 +605,7 @@ class SearchSpace(BaseModel):
     decode_max_num_seqs: list[int] = [256, 512, 1024]
     decode_chunked_prefill_size: int | None = Field(default=None, strict=True, gt=0)
     decode_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
+    decode_ignore_eos: bool | None = Field(default=None, strict=True)
     decode_reserved_tokens: int = Field(default=0, strict=True, ge=0)
     # pinned
     decode_block_size: int | list[int] | None = 64
@@ -623,6 +625,7 @@ class SearchSpace(BaseModel):
     agg_max_num_seqs: list[int] = [256, 512, 1024]
     agg_chunked_prefill_size: int | None = Field(default=None, strict=True, gt=0)
     agg_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
+    agg_ignore_eos: bool | None = Field(default=None, strict=True)
     # pinned
     agg_block_size: int | list[int] | None = 64
     agg_gpu_memory_utilization: float | list[float] | None = 0.9
@@ -971,7 +974,7 @@ class SearchSpace(BaseModel):
     @model_validator(mode="after")
     def _validate_engine_controls(self):
         for role in ("agg", "prefill", "decode"):
-            for field in ("chunked_prefill_size", "max_prefill_tokens"):
+            for field in ("chunked_prefill_size", "max_prefill_tokens", "ignore_eos"):
                 if getattr(self, f"{role}_{field}") is not None and set(self.backend) != {"sglang"}:
                     raise ValueError(f"{role}_{field} requires backend=sglang")
         if self.enable_chunked_prefill is not None and any(

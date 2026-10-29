@@ -26,6 +26,7 @@ def main():
     parser.add_argument("--parallelism", type=int, default=4)
     parser.add_argument("--decode-reserved-tokens", type=int, default=512)
     parser.add_argument("--scheduler-alignment", choices=("runtime", "legacy"), default="runtime")
+    parser.add_argument("--ignore-eos", action=argparse.BooleanOptionalAction, default=None)
     args = parser.parse_args()
     repository = Path(__file__).resolve().parents[4]
     template = yaml.safe_load((repository / "examples/cli/ascend910c-glm52-pd-8k1k.yaml").read_text())
@@ -42,6 +43,7 @@ def main():
     manifest = {
         "decode_reserved_tokens": args.decode_reserved_tokens,
         "scheduler_alignment": args.scheduler_alignment,
+        "ignore_eos": args.ignore_eos,
         "scheduler_limits": (
             {"chunked_prefill_size": 16384, "max_prefill_tokens": 32768, "global_max_running_requests": 64}
             if args.scheduler_alignment == "runtime"
@@ -92,6 +94,8 @@ def main():
         for role, count in (("prefill", int(prefill_count)), ("decode", int(decode_count))):
             worker = engine["workers"][role]
             worker["parallelism"]["replicas"] = count
+            if args.ignore_eos is not None:
+                worker["scheduler"]["ignore_eos"] = args.ignore_eos
             if args.scheduler_alignment == "runtime":
                 worker["scheduler"].update(
                     chunked_prefill_size=16384,

@@ -676,6 +676,25 @@ models logical headroom and lifecycle wakeups and is opt-in for compatibility.
 Its regression tests in `crates/core/src/engine/scheduler/sglang/tests.rs` are
 independently written. Host staging and SWA admission are outside this adaptation.
 
+The optional fixed-output admission path in
+`crates/core/src/engine/scheduler/sglang/prefill.rs` and its controls and tests
+also independently reimplement and modify the single-pool scheduling contract
+in `python/sglang/srt/managers/schedule_policy.py` and
+`python/sglang/srt/mem_cache/prefill_budget.py` at the same immutable revision
+`baa9befa381511cd4d56f83980951e5a45fffc6d`.
+Source: https://github.com/sgl-project/sglang/tree/baa9befa381511cd4d56f83980951e5a45fffc6d/python/sglang/srt
+Copyright 2023-2026 SGLang Team and SGLang contributors; Apache-2.0.
+The modified Rust model applies a role-wide `ignore_eos` setting and models
+single-pool KV reservations without importing or copying the runtime.
+The behavioral oracle generator
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/check_fixed_output_admission.py`
+executes methods from a separately supplied, hash-checked copy of those sources
+with synthetic request and allocator objects. Its generated
+`production/scheduler-audit-node20-20261030/fixed-output-oracle.json` in that
+evidence tree records the source hashes and reference admission outcomes.
+The generator and Rust comparison tests are independently written; neither
+the runtime source nor NPU execution is bundled into this oracle.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

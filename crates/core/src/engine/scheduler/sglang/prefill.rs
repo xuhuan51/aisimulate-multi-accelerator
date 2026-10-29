@@ -30,6 +30,36 @@ pub(super) struct AdmitResult {
     pub(super) prefill_fpm: Vec<PrefillFpmItem>,
 }
 
+fn fixed_output_fits(
+    request: &SglangRequest,
+    running: &[SglangRequest],
+    admitted: &[SglangRequest],
+    available_after_input: f64,
+) -> bool {
+    let mut completions = running
+        .iter()
+        .chain(admitted)
+        .chain(std::iter::once(request))
+        .filter(|request| request.remaining_output_tokens() > 0)
+        .map(|request| {
+            (
+                request.remaining_output_tokens(),
+                request.current_sequence_len(),
+            )
+        })
+        .collect::<Vec<_>>();
+    completions.sort_by_key(|&(remaining, _)| remaining);
+    let mut released = 0.0;
+    for (index, &(remaining, occupied)) in completions.iter().enumerate() {
+        let outstanding = (completions.len() - index) as f64;
+        if available_after_input + released - remaining as f64 * outstanding <= outstanding {
+            return false;
+        }
+        released += occupied as f64;
+    }
+    true
+}
+
 /// Behavioral model of SGLang's prefill admission (`Scheduler.get_new_batch_prefill`,
 /// `PrefillAdder.add_one_req` / `add_chunked_req`, `Req.init_next_round_input`) as of
 /// sgl-project/sglang v0.5.6.post2 (`5c8bd8b5`, `python/sglang/srt/managers/scheduler.py`,
@@ -49,14 +79,16 @@ pub(super) fn get_new_batch_prefill(
             let remaining_output = req
                 .remaining_output_tokens()
                 .min(config.clip_max_new_tokens);
-            remaining_output as f64 * new_token_ratio
+            remaining_output as f64
+                * if config.ignore_eos {
+                    1.0
+                } else {
+                    new_token_ratio
+                }
         })
         .sum();
-    // PagePool already removes the full physical footprint of every active
-    // partial page from available capacity, so page slack must not be charged
-    // a second time here.
-    let mut rem_total_tokens =
-        (cache.available_tokens() + cache.evictable_size) as f64 - reserved_decode_output;
+    let mut rem_current_tokens = (cache.available_tokens() + cache.evictable_size) as f64;
+    let mut rem_total_tokens = rem_current_tokens - reserved_decode_output;
     let mut rem_input_tokens = config.max_prefill_tokens as f64;
     let mut rem_chunk_tokens = config.chunked_prefill_size as f64;
 
@@ -106,17 +138,51 @@ pub(super) fn get_new_batch_prefill(
             break;
         }
 
-        let chunk_tokens =
-            if ceil_to_block(extend_input, config.block_size) as f64 <= rem_chunk_tokens {
-                extend_input
+        let page_overhead = if config.ignore_eos {
+            config.block_size
+        } else {
+            0
+        };
+        if config.ignore_eos && req.materialized_tokens == 0 {
+            let paged_input = ceil_to_block(extend_input, config.block_size) + page_overhead;
+            let fits = if config.enable_prefix_caching {
+                ((extend_input
+                    + req
+                        .remaining_output_tokens()
+                        .min(config.clip_max_new_tokens)
+                    + page_overhead) as f64)
+                    < rem_total_tokens
             } else {
-                let chunk = (rem_chunk_tokens as usize / config.block_size) * config.block_size;
-                if chunk == 0 {
-                    rejected.push_back(req);
-                    break;
-                }
-                chunk.min(extend_input)
+                paged_input as f64 <= rem_current_tokens.min(rem_total_tokens)
+                    && fixed_output_fits(
+                        &req,
+                        running,
+                        &can_run,
+                        rem_current_tokens - paged_input as f64,
+                    )
             };
+            if !fits {
+                rejected.push_back(req);
+                break;
+            }
+        }
+        let chunk_budget =
+            if config.ignore_eos && req.materialized_tokens > 0 && rem_total_tokens > 0.0 {
+                rem_chunk_tokens.min(rem_total_tokens)
+            } else {
+                rem_chunk_tokens
+            };
+        let chunk_tokens = if ceil_to_block(extend_input, config.block_size) as f64 <= chunk_budget
+        {
+            extend_input
+        } else {
+            let chunk = (chunk_budget as usize / config.block_size) * config.block_size;
+            if chunk == 0 {
+                rejected.push_back(req);
+                break;
+            }
+            chunk.min(extend_input)
+        };
 
         // Budgets are charged for computed tokens only (`PrefillAdder._update_prefill_budget`),
         // not for the cached prefix.
@@ -127,11 +193,13 @@ pub(super) fn get_new_batch_prefill(
             req.remaining_output_tokens()
                 .min(config.clip_max_new_tokens)
         };
-        if charged_input_tokens + output_reserve as f64 >= rem_total_tokens {
+        if !config.ignore_eos && charged_input_tokens + output_reserve as f64 >= rem_total_tokens {
             rejected.push_back(req);
             break;
         }
-        if charged_input_tokens > rem_input_tokens || charged_input_tokens > rem_chunk_tokens {
+        if (!config.ignore_eos && charged_input_tokens > rem_input_tokens)
+            || charged_input_tokens > rem_chunk_tokens
+        {
             rejected.push_back(req);
             break;
         }
@@ -191,12 +259,13 @@ pub(super) fn get_new_batch_prefill(
 
         total_isl += chunk_end;
         total_prefix += prefix_len;
-        rem_total_tokens -= charged_input_tokens + output_reserve as f64;
+        rem_current_tokens -= charged_input_tokens + page_overhead as f64;
+        rem_total_tokens -= charged_input_tokens + output_reserve as f64 + page_overhead as f64;
         rem_input_tokens -= charged_input_tokens;
         rem_chunk_tokens -= charged_input_tokens;
         can_run.push(req);
 
-        if rem_chunk_tokens <= 0.0 {
+        if rem_chunk_tokens <= 0.0 || (config.ignore_eos && rem_input_tokens <= 0.0) {
             break;
         }
     }
