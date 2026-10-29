@@ -13,6 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--include-uniform-batches", action="store_true")
     args = parser.parse_args()
     records = []
     for mode in ("eager", "graph"):
@@ -47,6 +48,9 @@ def main():
                     counts += [[17] * ((dp + 1) // 2) + [0] * (dp // 2)]
                     if dp > 1:
                         counts += [[1] + [maximum] * (dp - 1) for maximum in (2, 3, 5, 7, 9, 13, 17, 23, 31)]
+                    if args.include_uniform_batches:
+                        counts += [[active] * dp for active in range(1, 33)]
+                        counts = [list(batch) for batch in dict.fromkeys(map(tuple, counts))]
                     for batch in counts:
                         for kv_length in (8193, 32769):
                             record = {**identity, "batch": batch, "kv_length": kv_length}

@@ -153,7 +153,7 @@ engine:
 | 按需 | 补新workload查询的estimated、缺失键、不稳定插值区域 | 按实际查询频率和耗时占比选择，不均匀加密所有维度 |
 | 按需 | 新图桶、更大active batch、新TP/EP/拓扑、新内核版本 | 执行身份变化不能用输入输出长度外推代替实测 |
 
-现有 MoE chain 为 225 点，张量并行 MoE 为 126 点，DeepEP 为 143 点，HCCL 为 449 点。
+截至2026-10-30，MoE chain为225点，张量并行MoE为126点，DeepEP为150点，HCCL为449点。
 具体维度见采集清单，也不构成任意部署的完整实测网格。
 
 目前 node20 的 `/mnt/raid/user/data/models/glm-q/config.json` 不存在，本轮离线回放使用仓库保存的真实模型元数据。
@@ -452,7 +452,8 @@ EP16 eager、tensor-MoE eager和所有graph测试均成功。
   不同rank混合prefill/decode、非均匀DeepEP传输曲线及真实MoE路由仍需继续核验。
 - 历史P router使用cache-aware，新基线选择round-robin；两者请求分布不完全相同。
 - PD多路同时传输的带宽竞争、真实发送结束与P释放资源的边界、CPU调度和HTTP开销尚需匹配实测。
-- EP32 eager DeepEP缺少完整sent-token曲线，DCP eager缺少实测profiles，不能借用graph时间。
+- EP32 eager DeepEP的balanced曲线已补齐1～32 token范围，见第18节；
+  DCP eager仍缺少实测profiles，不能借用graph时间。
 - 历史DOCX的overlap/graph及采样参数没有完全固定，不能作为关闭两者后的准确性验收。
 
 因此目前能提交的是可复现的修正、算子数据和功能验证；最终TTFT/TPOT/吞吐误差以及
@@ -604,3 +605,61 @@ rank分别有1和3个decode请求时，均需按3行执行部分算子，而只�
 安装后另外执行8K输入predict和32K输入、最多4节点的六种PD配比搜索；均成功。
 安装检查仅使用2请求、32输出token，不替代第16节完整1K输出的功能回放或真实准确性验证。
 运行包身份与命令记录见同级`dp-runtime-publication.json`。
+
+## 18. 2026-10-30：EP32 eager通信扩展与搜索验证
+
+在node19和node20上使用同一固定镜像、26.1.1驱动、bond4通信接口和原CPU亲和性，
+采集balanced low-latency dispatch/combine。冻结的每rank token数为1、2、3、4、8、16、32，
+协议保持256次计时、10次预热、7组重复。每个计时边界都检查所有rank的有效payload，
+仍以CV不超过10%作为入表条件。
+
+第一次连续测七个shape，在32-token combine计时阶段出现设备访存错误和rank0 SIGSEGV。
+前六个shape的原始结果和失败日志全部保留；这份未完成的observations没有导入性能表。
+之后用不变的collector和协议，在独立进程中单独复现32-token，再逐个采集其余六个shape，
+七个shape的14个计时边界全部通过数值和CV检查。这只确认独立采集成功，
+原来连续执行的崩溃原因仍未确认，不能据此宣称已修复运行时故障。
+
+其中7个坐标已有合格历史数据，继续保留历史值；新增7个坐标：dispatch的8/16 token，
+combine的2/4/8/16/32 token。DeepEP表由143行增至150行，其他算子表不变。
+新旧重叠坐标的耗时变化为-12.01%至+13.13%，完整对照保留在发布报告。
+同型号节点仍存在运行状态与测量波动，不能默认换节点后误差为零。
+
+合并工具现在支持DeepEP坐标扩展：要求runtime、协议、serving setup完全一致，
+拒绝重复坐标替换，保留原始耗时和来源，再生成整张表统一的可追溯身份。
+正式表SHA256为`7bab1a8aa5bc69c283846d23d5aee36e39bf26f2838a65b1093bceb57268259c`。
+数据和复现脚本位于`production/deepep-eager-pair-20261030/`，摘要为`validation.json`，
+原始记录归档为`evidence.tar.gz`。
+
+150条数据的Rust逐点读取全部与表一致；45项模型、导出和合并测试通过。
+第17节的1264次查询全部通过。再加入所有uniform batch1～32并去重，共3576次查询全部通过，
+覆盖全局16/32、TP1/2/4/8/16、两种MoE布局、graph/eager和KV8193/32769。
+这些包含插值/anchored估计，不能把3576次成功查询当成3576个实测shape。
+
+以P为TP8/ADP2/EP16、D为TP8/ADP4/EP32、最多4节点为例，每个P实例占1节点，
+每个D实例占2节点。两个可行候选是1P1D（3节点）与2P1D（4节点）：
+
+| 输入/输出 | 并发/请求数 | 此有限候选集的首选 | TTFT(ms) | TPOT(ms) | 输出tok/s |
+| --- | --- | --- | ---: | ---: | ---: |
+| 8192/1024 | 32/32 | 2P1D | 11263.694 | 223.101 | 132.086 |
+| 32768/1024 | 8/8 | 2P1D | 16132.604 | 223.066 | 32.810 |
+
+这里2P1D按实例计，节点分配实际为2个P节点、2个D节点。它们不是搜索全部并行策略后的
+全局最优结论，也不是实测最优结论。两组首选YAML重新predict后，完成请求数、总时长、
+TTFT、TPOT、吞吐均与搜索完全一致。
+
+在已更新的运行包中，可从eager搜索示例扩展D实例为两个节点：
+
+```bash
+AISIMULATE_910C_MODEL="$model_metadata" bash scripts/run-ascend910c.sh recommend \
+  --stack engine --config examples/cli/ascend910c-glm52-pd-eager-search.yaml \
+  --set "engine.model=$model_metadata" \
+  --set engine.workers.decode.parallelism.attention_data=4 \
+  --set engine.workers.decode.parallelism.moe_expert=32 \
+  --set traffic.load.concurrency=32 --set traffic.stop.requests=32 \
+  --output-dir aisimulate-output/eager-ep32-search
+```
+
+1～32 token曲线扩展解决了此前已发现的EP32 eager覆盖错误，未解决非均匀专家路由、
+多路PD通信竞争、chunk KV发送与计算的重叠、host开销等误差来源。
+当前真实部署的完整权重路径在node19/20均不可用，匹配的关闭graph/overlap实测仍需补齐。
+因此准确率尚未验收，旧DOCX的误差数字也没有被本轮功能测试取代。

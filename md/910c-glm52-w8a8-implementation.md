@@ -173,15 +173,15 @@ HCCL、DeepEP、PD的实际延迟优先使用对应实测表，不是都用上�
 [systems/data/ascend910c](../python/aisimulate/src/aisimulate_core/systems/data/ascend910c/)，
 典型路径为 `attention/sglang/0.5.22/ascend_attention_perf.parquet`。
 
-| 数据族 | 发布记录数 | 计时边界 |
+| 数据族 | 当前源码树发布记录数（2026-10-30） | 计时边界 |
 |---|---:|---|
-| Linear | 2645 | 静态/动态W8A8及对应浮点linear路径 |
-| Vector | 1194 | 归一化、RoPE、cast、缓存写入、top-k、logits整理等 |
-| Attention/Indexer | 2577 | BF16 lightning indexer与稀疏attention |
-| MLA BMM | 366 | Q NoPE与输出投影等BMM |
+| Linear | 2888 | 静态/动态W8A8及对应浮点linear路径 |
+| Vector | 1410 | 归一化、RoPE、cast、缓存写入、top-k、logits整理等 |
+| Attention/Indexer | 10093 | BF16 lightning indexer与稀疏attention，区分active与padding |
+| MLA BMM | 434 | Q NoPE与输出投影等BMM |
 | Routed MoE计算链 | 225 | GMM1、量化SwiGLU、GMM2；不含dispatch/combine |
 | 张量MoE计算链 | 126 | EP1、全局MoE-TP的专家执行路径 |
-| DeepEP | 143 | normal和low-latency的dispatch/combine |
+| DeepEP | 150 | normal和low-latency的dispatch/combine，EP32 eager balanced覆盖1～32 token |
 | HCCL | 449 | 指定dtype、rank组、布局和执行模式的collective |
 | PD传输 | 227，50条曲线 | 指定P/D映射与页布局的实际KV搬运 |
 | DCP复合操作 | 2994 | KV存储、Q聚合、局部attention、输出合并及可选索引重映射 |

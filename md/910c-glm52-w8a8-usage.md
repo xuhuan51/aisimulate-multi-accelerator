@@ -77,7 +77,8 @@ AISIMULATE_910C_MODEL="$model_metadata" bash scripts/run-ascend910c.sh recommend
 第二条命令固定TP8/ADP2/EP16，搜索最多4节点内的6种P:D配比和并发8/16/32；
 先用这组已具备eager覆盖的配置核验调度。8K搜索改为8192输入即可。
 扩大TP/ADP/EP候选仍使用第3节的并行字段，缺失的eager shape会报错；
-当前EP32覆盖不全、DCP eager未采集，不应把graph记录混入这些候选。
+EP32 balanced eager通信的1～32 token查询范围已补齐，见对齐说明第18节；
+DCP eager仍未采集，不应把graph记录混入这些候选。
 元数据快照仅足够离线预测；真实部署仍需要完整模型权重。
 
 2026-10-30已重建本机 `aisimulate-910c:glm52-w8a8`，打包源码为 `56d40b26`、EngineSpec schema31，
@@ -264,15 +265,15 @@ GPU Replay自身限制PP1；NPU CP2存在缺失方法的执行错误；
 
 ## 5. 数据与解释范围
 
-| 数据族 | 已发布记录数 |
+| 数据族 | 当前源码树已发布记录数（2026-10-30） |
 |---|---:|
-| Linear | 2645 |
-| 向量/归一化/缓存操作 | 1194 |
-| Attention/Indexer | 2577 |
-| MLA BMM | 366 |
+| Linear | 2888 |
+| 向量/归一化/缓存操作 | 1410 |
+| Attention/Indexer | 10093 |
+| MLA BMM | 434 |
 | DeepEP专家计算链 | 225 |
 | 张量MoE计算链 | 126 |
-| DeepEP通信 | 143 |
+| DeepEP通信 | 150 |
 | HCCL | 449 |
 | PD传输 | 227，组成50条曲线 |
 | DCP存储/注意力/合并链 | 2994 |

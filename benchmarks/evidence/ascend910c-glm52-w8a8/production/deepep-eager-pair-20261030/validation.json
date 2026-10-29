@@ -1,0 +1,341 @@
+{
+  "scope": "Qualified EP32 balanced eager coordinate extension and offline functional coverage; accuracy remains unqualified",
+  "source_parent": "ca1b2840",
+  "publication": {
+    "old_rows_preserved_except_composite_identity": 143,
+    "qualified_new_campaign_rows": 14,
+    "added_disjoint_coordinates": 7,
+    "total_rows": 150,
+    "unqualified": [],
+    "overlap_comparisons": [
+      {
+        "coordinate": [
+          [
+            "low_latency",
+            "dispatch",
+            32,
+            16,
+            "balanced",
+            "eager"
+          ],
+          1
+        ],
+        "historical_ms": 0.5866765626706183,
+        "current_ms": 0.5953061705222353,
+        "relative_change": 0.014709310718556967
+      },
+      {
+        "coordinate": [
+          [
+            "low_latency",
+            "combine",
+            32,
+            16,
+            "balanced",
+            "eager"
+          ],
+          1
+        ],
+        "historical_ms": 0.3585463276831433,
+        "current_ms": 0.384787343617063,
+        "relative_change": 0.0731872394384403
+      },
+      {
+        "coordinate": [
+          [
+            "low_latency",
+            "dispatch",
+            32,
+            16,
+            "balanced",
+            "eager"
+          ],
+          2
+        ],
+        "historical_ms": 0.5631703127874061,
+        "current_ms": 0.6371239857980981,
+        "relative_change": 0.13131671064949968
+      },
+      {
+        "coordinate": [
+          [
+            "low_latency",
+            "dispatch",
+            32,
+            16,
+            "balanced",
+            "eager"
+          ],
+          3
+        ],
+        "historical_ms": 0.5589420319302008,
+        "current_ms": 0.6043204674497247,
+        "relative_change": 0.08118630005837657
+      },
+      {
+        "coordinate": [
+          [
+            "low_latency",
+            "combine",
+            32,
+            16,
+            "balanced",
+            "eager"
+          ],
+          3
+        ],
+        "historical_ms": 0.37899062677752227,
+        "current_ms": 0.3973832039628178,
+        "relative_change": 0.04853042763005444
+      },
+      {
+        "coordinate": [
+          [
+            "low_latency",
+            "dispatch",
+            32,
+            16,
+            "balanced",
+            "eager"
+          ],
+          4
+        ],
+        "historical_ms": 0.5728635925333947,
+        "current_ms": 0.582307735690847,
+        "relative_change": 0.016485849826286092
+      },
+      {
+        "coordinate": [
+          [
+            "low_latency",
+            "dispatch",
+            32,
+            16,
+            "balanced",
+            "eager"
+          ],
+          32
+        ],
+        "historical_ms": 0.6779093781951815,
+        "current_ms": 0.5965043739415705,
+        "relative_change": -0.1200824282300651
+      }
+    ],
+    "table_sha256": "7bab1a8aa5bc69c283846d23d5aee36e39bf26f2838a65b1093bceb57268259c",
+    "measurement_scope": "Identical pinned runtime and256/10/7 protocol on node19/20, fresh process per case",
+    "limitations": [
+      "Original multi-case native failure preserved and unresolved",
+      "Uniform synthetic balanced transport; not measured nonuniform routing or end-to-end accuracy"
+    ]
+  },
+  "original_failure": {
+    "status": "isolated_diagnostic_reproduction_planned_not_published",
+    "original_campaign": {
+      "elapsed_seconds": 110.96,
+      "completed_prefix_cases": 6,
+      "failed_case_index": 6,
+      "tokens_per_rank": 32,
+      "stage": "combine timing after initial payload checks and dispatch timing",
+      "observations_status": "running due to rank0 native SIGSEGV; incomplete observations rejected for publication",
+      "contamination": [],
+      "oom_killed": false
+    },
+    "source_review": {
+      "sglang_commit": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+      "collector_sha256": "5006512dc8ca53aec88bc915657d3f8b5406d73d54ff694a975cddd7ccd2296b",
+      "strategy_sha256": "84f8b39c0405e8344052d6b2c79ce87a9dbc3377438d250d50106c06bffedc1e",
+      "implementation": "SGLang _DeepEPDispatcherImplLowLatency -> Npu low_latency_strategy -> npu_moe_distribute_combine_v2",
+      "reviewed": [
+        "Same actual framework builder/dispatcher and quant config as previously qualified collector",
+        "Low latency handle retained in saved dictionary and reset before each combine; payload buffers retained until end.synchronize",
+        "Rank-synchronized per-call measurements, same256/10/7protocol and actual num_max_dispatch_tokens_per_rank32",
+        "NPU implementation constructs padding, masks, expert counts and combine arguments; no substituted kernel",
+        "Initial full-payload checks passed at32; failure happened in repeated combine. All NPU devices healthy/idle after owned containers stopped"
+      ]
+    },
+    "diagnostic_decision": "One isolated case32 reproduction with unchanged plan, collector, protocol and environment in fresh workers on same pair. Preserve original failure. Do not infer framework defect or weaken acceptance thresholds. If it fails again, retain unsupported coverage and investigate device/runtime separately.",
+    "isolated_reproduction": {
+      "status": "passed_full_payload_and_cv",
+      "case_index": 6,
+      "protocol": {
+        "iterations": 256,
+        "warmup": 10,
+        "repeats": 7
+      },
+      "observations": "isolated-32/node20/observations.json",
+      "inference": "Fresh process passed once. Original sequence/native failure remains unresolved, no runtime fix claimed."
+    },
+    "next_decision": "Collect remaining six coordinates once each in fresh per-case worker processes, preserving one frozen seven-case plan and identical collector/protocol. Qualification uses all results without retrying CV failures."
+  },
+  "tests": {
+    "targeted_passed": 45,
+    "exact_native_lookup": {
+      "status": "passed",
+      "checked_measured_rows": 150,
+      "max_abs_error_ms": 0.0,
+      "native_binary_sha256": "1e728bf4b37a5f1fd3328c44c688f7b597207efdd262c0e26d9f66bd515f7f99",
+      "table_sha256": "7bab1a8aa5bc69c283846d23d5aee36e39bf26f2838a65b1093bceb57268259c",
+      "preparation_ms": 2.5696740485727787,
+      "first_query_ms": 1.4616749249398708,
+      "subsequent_query_median_ms": 0.010229996405541897,
+      "scope": "Exact native lookup and typed wire; not forward, overlap or serving accuracy"
+    },
+    "nonuniform_probe": {
+      "queries": 1264,
+      "successful": 1264
+    },
+    "dense_probe": {
+      "queries": 3576,
+      "successful": 3576
+    },
+    "required_parity": "Identical native SHA to DP MAX_LEN publication;390 tests passed for that exact binary. No Rust/math changes in this extension."
+  },
+  "package": {
+    "wheel": "build/scheduler-audit-20261030/ep32-eager-wheels/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl",
+    "wheel_sha256": "777db704c32f0d9e4ddcb840a9e38f8b359c77ff0ab5444fe58a77b4819177d8",
+    "native_sha256": "1e728bf4b37a5f1fd3328c44c688f7b597207efdd262c0e26d9f66bd515f7f99",
+    "engine_spec_schema": 31,
+    "checked_files": 2278,
+    "mismatches": []
+  },
+  "searches": [
+    {
+      "input_tokens": 8192,
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/workspace",
+        "-e",
+        "PYTHONPATH=/workspace/python/aisimulate/src",
+        "aisim-node20-validation-20261027-v2",
+        "python3",
+        "-m",
+        "aisimulate",
+        "predict",
+        "--stack",
+        "engine",
+        "--config",
+        "/workspace/aisimulate-output/ep32-eager-pd-8192-20261030/recommendations/0001.yaml",
+        "--output-dir",
+        "/workspace/aisimulate-output/ep32-eager-pd-8192-20261030/saved-best-replay"
+      ],
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 2,
+        "failed": 0,
+        "feasible": 2,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "best_parallelism": {
+        "prefill": {
+          "attention_data": 2,
+          "moe_expert": 16,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 2,
+          "tensor": 8
+        },
+        "decode": {
+          "attention_data": 4,
+          "moe_expert": 32,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 1,
+          "tensor": 8
+        }
+      },
+      "metrics": {
+        "completed_requests": 32.0,
+        "mean_ttft_ms": 11263.693714625953,
+        "mean_tpot_ms": 223.1006126064271,
+        "output_throughput_tok_s": 132.0855665655456,
+        "duration_ms": 248081.60991412593
+      },
+      "saved_replay_differences": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/workspace",
+        "-e",
+        "PYTHONPATH=/workspace/python/aisimulate/src",
+        "aisim-node20-validation-20261027-v2",
+        "python3",
+        "-m",
+        "aisimulate",
+        "predict",
+        "--stack",
+        "engine",
+        "--config",
+        "/workspace/aisimulate-output/ep32-eager-pd-32768-20261030/recommendations/0001.yaml",
+        "--output-dir",
+        "/workspace/aisimulate-output/ep32-eager-pd-32768-20261030/saved-best-replay"
+      ],
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 2,
+        "failed": 0,
+        "feasible": 2,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "best_parallelism": {
+        "prefill": {
+          "attention_data": 2,
+          "moe_expert": 16,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 2,
+          "tensor": 8
+        },
+        "decode": {
+          "attention_data": 4,
+          "moe_expert": 32,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 1,
+          "tensor": 8
+        }
+      },
+      "metrics": {
+        "completed_requests": 8.0,
+        "mean_ttft_ms": 16132.60414662655,
+        "mean_tpot_ms": 223.06611115347027,
+        "output_throughput_tok_s": 32.81022474087109,
+        "duration_ms": 249678.26537912665
+      },
+      "saved_replay_differences": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      }
+    }
+  ],
+  "archive": "evidence.tar.gz",
+  "archive_sha256": "5dc9092ace32a100b0ea83886bf1abd4092629a78f3e8ae6c88415a39d061143",
+  "archive_bytes": 9889482,
+  "remaining": [
+    "Original multi-case transport SIGSEGV unresolved; only isolated samples published",
+    "Matched eager/no-overlap serving measurements absent; configured full weights unavailable on19/20",
+    "Nonuniform sender traffic and expert skew approximations",
+    "PD chunk send/compute overlap, transfer contention and host costs",
+    "DCP eager profiles missing"
+  ]
+}

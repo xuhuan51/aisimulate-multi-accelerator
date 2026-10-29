@@ -3,7 +3,6 @@ import hashlib
 import json
 
 import pytest
-
 from collector.sglang.ascend_curve_append import (
     append_curves,
     collection_identities,
@@ -138,6 +137,62 @@ def test_attention_extension_preserves_measurements_and_records_composite_proven
     merged = {"rows": rows, "report": report, "metadata": old["metadata"]}
     extended, _, counts, _ = extend_attention_points([merged, attention_campaign(33792, "next")])
     assert len(extended) == 3 and counts == {0: 2, 1: 1}
+
+
+def deepep_campaign(tokens, plan, mode="eager", protocol=None):
+    source = attention_campaign(8192, plan, protocol)
+    digest = source["rows"][0]["runtime_identity_sha256"]
+    source["rows"] = [
+        {
+            "phase": "low_latency",
+            "operation": "combine",
+            "num_ranks": 32,
+            "ranks_per_node": 16,
+            "distribution": "balanced",
+            "execution_mode": mode,
+            "tokens_per_rank": tokens,
+            "latency_ms": tokens / 10,
+            "source_sha256": plan,
+            "runtime_identity_sha256": digest,
+        }
+    ]
+    return source
+
+
+def test_deepep_extension_keeps_one_identity_across_unchanged_and_extended_curves():
+    old = deepep_campaign(1, "old")
+    old["rows"].append({**old["rows"][0], "execution_mode": "graph", "latency_ms": 0.05})
+    added = deepep_campaign(32, "new")
+    rows, curves, counts, identities = extend_points("deepep", [old, added])
+    assert [
+        (row["execution_mode"], row["tokens_per_rank"], row["latency_ms"], row["source_sha256"]) for row in rows
+    ] == [
+        ("eager", 1, 0.1, "old"),
+        ("eager", 32, 3.2, "new"),
+        ("graph", 1, 0.05, "old"),
+    ]
+    assert counts == {0: 2, 1: 1}
+    assert len({row["runtime_identity_sha256"] for row in rows}) == 1
+    assert len({curve["collection_identity_sha256"] for curve in curves}) == 1
+    merged = {
+        "rows": rows,
+        "metadata": old["metadata"],
+        "report": {
+            "merged_identities": identities,
+            "campaigns": [{"report": old["report"]}, {"report": added["report"]}],
+        },
+    }
+    extended, _, counts, _ = extend_points("deepep", [merged, deepep_campaign(16, "next")])
+    assert len(extended) == 4 and counts == {0: 3, 1: 1}
+    assert len({row["runtime_identity_sha256"] for row in extended}) == 1
+
+
+def test_deepep_extension_rejects_overlaps_and_cross_curve_protocol_changes():
+    old = deepep_campaign(1, "old")
+    with pytest.raises(ValueError, match="Overlapping physical points"):
+        extend_points("deepep", [old, deepep_campaign(1, "new")])
+    with pytest.raises(ValueError, match="identical runtime, protocol"):
+        extend_points("deepep", [old, deepep_campaign(1, "new", mode="graph", protocol={"iterations": 16})])
 
 
 def test_attention_extension_rejects_overlaps_and_changed_protocols():

@@ -25,12 +25,19 @@ def physical_curve(operation, row):
         return tuple(row[field] for field in ("source_tp", "destination_tp", "page_layout"))
     if operation == "dcp_attention":
         return tuple(row[field] for field in ("phase", "local_heads", "dcp_size", "remap_topk", "execution_mode"))
+    if operation == "deepep":
+        return tuple(
+            row[field]
+            for field in ("phase", "operation", "num_ranks", "ranks_per_node", "distribution", "execution_mode")
+        )
     raise ValueError("Unsupported Ascend operator grid")
 
 
 def physical_coordinate(operation, row):
     if operation in ("attention", "dcp_attention"):
         return tuple(row[field] for field in ("active_batch", "padded_batch", "sequence_length", "prefix"))
+    if operation == "deepep":
+        return row["tokens_per_rank"]
     return row["m" if operation == "linear" else "tokens"]
 
 
@@ -129,11 +136,16 @@ def extend_points(operation, campaigns):
             groups[physical_curve(operation, row)].append((index, row))
             counts[index] += 1
     merged_identities = {}
+    table_sources = (
+        sorted({row["runtime_identity_sha256"] for values in groups.values() for _, row in values})
+        if operation == "deepep"
+        else None
+    )
     for key, values in sorted(groups.items()):
         coordinates = [physical_coordinate(operation, row) for _, row in values]
         if len(coordinates) != len(set(coordinates)):
             raise ValueError("Overlapping physical points cannot replace existing measurements")
-        source_ids = sorted({row["runtime_identity_sha256"] for _, row in values})
+        source_ids = table_sources or sorted({row["runtime_identity_sha256"] for _, row in values})
         first = identities[source_ids[0]]
         conditions = {name: first[name] for name in ("runtime", "protocol", "serving_setup")}
         if any({name: identities[digest][name] for name in conditions} != conditions for digest in source_ids):
@@ -172,13 +184,15 @@ def extend_points(operation, campaigns):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--operation", choices=("linear", "vector", "bmm", "attention", "pd", "dcp_attention"), required=True
+        "--operation", choices=("linear", "vector", "bmm", "attention", "pd", "dcp_attention", "deepep"), required=True
     )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--extend-attention-points", action="store_true")
     parser.add_argument("--extend-points", action="store_true")
     parser.add_argument("campaign", type=Path, nargs="+")
     args = parser.parse_args()
+    if args.operation == "deepep" and not args.extend_points:
+        parser.error("DeepEP requires --extend-points to retain one verified table-wide runtime identity")
     import pyarrow as arrow
     import pyarrow.parquet as parquet
     import yaml
