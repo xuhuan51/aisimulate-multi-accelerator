@@ -42,6 +42,44 @@ pub fn engine_seed_offset(identity: RankIdentity) -> Result<u64> {
 pub struct SchedulerRank {
     core: EngineCore,
     handoff_requests: HashMap<HandoffId, Uuid>,
+    group_timing: Option<Arc<dyn TimingModel>>,
+    dp_size: u32,
+    group_speedup_ratio: f64,
+}
+
+struct DeferredGroupTiming(Arc<dyn TimingModel>);
+
+impl TimingModel for DeferredGroupTiming {
+    fn prefill_batch_validation_can_fail(&self) -> bool {
+        self.0.prefill_batch_validation_can_fail()
+    }
+
+    fn prefill_prediction_can_fail(&self) -> bool {
+        false
+    }
+
+    fn validate_prefill_batch(&self, requests: &[(usize, usize)]) -> Result<()> {
+        self.0.validate_prefill_batch(requests)
+    }
+
+    fn predict_prefill_ms(
+        &self,
+        _batch_size: usize,
+        _mean_isl: usize,
+        _mean_prefix: usize,
+    ) -> Result<f64> {
+        Ok(0.0)
+    }
+
+    fn predict_decode_ms(
+        &self,
+        _batch_size: usize,
+        _active_kv_tokens: usize,
+        _mean_context_length: usize,
+        _total_kv_tokens: usize,
+    ) -> Result<f64> {
+        Ok(0.0)
+    }
 }
 
 impl SchedulerRank {
@@ -86,7 +124,17 @@ impl SchedulerRank {
             config.g3_offload.is_none(),
             "g3_offload is Replay-owned; construct it through ReplaySpec"
         );
-        let mut args = core_args(config, timing);
+        let group_timing = (config.backend == Backend::Sglang
+            && config.worker_type != WorkerType::Aggregated
+            && identity.dp_size.get() > 1
+            && timing.supports_group_timing())
+        .then(|| Arc::clone(&timing));
+        let rank_timing: Arc<dyn TimingModel> = if group_timing.is_some() {
+            Arc::new(DeferredGroupTiming(timing))
+        } else {
+            timing
+        };
+        let mut args = core_args(config, rank_timing);
         if config.backend == Backend::Sglang {
             normalize_sglang_attention_dp(&mut args, identity.dp_size.get())?;
         }
@@ -111,6 +159,14 @@ impl SchedulerRank {
         Ok(Self {
             core,
             handoff_requests: HashMap::new(),
+            group_timing,
+            dp_size: identity.dp_size.get(),
+            group_speedup_ratio: config.speedup_ratio
+                * if config.worker_type == WorkerType::Decode {
+                    config.decode_speedup_ratio
+                } else {
+                    1.0
+                },
         })
     }
 
@@ -311,6 +367,35 @@ impl RankEngine for SchedulerRank {
             }
         }
         Ok(pending.effects)
+    }
+
+    fn group_duration_ms(&self, pending: &[(u32, &Self::PendingPass)]) -> Result<Option<f64>> {
+        let Some(timing) = &self.group_timing else {
+            return Ok(None);
+        };
+        let mut metrics = vec![crate::ForwardPassMetrics::default(); self.dp_size as usize];
+        for (rank, pending) in pending {
+            let observed = &pending.effects.forward_pass_metrics;
+            let entry = metrics
+                .get_mut(*rank as usize)
+                .ok_or_else(|| anyhow!("invalid synchronized timing rank"))?;
+            entry.dp_rank = *rank;
+            entry.scheduled_requests = crate::ScheduledRequestMetrics {
+                num_prefill_requests: observed.num_prefill_requests,
+                sum_prefill_tokens: u32::try_from(observed.sum_prefill_tokens)?,
+                sum_prefill_kv_tokens: u32::try_from(observed.sum_prefill_kv_tokens)?,
+                var_prefill_length: observed.var_prefill_length,
+                num_decode_requests: observed.num_decode_requests,
+                sum_decode_kv_tokens: u32::try_from(observed.sum_decode_kv_tokens)?,
+                var_decode_kv_tokens: observed.var_decode_kv_tokens,
+                ..Default::default()
+            };
+        }
+        crate::engine::modeled_duration_ms(
+            timing.predict_group_ms(&metrics)?,
+            self.group_speedup_ratio,
+        )
+        .map(Some)
     }
 
     fn complete_idle_group_pass(
@@ -688,6 +773,94 @@ mod tests {
         HostOffloadObservation, HostOffloadObservationData, NativeHostOffloadConfig, PressureKind,
         TimingModelConfig,
     };
+
+    struct GroupProbe {
+        seen: Mutex<Vec<Vec<crate::ForwardPassMetrics>>>,
+        duration: f64,
+    }
+
+    impl TimingModel for GroupProbe {
+        fn supports_group_timing(&self) -> bool {
+            true
+        }
+        fn predict_prefill_ms(&self, _: usize, _: usize, _: usize) -> Result<f64> {
+            panic!("rank-local timing must be deferred")
+        }
+        fn predict_decode_ms(&self, _: usize, _: usize, _: usize, _: usize) -> Result<f64> {
+            panic!("rank-local timing must be deferred")
+        }
+        fn predict_group_ms(&self, metrics: &[crate::ForwardPassMetrics]) -> Result<f64> {
+            self.seen.lock().unwrap().push(metrics.to_vec());
+            Ok(self.duration)
+        }
+    }
+
+    #[test]
+    fn synchronized_timing_observes_committed_batches_and_idle_ranks_once() {
+        use crate::engine::generalized::{
+            EngineIdentity, GeneralizedMockerEngine, SchedulerCommand,
+        };
+        for duration in [25.0, f64::NAN, -1.0] {
+            let probe = Arc::new(GroupProbe {
+                seen: Mutex::default(),
+                duration,
+            });
+            let config = EngineConfig {
+                worker_type: WorkerType::Prefill,
+                num_gpu_blocks: 1024,
+                block_size: 4,
+                speedup_ratio: 2.0,
+                ..EngineConfig::for_backend(Backend::Sglang)
+            };
+            let mut engine = GeneralizedMockerEngine::new_with_rank_factory(
+                EngineIdentity::new(41),
+                NonZeroU32::new(4).unwrap(),
+                |identity| {
+                    SchedulerRank::new_with_timing_model(identity, &config, probe.clone(), 0)
+                },
+            )
+            .unwrap();
+            for (rank, length) in [(1, 5), (3, 9)] {
+                engine
+                    .apply_command_effects(
+                        SchedulerCommand::new(
+                            rank,
+                            Command::Submit(Request {
+                                request_id: Uuid::from_u128(rank.into()),
+                                tokens: vec![rank; length],
+                                max_output_tokens: 1,
+                                output_token_ids: None,
+                                session_id: None,
+                            }),
+                        ),
+                        0.0,
+                    )
+                    .unwrap();
+            }
+            let pass = engine.execute_pass(0.0);
+            let seen = probe.seen.lock().unwrap();
+            assert_eq!(seen.len(), 1);
+            assert_eq!(
+                seen[0]
+                    .iter()
+                    .map(|rank| rank.scheduled_requests.sum_prefill_tokens)
+                    .collect::<Vec<_>>(),
+                [0, 5, 0, 9]
+            );
+            drop(seen);
+            if duration == 25.0 {
+                let pass = pass.unwrap().unwrap();
+                assert_eq!(pass.end_ms, 12.5);
+                assert!(pass.by_rank.iter().all(|rank| rank.rank_end_ms == 12.5));
+                let completed = engine.complete_pass(pass.pass_id, pass.end_ms).unwrap();
+                assert_eq!(completed.effects.by_rank.len(), 4);
+            } else {
+                assert!(pass.is_err());
+                assert!(engine.execute_pass(0.0).is_err());
+                assert_eq!(probe.seen.lock().unwrap().len(), 1);
+            }
+        }
+    }
 
     #[test]
     fn state_cache_parameters_reach_rank_local_args() {

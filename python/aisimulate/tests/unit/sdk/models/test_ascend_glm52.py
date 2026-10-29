@@ -379,6 +379,105 @@ def transfer_model(model_path, role, **overrides):
     )
 
 
+@pytest.mark.parametrize("execution_mode", ["eager", "graph"])
+def test_synchronized_dp_estimator_preserves_uniform_cost_and_rank_permutation(model_path, execution_mode):
+    model = transfer_model(
+        model_path,
+        "decode",
+        estimator_config={
+            "op_level": {"ascend": {"decode_execution_mode": execution_mode, "shape_policy": "anchored"}}
+        },
+    )
+
+    def metrics(count):
+        return {"scheduled_requests": {"num_decode_requests": count, "sum_decode_kv_tokens": count * 8193}}
+
+    uniform = model.estimate_forward_pass_time_ms([metrics(2), metrics(2)])
+    assert uniform == pytest.approx(model.estimate_forward_pass_time_ms(metrics(2)), rel=1e-12)
+    for counts in ((1, 9), (0, 9), (0, 0)):
+        duration = model.estimate_forward_pass_time_ms([metrics(count) for count in counts])
+        assert duration == model.estimate_forward_pass_time_ms([metrics(count) for count in reversed(counts)])
+        assert duration >= 0
+    with pytest.raises(ValueError, match="all 2 rank metrics"):
+        model.estimate_forward_pass_time_ms([metrics(1)] * 3)
+
+
+def test_synchronized_sum_len_executes_with_idle_ranks_and_rejects_mixed_phases(model_path):
+    model = transfer_model(
+        model_path,
+        "decode",
+        tp=4,
+        attention_dp=4,
+        estimator_config={"op_level": {"ascend": {"decode_execution_mode": "eager", "shape_policy": "anchored"}}},
+    )
+    active = {"scheduled_requests": {"num_decode_requests": 1, "sum_decode_kv_tokens": 32769}}
+    idle = {"scheduled_requests": {}}
+    duration = model.estimate_forward_pass_time_ms([active, idle, idle, idle])
+    assert duration > 0
+    assert duration == model.estimate_forward_pass_time_ms([idle, idle, idle, active])
+    prefill = {"scheduled_requests": {"num_prefill_requests": 1, "sum_prefill_tokens": 8192}}
+    with pytest.raises(ValueError, match="pure prefill or pure decode"):
+        model.estimate_forward_pass_time_ms([active, prefill, idle, idle])
+
+
+def test_pd_group_timing_is_independent_of_diagnostic_capture(model_path):
+    from aisimulate.compiler import prediction_to_replay_spec
+    from aisimulate.config.cli import CorePredictionConfig
+    from aisimulate.runner import EngineReplayRunnerFactory
+    from aisimulate.sweeper import ReplayOutputRequirements
+
+    public = CorePredictionConfig.model_validate(
+        {
+            "traffic": {
+                "source": {"type": "synthetic", "input_tokens": 8192, "output_tokens": 4},
+                "load": {"type": "concurrency", "concurrency": 2},
+                "stop": {"requests": 2},
+            },
+            "engine": {
+                "model": model_path,
+                "hardware": "ascend910c",
+                "backend": "sglang",
+                "backend_version": "0.5.22",
+                "mode": "disaggregated",
+                "context_length": 16384,
+                "gemm_quant_mode": "w8a8",
+                "moe_quant_mode": "w8a8_dynamic",
+                "fmha_quant_mode": "bfloat16",
+                "kvcache_quant_mode": "bfloat16",
+                "estimation_mode": "op_level",
+                "kv_transfer": {"type": "measured"},
+                "estimator_config": {
+                    "op_level": {"ascend": {"decode_execution_mode": "eager", "shape_policy": "anchored"}}
+                },
+                "workers": {
+                    role: {
+                        "parallelism": {"tensor": 8, "attention_data": 2, "moe_tensor": 1, "moe_expert": 16},
+                        "scheduler": {"ignore_eos": True, "chunked_prefill_size": 16384, "max_prefill_tokens": 32768},
+                        "kv_cache": {
+                            "block_size": 128,
+                            "prefix_caching": False,
+                            "capacity": {"type": "fixed", "blocks": 512},
+                        },
+                    }
+                    for role in ("prefill", "decode")
+                },
+            },
+        }
+    )
+    reports = [
+        EngineReplayRunnerFactory()
+        .create(0)
+        .run(
+            prediction_to_replay_spec(public),
+            output_requirements=ReplayOutputRequirements(capture_performance_diagnostics=capture),
+        )
+        for capture in (False, True)
+    ]
+    for field in ("completed_requests", "mean_ttft_ms", "mean_tpot_ms", "output_throughput_tok_s"):
+        assert reports[0].metrics[field] == pytest.approx(reports[1].metrics[field], rel=1e-12)
+    assert reports[0].metrics["completed_requests"] == 2
+
+
 def test_canonical_pd_model_selects_measured_mapping_and_rejects_unknown_geometry(model_path):
     source = transfer_model(model_path, "prefill")
     target = transfer_model(model_path, "decode")

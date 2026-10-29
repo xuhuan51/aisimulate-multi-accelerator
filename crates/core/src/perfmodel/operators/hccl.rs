@@ -7,6 +7,13 @@ use crate::operators::base::{PerformanceResult, Source};
 use crate::perf_database::PerfDatabase;
 use crate::perf_database::hccl::HcclKey;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DpPaddingMode {
+    MaxLen,
+    SumLen,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HcclOp {
     pub name: String,
@@ -16,6 +23,8 @@ pub struct HcclOp {
     pub token_split: u32,
     #[serde(default)]
     pub token_axis: AscendLinearTokens,
+    #[serde(default)]
+    pub dp_padding_mode: Option<DpPaddingMode>,
 }
 
 impl HcclOp {
@@ -42,6 +51,9 @@ impl HcclOp {
     }
 
     pub fn query(&self, db: &PerfDatabase, num_tokens: u32) -> Result<PerformanceResult, AicError> {
+        if self.dp_padding_mode == Some(DpPaddingMode::SumLen) {
+            return Ok(PerformanceResult::new(0.0, Source::Empirical));
+        }
         let bytes = self.payload_bytes(num_tokens)?;
         if bytes == 0 || self.scale_factor == 0.0 {
             return Ok(PerformanceResult::new(0.0, Source::Empirical));
@@ -105,6 +117,7 @@ mod tests {
             elements_per_token: 6144,
             token_split: 8,
             token_axis: AscendLinearTokens::Tokens,
+            dp_padding_mode: None,
         };
         assert_eq!(op.payload_bytes(9).unwrap(), 24576);
         assert_eq!(op.payload_bytes(0).unwrap(), 0);

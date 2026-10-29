@@ -344,6 +344,7 @@ pub struct Engine {
     /// `(nextn + 1)` exactly as Python `_run_generation_phase:200`
     /// (`batch_size = batch_size * (model._nextn + 1)`). 0 disables scaling.
     nextn: u32,
+    ascend_dp_layout: Option<(u32, u32)>,
 }
 
 impl std::fmt::Debug for Engine {
@@ -413,6 +414,17 @@ impl Engine {
             spec.context_ops.iter().chain(&spec.generation_ops),
         )?;
         Ok(Engine {
+            ascend_dp_layout: (spec.engine.system_name == "ascend910c"
+                && spec.engine.parallel.attention_dp_size.unwrap_or(1) > 1
+                && spec.engine.parallel.dcp_size.unwrap_or(1) == 1
+                && spec
+                    .context_ops
+                    .iter()
+                    .any(|op| matches!(op, Op::AscendAttention(_))))
+            .then_some((
+                spec.engine.parallel.tp_size,
+                spec.engine.parallel.attention_dp_size.unwrap_or(1),
+            )),
             context_plan: OpListPlan::new(&spec.context_ops),
             generation_plan: OpListPlan::new(&spec.generation_ops),
             context_ops: spec.context_ops,
@@ -2229,6 +2241,16 @@ impl Engine {
         for metrics in metrics_by_rank {
             validate_forward_pass_metrics(metrics)?;
         }
+        if metrics_by_rank.len() > 1 && self.supports_ascend_dp_timing() {
+            let (latency, max_rank, _) = self.ascend_dp_estimate(metrics_by_rank, false)?;
+            return Ok(crate::ForwardPassEstimate {
+                latency_ms: Some(latency),
+                native_latency_ms: Some(latency),
+                correction_factor: Some(1.0),
+                max_rank,
+                ranks: Vec::new(),
+            });
+        }
         let mut max_latency = 0.0_f64;
         let mut max_rank = None;
         let mut ranks = Vec::new();
@@ -2258,6 +2280,76 @@ impl Engine {
             max_rank,
             ranks,
         })
+    }
+
+    pub fn supports_ascend_dp_timing(&self) -> bool {
+        self.ascend_dp_layout.is_some()
+    }
+
+    pub(crate) fn ascend_dp_estimate(
+        &self,
+        metrics: &[ForwardPassMetrics],
+        capture: bool,
+    ) -> Result<(f64, Option<usize>, Vec<PerOpValue>), AicError> {
+        let (attention_tp, attention_dp) = self.ascend_dp_layout.ok_or_else(|| {
+            AicError::InvalidForwardPassMetrics(
+                "Ascend synchronized DP timing is not configured".into(),
+            )
+        })?;
+        if metrics.len() != attention_dp as usize {
+            return Err(AicError::InvalidForwardPassMetrics(format!(
+                "Ascend synchronized timing needs all {attention_dp} rank metrics, including idle ranks"
+            )));
+        }
+        for rank in metrics {
+            validate_forward_pass_metrics(rank)?;
+        }
+        let buckets = self
+            .generation_ops
+            .iter()
+            .find_map(|op| match op {
+                Op::AscendAttention(attention) => Some(attention.graph_buckets.as_slice()),
+                _ => None,
+            })
+            .unwrap_or_default();
+        let shape = super::ascend_dp::GroupShape::new(metrics, attention_tp, buckets)?;
+        let operations = if shape.decode {
+            &self.generation_ops
+        } else {
+            &self.context_ops
+        };
+        let mut maximum = 0.0_f64;
+        let mut max_rank = None;
+        let mut critical_operations = Vec::new();
+        for (rank, metrics) in metrics.iter().enumerate() {
+            let context = shape.context(metrics);
+            if context.batch_size == 0 {
+                continue;
+            }
+            let mut fold = PerOpFold::new(if shape.decode {
+                "generation"
+            } else {
+                "context"
+            });
+            let mut latency = 0.0;
+            for operation in operations {
+                if let Some(bound) = shape.bind(operation, rank, context.batch_size, false)? {
+                    let result = bound.query(&self.db, &context)?;
+                    latency += result.latency_ms;
+                    if capture {
+                        fold.add(&bound, result);
+                    }
+                }
+            }
+            if latency > maximum {
+                maximum = latency;
+                max_rank = Some(rank);
+                if capture {
+                    critical_operations = strip_per_op_metadata(fold.into_values());
+                }
+            }
+        }
+        Ok((maximum, max_rank, critical_operations))
     }
 
     /// Dispatch one rank's FPM on its scheduled workload. Literal port of

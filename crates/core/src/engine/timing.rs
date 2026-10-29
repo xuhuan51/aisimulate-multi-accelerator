@@ -741,6 +741,14 @@ pub enum TimingModelConfig {
 /// Implementations may call AIC, interpolate profiler data, or use another
 /// provider without adding that dependency to `aisimulate-core`.
 pub trait TimingModel: Send + Sync {
+    fn supports_group_timing(&self) -> bool {
+        false
+    }
+
+    fn predict_group_ms(&self, _metrics: &[crate::ForwardPassMetrics]) -> Result<f64> {
+        anyhow::bail!("timing provider does not support synchronized rank batches")
+    }
+
     /// Whether `validate_prefill_batch` may reject geometry. A false return
     /// guarantees only that validation accepts every batch, not that prediction
     /// or duration conversion is infallible. Admission must still protect those

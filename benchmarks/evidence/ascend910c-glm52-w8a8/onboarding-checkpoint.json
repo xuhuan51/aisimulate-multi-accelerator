@@ -1733,6 +1733,30 @@
           "scope": "validation",
           "sha256": "e2f87f617d31bf2140756bf75a4cb545b6bca8fb0905de3684a4d86381a695fd"
         },
+        "synchronized_dp_evidence_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/dp-synchronization-validation-evidence.tar.gz",
+          "scope": "validation",
+          "sha256": "6456623e796d7689907c0fc14a2ed28885c237e98d9488e56bdee86538b5cd5e"
+        },
+        "synchronized_dp_oracle_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/dp-padding-oracle.json",
+          "scope": "validation",
+          "sha256": "55e068260ae7b6610596375c8cc54d4041423f37a03bb472f7cc89f93260d8dc"
+        },
+        "synchronized_dp_validation_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/dp-synchronization-validation.json",
+          "scope": "validation",
+          "sha256": "60af671bb4b545023502efd2166c53a558113ba1830a33cb0dcbbe62d8944ede"
+        },
         "tensor_adp2_actual_request": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -1912,11 +1936,11 @@
       },
       "progress": {
         "blockers": [
-          "Full-forward and serving accuracy not qualified: matching graph/overlap-disabled measurements absent.",
-          "Nonuniform DP shape synchronization and PD transfer contention/release boundaries still need alignment and trace verification.",
-          "EP32 eager DeepEP axis and DCP eager profiles incomplete."
+          "Matching eager/no-overlap serving accuracy measurements absent.",
+          "Nonuniform transport, balanced routing, within-rank KV averaging and mixed-phase DP remain approximations.",
+          "New MAX_LEN padding profiles awaiting publication; EP32 eager DeepEP and DCP eager coverage incomplete."
         ],
-        "next_action": "Use matched fixed-length streaming baseline from auditsection15; capture per-rank actualbatch/KVcapacity/forward times, then align nonuniform DP andtransfer lifecycle before validating PD/parallel rankings.",
+        "next_action": "Validate and publish newly collected eager padding planes, rebuild the installed runtime, then extend EP32 eager transport profiles and continue PD transfer/host alignment.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2776,6 +2800,7 @@
       "search_feasibility": "Use known single-turn synthetic ISL+OSL only for KV preflight; preserve runtime context180000 and saved role limits. 8K12candidates and32K6legalPDcandidates completed. Both saved top candidates reproduce completed requests,TTFT,TPOT,throughput exactly. 32KTP4ADP4 is genuinely KV-infeasible; independent parallel axes correctly prune >64device combinations.",
       "search_validation": "Focusedsearch45passed;broader205passed5failedbecauseofflinecontainercannotdownloadHuggingFacemetadata. Short8requestreplays validate pipeline only,notservingaccuracyorsteadystateoptimum.",
       "status": "in_progress",
+      "synchronized_dp_timing": "Implemented pure-PD DCP1 group timing using committed per-rank batches including idle ranks, pinned MAX_LEN/SUM_LEN selection, global dense/expert shapes and conditional HCCL. Corrected post-retraction decode telemetry. Schema31 staging native e91bc58e52a8aa3986fd54c3191ad0ef9848d2ce5fd22a3ce6c2ce1b4a4b2541; runtime publication pending expanded padding profiles. Tests306 sourcecases,2080core+84SGLang,28GLM,390parities+5boundary passed. 8K/32K each6ratios completed and saved-best metrics identical. Expanded probe1140/1264 successful;72missing padding,52EP32eagerDeepEP. Extra3360coordinates collected;2numerical failures quarantined and102CVcases repeated once.",
       "validation": "Rust2063passed1ignored;bothparitysuites390passed;GLMmodel19passed. Prior DCP2negativeKVtest reproduced as obsolete on unchanged old installed wheel. Native eager2requestPDreplaycompleted."
     },
     "sglang_simulator_bridge": {
@@ -2865,7 +2890,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 82,
+  "revision": 83,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

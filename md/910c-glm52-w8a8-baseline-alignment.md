@@ -448,8 +448,8 @@ EP16 eager、tensor-MoE eager和所有graph测试均成功。
 
 以下仍不能仅凭源码修正宣称准确：
 
-- 原生attention-DP调度有同步屏障，但当前算子组合仍以uniform DP负载近似全局算子shape。
-  MAX_LEN/SUM_LEN在非均匀rank上的真实tensor/通信量仍需整轮trace核验。
+- PD的attention-DP算子组合已按各rank实际batch推导MAX_LEN/SUM_LEN，见第16节。
+  不同rank混合prefill/decode、非均匀DeepEP传输曲线及真实MoE路由仍需继续核验。
 - 历史P router使用cache-aware，新基线选择round-robin；两者请求分布不完全相同。
 - PD多路同时传输的带宽竞争、真实发送结束与P释放资源的边界、CPU调度和HTTP开销尚需匹配实测。
 - EP32 eager DeepEP缺少完整sent-token曲线，DCP eager缺少实测profiles，不能借用graph时间。
@@ -498,3 +498,66 @@ P/D `scheduler.ignore_eos: true`。预热请求不计入这128条；prefix cache
 安装后的公开predict和PD搜索均通过；最终二进制两套parity共390通过、原生边界5通过，
 最后一次准入边界修改另有84项SGLang调度回归通过。运行包身份与全部证据位于同目录
 `runtime-publication.json`。这些结果验证实现与安装状态，准确性状态仍为未验收。
+
+## 16. 用真实DP batch推导算子shape
+
+本阶段继续沿用AISimulate原生调度器，对齐固定0.5.22镜像的执行规则。
+之前的实验性sglang-simulator桥接已经撤下并保留归档，当前预测不依赖它。
+
+此前每个attention-DP rank分别估时，再取最大值作为同步完成时间。
+虽然有同步屏障，dense/MoE/通信仍按“本rank token数乘DP”计算，无法表达不均匀负载。
+现在专用P/D worker先完成各rank的调度选择，将包括空闲rank在内的整组batch交给
+canonical Rust性能模型，然后确定共同完成时间。单rank估时不会重复计入这轮耗时。
+
+以TP4/ADP4、某轮decode有效batch为`[1,0,0,0]`为例：
+
+1. 先按attention TP对齐，得到`[4,0,0,0]`；attention仍只有1条有效KV序列。
+2. 固定版本的eager规则比较`2 × sum`与`max × DP`，此例为8和16，选择SUM_LEN。
+3. 全局dense/tensor-MoE buffer为4行。此前独立rank近似会按4×4=16行计算。
+4. gather/combine选择SUM_LEN的all-reduce分支，不沿用MAX_LEN的all-gather/reduce-scatter组合。
+5. EP16、top-k8的balanced模型使用`ceil(4×8/16)=2`作为平均专家接收token数。
+   这仍是路由分布假设，不等于每次真实模型推理都恰好均匀。
+
+相反，TP8/ADP2的`[1,9]`先对齐为`[8,16]`，eager选择MAX_LEN，
+两个rank均以16行执行，全局buffer为32行。attention分别保留1和9条有效序列。
+P阶段使用SUM_LEN；例如只有一个rank计算8192个新token，另一个空闲，
+全局buffer就是8192行。graph开启时使用所有rank共同选择的capture bucket；
+超出bucket范围后整个算子组合回到eager。
+
+另外修正了decode统计：KV不足导致请求回退后，forward metrics只记录实际执行的
+survivor batch；回退请求计入等待队列，避免并发升高时把它们算进本轮算子shape。
+
+适用边界：专用P/D角色、DCP1、无投机、固定拓扑、已审计的DeepEP v1或tensor-MoE。
+PD搜索自动使用此路径。直接传入多个rank的forward metrics时，必须提供完整DP向量；
+单条metrics仍保留原来的uniform查询语义。PD合并部署的跨rank混合prefill/decode，
+以及更复杂的gatherv/elastic规则不在此阶段的支持范围内。
+
+源码oracle脚本`production/check_dp_padding.py`直接执行经过SHA验证的原始
+`DpPaddingMode`和对齐函数，306个参考case写入
+`production/scheduler-audit-node20-20261030/dp-padding-oracle.json`。
+`check_dp_shape_coverage.py`通过公开canonical接口检查非均匀batch，结果文件位于同目录。
+测试验证调度边界、shape选择和代码一致性，不能代替真实forward耗时验证。
+
+剩余近似包括：DeepEP使用最大sender的实测曲线，尚未采集各rank发送量不同的完整传输曲线；
+专家负载按balanced建模；一个rank内的KV长度仍有平均化；多路PD传输竞争和host开销未完全校准。
+算子证据对应关键rank，不能据此宣称已计算所有设备的总能耗。
+缺失profile仍明确报错，anchored外推结果也不等于该shape已经实测。
+
+本阶段EngineSpec升级为schema31，需要同步更新原生库与Python组合代码。
+
+验证记录为`production/scheduler-audit-node20-20261030/dp-synchronization-validation.json`：
+306组源码oracle、2080项Rust核心测试通过；回退统计修改另跑84项SGLang测试；
+最终原生库通过28项GLM测试、390项必需parity和5项原生调度边界测试。
+包含关闭/开启诊断输出时预测一致的回归，防止搜索快速路径丢失性能模型。
+扩展探针1264次查询中1140次成功，72次缺eager补齐plane，52次超出EP32 eager DeepEP范围，
+这些缺口会明确报错并作为下一阶段的采集目标。
+
+固定TP8/ADP2/EP16、最多4节点、并发8和8条完整请求的功能回放结果：
+
+| 输入/输出 | 完成PD配比数 | 此小样本搜索首选 | 平均TTFT(ms) | 平均TPOT(ms) | 输出tok/s |
+| --- | --- | --- | --- | --- | --- |
+| 8192/1024 | 6/6 | 3P1D | 3260.178 | 201.353 | 38.815 |
+| 32768/1024 | 6/6 | 2P2D | 119017.881 | 201.119 | 18.918 |
+
+保存后的首选YAML再次predict，完成请求数、duration、TTFT、TPOT和吞吐与搜索完全一致。
+上述8请求结果用于验证功能和回放一致性；样本少，部分候选分数接近，不作为实测最优配比结论。

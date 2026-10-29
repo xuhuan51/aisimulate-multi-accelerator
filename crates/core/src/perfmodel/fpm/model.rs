@@ -617,6 +617,30 @@ impl ForwardPassPerfModel {
         }
     }
 
+    pub fn estimate_ascend_dp_operations(
+        &self,
+        metrics: &[ForwardPassMetrics],
+    ) -> Result<Vec<crate::perfmodel::engine::PerOpValue>, AicError> {
+        let ForwardPassPerfMode::Native {
+            engine,
+            corrections,
+        } = &self.mode
+        else {
+            return Err(AicError::InvalidForwardPassMetrics(
+                "Ascend DP operator evidence requires a native estimator".into(),
+            ));
+        };
+        let (_, _, mut operations) = engine.ascend_dp_estimate(metrics, true)?;
+        if let Some(features) = IterationFeatures::from_metrics(metrics)? {
+            let factor = self.correction_factor(corrections, &features);
+            for (_, latency, energy, _) in &mut operations {
+                *latency *= factor;
+                *energy *= factor;
+            }
+        }
+        Ok(operations)
+    }
+
     /// Estimate the same iteration with executed direct-FPM support. The
     /// native rank maximum and online correction are explicit; measurement
     /// weights describe raw lookup values only. Detailed query state is returned;

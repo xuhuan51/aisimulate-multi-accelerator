@@ -515,6 +515,9 @@ enum AicPhaseProvider {
 }
 
 struct AicTimingModel {
+    group_model: Option<Arc<ForwardPassPerfModel>>,
+    group_phase_cache:
+        quick_cache::sync::Cache<Vec<(u32, u32, u32, u32, u32)>, Arc<ValidatedTimingPhase>>,
     engine: Py<PyAny>,
     diagnostic_model: Option<Arc<ForwardPassPerfModel>>,
     fpm_model: Option<Arc<ForwardPassPerfModel>>,
@@ -573,6 +576,8 @@ impl AicTimingModel {
         let native = model.native_engine().context(
             "AIC regression estimator is not ready: offline replay requires trained observations or a native estimator"
         )?;
+        let group_timing =
+            worker_type != ForwardPassWorkerType::Aggregated && native.supports_ascend_dp_timing();
         let phase_provider = AicPhaseProvider::Native(Arc::clone(&native));
         let engine = Python::with_gil(|py| -> PyResult<_> {
             Ok(Py::new(py, crate::AicEngine::from_shared_engine(native))?.into_any())
@@ -583,6 +588,8 @@ impl AicTimingModel {
             None
         };
         Ok(Self {
+            group_model: group_timing.then(|| Arc::clone(&model)),
+            group_phase_cache: quick_cache::sync::Cache::new(128),
             engine,
             fpm_model: use_fpm_decode_totals.then(|| Arc::clone(&model)),
             diagnostic_model: Some(model),
@@ -802,6 +809,47 @@ fn phase_evidence_from_entries(
 }
 
 impl TimingModel for AicTimingModel {
+    fn supports_group_timing(&self) -> bool {
+        self.group_model.is_some()
+    }
+
+    fn predict_group_ms(&self, metrics: &[crate::ForwardPassMetrics]) -> Result<f64> {
+        let model = self
+            .group_model
+            .as_ref()
+            .context("AIC synchronized DP timing is not configured")?;
+        let key = metrics
+            .iter()
+            .map(|rank| {
+                let scheduled = &rank.scheduled_requests;
+                (
+                    scheduled.num_prefill_requests,
+                    scheduled.sum_prefill_tokens,
+                    scheduled.sum_prefill_kv_tokens,
+                    scheduled.num_decode_requests,
+                    scheduled.sum_decode_kv_tokens,
+                )
+            })
+            .collect::<Vec<_>>();
+        let phase = if let Some(phase) = self.group_phase_cache.get(&key) {
+            phase
+        } else {
+            let operations = model.estimate_ascend_dp_operations(metrics)?;
+            let phase = Arc::new(phase_evidence_from_native_entries(operations)?);
+            self.group_phase_cache.insert(key, Arc::clone(&phase));
+            phase
+        };
+        if phase.as_phase().latency_ms > 0.0 {
+            self.record_evidence(
+                &phase,
+                metrics
+                    .iter()
+                    .any(|rank| rank.scheduled_requests.sum_prefill_tokens > 0),
+            )?;
+        }
+        Ok(phase.as_phase().latency_ms)
+    }
+
     fn prefill_batch_validation_can_fail(&self) -> bool {
         self.decoder_replay
     }
@@ -3591,6 +3639,8 @@ mod tests {
 
     fn python_timing_model(engine: Py<PyAny>, use_fpm_decode_totals: bool) -> AicTimingModel {
         AicTimingModel {
+            group_model: None,
+            group_phase_cache: quick_cache::sync::Cache::new(128),
             engine,
             diagnostic_model: None,
             fpm_model: None,

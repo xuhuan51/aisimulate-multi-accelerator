@@ -30,6 +30,7 @@ pub(super) struct DecodeResult {
     pub(super) new_token_ratio_estimate: Option<f64>,
     pub(super) end_ms: f64,
     pub(super) decode_acceptance: DecodeAcceptance,
+    pub(super) scheduled_decode_lens: Vec<u64>,
 }
 
 /// What a scheduler pass asks the step simulation to do with `running`.
@@ -525,6 +526,10 @@ fn simulate_step(
     };
 
     output_signals.reserve(running.len());
+    let scheduled_decode_lens = running
+        .iter()
+        .map(|request| request.current_sequence_len() as u64)
+        .collect();
     let mut completed_indices = Vec::new();
     let mut decode_acceptance = DecodeAcceptance::default();
 
@@ -601,5 +606,6 @@ fn simulate_step(
         new_token_ratio_estimate,
         end_ms: current_time_ms + total_time.as_secs_f64() * 1000.0,
         decode_acceptance,
+        scheduled_decode_lens,
     })
 }

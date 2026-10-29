@@ -217,7 +217,9 @@ def configure_ascend_glm52(model, raw_config):
                 else operation
             )
 
-        def collective(name, operation, ranks, count=1, shard=False, global_tokens=False, width=6144, requests=False):
+        def collective(
+            name, operation, ranks, count=1, shard=False, global_tokens=False, width=6144, requests=False, dp_mode=None
+        ):
             if ranks == 1:
                 return None
             elements = width * (attention_dp if global_tokens else 1)
@@ -225,7 +227,7 @@ def configure_ascend_glm52(model, raw_config):
             if not context:
                 elements *= padding // split
                 split = padding
-            return {
+            result = {
                 "Hccl": {
                     "name": phase + "_" + name,
                     "scale_factor": float(count),
@@ -238,10 +240,14 @@ def configure_ascend_glm52(model, raw_config):
                         "execution_mode": mode,
                     },
                     "elements_per_token": elements,
-                    "token_split": split,
+                    "token_split": split * (attention_dp if global_tokens else 1),
                     "token_axis": "requests" if requests else "tokens",
+                    "dp_padding_mode": dp_mode,
                 }
             }
+            return (
+                {"TokenScale": {"op": result, "numerator": attention_dp, "denominator": 1}} if global_tokens else result
+            )
 
         def attention_op(name, operation, count, local_heads):
             return {
@@ -374,19 +380,39 @@ def configure_ascend_glm52(model, raw_config):
         else:
             entries.extend(
                 [
-                    collective("dense_attention_reduce_scatter", "reduce_scatter", local_tp, 3),
-                    collective("dense_input_gather", "all_gather", global_tp, 3, shard=True),
-                    collective("dense_output_reduce_scatter", "reduce_scatter", global_tp, 3, global_tokens=True),
-                    collective("dense_output_gather", "all_gather", local_tp, 3, shard=True),
+                    collective("dense_attention_reduce_scatter", "reduce_scatter", local_tp, 3, dp_mode="max_len"),
+                    collective("dense_input_gather", "all_gather", global_tp, 3, shard=True, dp_mode="max_len"),
+                    collective(
+                        "dense_output_reduce_scatter",
+                        "reduce_scatter",
+                        global_tp,
+                        3,
+                        global_tokens=True,
+                        dp_mode="max_len",
+                    ),
+                    collective("dense_output_gather", "all_gather", local_tp, 3, shard=True, dp_mode="max_len"),
+                    collective("dense_global_sums", "all_reduce", global_tp, 6, global_tokens=True, dp_mode="sum_len"),
                 ]
             )
             if tensor_moe:
                 entries.extend(
                     [
-                        collective("sparse_attention_reduce_scatter", "reduce_scatter", local_tp, 75),
-                        collective("sparse_input_gather", "all_gather", global_tp, 75, shard=True),
-                        collective("sparse_output_reduce_scatter", "reduce_scatter", global_tp, 75, global_tokens=True),
-                        collective("sparse_output_gather", "all_gather", local_tp, 75, shard=True),
+                        collective(
+                            "sparse_attention_reduce_scatter", "reduce_scatter", local_tp, 75, dp_mode="max_len"
+                        ),
+                        collective("sparse_input_gather", "all_gather", global_tp, 75, shard=True, dp_mode="max_len"),
+                        collective(
+                            "sparse_output_reduce_scatter",
+                            "reduce_scatter",
+                            global_tp,
+                            75,
+                            global_tokens=True,
+                            dp_mode="max_len",
+                        ),
+                        collective("sparse_output_gather", "all_gather", local_tp, 75, shard=True, dp_mode="max_len"),
+                        collective(
+                            "sparse_global_sums", "all_reduce", global_tp, 150, global_tokens=True, dp_mode="sum_len"
+                        ),
                     ]
                 )
         routed = [

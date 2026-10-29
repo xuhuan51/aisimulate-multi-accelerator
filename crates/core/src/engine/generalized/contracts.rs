@@ -326,6 +326,10 @@ pub trait RankEngine: Sized {
         now_ms: f64,
     ) -> Result<RankPass<Self::PassStartEffects, Self::PendingPass>>;
 
+    fn group_duration_ms(&self, _pending: &[(u32, &Self::PendingPass)]) -> Result<Option<f64>> {
+        Ok(None)
+    }
+
     /// Release the effects of a previously committed pass.
     fn complete_pass(
         &mut self,

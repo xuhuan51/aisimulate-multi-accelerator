@@ -1249,7 +1249,7 @@ impl SglangCore {
                         p.tokens_computed as u64,
                     )
                 }),
-            scheduled_decode_lens.into_iter(),
+            std::mem::take(&mut decode.scheduled_decode_lens).into_iter(),
             std::iter::empty(),
             std::iter::empty(),
             (decode.end_ms - now_ms) / 1000.0,

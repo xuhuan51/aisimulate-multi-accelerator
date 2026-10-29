@@ -847,6 +847,7 @@ mod tests {
                 elements_per_token: 6144,
                 token_split: 1,
                 token_axis: crate::operators::ascend_linear::AscendLinearTokens::Tokens,
+                dp_padding_mode: None,
             }),
             OpSpec::AscendLinear(crate::operators::AscendLinearOp {
                 name: "ascend_o_proj".into(),

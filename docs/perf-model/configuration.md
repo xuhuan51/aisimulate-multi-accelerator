@@ -243,7 +243,28 @@ execution is also serialized in the reference deployment. Model execution
 mode selection alone does not qualify end-to-end accuracy or include unmeasured
 host launch overhead.
 
-EngineSpec binary schema 30 adds the attention eager-alignment policy. Rebuild
+For SGLang PD workers with attention DP greater than one and DCP1, native
+execution gathers the committed batch metrics for every rank before estimating
+the shared forward duration. Idle ranks contribute zero active tokens. The
+Ascend operator model aligns each rank's tokens to attention TP and selects
+the pinned runtime's MAX_LEN or SUM_LEN padding policy. Prefill uses SUM_LEN;
+eager decode uses MAX_LEN when twice the aligned token sum is at least the
+maximum aligned length times DP. Captured decode uses a shared graph bucket.
+Global dense/tensor-MoE work uses the resulting global buffer; attention
+retains each rank's active sequences. SUM_LEN gather/combine uses the measured
+all-reduce branch. Expert receive counts still assume balanced routing, and
+DeepEP time uses the measured maximum-sender profile; a nonuniform transport
+profile is not inferred from it. Mixed prefill/decode groups remain unsupported
+by this synchronized timing path. Aggregated execution retains its prior model.
+
+Direct forward-pass queries with multiple rank entries require the complete DP
+vector, including idle entries. A single entry retains the historical uniform
+rank estimate. Missing padded attention measurements continue to fail explicitly.
+Per-operation evidence describes the critical rank; it is not a sum of energy
+across all ranks or nodes.
+
+EngineSpec binary schema 31 adds conditional DP communication branches, following
+schema 30's attention eager-alignment policy. Rebuild
 the native extension together with the Python model composition; older binary
 payloads are rejected rather than decoded using the new positional layout.
 

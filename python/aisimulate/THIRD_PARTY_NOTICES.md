@@ -719,6 +719,24 @@ at revision `baa9befa381511cd4d56f83980951e5a45fffc6d` in the same SGLang source
 Copyright 2023-2026 SGLang Team and SGLang contributors; Apache-2.0.
 The Rust implementation is independently written and modified for native simulation.
 
+
+The synchronized attention-DP shape model in
+`crates/core/src/perfmodel/engine/ascend_dp.rs`, the Ascend GLM operator
+composition in `python/aisimulate/src/aisimulate_core/sdk/models/ascend_glm52.py`,
+and their independently written tests reimplement and modify the MAX_LEN /
+SUM_LEN behavioral contracts of `python/sglang/srt/layers/dp_attention.py`,
+`python/sglang/srt/model_executor/forward_batch_info.py`,
+`python/sglang/srt/layers/layer_boundary/exit.py`, and
+`python/sglang/srt/utils/common.py` at immutable revision
+`baa9befa381511cd4d56f83980951e5a45fffc6d` (Copyright 2023-2026 SGLang Team
+and contributors; Apache-2.0). Runtime source is not bundled. The source
+oracle `benchmarks/evidence/ascend910c-glm52-w8a8/production/check_dp_padding.py`
+executes the original alignment and DP selection functions from a separately
+supplied, hash-checked source snapshot with pinned non-device settings.
+Its generated `production/scheduler-audit-node20-20261030/dp-padding-oracle.json`
+records source hashes, inputs, and outputs. Expert receive counts still assume
+balanced routing; DeepEP timing uses the measured maximum-sender profile.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

@@ -560,6 +560,9 @@ fn committed_decode_membership_excludes_retracted_requests() {
     }
     let pass = core.execute_hidden_pass(0.0);
     assert_eq!(pass.committed_requests, vec![completed]);
+    let metrics = pass.fpm.as_ref().unwrap();
+    assert_eq!(metrics.num_decode_requests, 1);
+    assert_eq!(metrics.sum_decode_kv_tokens, 4);
     assert!(
         pass.output_signals
             .iter()

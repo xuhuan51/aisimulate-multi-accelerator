@@ -283,6 +283,28 @@ impl<C: RankEngine> GeneralizedMockerEngine<C> {
             });
         }
 
+        let group_timing = self.ranks[0]
+            .group_duration_ms(
+                &pending
+                    .iter()
+                    .map(|rank| (rank.dp_rank, &rank.pending))
+                    .collect::<Vec<_>>(),
+            )
+            .and_then(|duration| {
+                if let Some(duration) = duration {
+                    validate_time(duration, "group pass duration")?;
+                    validate_time(now_ms + duration, "group pass end time")?;
+                }
+                Ok(duration)
+            })
+            .map_err(|error| self.poison(error))?;
+        if let Some(duration) = group_timing {
+            end_ms = now_ms + duration;
+            for rank in &mut started {
+                rank.rank_end_ms = end_ms;
+            }
+        }
+
         let any_rank_prefilled = self.ranks.iter().any(RankEngine::prefill_in_pass);
         let any_rank_ran_model = self.ranks.iter().any(RankEngine::model_work_in_pass);
         for rank in &mut self.ranks {

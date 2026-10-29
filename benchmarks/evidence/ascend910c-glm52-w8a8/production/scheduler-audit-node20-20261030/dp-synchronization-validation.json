@@ -1,0 +1,132 @@
+{
+  "scope": "Native pure-PD attention-DP batch geometry and source behavior; not end-to-end accuracy qualification",
+  "source_parent": "e6c5a9ab",
+  "native": {
+    "wheel": "build/scheduler-audit-20261030/dp-shapes-final-wheels/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl",
+    "native_sha256": "e91bc58e52a8aa3986fd54c3191ad0ef9848d2ce5fd22a3ce6c2ce1b4a4b2541",
+    "wheel_sha256": "4212f3fee4b4d69125bf63b9c62c6b964eb73837d06fbef56cd792f4c67643df",
+    "engine_spec_schema": 31
+  },
+  "tests": {
+    "pinned_source_cases": 306,
+    "core_passed": 2080,
+    "core_ignored": 1,
+    "post_retraction_sglang_passed": 84,
+    "python_glm_passed": 28,
+    "final_native_required_parities": 390,
+    "final_native_boundary_tests": 5
+  },
+  "coverage": {
+    "queries": 1264,
+    "successful": 1140,
+    "missing_eager_padding_planes": 72,
+    "ep32_eager_deepep_bounds": 52
+  },
+  "searches": [
+    {
+      "input_tokens": 8192,
+      "output_tokens": 1024,
+      "concurrency": 8,
+      "requests": 8,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 6,
+        "failed": 0,
+        "feasible": 6,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "best_parallelism": {
+        "decode": {
+          "attention_data": 2,
+          "moe_expert": 16,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 1,
+          "tensor": 8
+        },
+        "prefill": {
+          "attention_data": 2,
+          "moe_expert": 16,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 3,
+          "tensor": 8
+        }
+      },
+      "best_metrics": {
+        "completed_requests": 8.0,
+        "mean_ttft_ms": 3260.177860875951,
+        "mean_tpot_ms": 201.352781949169,
+        "output_throughput_tok_s": 38.81456025068595,
+        "duration_ms": 211054.81930212586
+      },
+      "saved_replay_differences": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "output_tokens": 1024,
+      "concurrency": 8,
+      "requests": 8,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 6,
+        "failed": 0,
+        "feasible": 6,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "best_parallelism": {
+        "decode": {
+          "attention_data": 2,
+          "moe_expert": 16,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 2,
+          "tensor": 8
+        },
+        "prefill": {
+          "attention_data": 2,
+          "moe_expert": 16,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 2,
+          "tensor": 8
+        }
+      },
+      "best_metrics": {
+        "completed_requests": 8.0,
+        "mean_ttft_ms": 119017.88050718988,
+        "mean_tpot_ms": 201.11873303323557,
+        "output_throughput_tok_s": 18.918449462937215,
+        "duration_ms": 433016.459200253
+      },
+      "saved_replay_differences": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      }
+    }
+  ],
+  "archive": "dp-synchronization-validation-evidence.tar.gz",
+  "archive_sha256": "6456623e796d7689907c0fc14a2ed28885c237e98d9488e56bdee86538b5cd5e",
+  "remaining": [
+    "Uniform-profile approximation for nonuniform DeepEP and balanced expert routing",
+    "Within-rank KV averaging and mixed-phase aggregated DP timing",
+    "EP32 eager DeepEP bounds and DCP eager profiles",
+    "PD network contention, release boundaries and host overhead",
+    "Matched eager/no-overlap serving measurements absent"
+  ]
+}
