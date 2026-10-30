@@ -791,7 +791,7 @@ chunk边界，因此结果不变。搜索和保存YAML后直接回放的主要�
 `pd-chunks-validation.json`、`pd-chunks-evidence.tar.gz`，包含修复过程中发现并解决的
 页容量回归记录，没有通过修改冻结golden掩盖偏差。
 
-本机 `aisimulate-910c:glm52-w8a8` 现已更新到本节代码 `a63007f2`，镜像ID为
+完成本节时，本机 `aisimulate-910c:glm52-w8a8` 更新到代码 `a63007f2`，当时镜像ID为
 `sha256:a15e49a0bc8af505b8d67c3f444c5ca9f6c59d56caffe81bdf4958fb001faff2`。
 安装后的8K/1K和32K/1K搜索均为2/2候选可行，各候选主要指标与源码一致。
 旧镜像保留为 `aisimulate-910c:before-pd-chunks-20261030`。身份、表SHA和安装证据见
@@ -845,3 +845,10 @@ token/s，与修复前一致。这些例子没有触发新增的内存压力分�
 本节验证汇总和完整日志归档分别为同目录下的 `prefill-token-kv-validation.json`
 和 `prefill-token-kv-evidence.tar.gz`。仍需核对跨请求发送队列争用，并获取同配置的
 graph/overlap关闭实测，才能判断端到端预测误差是否收敛。
+
+本机默认镜像已安装本节代码 `c2dbc647`，镜像ID为
+`sha256:e8ae21781a74c1819be38712b43af39a95ca539927c7598159b61bcad3555edf`。
+安装后的两组PD搜索和合并部署指标均与源码一致，原生库、schema31及10张算子表的
+SHA也逐项匹配。安装记录见 `prefill-token-kv-runtime-publication.json`，日志见
+`prefill-token-kv-runtime-evidence.tar.gz`。上一版保留为
+`aisimulate-910c:before-prefill-kv-20261030`。

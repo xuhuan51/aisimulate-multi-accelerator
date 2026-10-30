@@ -1749,6 +1749,22 @@
           "scope": "validation",
           "sha256": "54def7a23a294b8c2db80f7b63f0fc8323d60b93ed7d8939b6faaa93e04723cd"
         },
+        "prefill_token_kv_runtime_evidence_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/prefill-token-kv-runtime-evidence.tar.gz",
+          "scope": "validation",
+          "sha256": "ffca2aa00340c2155201576b8294f5a7a7f42693d26fad690a24e9674e3aee05"
+        },
+        "prefill_token_kv_runtime_publication_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/prefill-token-kv-runtime-publication.json",
+          "scope": "validation",
+          "sha256": "40cfc45f2b4e45be9b629c0d91efecce46c993046f83f4eb491eb67bb0ef617d"
+        },
         "prefill_token_kv_validation_20261030": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -2147,10 +2163,10 @@
           "Original multi-case transport SIGSEGV unresolved; only isolated samples published",
           "Matched eager/no-overlap serving measurements absent; configured full weights unavailable on19/20",
           "Nonuniform sender traffic and expert skew approximations",
-          "Cross-request PD sender contention, host/bootstrap/metadata costs; aggregate first-output KV accounting still needs correction",
+          "Cross-request PD sender contention, host/bootstrap/metadata costs",
           "DCP eager profiles missing"
         ],
-        "next_action": "Publish verified prefill first-token KV runtime; continue sender queue contention and matched eager serving validation.",
+        "next_action": "Continue pinned-runtime cross-request sender queue/transport contention and host costs; obtain matched graph/overlap-off forward and serving measurements before accepting accuracy or PD/parallelism rankings.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2214,7 +2230,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Continue pinned-runtime sender contention and aggregate sampled-token KV accounting; obtain matched graph/overlap-off serving measurements before accepting prediction accuracy.",
+    "next_action": "Continue pinned-runtime cross-request sender queue/transport contention and host costs; obtain matched graph/overlap-off forward and serving measurements before accepting accuracy or PD/parallelism rankings.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3008,6 +3024,7 @@
       "pd_routing_validation": "Selectable two-level replica/rank round robin implemented, propagated through search/save/replay. Rust2072+34contracts,Python473config+513runner+5native,390parities pass. Functional 8K/32K searches completed six PD ratios each; no ranking accuracy claim.",
       "pd_source_release": "SGLang source release and destination activation now proceed independently after transfer completion, each at its own worker boundary. P router accounting retires when source KV is released. Native2083 pass1ignored; pinned source7 cases pass. Runtime not yet rebuilt. Next: audit prebuilt first-token emission, chunk KV sending and sender queues.",
       "prefill_sampled_token_kv_progress": "Ordinary prefill first output now remains unmaterialized until decode consumes it, matching pinned v0.5.22 source bodies.12 CPU oracle cases pass. Final Rust regression in progress; earlier full run2094passed2failed1ignored exposed two fixtures depending on premature page allocation, now corrected. Canonical installed runtime remains chunk phase; no serving accuracy acceptance.",
+      "prefill_sampled_token_kv_publication": "Installed c2dbc647 runtime image e8ae21781a74c1819be38712b43af39a95ca539927c7598159b61bcad3555edf. NativeSHA e3a44d67c4515e23a728a82a661475f1cb892c040d1613b5543e98c5684dede4, schema31 and all10tables match. Both finite PD searches2/2feasible plus aggregate8K1K source/installed metrics identical. Rollback retained as before-prefill-kv-20261030. Accuracy remains unaccepted.",
       "prefill_sampled_token_kv_validation": "Core2096pass1ignored;390frozen GPU/model parity pass;140GLM/public API pass1known stale-signature assertion deselected;12source-body oracle cases pass;2278packagefiles/10tables match. Both finite PD searches and aggregate8K1K regression reproduce previous metrics; saved YAML replay matches. Installed runtime publication pending; serving accuracy unaccepted.",
       "primary_digest": "sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443",
       "primary_runtime": "v0.5.22-cann9.1.0-a3 / baa9befa381511cd4d56f83980951e5a45fffc6d",
@@ -3021,6 +3038,7 @@
       "runtime_publication": "Installedsha256:ad6c9516f492ea933fdd083c0d5f5ec38d1cc5c2f908b8382e0e260a3b325937 frome53c91d3812700e633ce108f5a85d7050a130928;schema30;2159packagedfiles matchcommittedsource. Public installedpredict andsixratiosearch pass. Finalbinary390parities+5nativecontracttests;finalscheduler84regressions. Eagerattention2943newrows,6739total. Fullbatch1..32probe2394/2560 success;all166failuresEP32eagerDeepEPaxis. Accuracyunqualified; native DPuniform shape approximation andtransfer/hostdetails remain.",
       "search_feasibility": "Use known single-turn synthetic ISL+OSL only for KV preflight; preserve runtime context180000 and saved role limits. 8K12candidates and32K6legalPDcandidates completed. Both saved top candidates reproduce completed requests,TTFT,TPOT,throughput exactly. 32KTP4ADP4 is genuinely KV-infeasible; independent parallel axes correctly prune >64device combinations.",
       "search_validation": "Focusedsearch45passed;broader205passed5failedbecauseofflinecontainercannotdownloadHuggingFacemetadata. Short8requestreplays validate pipeline only,notservingaccuracyorsteadystateoptimum.",
+      "sender_queue_followup": "Read-only CPU execution of unmodified v0.5.22/v0.5.20 add_transfer_request bodies confirms same-peer FIFO and different-peer hash collisions: destination session port sum modulo configured queue count. Per-request FIFO alone is insufficient. Actual per-sender service and port layout are not captured by isolated whole-transfer curves; no global contention multiplier or new accuracy claim introduced.",
       "status": "in_progress",
       "synchronized_dp_timing": "Implemented pure-PD DCP1 group timing using committed per-rank batches including idle ranks, pinned MAX_LEN/SUM_LEN selection, global dense/expert shapes and conditional HCCL. Corrected post-retraction decode telemetry. Schema31 staging native e91bc58e52a8aa3986fd54c3191ad0ef9848d2ce5fd22a3ce6c2ce1b4a4b2541; runtime publication pending expanded padding profiles. Tests306 sourcecases,2080core+84SGLang,28GLM,390parities+5boundary passed. 8K/32K each6ratios completed and saved-best metrics identical. Expanded probe1140/1264 successful;72missing padding,52EP32eagerDeepEP. Extra3360coordinates collected;2numerical failures quarantined and102CVcases repeated once.",
       "validation": "Rust2063passed1ignored;bothparitysuites390passed;GLMmodel19passed. Prior DCP2negativeKVtest reproduced as obsolete on unchanged old installed wheel. Native eager2requestPDreplaycompleted."
@@ -3112,7 +3130,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 96,
+  "revision": 97,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }
