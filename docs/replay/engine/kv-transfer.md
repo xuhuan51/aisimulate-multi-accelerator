@@ -106,6 +106,14 @@ worker can delay activation without keeping KV pinned on an idle prefill worker.
 The handoff completes after both actions finish. For vLLM and TensorRT-LLM,
 source release follows destination activation.
 
+SGLang returns the token already sampled by prefill when the destination admits
+the received request into its prebuilt batch. This output is visible before the
+next decode forward, including when another attention-DP rank runs a longer
+batch. A one-token output completes at that admission boundary; an N-token
+output needs N-1 ordinary decode steps. Prebuilt output does not increment decode
+acceptance counters or materialize an additional KV token. Its first decode
+forward reads the prompt plus the sampled token.
+
 TensorRT-LLM decode workers use `GUARANTEED_NO_EVICT` scheduling, which reserves
 room for the whole output while transferred KV is held.
 

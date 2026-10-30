@@ -233,6 +233,7 @@ pub(crate) struct EnginePassResult {
     #[cfg(test)]
     pub(crate) completed_requests: usize,
     pub(crate) output_signals: Vec<OutputSignal>,
+    pub(crate) start_output_signals: Vec<OutputSignal>,
     pub(crate) admissions: Vec<AdmissionEvent>,
     /// KV-pressure actions committed while selecting this pass.
     pub(crate) pressure_events: Vec<PressureEvent>,
@@ -779,12 +780,14 @@ mod tests {
             let blocked_handoff = HandoffId::from(Uuid::from_u128(36_100 + case as u128));
             let owner_request = Uuid::from_u128(36_200 + case as u128);
             let fresh_request = Uuid::from_u128(36_400 + case as u128);
+            let mut owner_payload = request(owner_request, (100..108).collect());
+            owner_payload.max_output_tokens = 3;
 
             let owner = destination
                 .apply_command_effects(
                     SchedulerCommand::ReserveDestination {
                         handoff_id: owner_handoff,
-                        request: request(owner_request, (100..108).collect()),
+                        request: owner_payload,
                     },
                     true,
                 )

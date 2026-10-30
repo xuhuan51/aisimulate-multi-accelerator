@@ -2345,6 +2345,7 @@ impl VllmCore {
             completed_requests: requests_before.saturating_sub(self.state.requests.len()),
             output_signals,
             admissions,
+            start_output_signals: Vec::new(),
             pressure_events: std::mem::take(&mut self.pressure_events),
             lifecycle_events: std::mem::take(&mut self.lifecycle_events),
             mocker_metrics: self.mocker_metrics(),

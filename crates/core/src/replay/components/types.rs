@@ -12,7 +12,7 @@ use crate::engine::{
 };
 use crate::replay::core::RequestIdentity;
 use crate::replay::loadgen::ReplayRequestPayload;
-use crate::replay::protocol::DirectRequest;
+use crate::replay::protocol::{DirectRequest, OutputSignal};
 use crate::replay::telemetry::ReplayTrafficMetricsSnapshot;
 
 impl RequestIdentity for DirectRequest {
@@ -150,6 +150,7 @@ pub(crate) struct ArtifactPassStart {
 #[derive(Debug, Default)]
 pub(crate) struct EngineEffects<Events: EngineEventBatch = ()> {
     pub(crate) admissions: Vec<AdmissionEvent>,
+    pub(crate) start_output_signals: Vec<OutputSignal>,
     pub(crate) pressure_events: Vec<PressureEvent>,
     pub(crate) pass_start_events: Events,
     pub(crate) artifact_pass_start: Option<Box<ArtifactPassStart>>,
@@ -161,6 +162,7 @@ pub(crate) struct EngineEffects<Events: EngineEventBatch = ()> {
 impl<Events: EngineEventBatch> EngineEffects<Events> {
     pub(crate) fn has_observable_pass_start(&self) -> bool {
         !self.admissions.is_empty()
+            || !self.start_output_signals.is_empty()
             || !self.pressure_events.is_empty()
             || !self.pass_start_events.is_empty()
             || self.artifact_pass_start.is_some()
@@ -187,6 +189,7 @@ impl<Events: EngineEventBatch> EngineEffects<Events> {
 
     pub(crate) fn is_empty(&self) -> bool {
         self.admissions.is_empty()
+            && self.start_output_signals.is_empty()
             && self.pressure_events.is_empty()
             && self.pass_start_events.is_empty()
             && self.artifact_pass_start.is_none()

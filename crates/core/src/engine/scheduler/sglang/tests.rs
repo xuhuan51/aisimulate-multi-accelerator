@@ -1112,7 +1112,7 @@ mod destination_lifecycle {
         let activated = activated_pass.fpm.unwrap();
         assert_eq!(activated.num_queued_prefill, 0);
         assert_eq!(activated.num_queued_decode, 1);
-        assert_eq!(activated.sum_queued_decode_kv_tokens, 4);
+        assert_eq!(activated.sum_queued_decode_kv_tokens, 5);
 
         let completed = execute(&mut core, activated_pass.end_ms).fpm.unwrap();
         assert_eq!(completed.num_queued_decode, 0);
@@ -1384,7 +1384,7 @@ mod destination_lifecycle {
         drive_source_to_hold(
             &mut source,
             handoff_id,
-            request(logical_uuid, logical_tokens.clone(), 2),
+            request(logical_uuid, logical_tokens.clone(), 3),
         );
 
         let usage_before_reservation = occupied_tokens(&destination);
@@ -1392,7 +1392,7 @@ mod destination_lifecycle {
             .apply_command_effects(
                 SchedulerCommand::ReserveDestination {
                     handoff_id,
-                    request: request(logical_uuid, logical_tokens, 2),
+                    request: request(logical_uuid, logical_tokens, 3),
                 },
                 true,
             )
@@ -1430,6 +1430,8 @@ mod destination_lifecycle {
             .prebuilt_request(logical_uuid)
             .expect("activated request must be prebuilt-ready");
         assert_eq!(ready.kv_pages(), reserved_pages);
+        assert_eq!(ready.output_len(), 1);
+        assert_eq!(ready.materialized_tokens, ready.prompt_len());
         assert_eq!(destination.running.len(), 1);
         assert!(destination.kv_manager.cache().protected_size >= protected_before_activation);
         let activation_stores = stored_hashes(&destination.drain_kv_events());
@@ -1480,6 +1482,10 @@ mod destination_lifecycle {
             .collect::<Vec<_>>();
         assert_eq!(logical_admissions.len(), 1);
         assert_eq!(logical_admissions[0].reused_input_tokens, 0);
+        assert_eq!(admitted.start_output_signals.len(), 1);
+        assert_eq!(admitted.start_output_signals[0].uuid, logical_uuid);
+        assert!(!admitted.start_output_signals[0].completed);
+        assert_eq!(admitted.output_signals.len(), 1);
         let running = destination
             .running
             .iter()

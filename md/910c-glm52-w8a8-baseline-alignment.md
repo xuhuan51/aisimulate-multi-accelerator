@@ -451,7 +451,8 @@ EP16 eager、tensor-MoE eager和所有graph测试均成功。
 - PD的attention-DP算子组合已按各rank实际batch推导MAX_LEN/SUM_LEN，见第16节。
   不同rank混合prefill/decode、非均匀DeepEP传输曲线及真实MoE路由仍需继续核验。
 - 历史P router使用cache-aware，新基线选择round-robin；两者请求分布不完全相同。
-- PD多路同时传输的带宽竞争、真实发送结束与P释放资源的边界、CPU调度和HTTP开销尚需匹配实测。
+- P释放资源及D返回首token的边界已按源码修复，见第19、20节。
+  PD多路同时传输的带宽竞争、chunk发送、CPU调度和HTTP开销尚需继续核验。
 - EP32 eager DeepEP的balanced曲线已补齐1～32 token范围，见第18节；
   DCP eager仍缺少实测profiles，不能借用graph时间。
 - 历史DOCX的overlap/graph及采样参数没有完全固定，不能作为关闭两者后的准确性验收。
@@ -686,3 +687,45 @@ Rust 核心测试2083通过、1忽略；固定源码的7个轮询用例验证成
 并检查再次轮询不会重复释放。证据位于
 `production/scheduler-audit-node20-20261030/pd-release-validation.json`。
 这是调度因果顺序验证，不能视作整机准确性验收；运行包将在本轮调度修复完成后更新。
+
+## 20. PD 首 token 与 decode 轮数（2026-10-30）
+
+固定运行时在接收元数据时已保存 P 端采样出的首 token。D 端把请求加入 prebuilt batch
+后，先执行 `process_batch_result_prebuilt` 返回这个 token，再执行
+`update_running_batch` 准备下一轮 decode。v0.5.20 与 v0.5.22 的这段选批函数 AST 一致；
+结果处理函数只在释放 KV 时是否显式传入 `checkpoint=True` 上有差异。
+
+此前模拟器虽然接收了提示词 KV，却从零输出开始执行 D forward，导致首 token 多等一轮
+decode，1024 输出也多计算一轮。现已在调度轮次开始时报告 prebuilt 输出，普通 decode
+输出仍在计算结束时报告；输出1个 token 的请求可在 prebuilt 准入时直接完成。
+一般输出 N 个 token 需要 N-1 轮普通 decode，不包括另行配置的投机解码等情况。
+
+这项修复同时处理两点：P 已生成的首 token 尚未拥有计算过的 KV，不能提前增加 KV 用量；
+第一轮 D forward 的上下文应包含提示词与这个首 token。对应的 KV 页面增长和最终缓存
+只按已物化 token 计算。prebuilt 输出也不计入 decode acceptance 的 forward 次数。
+
+确定性验证以 P=1ms、D=10ms 为例：输出1/2/4个 token 的 TTFT 均为1ms，完成时间分别为
+1/11/31ms。另一个 DP rank 正在执行 decode 时，当前 rank 的单 token 完成仍发生在
+1ms，不能被推迟到11ms。D 的 running batch 已满时仍需先等到准入空位。
+24个原始源码函数用例覆盖单/多请求、已有 running batch、是否启用 radix cache 和短输出。
+源码 oracle 与版本比较保存在 `production/scheduler-audit-node20-20261030/pd-prebuilt-*.json`。
+
+这一修正消除了确定的一轮时序偏差，不代表能解释此前 DOCX 中全部 TTFT/TPOT 差距。
+chunk KV 传输、多个发送队列间的竞争、host 开销以及同配置实测仍需继续对齐。
+
+重复第18节相同并行布局、相同有限候选集的完整1024输出搜索，并重放保存的首选配置：
+
+| 输入/输出 | 并发/请求数 | 首选 | 修复前TTFT(ms) | 修复后TTFT(ms) | 修复后TPOT(ms) | 输出tok/s |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| 8192/1024 | 32/32 | 2P1D | 11263.694 | 11040.638 | 223.100 | 132.205 |
+| 32768/1024 | 8/8 | 2P1D | 16132.604 | 15909.741 | 223.066 | 32.840 |
+
+两个搜索均2/2候选可行，保存配置的重放与搜索主要指标一致。这里每个D实例仍占两个节点，
+2P1D实际使用2个P节点和2个D节点。TTFT减少约223ms，TPOT基本不变；不能据此声称原有
+实测差距已经解决，更不能把两候选的首选当作全部并行策略的最优解。
+
+最终原生核心测试2086通过、1忽略，两套GPU/模型parity共390通过，原生库SHA为
+`a53db3bb92d56c7128e9cde7d075cbefae7ccc0c2a29a4a8d460e177af5c6def`。
+GLM与公共API测试140通过、1失败：既有签名断言漏写`op_level_options`，已核对旧运行包
+与当前代码的签名完全一致，本阶段未改Python公共API。保留该失败记录，不把测试全绿
+作为结论。验证摘要与完整日志归档分别为`pd-prebuilt-validation.json`、`pd-prebuilt-evidence.tar.gz`。

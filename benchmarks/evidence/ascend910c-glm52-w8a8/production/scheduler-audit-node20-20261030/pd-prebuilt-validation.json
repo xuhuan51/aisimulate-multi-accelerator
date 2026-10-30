@@ -1,0 +1,210 @@
+{
+  "upstream_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+  "source_oracle_cases": 24,
+  "core_tests": {
+    "passed": 2086,
+    "failed": 0,
+    "ignored": 1,
+    "command": "cargo test -p aisimulate-core --locked --offline --lib"
+  },
+  "parity_tests": {
+    "passed": 390,
+    "command": "python3 -m pytest -q -c pytest.ini crates/core/parity_tests/perfmodel/test_engine_step_parity.py crates/core/parity_tests/perfmodel/test_compile_engine_parity.py"
+  },
+  "glm_and_public_api_tests": {
+    "passed": 140,
+    "failed": 1,
+    "failure": "test_stable_function_signatures omits preexisting op_level_options parameter. Installed source0d3ce2e0 and current source signatures verified identical; no Python public API was changed in this phase.",
+    "command": "python3 -m pytest -q -c pytest.ini python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py python/aisimulate/tests/cross_package/test_core_public_api.py"
+  },
+  "formatting": {
+    "rustfmt": "passed",
+    "ruff": "passed"
+  },
+  "package": {
+    "wheel": "build/scheduler-audit-20261030/pd-boundary-wheels/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl",
+    "wheel_sha256": "5b163a13f76444d3b3f71f0ff9f74120a1a4b0498d553aa747a30ccf421c2d7a",
+    "native_sha256": "a53db3bb92d56c7128e9cde7d075cbefae7ccc0c2a29a4a8d460e177af5c6def",
+    "engine_spec_schema": 31,
+    "checked_files": 2278,
+    "mismatches": []
+  },
+  "searches": [
+    {
+      "input_tokens": 8192,
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/workspace",
+        "-e",
+        "PYTHONPATH=/workspace/python/aisimulate/src",
+        "aisim-node20-validation-20261027-v2",
+        "python3",
+        "-m",
+        "aisimulate",
+        "predict",
+        "--stack",
+        "engine",
+        "--config",
+        "/workspace/aisimulate-output/pd-boundary-pd-8192-20261030/recommendations/0001.yaml",
+        "--output-dir",
+        "/workspace/aisimulate-output/pd-boundary-pd-8192-20261030/saved-best-replay"
+      ],
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 2,
+        "failed": 0,
+        "feasible": 2,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "best_parallelism": {
+        "decode": {
+          "attention_data": 4,
+          "moe_expert": 32,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 1,
+          "tensor": 8
+        },
+        "prefill": {
+          "attention_data": 2,
+          "moe_expert": 16,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 2,
+          "tensor": 8
+        }
+      },
+      "metrics": {
+        "completed_requests": 32.0,
+        "mean_ttft_ms": 11040.637664875952,
+        "mean_tpot_ms": 223.1004763090176,
+        "output_throughput_tok_s": 132.20450907456788,
+        "duration_ms": 247858.41443212595
+      },
+      "saved_replay_differences": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      },
+      "before_metrics": {
+        "completed_requests": 32.0,
+        "mean_ttft_ms": 11263.693714625953,
+        "mean_tpot_ms": 223.1006126064271,
+        "output_throughput_tok_s": 132.0855665655456,
+        "duration_ms": 248081.60991412593
+      },
+      "change_from_previous": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": -223.05604975000097,
+        "mean_tpot_ms": -0.00013629740948317703,
+        "output_throughput_tok_s": 0.11894250902227554,
+        "duration_ms": -223.19548199998098
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/workspace",
+        "-e",
+        "PYTHONPATH=/workspace/python/aisimulate/src",
+        "aisim-node20-validation-20261027-v2",
+        "python3",
+        "-m",
+        "aisimulate",
+        "predict",
+        "--stack",
+        "engine",
+        "--config",
+        "/workspace/aisimulate-output/pd-boundary-pd-32768-20261030/recommendations/0001.yaml",
+        "--output-dir",
+        "/workspace/aisimulate-output/pd-boundary-pd-32768-20261030/saved-best-replay"
+      ],
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 2,
+        "failed": 0,
+        "feasible": 2,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "best_parallelism": {
+        "decode": {
+          "attention_data": 4,
+          "moe_expert": 32,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 1,
+          "tensor": 8
+        },
+        "prefill": {
+          "attention_data": 2,
+          "moe_expert": 16,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 2,
+          "tensor": 8
+        }
+      },
+      "metrics": {
+        "completed_requests": 8.0,
+        "mean_ttft_ms": 15909.74113162655,
+        "mean_tpot_ms": 223.06604145552302,
+        "output_throughput_tok_s": 32.839546724006276,
+        "duration_ms": 249455.33106312662
+      },
+      "saved_replay_differences": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      },
+      "before_metrics": {
+        "completed_requests": 8.0,
+        "mean_ttft_ms": 16132.60414662655,
+        "mean_tpot_ms": 223.06611115347027,
+        "output_throughput_tok_s": 32.81022474087109,
+        "duration_ms": 249678.26537912665
+      },
+      "change_from_previous": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": -222.86301500000081,
+        "mean_tpot_ms": -6.969794725364409e-05,
+        "output_throughput_tok_s": 0.029321983135183416,
+        "duration_ms": -222.93431600002805
+      }
+    }
+  ],
+  "archive": {
+    "path": "pd-prebuilt-evidence.tar.gz",
+    "sha256": "1380390563b64d7c15832de59c8d1c59d6e214ea5390bb6691fc5b72a4573f0c"
+  },
+  "runtime_publication": "pending",
+  "serving_accuracy": "not assessed against a matched graph/overlap-disabled deployment",
+  "source_file_sha256": {
+    "crates/core/src/engine/protocol.rs": "cad501616a3948acb871bf7d45efe66764c1be566135e746d57eb6c26c516a2d",
+    "crates/core/src/engine/scheduler/mod.rs": "a70ae2bba950a9e4f4baea4f9ca3cf73fdb8d4e6c670ac6f331a44a17605928b",
+    "crates/core/src/engine/scheduler/rank.rs": "2c4e67f5f946ac5fb87cb04925501ccd45140d14f6a633349c6e104b0d20e28b",
+    "crates/core/src/engine/scheduler/sglang/core.rs": "f99d2ae8c0551dcac1bdfb22df55528c7129eca10ecdfae736de43efeafa8803",
+    "crates/core/src/engine/scheduler/sglang/decode.rs": "aad0ec994de976861ff680d629c2d02f7bdb46e78b049caf7c46f4fd3543a109",
+    "crates/core/src/engine/scheduler/sglang/tests.rs": "44c02480e389142ef3684788d3b18074716bd9219cd1e32a00440584030cc98a",
+    "crates/core/src/engine/scheduler/vllm/core.rs": "4c4e5daa797f63ad830285187f5ce27c733aa32c8552c4d407a58fc81957e236",
+    "crates/core/src/replay/agg.rs": "f75a14afddfde922a78d505465fe61c9746c997fc5b6119eef19886ed08a4d51",
+    "crates/core/src/replay/components/engine.rs": "6cf28215ea7ce380ce7de5d2fcb99a9ff676aa0afb82690fd183c22814da07f3",
+    "crates/core/src/replay/components/types.rs": "c10580956af486c613b31195487a4a96bb203fbe00766b32fc089e538ca33bdc",
+    "crates/core/src/replay/disagg.rs": "8ca3ef460b705815e0eff42a347c3f936838e86a55a888c3ea2d7d786cd8a6dd",
+    "crates/core/src/replay/disagg_tests.rs": "0e7ac079052cd2fb39057d5e772f6edfec99f5f2e621e506f1316a7dd9e350cc"
+  }
+}

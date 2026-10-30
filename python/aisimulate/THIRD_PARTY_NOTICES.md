@@ -751,6 +751,19 @@ state-machine implementation; the upstream runtime source is not bundled.
 `production/check_pd_release.py` executes that hash-checked upstream poll body
 with transport/cache stubs and retains its source hash in the generated oracle.
 
+The prebuilt first-token behavior in `crates/core/src/engine/scheduler/sglang/core.rs`,
+`decode.rs`, the scheduler pass-start protocol, replay adapters, and their independent
+regression tests reimplement and modify the behavioral contracts of
+`python/sglang/srt/disaggregation/decode.py` (`get_next_disagg_decode_batch_to_run`)
+and `python/sglang/srt/managers/scheduler_components/batch_result_processor.py`
+(`process_batch_result_prebuilt`) at immutable SGLang revision
+`baa9befa381511cd4d56f83980951e5a45fffc6d` (Copyright 2023-2026 SGLang Team
+and contributors; Apache-2.0). The upstream source is not bundled.
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/check_pd_prebuilt.py`
+executes the hash-checked original bodies with non-device stubs; its generated
+`production/scheduler-audit-node20-20261030/pd-prebuilt-oracle.json` retains
+source identities and event ordering. This does not execute the full serving runtime.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

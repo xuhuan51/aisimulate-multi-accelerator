@@ -2431,6 +2431,10 @@ where
             );
         }
         self.apply_prefill_observations(effects.pass_start_events, KvIngestBoundary::PassStart)?;
+        anyhow::ensure!(
+            effects.start_output_signals.is_empty(),
+            "prefill emitted unexpected prebuilt outputs"
+        );
         for payload in effects.immediate_completions {
             self.process_worker_completion_payload(payload)?;
         }
@@ -2507,6 +2511,9 @@ where
             effects.pass_start_events,
             KvIngestBoundary::PassStart,
         )?;
+        for signal in effects.start_output_signals {
+            self.process_decode_signal(signal)?;
+        }
         for payload in effects.immediate_completions {
             self.process_worker_completion_payload(payload)?;
         }

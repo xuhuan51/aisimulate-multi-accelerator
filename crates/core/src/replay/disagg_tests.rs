@@ -1948,7 +1948,7 @@ fn sglang_releases_source_kv_while_destination_finishes_a_decode_pass() {
     assert_eq!(second.source_held_ms, Some(2.0));
     assert_eq!(second.source_released_ms, Some(2.0));
     assert_eq!(second.destination_activated_ms, Some(11.0));
-    assert!(second.first_token_ms.unwrap() >= second.destination_activated_ms.unwrap());
+    assert_eq!(second.first_token_ms, Some(11.0));
     let uuid = Uuid::from_u128(2);
     assert!(
         transition_index(
@@ -1961,6 +1961,89 @@ fn sglang_releases_source_kv_while_destination_finishes_a_decode_pass() {
     );
     assert_eq!(report.request_counts.completed_requests, 2);
     assert_eq!(report.request_counts.total_output_tokens, 8);
+}
+
+#[test]
+fn sglang_prebuilt_first_token_does_not_execute_a_decode_forward() {
+    for output_tokens in [1, 2, 4] {
+        let mut config = sglang_disagg_config();
+        config.num_prefill_workers = 1;
+        config.num_decode_workers = 1;
+        for args in [&mut config.prefill_args, &mut config.decode_args] {
+            args.speedup_ratio = 1.0;
+            args.decode_speedup_ratio = 1.0;
+            args.enable_prefix_caching = false;
+            args.timing_model = crate::engine::TimingModelConfig::Fixed {
+                prefill_ms: 1.0,
+                decode_ms: 10.0,
+            };
+        }
+        let pending =
+            crate::replay::normalize_trace_requests(vec![request(1, 128, output_tokens, 0.0)], 1.0)
+                .unwrap();
+        let (collector, _) =
+            DisaggRuntime::from_requests(&config, None, None, pending, ReplayMode::Trace)
+                .unwrap()
+                .with_per_request_records(true)
+                .run()
+                .unwrap();
+        let report = collector.finish();
+        let record = &report.per_request[0];
+        assert_eq!(record.first_token_ms, Some(1.0));
+        assert_eq!(
+            record.terminal_time_ms,
+            1.0 + 10.0 * (output_tokens - 1) as f64
+        );
+        assert_eq!(report.request_counts.completed_requests, 1);
+        assert_eq!(report.request_counts.total_output_tokens, output_tokens);
+    }
+}
+
+#[test]
+fn sglang_prebuilt_terminal_output_is_not_delayed_by_another_dp_rank() {
+    let mut config = sglang_disagg_config();
+    config.num_prefill_workers = 1;
+    config.num_decode_workers = 1;
+    config.prefill_dp_size = 2;
+    config.decode_dp_size = 2;
+    for args in [&mut config.prefill_args, &mut config.decode_args] {
+        args.speedup_ratio = 1.0;
+        args.decode_speedup_ratio = 1.0;
+        args.enable_prefix_caching = false;
+        args.timing_model = crate::engine::TimingModelConfig::Fixed {
+            prefill_ms: 1.0,
+            decode_ms: 10.0,
+        };
+    }
+    let mut long = request(2, 128, 3, 0.0);
+    long.dp_rank = 1;
+    long.preferred_dp_rank = Some(1);
+    long.preferred_prefill_dp_rank = Some(1);
+    let pending =
+        crate::replay::normalize_trace_requests(vec![request(1, 128, 1, 0.0), long], 1.0).unwrap();
+    let (collector, _) =
+        DisaggRuntime::from_requests(&config, None, None, pending, ReplayMode::Trace)
+            .unwrap()
+            .with_per_request_records(true)
+            .run()
+            .unwrap();
+    let report = collector.finish();
+    let short = report
+        .per_request
+        .iter()
+        .find(|record| record.uuid == Uuid::from_u128(1).to_string())
+        .unwrap();
+    let long = report
+        .per_request
+        .iter()
+        .find(|record| record.uuid == Uuid::from_u128(2).to_string())
+        .unwrap();
+    assert_eq!(short.first_token_ms, Some(1.0));
+    assert_eq!(short.terminal_time_ms, 1.0);
+    assert_eq!(long.first_token_ms, Some(1.0));
+    assert_eq!(long.terminal_time_ms, 21.0);
+    assert_eq!(report.request_counts.completed_requests, 2);
+    assert_eq!(report.request_counts.total_output_tokens, 4);
 }
 
 #[test]

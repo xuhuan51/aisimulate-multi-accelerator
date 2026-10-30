@@ -856,6 +856,30 @@ where
 
             let mut effects: EngineEffects<Observation::Batch> = EngineEffects::default();
             for rank in started.by_rank {
+                let completed_requests = rank
+                    .effects
+                    .outputs
+                    .iter()
+                    .filter_map(|output| output.completed.then_some(output.request_id))
+                    .collect::<Vec<_>>();
+                self.apply_request_accounting(
+                    SchedulerOwner {
+                        worker_id,
+                        dp_rank: rank.dp_rank,
+                    },
+                    None,
+                    &completed_requests,
+                )?;
+                effects
+                    .start_output_signals
+                    .extend(rank.effects.outputs.into_iter().map(|output| OutputSignal {
+                        uuid: output.request_id,
+                        token_id: output.token_id,
+                        completed: output.completed,
+                        rejected: output.rejected,
+                        handoff_delay_ms: None,
+                        cached_tokens: output.cached_tokens,
+                    }));
                 if pending.committed_requests.is_empty() {
                     pending.committed_requests = rank.effects.committed_requests;
                 } else {
@@ -913,6 +937,7 @@ where
                     .collect();
             }
             effects.progress.made_progress = !effects.admissions.is_empty()
+                || !effects.start_output_signals.is_empty()
                 || !effects.pressure_events.is_empty()
                 || !effects.pass_start_events.is_empty()
                 || effects.artifact_pass_start.is_some()
@@ -1117,7 +1142,10 @@ where
                 .process_internal_work(now_ms)
                 .map_err(crate::replay::error::engine_boundary)?;
             for rank in effects.into_by_rank() {
-                if !rank.effects.admissions.is_empty() || !rank.effects.pressure_events.is_empty() {
+                if !rank.effects.admissions.is_empty()
+                    || !rank.effects.pressure_events.is_empty()
+                    || !rank.effects.outputs.is_empty()
+                {
                     bail!(
                         "engine internal work exposed pass-start scheduler effects for worker {worker_id} rank {}",
                         rank.dp_rank

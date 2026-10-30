@@ -333,6 +333,7 @@ pub struct PassStartEffects {
     /// Queue ownership alone does not imply unfinished model work.
     pub committed_requests: Vec<Uuid>,
     pub admissions: Vec<Admission>,
+    pub outputs: Vec<Output>,
     pub pressure_events: Vec<PressureEvent>,
     pub kv_events: Vec<KvEvent>,
 }

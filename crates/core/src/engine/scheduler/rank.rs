@@ -319,6 +319,12 @@ impl RankEngine for SchedulerRank {
         let pass = self.core.try_execute_hidden_pass(now_ms)?;
         let end_ms = pass.end_ms;
         let (same_timestamp_retry, start_effects, completion_effects) = split_pass(pass)?;
+        for output in &start_effects.outputs {
+            if output.completed {
+                self.handoff_requests
+                    .retain(|_, request_id| *request_id != output.request_id);
+            }
+        }
         Ok(RankPass {
             end_ms,
             same_timestamp_retry,
@@ -698,6 +704,7 @@ fn split_pass(
         committed_requests,
         same_timestamp_retry,
         output_signals,
+        start_output_signals,
         admissions,
         pressure_events,
         lifecycle_events,
@@ -713,6 +720,16 @@ fn split_pass(
     };
     let start = PassStartEffects {
         committed_requests,
+        outputs: start_output_signals
+            .into_iter()
+            .map(|output| Output {
+                request_id: output.uuid,
+                token_id: output.token_id,
+                completed: output.completed,
+                rejected: output.rejected,
+                cached_tokens: output.cached_tokens,
+            })
+            .collect(),
         admissions: admissions
             .into_iter()
             .map(|admission| Admission {
@@ -1590,6 +1607,77 @@ mod tests {
             .unwrap();
         assert_eq!(cancellation.result, CommandResult::Applied);
         assert!(!rank.handoff_requests.contains_key(&handoff_id));
+    }
+
+    #[test]
+    fn sglang_prebuilt_outputs_precede_decode_and_retire_terminal_handoffs() {
+        let config = EngineConfig {
+            worker_type: WorkerType::Decode,
+            num_gpu_blocks: 8,
+            block_size: 4,
+            max_num_seqs: 2,
+            speedup_ratio: 1.0,
+            decode_speedup_ratio: 1.0,
+            timing_model: TimingModelConfig::Fixed {
+                prefill_ms: 1.0,
+                decode_ms: 10.0,
+            },
+            ..EngineConfig::for_backend(Backend::Sglang)
+        };
+        let mut rank = SchedulerRank::new(
+            RankIdentity {
+                worker_id: 1,
+                dp_rank: 0,
+                dp_size: NonZeroU32::MIN,
+            },
+            &config,
+        )
+        .unwrap();
+        for (request_number, outputs) in [(1, vec![51]), (2, vec![61, 62, 63])] {
+            let handoff_id = HandoffId::from(Uuid::from_u128(request_number));
+            let commands = [
+                Command::ReserveDestination {
+                    handoff_id,
+                    request: Request {
+                        request_id: Uuid::from_u128(request_number),
+                        tokens: vec![1, 2, 3, 4],
+                        max_output_tokens: outputs.len(),
+                        output_token_ids: Some(outputs),
+                        session_id: None,
+                    },
+                },
+                Command::ActivateDestination { handoff_id },
+            ];
+            for command in commands {
+                rank.apply_command_effects(
+                    command,
+                    CommandContext {
+                        now_ms: 1.0,
+                        pass_in_flight: false,
+                    },
+                    None,
+                )
+                .unwrap();
+            }
+        }
+        let pass = rank.execute_pass(1.0).unwrap();
+        assert_eq!(pass.end_ms, 11.0);
+        let early = &pass.start_effects.outputs;
+        assert_eq!(early.len(), 2);
+        assert_eq!(early[0].token_id, Some(51));
+        assert!(early[0].completed);
+        assert_eq!(early[1].token_id, Some(61));
+        assert!(!early[1].completed);
+        assert!(
+            !rank
+                .handoff_requests
+                .contains_key(&HandoffId::from(Uuid::from_u128(1)))
+        );
+        let late = rank.complete_pass(pass.pending, pass.end_ms).unwrap();
+        assert_eq!(late.outputs.len(), 1);
+        assert_eq!(late.outputs[0].token_id, Some(62));
+        assert_eq!(late.forward_pass_metrics.sum_decode_kv_tokens, 5);
+        assert_eq!(late.decode_acceptance.forwards, 1);
     }
 
     #[test]

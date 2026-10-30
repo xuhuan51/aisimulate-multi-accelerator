@@ -98,6 +98,10 @@ impl ReservedSglangDecode {
         request.is_decode_handoff = true;
         request.materialized_tokens = request.prompt_len();
         request.allocated_tokens = allocated_tokens;
+        if request.max_output_tokens > 0 {
+            let token_id = request.next_output_token();
+            request.sequence_tokens.push(token_id);
+        }
         request.debug_assert_invariants(block_size);
         request
     }
@@ -957,7 +961,7 @@ impl SglangCore {
             (self.kv_manager.begin_admission(), waiting)
         });
         let running_before_admission = self.running.len();
-        let mut admissions = self.promote_prebuilt_ready();
+        let (mut admissions, start_output_signals) = self.promote_prebuilt_ready();
         let materialized_waiting = !self.prebuilt_ready.is_empty();
         apply_schedule_policy(&mut self.waiting, &self.kv_manager, &self.config);
 
@@ -1190,6 +1194,11 @@ impl SglangCore {
         }
 
         if let Some(collector) = collector {
+            for signal in &start_output_signals {
+                if signal.token_id.is_some() {
+                    collector.on_token(signal.uuid, now_ms);
+                }
+            }
             for signal in &decode.output_signals {
                 if signal.token_id.is_some() {
                     collector.on_token(signal.uuid, decode.end_ms);
@@ -1296,9 +1305,11 @@ impl SglangCore {
             completed_requests: decode
                 .output_signals
                 .iter()
+                .chain(&start_output_signals)
                 .filter(|signal| signal.completed)
                 .count(),
             output_signals: decode.output_signals,
+            start_output_signals,
             admissions,
             pressure_events: decode.pressure_events,
             lifecycle_events: std::mem::take(&mut self.lifecycle_events),
@@ -1321,9 +1332,19 @@ impl SglangCore {
         actual_used.div_ceil(self.config.block_size) as u64
     }
 
-    fn promote_prebuilt_ready(&mut self) -> Vec<crate::engine::scheduler::AdmissionEvent> {
+    fn promote_prebuilt_ready(
+        &mut self,
+    ) -> (
+        Vec<crate::engine::scheduler::AdmissionEvent>,
+        Vec<OutputSignal>,
+    ) {
         let mut admissions = Vec::new();
-        while self.running.len() < self.config.max_running_requests {
+        let mut outputs = Vec::new();
+        let available = self
+            .config
+            .max_running_requests
+            .saturating_sub(self.running.len());
+        for _ in 0..available {
             let Some(request) = self.prebuilt_ready.pop_front() else {
                 break;
             };
@@ -1332,12 +1353,26 @@ impl SglangCore {
                 reused_input_tokens: 0,
                 cache_tier_attribution: None,
             });
-            self.running.push(request);
+            let completed = request.remaining_output_tokens() == 0;
+            outputs.push(OutputSignal {
+                uuid: request.uuid,
+                token_id: request.sequence_tokens.get(request.prompt_len()).copied(),
+                completed,
+                rejected: false,
+                cached_tokens: None,
+                handoff_delay_ms: None,
+            });
+            request.debug_assert_invariants(self.config.block_size);
+            if completed {
+                self.complete_source(request);
+            } else {
+                self.running.push(request);
+            }
         }
         if self.config.decode_reserved_tokens > 0 && !admissions.is_empty() {
             self.bump_capacity_generation();
         }
-        admissions
+        (admissions, outputs)
     }
 }
 

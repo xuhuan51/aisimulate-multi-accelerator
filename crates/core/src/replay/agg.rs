@@ -849,6 +849,9 @@ where
             sink.record_pass_start_kv_events(pass_start.at_ms, &pass_start.kv_events)?;
         }
         self.apply_engine_observations(effects.pass_start_events, KvIngestBoundary::PassStart)?;
+        for signal in effects.start_output_signals {
+            self.process_output_signal(signal)?;
+        }
         for payload in effects.immediate_completions {
             self.process_worker_completion_payload(payload)?;
         }

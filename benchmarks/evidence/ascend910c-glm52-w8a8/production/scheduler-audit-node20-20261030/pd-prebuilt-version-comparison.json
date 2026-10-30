@@ -1,0 +1,35 @@
+{
+  "functions": [
+    {
+      "path": "disaggregation/decode.py",
+      "function": "get_next_disagg_decode_batch_to_run",
+      "versions": {
+        "v0.5.22": {
+          "file_sha256": "7a106070dee807c4cc5498dc6d8092b229b23e573bf2dfa44f201ee695815718",
+          "ast_sha256": "445ce4cfc27db28e48810a58bf66e6a6151944c440370299162b2567b3e64492"
+        },
+        "v0.5.20": {
+          "file_sha256": "695bf37c4f68ca2a0604a9bf7441b6cb3303970c6c7eb167ffe8bcbeb2b393ca",
+          "ast_sha256": "445ce4cfc27db28e48810a58bf66e6a6151944c440370299162b2567b3e64492"
+        }
+      },
+      "identical_function_ast": true
+    },
+    {
+      "path": "managers/scheduler_components/batch_result_processor.py",
+      "function": "process_batch_result_prebuilt",
+      "versions": {
+        "v0.5.22": {
+          "file_sha256": "bf45be863809db610712b68679a69ba9f9c011e63753f4f2244e3ca824ab1432",
+          "ast_sha256": "f565c007f7c54b8ba6666c5ab8074b11d09c4554a8b9875c23d0bdd150c57211"
+        },
+        "v0.5.20": {
+          "file_sha256": "e4fb82ba6bc501f2e8f29a0fc76ce240d1d128210122619c899917433c2b6ddb",
+          "ast_sha256": "6ee8b4018103807021bb060ee25e560d8cbfaee6a79dd7b2a73b8dba694f18f8"
+        }
+      },
+      "identical_function_ast": false
+    }
+  ],
+  "finding": "Both versions stream the already received prefill token before preparing the next decode batch. The result processor differs only in v0.5.22 explicitly passing checkpoint=True to release_kv_cache for a completed request."
+}

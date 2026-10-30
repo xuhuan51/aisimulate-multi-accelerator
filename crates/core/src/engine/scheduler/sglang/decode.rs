@@ -62,8 +62,7 @@ fn decode_page_growth_needed(
         .iter()
         .map(|req| {
             let burst = max_burst.min(req.remaining_output_tokens());
-            let target =
-                super::config::ceil_to_block(req.current_sequence_len() + burst, block_size);
+            let target = super::config::ceil_to_block(req.materialized_tokens + burst, block_size);
             target.saturating_sub(req.allocated_tokens)
         })
         .sum()
@@ -305,7 +304,7 @@ fn prefill_first_tokens(
         };
     };
     for req in running.iter_mut() {
-        let crossing_page_boundary = req.current_sequence_len() + 1 > req.allocated_tokens;
+        let crossing_page_boundary = req.materialized_tokens + 1 > req.allocated_tokens;
         kv_manager.extend_decode(&mut req.kv_lease, &mut reservation);
         if crossing_page_boundary {
             req.allocated_tokens += config.block_size;
@@ -345,7 +344,7 @@ pub(super) fn cleanup_completed_request(
     kv_manager: &mut SglangKvManager,
     block_size: usize,
 ) {
-    let tokens_to_cache = floor_to_block(request.current_sequence_len(), block_size);
+    let tokens_to_cache = floor_to_block(request.materialized_tokens, block_size);
     if !request.kv_lease.is_active() {
         return;
     }
@@ -553,7 +552,7 @@ fn simulate_step(
         }
         let burst = accepted.min(remaining);
         for _ in 0..burst {
-            let crossing_page_boundary = req.current_sequence_len() + 1 > req.allocated_tokens;
+            let crossing_page_boundary = req.materialized_tokens + 1 > req.allocated_tokens;
             kv_manager.extend_decode(&mut req.kv_lease, &mut reservation);
             if crossing_page_boundary {
                 req.allocated_tokens += config.block_size;
