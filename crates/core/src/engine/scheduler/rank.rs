@@ -258,7 +258,8 @@ impl RankEngine for SchedulerRank {
                 .effects
                 .lifecycle_events
                 .retain(|event| match *event {
-                    LifecycleEvent::SourceHeld { request_id: id, .. }
+                    LifecycleEvent::SourceChunkReady { request_id: id, .. }
+                    | LifecycleEvent::SourceHeld { request_id: id, .. }
                     | LifecycleEvent::DestinationReserved { request_id: id, .. } => {
                         id != request_id
                     }
@@ -654,6 +655,17 @@ fn map_command_effects(
 
 fn map_lifecycle(event: CoreLifecycle) -> LifecycleEvent {
     match event {
+        CoreLifecycle::SourceChunkReady {
+            handoff_id,
+            request_id,
+            ready_tokens,
+            transfer_timing,
+        } => LifecycleEvent::SourceChunkReady {
+            handoff_id,
+            request_id,
+            ready_tokens,
+            transfer_timing,
+        },
         CoreLifecycle::SourceHeld {
             handoff_id,
             request_id,
@@ -667,10 +679,12 @@ fn map_lifecycle(event: CoreLifecycle) -> LifecycleEvent {
             handoff_id,
             request_id,
             transferable_prompt_tokens,
+            cached_prompt_tokens,
         } => LifecycleEvent::DestinationReserved {
             handoff_id,
             request_id,
             transferable_prompt_tokens,
+            cached_prompt_tokens,
         },
     }
 }

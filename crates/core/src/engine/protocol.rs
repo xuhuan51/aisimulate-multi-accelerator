@@ -79,6 +79,12 @@ pub enum CommandResult {
 /// coordinator.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LifecycleEvent {
+    SourceChunkReady {
+        handoff_id: HandoffId,
+        request_id: Uuid,
+        ready_tokens: usize,
+        transfer_timing: HandoffTransferTiming,
+    },
     /// Prefill computation completed and source KV ownership is retained.
     SourceHeld {
         handoff_id: HandoffId,
@@ -90,6 +96,7 @@ pub enum LifecycleEvent {
         handoff_id: HandoffId,
         request_id: Uuid,
         transferable_prompt_tokens: usize,
+        cached_prompt_tokens: Option<usize>,
     },
 }
 

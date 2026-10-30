@@ -764,6 +764,19 @@ executes the hash-checked original bodies with non-device stubs; its generated
 `production/scheduler-audit-node20-20261030/pd-prebuilt-oracle.json` retains
 source identities and event ordering. This does not execute the full serving runtime.
 
+The chunk-transfer behavior in `crates/core/src/engine/protocol.rs`,
+`engine/scheduler/{source_holds,rank,sglang/core}.rs`,
+`crates/core/src/replay/{handoff,disagg,state,event,runtime_utils}.rs`, and the
+associated tests independently reimplements and modifies the ordering of
+`process_prefill_chunk` and `_send_kv_chunk` in
+https://github.com/sgl-project/sglang/blob/baa9befa381511cd4d56f83980951e5a45fffc6d/python/sglang/srt/disaggregation/prefill.py
+(Copyright 2023-2026 SGLang Team and contributors; Apache-2.0).
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/check_pd_chunks.py`
+executes the hash-checked upstream bodies using CPU transport/KV stubs. Its
+generated `production/scheduler-audit-node20-20261030/pd-chunks-oracle.json`
+records source hashes, page boundaries and ordering. The upstream source is
+not bundled; these checks do not measure transfer latency or serving accuracy.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

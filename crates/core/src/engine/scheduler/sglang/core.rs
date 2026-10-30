@@ -476,6 +476,7 @@ impl SglangCore {
             return Vec::new();
         };
         let transferable_prompt_tokens = kv.transferable_prompt_tokens();
+        let cached_prompt_tokens = Some(kv.prefix_len);
         let (handoff_id, request_id, request) = self
             .pending_destinations
             .pop_front()
@@ -486,6 +487,7 @@ impl SglangCore {
             handoff_id,
             request_id,
             transferable_prompt_tokens,
+            cached_prompt_tokens,
         }]
     }
 
@@ -1083,6 +1085,22 @@ impl SglangCore {
         let previously_running = self.running.len();
         for mut req in admit.can_run {
             if req.materialized_tokens < req.current_sequence_len() {
+                if let Some(handoff_id) = self.source_holds.pending_handoff(req.uuid) {
+                    self.lifecycle_events
+                        .push(SchedulerLifecycleEvent::SourceChunkReady {
+                            handoff_id,
+                            request_id: req.uuid,
+                            ready_tokens: req.materialized_tokens / self.config.block_size
+                                * self.config.block_size,
+                            transfer_timing: prefill_handoff_transfer_timing(
+                                req.prompt_len(),
+                                self.config.kv_transfer_bandwidth,
+                                self.config.kv_transfer_bytes_per_token,
+                                0,
+                                self.config.kv_transfer_timing_mode,
+                            ),
+                        });
+                }
                 cache_materialized_prefix(&mut req, &mut self.kv_manager, &self.config);
                 self.waiting.push_front(req);
             } else {

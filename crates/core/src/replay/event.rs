@@ -73,6 +73,7 @@ pub(crate) enum SimulationEventKind<Events: EngineEventBatch = ()> {
     EnginePassCompletion(EnginePassCompletion<Events>),
     TransferComplete {
         handoff_id: HandoffId,
+        chunk_index: usize,
     },
     WorkerReady {
         stage: SimulationWorkerStage,
@@ -122,9 +123,15 @@ impl<Events: EngineEventBatch> SimulationEventKind<Events> {
                 },
             ) => (*right_stage, *right_worker).cmp(&(*left_stage, *left_worker)),
             (
-                SimulationEventKind::TransferComplete { handoff_id: left },
-                SimulationEventKind::TransferComplete { handoff_id: right },
-            ) => right.cmp(left),
+                SimulationEventKind::TransferComplete {
+                    handoff_id: left,
+                    chunk_index: left_chunk,
+                },
+                SimulationEventKind::TransferComplete {
+                    handoff_id: right,
+                    chunk_index: right_chunk,
+                },
+            ) => (right, right_chunk).cmp(&(left, left_chunk)),
             _ => Ordering::Equal,
         }
     }

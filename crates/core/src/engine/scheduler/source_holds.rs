@@ -52,6 +52,12 @@ pub enum SchedulerCommandResult {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum SchedulerLifecycleEvent {
+    SourceChunkReady {
+        handoff_id: HandoffId,
+        request_id: Uuid,
+        ready_tokens: usize,
+        transfer_timing: HandoffTransferTiming,
+    },
     SourceHeld {
         handoff_id: HandoffId,
         request_id: Uuid,
@@ -61,6 +67,7 @@ pub enum SchedulerLifecycleEvent {
         handoff_id: HandoffId,
         request_id: Uuid,
         transferable_prompt_tokens: usize,
+        cached_prompt_tokens: Option<usize>,
     },
 }
 
@@ -144,6 +151,10 @@ impl<T> SourceHolds<T> {
     pub(crate) fn contains_request(&self, request_id: Uuid) -> bool {
         self.pending_by_request.contains_key(&request_id)
             || self.held_by_request.contains_key(&request_id)
+    }
+
+    pub(crate) fn pending_handoff(&self, request_id: Uuid) -> Option<HandoffId> {
+        self.pending_by_request.get(&request_id).copied()
     }
 
     pub(crate) fn complete_source(&mut self, request_id: Uuid, payload: T) -> SourceCompletion<T> {

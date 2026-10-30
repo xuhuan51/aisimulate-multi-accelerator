@@ -297,6 +297,7 @@ enum PrefillSignalDisposition {
 struct ScheduledTransfer {
     at_ms: f64,
     handoff_id: HandoffId,
+    chunk_index: usize,
 }
 
 impl DisaggFlowState {
@@ -555,6 +556,27 @@ impl DisaggFlowState {
     ) -> Result<()> {
         for event in events {
             match event {
+                LifecycleEvent::SourceChunkReady {
+                    handoff_id,
+                    request_id,
+                    ready_tokens,
+                    transfer_timing,
+                } => {
+                    let uuid = self.uuid_for_handoff(handoff_id)?;
+                    if uuid != request_id {
+                        bail!("source chunk request ID does not match its handoff");
+                    }
+                    self.apply_handoff_fact(
+                        uuid,
+                        HandoffFact::SourceChunkReady {
+                            handoff_id,
+                            ready_tokens,
+                            transfer_timing,
+                        },
+                        now_ms,
+                        collector,
+                    )?;
+                }
                 LifecycleEvent::SourceHeld {
                     handoff_id,
                     request_id,
@@ -586,6 +608,7 @@ impl DisaggFlowState {
                     handoff_id,
                     request_id,
                     transferable_prompt_tokens,
+                    cached_prompt_tokens,
                 } => {
                     let uuid = self.uuid_for_handoff(handoff_id)?;
                     if uuid != request_id {
@@ -606,6 +629,7 @@ impl DisaggFlowState {
                         HandoffFact::DestinationReserved {
                             handoff_id,
                             transferable_prompt_tokens,
+                            cached_prompt_tokens,
                         },
                         now_ms,
                         collector,
@@ -712,6 +736,9 @@ impl DisaggFlowState {
         now_ms: f64,
         collector: &mut TraceCollector,
     ) -> Result<Option<ScheduledTransfer>> {
+        let HandoffAction::StartTransfer { chunk_index, .. } = action.action else {
+            bail!("start_transfer requires a transfer action");
+        };
         self.acknowledge_action(
             uuid,
             action,
@@ -722,14 +749,22 @@ impl DisaggFlowState {
         self.state_mut(uuid)?.transfer_pending();
         let handoff_id = self.state(uuid)?.handoff_id;
         if delay_ms > 0.0 {
+            let pending = &mut self.state_mut(uuid)?.pending_transfer_index;
+            if pending.replace(chunk_index).is_some() {
+                bail!("handoff already has a scheduled chunk transfer");
+            }
             return Ok(Some(ScheduledTransfer {
                 at_ms: now_ms + delay_ms,
                 handoff_id,
+                chunk_index,
             }));
         }
         self.apply_handoff_fact(
             uuid,
-            HandoffFact::TransferCompleted { handoff_id },
+            HandoffFact::TransferCompleted {
+                handoff_id,
+                chunk_index,
+            },
             now_ms,
             collector,
         )?;
@@ -865,26 +900,18 @@ impl DisaggFlowState {
 
     #[inline(never)]
     fn prepare_logical_finish(&mut self, uuid: Uuid, remove_actions: bool) -> Result<()> {
-        let transfer_was_pending = {
+        {
             let state = self.state_mut(uuid)?;
             if !state.counted_in_flight || state.phase == DisaggPhase::Done {
                 bail!("offline disagg replay finalized request {uuid} more than once");
             }
-            let transfer_was_pending = state.phase == DisaggPhase::TransferPending;
             state.counted_in_flight = false;
             state.complete_decode();
-            transfer_was_pending
-        };
+        }
         self.logical_in_flight = self
             .logical_in_flight
             .checked_sub(1)
             .expect("logical in-flight request count underflow");
-        if transfer_was_pending {
-            self.stale_transfer_events = self
-                .stale_transfer_events
-                .checked_add(1)
-                .expect("stale transfer event count overflow");
-        }
         if remove_actions {
             self.action_queues.remove(uuid);
         }
@@ -905,6 +932,12 @@ impl DisaggFlowState {
         }
 
         let handoff_id = self.state(uuid)?.handoff_id;
+        if self.state(uuid)?.pending_transfer_index.is_some() {
+            self.stale_transfer_events = self
+                .stale_transfer_events
+                .checked_add(1)
+                .expect("stale transfer event count overflow");
+        }
         self.state_mut(uuid)?.mark_done();
         let removed = self.requests_by_handoff.remove(&handoff_id);
         if removed != Some(uuid) {
@@ -1688,6 +1721,7 @@ where
                         &mut self.next_event_seq,
                         transfer.at_ms,
                         transfer.handoff_id,
+                        transfer.chunk_index,
                     );
                     #[cfg(test)]
                     self.stats
@@ -2331,11 +2365,23 @@ where
     /// Drain transfer completions scheduled for the current logical timestamp.
     fn apply_transfer_completions(&mut self) -> Result<bool> {
         let mut changed = false;
-        while let Some(handoff_id) = pop_ready_transfer_complete(&mut self.events, self.now_ms) {
+        while let Some((handoff_id, chunk_index)) =
+            pop_ready_transfer_complete(&mut self.events, self.now_ms)
+        {
             let Some(uuid) = self.flow.requests_by_handoff.get(&handoff_id).copied() else {
                 continue;
             };
-            self.apply_handoff_fact(uuid, HandoffFact::TransferCompleted { handoff_id })?;
+            if self.state_mut(uuid)?.pending_transfer_index != Some(chunk_index) {
+                continue;
+            }
+            self.state_mut(uuid)?.pending_transfer_index = None;
+            self.apply_handoff_fact(
+                uuid,
+                HandoffFact::TransferCompleted {
+                    handoff_id,
+                    chunk_index,
+                },
+            )?;
             changed = true;
         }
         Ok(changed)
@@ -2786,7 +2832,7 @@ where
         while self.events.peek().is_some_and(|event| {
             matches!(
                 &event.kind,
-                super::events::SimulationEventKind::TransferComplete { handoff_id }
+                super::events::SimulationEventKind::TransferComplete { handoff_id, .. }
                     if !self.flow.requests_by_handoff.contains_key(handoff_id)
             )
         }) {
@@ -2805,7 +2851,7 @@ where
             self.events.retain(|event| {
                 !matches!(
                     &event.kind,
-                    super::events::SimulationEventKind::TransferComplete { handoff_id }
+                    super::events::SimulationEventKind::TransferComplete { handoff_id, .. }
                         if !requests_by_handoff.contains_key(handoff_id)
                 )
             });

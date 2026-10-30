@@ -1254,6 +1254,7 @@ impl VllmCore {
             handoff_id,
             request_id,
             transferable_prompt_tokens,
+            cached_prompt_tokens: None,
         }]
     }
 

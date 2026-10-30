@@ -107,6 +107,7 @@ pub(crate) struct DisaggRequestState {
     pub(crate) destination_routed: bool,
     pub(crate) pending_prefill_action: Option<IssuedHandoffAction>,
     pub(crate) pending_destination_action: Option<IssuedHandoffAction>,
+    pub(crate) pending_transfer_index: Option<usize>,
     terminal_status: Option<ReplayTerminalStatus>,
     terminal_notified: bool,
 }
@@ -162,6 +163,7 @@ impl DisaggRequestState {
             destination_routed: false,
             pending_prefill_action: None,
             pending_destination_action: None,
+            pending_transfer_index: None,
             terminal_status: None,
             terminal_notified: false,
         }

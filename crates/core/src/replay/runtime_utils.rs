@@ -158,11 +158,15 @@ pub(super) fn push_transfer_complete<Events: EngineEventBatch>(
     next_event_seq: &mut u64,
     at_ms: f64,
     handoff_id: HandoffId,
+    chunk_index: usize,
 ) {
     events.push(SimulationEvent {
         at_ms,
         seq_no: *next_event_seq,
-        kind: SimulationEventKind::TransferComplete { handoff_id },
+        kind: SimulationEventKind::TransferComplete {
+            handoff_id,
+            chunk_index,
+        },
     });
     *next_event_seq += 1;
 }
@@ -170,7 +174,7 @@ pub(super) fn push_transfer_complete<Events: EngineEventBatch>(
 pub(super) fn pop_ready_transfer_complete<Events: EngineEventBatch>(
     events: &mut BinaryHeap<SimulationEvent<Events>>,
     now_ms: f64,
-) -> Option<HandoffId> {
+) -> Option<(HandoffId, usize)> {
     let event = events.peek()?;
     if event.at_ms != now_ms {
         return None;
@@ -179,10 +183,14 @@ pub(super) fn pop_ready_transfer_complete<Events: EngineEventBatch>(
         return None;
     };
     let event = events.pop().expect("event must exist after peek");
-    let SimulationEventKind::TransferComplete { handoff_id } = event.kind else {
+    let SimulationEventKind::TransferComplete {
+        handoff_id,
+        chunk_index,
+    } = event.kind
+    else {
         unreachable!("peeked decode handoff event must match popped event");
     };
-    Some(handoff_id)
+    Some((handoff_id, chunk_index))
 }
 
 pub(super) fn push_worker_ready<Events: EngineEventBatch>(
@@ -436,6 +444,7 @@ mod tests {
             &mut next_event_seq,
             10.0,
             HandoffId::new(Uuid::from_u128(2)),
+            0,
         );
         push_worker_ready(
             &mut events,
@@ -473,7 +482,7 @@ mod tests {
         );
         assert_eq!(
             pop_ready_transfer_complete(&mut events, 10.0),
-            Some(HandoffId::new(Uuid::from_u128(2)))
+            Some((HandoffId::new(Uuid::from_u128(2)), 0))
         );
     }
 }

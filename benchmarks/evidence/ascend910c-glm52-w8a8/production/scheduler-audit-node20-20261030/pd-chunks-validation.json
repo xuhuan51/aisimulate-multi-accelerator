@@ -1,0 +1,331 @@
+{
+  "upstream_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+  "source_oracle_cases": 7,
+  "core_tests": {
+    "passed": 2094,
+    "failed": 0,
+    "ignored": 1,
+    "command": "cargo test --locked --offline -p aisimulate-core --lib -- --test-threads=8"
+  },
+  "parity_tests": {
+    "passed": 390,
+    "command": "python3 -m pytest -q -c pytest.ini crates/core/parity_tests/perfmodel/test_engine_step_parity.py crates/core/parity_tests/perfmodel/test_compile_engine_parity.py"
+  },
+  "glm_and_public_api_tests": {
+    "passed": 140,
+    "deselected": 1,
+    "command": "python3 -m pytest -q -c pytest.ini python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py python/aisimulate/tests/cross_package/test_core_public_api.py -k 'not test_stable_function_signatures'",
+    "exclusion": "Previously reproduced stale signature assertion omits existing op_level_options; preserved in pd-boundary evidence. No Python public signature changes in this phase."
+  },
+  "development_regressions": [
+    "The initial missing-footprint clamp bypassed an existing curve-range error.",
+    "A blanket missing<=prompt guard rejected legitimate page-rounded footprints in ten tests.",
+    "Final implementation carries cached prefix separately from rounded transfer capacity, retains the old whole-transfer accounting, and adds a 257-token/128-token-page regression. Final full suite passes; intermediate failed logs retained."
+  ],
+  "formatting": "Rustfmt, Ruff check/format, packaged legal file identity and git diff --check passed.",
+  "package": {
+    "wheel": "build/scheduler-audit-20261030/pd-chunks-v2-wheels/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl",
+    "wheel_sha256": "155349c94b6d718592f3a9af71eccfa4d8e7e484859a8a2504727ecc67d630d7",
+    "native_sha256": "af259be3bb8d549f4c4a99019f88e3f0c09ef4ef80ea6e5cf5256ea99b8f5cf2",
+    "packaged_files_checked": 2278,
+    "mismatches": [],
+    "tables": [
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/attention/sglang/0.5.22/ascend_attention_perf.parquet",
+        "sha256": "e1993aedd3ece9a3ad79f696d782d124e56499e8b0988b03edfdb1f5ff9aeafd"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/attention/sglang/0.5.22/ascend_dcp_attention_perf.parquet",
+        "sha256": "69c0225063d8d7546be38abbfc621d9a8a1c6fbbaf850f4e78d369d49f583f20"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/comm/hccl/9.1.0-b243-drv26.1.1-nodes31-32-v3/hccl_perf.parquet",
+        "sha256": "b17770797d092572004884d4ac927346b565c5db8f686d593c29c52e7d09d5f8"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/gemm/sglang/0.5.22/ascend_linear_perf.parquet",
+        "sha256": "fa23597e4a506562eafd6302f2a1a10f619b6316e09840f0613035f92ec29d28"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/kv_transfer/sglang/0.5.22/ascend_pd_perf.parquet",
+        "sha256": "b8e0fd086dc67529e243ec85e8f588d74edd8e7fc1bcd0bb5b14050bb95c9fb1"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/mla_bmm/sglang/0.5.22/ascend_bmm_perf.parquet",
+        "sha256": "93ea52d07ac393c94d743754991b1bdcbc0166ae4a28ac617d9a09c5080e6f75"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_deepep_perf.parquet",
+        "sha256": "7bab1a8aa5bc69c283846d23d5aee36e39bf26f2838a65b1093bceb57268259c"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_moe_chain_perf.parquet",
+        "sha256": "66a7979919f7be83ae2d59a88bff50cd67e0d4297910a4170beb00c6f3489938"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_moe_tensor_perf.parquet",
+        "sha256": "b9ae6894e94a233b843918951801b8533d9d921bc297a3c903e6dd9507032f94"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/vector/sglang/0.5.22/ascend_vector_perf.parquet",
+        "sha256": "cfcc32a50cd4c4c846c2b61e428501e4d0af7031fed00e6989530ea16eadbf1c"
+      }
+    ],
+    "legal_files_match": true
+  },
+  "searches": [
+    {
+      "input_tokens": 8192,
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/workspace",
+        "-e",
+        "PYTHONPATH=/workspace/python/aisimulate/src",
+        "aisim-node20-validation-20261027-v2",
+        "python3",
+        "-m",
+        "aisimulate",
+        "predict",
+        "--stack",
+        "engine",
+        "--config",
+        "/workspace/aisimulate-output/pd-chunks-pd-8192-20261030/recommendations/0001.yaml",
+        "--output-dir",
+        "/workspace/aisimulate-output/pd-chunks-pd-8192-20261030/saved-best-replay"
+      ],
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 2,
+        "failed": 0,
+        "feasible": 2,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "best_parallelism": {
+        "prefill": {
+          "attention_data": 2,
+          "moe_expert": 16,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 2,
+          "tensor": 8
+        },
+        "decode": {
+          "attention_data": 4,
+          "moe_expert": 32,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 1,
+          "tensor": 8
+        }
+      },
+      "metrics": {
+        "completed_requests": 32.0,
+        "mean_ttft_ms": 11040.637664875952,
+        "mean_tpot_ms": 223.1004763090176,
+        "output_throughput_tok_s": 132.20450907456788,
+        "duration_ms": 247858.41443212595
+      },
+      "saved_replay_differences": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      },
+      "before_metrics": {
+        "completed_requests": 32.0,
+        "mean_ttft_ms": 11040.637664875952,
+        "mean_tpot_ms": 223.1004763090176,
+        "output_throughput_tok_s": 132.20450907456788,
+        "duration_ms": 247858.41443212595
+      },
+      "change_from_previous": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      },
+      "candidates": [
+        {
+          "prefill_replicas": 2,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 32.0,
+            "mean_ttft_ms": 11040.637664875952,
+            "mean_tpot_ms": 223.1004763090176,
+            "output_throughput_tok_s": 132.20450907456788,
+            "duration_ms": 247858.41443212595
+          },
+          "change_from_previous": {
+            "completed_requests": 0.0,
+            "mean_ttft_ms": 0.0,
+            "mean_tpot_ms": 0.0,
+            "output_throughput_tok_s": 0.0,
+            "duration_ms": 0.0
+          }
+        },
+        {
+          "prefill_replicas": 1,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 32.0,
+            "mean_ttft_ms": 20853.140824875947,
+            "mean_tpot_ms": 223.1008486571358,
+            "output_throughput_tok_s": 122.50429015213042,
+            "duration_ms": 267484.50980212586
+          },
+          "change_from_previous": {
+            "completed_requests": 0.0,
+            "mean_ttft_ms": 0.0,
+            "mean_tpot_ms": 0.0,
+            "output_throughput_tok_s": 0.0,
+            "duration_ms": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "input_tokens": 32768,
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/workspace",
+        "-e",
+        "PYTHONPATH=/workspace/python/aisimulate/src",
+        "aisim-node20-validation-20261027-v2",
+        "python3",
+        "-m",
+        "aisimulate",
+        "predict",
+        "--stack",
+        "engine",
+        "--config",
+        "/workspace/aisimulate-output/pd-chunks-pd-32768-20261030/recommendations/0001.yaml",
+        "--output-dir",
+        "/workspace/aisimulate-output/pd-chunks-pd-32768-20261030/saved-best-replay"
+      ],
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 2,
+        "failed": 0,
+        "feasible": 2,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "best_parallelism": {
+        "prefill": {
+          "attention_data": 2,
+          "moe_expert": 16,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 2,
+          "tensor": 8
+        },
+        "decode": {
+          "attention_data": 4,
+          "moe_expert": 32,
+          "moe_tensor": 1,
+          "pipeline": 1,
+          "replicas": 1,
+          "tensor": 8
+        }
+      },
+      "metrics": {
+        "completed_requests": 8.0,
+        "mean_ttft_ms": 15890.210070625952,
+        "mean_tpot_ms": 223.06604145552302,
+        "output_throughput_tok_s": 32.84211809183035,
+        "duration_ms": 249435.80000212602
+      },
+      "saved_replay_differences": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      },
+      "before_metrics": {
+        "completed_requests": 8.0,
+        "mean_ttft_ms": 15909.74113162655,
+        "mean_tpot_ms": 223.06604145552302,
+        "output_throughput_tok_s": 32.839546724006276,
+        "duration_ms": 249455.33106312662
+      },
+      "change_from_previous": {
+        "completed_requests": 0.0,
+        "mean_ttft_ms": -19.53106100059813,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.002571367824074855,
+        "duration_ms": -19.53106100059813
+      },
+      "candidates": [
+        {
+          "prefill_replicas": 1,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 8.0,
+            "mean_ttft_ms": 26419.16711137595,
+            "mean_tpot_ms": 223.06646494843605,
+            "output_throughput_tok_s": 30.297137905084202,
+            "duration_ms": 270388.576824126
+          },
+          "change_from_previous": {
+            "completed_requests": 0.0,
+            "mean_ttft_ms": -75.27071200060163,
+            "mean_tpot_ms": 3.0642473120678915e-05,
+            "output_throughput_tok_s": 0.027135743638549314,
+            "duration_ms": -242.391628000536
+          }
+        },
+        {
+          "prefill_replicas": 2,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 8.0,
+            "mean_ttft_ms": 15890.210070625952,
+            "mean_tpot_ms": 223.06604145552302,
+            "output_throughput_tok_s": 32.84211809183035,
+            "duration_ms": 249435.80000212602
+          },
+          "change_from_previous": {
+            "completed_requests": 0.0,
+            "mean_ttft_ms": -19.53106100059813,
+            "mean_tpot_ms": 0.0,
+            "output_throughput_tok_s": 0.002571367824074855,
+            "duration_ms": -19.53106100059813
+          }
+        }
+      ]
+    }
+  ],
+  "archive": {
+    "file": "pd-chunks-evidence.tar.gz",
+    "sha256": "5e0445123dc2d8e1c0a301de1560331447e9603b3672dd18d346af7f26c5a4dc",
+    "bytes": 160012
+  },
+  "runtime_publication": "Source validation complete; canonical image promotion pending publication record.",
+  "serving_accuracy": "Not accepted. No matched eager/no-overlap serving measurement; given full model path absent on node20. Per-request chunk FIFO is implemented; cross-request contention, host/bootstrap/metadata cost and other documented gaps remain.",
+  "source_file_sha256": {
+    "crates/core/src/engine/protocol.rs": "01f7dfd5628d84e2c96e2aa6394569ffaade84c903f97c8ad1cbbd9f0030cf17",
+    "crates/core/src/engine/scheduler/rank.rs": "492f4dc09726bcfc7787786bf4db362df576df748485748320722669b2a11b6b",
+    "crates/core/src/engine/scheduler/sglang/core.rs": "765e80a485d717076517c96a37551eec9b40bf5b8fe11bc21ab7b97e01b54292",
+    "crates/core/src/engine/scheduler/sglang/tests.rs": "552ab29604522fa986d82840b8bdc5dd1cf91d76effd54855825253239e0e4a5",
+    "crates/core/src/engine/scheduler/source_holds.rs": "d218ccb5faa33744c1e9d50ffdb0881bd637b0b476f07f7bba5ac5e20203e06f",
+    "crates/core/src/engine/scheduler/vllm/core.rs": "53c3735112018ef312debc3c8b401315c0e0abda32e8e1b3b99a22b7f568d0d6",
+    "crates/core/src/replay/disagg.rs": "dc6d4b14ad083f3622945d90aecf870c9e26713c187c7148e7b5fec0ee0330b6",
+    "crates/core/src/replay/disagg_tests.rs": "10f8846db28cfcf80185f1f17a726c397198d8d70325bd098d04ed18a7a84194",
+    "crates/core/src/replay/event.rs": "4710f794121fb38dc7007078f01b0bdc86bd5b13e9b48f539eadbad96a6f79ca",
+    "crates/core/src/replay/handoff.rs": "4eb7602c03306a93b3c4940416a39c190888289da8686879c46930b6d3578b72",
+    "crates/core/src/replay/runtime_utils.rs": "845b7490091232ce7e375475513b302f48c7e43ead6b0649b419909624de69ce",
+    "crates/core/src/replay/state.rs": "fd6648c2c2baf1f875b20708692472bcd049df1a05d11ccdf614677a76e4581f"
+  }
+}

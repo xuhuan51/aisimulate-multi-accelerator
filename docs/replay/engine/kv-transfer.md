@@ -50,8 +50,10 @@ link contention between groups remains uncalibrated.
 The shared `estimator_config.op_level.ascend.kv_transfer_page_layout` selects
 `contiguous` (default) or `fragmented`; both role configurations must agree.
 The source model prepares the measured curve once and Replay shares it across
-handoffs. Destination reservation and source KV retention keep their existing
-ordering. Missing-token counts round up to 128-token pages, zero transfer is
+handoffs. For SGLang, Replay queries each completed prefill chunk separately;
+each query preserves the curve's launch cost and token bounds. Destination
+reservation and source KV retention keep their existing ordering.
+Missing-token counts round up to 128-token pages, zero transfer is
 free. With the default Ascend `shape_policy: measured`, an out-of-bounds query
 fails without a bandwidth fallback. With `shape_policy: anchored` on both
 roles, page-work ratios extend the same measured mapping, preserve a measured
@@ -83,12 +85,13 @@ even when compute time does not change. `state_bytes` is the prefill role's
 
 ## Request flow
 
-1. The prefill worker runs the prompt and produces the first token.
-2. The request is handed to a decode worker at the same virtual time. KV
-   transfer starts, and the prefill worker's copy stays reserved until the
-   transfer finishes.
-3. After the transfer completes, the decode worker admits the request and
-   generates the remaining tokens.
+1. The decode worker reserves destination KV capacity according to the
+   backend's handoff order below.
+2. The prefill worker computes the prompt and produces the first token.
+   SGLang can start sending completed chunks before the entire prompt finishes.
+3. After all prompt KV has arrived, the decode worker admits the request and
+   generates the remaining tokens. Source KV remains reserved until transfer
+   success is processed by the prefill scheduler.
 
 The reported TTFT includes prefill queueing, prefill compute and the transfer.
 Transfer events share one virtual clock with compute and arrivals.
@@ -99,6 +102,22 @@ Backends order the handoff differently:
 | --- | --- |
 | vLLM, TensorRT-LLM | Source-first: the prefill side finishes and then the decode side reserves space. |
 | SGLang | Destination-first: the decode side reserves space before the transfer. |
+
+SGLang publishes each completed prefill chunk at its forward completion
+boundary, even with overlap scheduling disabled. Non-final sends end at a full
+KV page; the last send includes the remaining partial page. Transfers for one
+request run in FIFO order and overlap later prefill computation. A slow
+transfer preserves queued chunk boundaries instead of combining their timing
+queries. With `destination_missing`, chunks intersect the uncached destination
+suffix. State bytes in the bandwidth model are charged only on the final send.
+If only a fixed native handoff delay is supplied, it remains a single final
+delay; that configuration cannot predict the overlap from individual copies.
+
+The chunk model covers the standard non-staging transport path. DCP packing,
+staging grids, optional early cached-prefix sends, metadata/bootstrap latency
+and competition between different requests require separate transport models.
+The measured GLM Ascend transfer contract uses DCP1 and includes the NPU MLA
+K/V/index buffers together in each page transfer.
 
 After a SGLang transfer completes, source KV release and destination activation
 proceed independently at each worker's next scheduler boundary. A busy decode

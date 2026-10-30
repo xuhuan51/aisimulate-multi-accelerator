@@ -481,10 +481,10 @@ fn simultaneous_handoffs_follow_arrival_order_across_replays() {
         let mut events: BinaryHeap<SimulationEvent<()>> = BinaryHeap::new();
         let mut next_event_seq = 0;
         for handoff_id in handoffs.into_iter().rev() {
-            push_transfer_complete(&mut events, &mut next_event_seq, 10.0, handoff_id);
+            push_transfer_complete(&mut events, &mut next_event_seq, 10.0, handoff_id, 0);
         }
         let mut released = Vec::new();
-        while let Some(handoff_id) = pop_ready_transfer_complete(&mut events, 10.0) {
+        while let Some((handoff_id, _)) = pop_ready_transfer_complete(&mut events, 10.0) {
             released.push(flow.uuid_for_handoff(handoff_id).unwrap());
         }
         assert_eq!(released, request_ids);
@@ -2000,6 +2000,58 @@ fn sglang_prebuilt_first_token_does_not_execute_a_decode_forward() {
 }
 
 #[test]
+fn sglang_chunk_transfers_overlap_later_prefill_without_releasing_partial_kv() {
+    for (bandwidth, expected_first) in [(256.0, 3.5), (128.0, 4.0), (64.0, 7.0)] {
+        let mut config = sglang_disagg_config();
+        config.num_prefill_workers = 1;
+        config.num_decode_workers = 1;
+        for args in [&mut config.prefill_args, &mut config.decode_args] {
+            args.speedup_ratio = 1.0;
+            args.decode_speedup_ratio = 1.0;
+            args.block_size = 128;
+            args.enable_prefix_caching = false;
+            args.timing_model = crate::engine::TimingModelConfig::Fixed {
+                prefill_ms: 1.0,
+                decode_ms: 10.0,
+            };
+        }
+        config.prefill_args.sglang.chunked_prefill_size = 128;
+        config.prefill_args.kv_transfer_bytes_per_token = Some(1_000_000);
+        config.prefill_args.kv_transfer_bandwidth = Some(bandwidth);
+        let pending =
+            crate::replay::normalize_trace_requests(vec![request(1, 384, 2, 0.0)], 1.0).unwrap();
+        let (collector, stats) =
+            DisaggRuntime::from_requests(&config, None, None, pending, ReplayMode::Trace)
+                .unwrap()
+                .with_per_request_records(true)
+                .run()
+                .unwrap();
+        let report = collector.finish();
+        let record = &report.per_request[0];
+        assert_eq!(record.source_held_ms, Some(3.0));
+        assert_eq!(record.source_released_ms, Some(expected_first));
+        assert_eq!(record.destination_activated_ms, Some(expected_first));
+        assert_eq!(record.first_token_ms, Some(expected_first));
+        assert_eq!(record.terminal_time_ms, expected_first + 10.0);
+        let uuid = Uuid::from_u128(1);
+        assert_eq!(
+            stats
+                .transition_log
+                .iter()
+                .filter(|event| { **event == DisaggTransition::TransferQueued { uuid } })
+                .count(),
+            3
+        );
+        assert!(
+            transition_index(
+                &stats.transition_log,
+                DisaggTransition::TransferQueued { uuid }
+            ) < transition_index(&stats.transition_log, DisaggTransition::SourceHeld { uuid })
+        );
+    }
+}
+
+#[test]
 fn sglang_prebuilt_terminal_output_is_not_delayed_by_another_dp_rank() {
     let mut config = sglang_disagg_config();
     config.num_prefill_workers = 1;
@@ -2044,6 +2096,64 @@ fn sglang_prebuilt_terminal_output_is_not_delayed_by_another_dp_rank() {
     assert_eq!(long.terminal_time_ms, 21.0);
     assert_eq!(report.request_counts.completed_requests, 2);
     assert_eq!(report.request_counts.total_output_tokens, 4);
+}
+
+#[test]
+fn sglang_cancel_during_chunk_transfer_drains_busy_prefill_and_stale_events() {
+    for bandwidth in [0.5, 4096.0] {
+        let mut config = forced_chunked_handoff_config(EngineType::Sglang);
+        for args in [&mut config.prefill_args, &mut config.decode_args] {
+            args.speedup_ratio = 1.0;
+            args.decode_speedup_ratio = 1.0;
+            args.enable_prefix_caching = false;
+            args.timing_model = crate::engine::TimingModelConfig::Fixed {
+                prefill_ms: 1.0,
+                decode_ms: 10.0,
+            };
+        }
+        config.prefill_args.kv_transfer_bytes_per_token = Some(1_000_000);
+        config.prefill_args.kv_transfer_bandwidth = Some(bandwidth);
+        let uuid = Uuid::from_u128(1);
+        let mut runtime = DisaggRuntime::from_requests(
+            &config,
+            None,
+            None,
+            VecDeque::from([request(1, 256, 2, 0.0)]),
+            ReplayMode::Trace,
+        )
+        .unwrap()
+        .with_per_request_records(true);
+        runtime.drain_current_timestamp().unwrap();
+        runtime.advance_now_ms(1.0);
+        runtime.drain_current_timestamp().unwrap();
+        assert_eq!(runtime.state(uuid).unwrap().pending_transfer_index, Some(0));
+        assert!(
+            !runtime
+                .stats
+                .transition_log
+                .contains(&DisaggTransition::SourceHeld { uuid })
+        );
+        let handoff_id = runtime.state(uuid).unwrap().handoff_id;
+        runtime
+            .apply_handoff_fact(uuid, HandoffFact::Canceled { handoff_id })
+            .unwrap();
+        runtime.drain_current_timestamp().unwrap();
+        while !runtime.is_done() {
+            runtime.step().unwrap();
+        }
+        assert!(runtime.now_ms <= 2.0);
+        assert_eq!(runtime.flow.stale_transfer_events, 0);
+        assert!(
+            !runtime
+                .stats
+                .transition_log
+                .contains(&DisaggTransition::DestinationActivated { uuid })
+        );
+        assert_eq!(
+            runtime.collector.per_request_records()[0].terminal_status,
+            ReplayTerminalStatus::Canceled
+        );
+    }
 }
 
 #[test]

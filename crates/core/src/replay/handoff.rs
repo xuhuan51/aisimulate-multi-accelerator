@@ -8,6 +8,7 @@ pub use crate::engine::{HandoffId, HandoffTransferTiming};
 use anyhow::{Result, bail};
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum HandoffOrder {
@@ -17,6 +18,11 @@ pub enum HandoffOrder {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum HandoffFact {
+    SourceChunkReady {
+        handoff_id: HandoffId,
+        ready_tokens: usize,
+        transfer_timing: HandoffTransferTiming,
+    },
     SourceHeld {
         handoff_id: HandoffId,
         transfer_timing: HandoffTransferTiming,
@@ -24,9 +30,13 @@ pub enum HandoffFact {
     DestinationReserved {
         handoff_id: HandoffId,
         transferable_prompt_tokens: usize,
+        #[serde(default)]
+        cached_prompt_tokens: Option<usize>,
     },
     TransferCompleted {
         handoff_id: HandoffId,
+        #[serde(default)]
+        chunk_index: usize,
     },
     Failed {
         handoff_id: HandoffId,
@@ -42,9 +52,10 @@ pub enum HandoffFact {
 impl HandoffFact {
     fn handoff_id(&self) -> HandoffId {
         match *self {
-            Self::SourceHeld { handoff_id, .. }
+            Self::SourceChunkReady { handoff_id, .. }
+            | Self::SourceHeld { handoff_id, .. }
             | Self::DestinationReserved { handoff_id, .. }
-            | Self::TransferCompleted { handoff_id }
+            | Self::TransferCompleted { handoff_id, .. }
             | Self::Failed { handoff_id }
             | Self::TimedOut { handoff_id }
             | Self::Canceled { handoff_id } => handoff_id,
@@ -63,6 +74,8 @@ pub enum HandoffAction {
     StartTransfer {
         handoff_id: HandoffId,
         delay_ms: f64,
+        #[serde(default)]
+        chunk_index: usize,
     },
     ActivateDestination {
         handoff_id: HandoffId,
@@ -223,6 +236,8 @@ struct SourceProgress {
     submitted: bool,
     held: bool,
     transfer_timing: Option<HandoffTransferTiming>,
+    ready_tokens: usize,
+    chunks: VecDeque<usize>,
     release_issued: bool,
     cancel_issued: bool,
     cleanup_done: bool,
@@ -234,6 +249,7 @@ struct DestinationProgress {
     accepted: bool,
     reserved: bool,
     transferable_prompt_tokens: Option<usize>,
+    cached_prompt_tokens: Option<usize>,
     activation_issued: bool,
     activation_applied: bool,
     cancel_issued: bool,
@@ -242,9 +258,17 @@ struct DestinationProgress {
 
 #[derive(Default)]
 struct TransferProgress {
-    issued: bool,
-    scheduled: bool,
+    active: Option<ActiveTransfer>,
+    next_chunk_index: usize,
+    sent_tokens: usize,
     completed: bool,
+}
+
+struct ActiveTransfer {
+    chunk_index: usize,
+    end_tokens: usize,
+    last: bool,
+    scheduled: bool,
 }
 
 /// Pure state machine for one prefill-to-decode ownership handoff.
@@ -313,22 +337,42 @@ impl HandoffCoordinatorCore {
             return Ok(Vec::new());
         }
         match fact {
+            HandoffFact::SourceChunkReady {
+                ready_tokens,
+                transfer_timing,
+                ..
+            } => {
+                if self.order != HandoffOrder::DestinationFirst {
+                    bail!("source chunks require destination-first handoff ordering");
+                }
+                self.accept_transfer_timing(transfer_timing)?;
+                if ready_tokens >= transfer_timing.full_prompt_tokens {
+                    bail!("non-final source chunk must end before the full prompt");
+                }
+                if self.source.held || ready_tokens <= self.source.ready_tokens {
+                    return Ok(Vec::new());
+                }
+                self.source.ready_tokens = ready_tokens;
+                self.source.chunks.push_back(ready_tokens);
+                self.advance_active()
+            }
             HandoffFact::SourceHeld {
                 transfer_timing, ..
             } => {
                 if self.source.held {
                     return Ok(Vec::new());
                 }
-                if !self.source.submitted {
-                    bail!("source held before prefill submission was acknowledged");
-                }
-                validate_transfer_timing(transfer_timing)?;
+                self.accept_transfer_timing(transfer_timing)?;
                 self.source.held = true;
-                self.source.transfer_timing = Some(transfer_timing);
+                self.source.ready_tokens = transfer_timing.full_prompt_tokens;
+                self.source
+                    .chunks
+                    .push_back(transfer_timing.full_prompt_tokens);
                 self.advance_active()
             }
             HandoffFact::DestinationReserved {
                 transferable_prompt_tokens,
+                cached_prompt_tokens,
                 ..
             } => {
                 if self.destination.reserved {
@@ -339,16 +383,25 @@ impl HandoffCoordinatorCore {
                 }
                 self.destination.reserved = true;
                 self.destination.transferable_prompt_tokens = Some(transferable_prompt_tokens);
+                self.destination.cached_prompt_tokens = cached_prompt_tokens;
                 self.advance_active()
             }
-            HandoffFact::TransferCompleted { .. } => {
-                if self.transfer.completed {
+            HandoffFact::TransferCompleted { chunk_index, .. } => {
+                let Some(active) = self.transfer.active.as_ref() else {
+                    if chunk_index < self.transfer.next_chunk_index {
+                        return Ok(Vec::new());
+                    }
+                    bail!("transfer completed before it was issued");
+                };
+                if chunk_index < active.chunk_index {
                     return Ok(Vec::new());
                 }
-                if !self.transfer.scheduled {
+                if chunk_index != active.chunk_index || !active.scheduled {
                     bail!("transfer completed before it was scheduled");
                 }
-                self.transfer.completed = true;
+                self.transfer.sent_tokens = active.end_tokens;
+                self.transfer.completed = active.last;
+                self.transfer.active = None;
                 self.advance_active()
             }
             HandoffFact::Failed { .. }
@@ -395,9 +448,17 @@ impl HandoffCoordinatorCore {
                 require_outcome(&outcome, &[HandoffActionOutcome::Accepted])?;
                 self.destination.accepted = true;
             }
-            HandoffAction::StartTransfer { .. } => {
+            HandoffAction::StartTransfer { chunk_index, .. } => {
                 require_outcome(&outcome, &[HandoffActionOutcome::Scheduled])?;
-                self.transfer.scheduled = true;
+                let active = self
+                    .transfer
+                    .active
+                    .as_mut()
+                    .ok_or_else(|| anyhow::anyhow!("scheduled transfer is not active"))?;
+                if active.chunk_index != chunk_index {
+                    bail!("scheduled transfer does not match the active chunk");
+                }
+                active.scheduled = true;
             }
             HandoffAction::ActivateDestination { .. } => {
                 require_outcome(&outcome, &[HandoffActionOutcome::Applied])?;
@@ -442,6 +503,22 @@ impl HandoffCoordinatorCore {
         self.completion
     }
 
+    fn accept_transfer_timing(&mut self, timing: HandoffTransferTiming) -> Result<()> {
+        if !self.source.submitted {
+            bail!("source KV became ready before prefill submission was acknowledged");
+        }
+        validate_transfer_timing(timing)?;
+        if self
+            .source
+            .transfer_timing
+            .is_some_and(|previous| previous != timing)
+        {
+            bail!("source transfer timing changed within a handoff");
+        }
+        self.source.transfer_timing = Some(timing);
+        Ok(())
+    }
+
     fn advance_active(&mut self) -> Result<Vec<IssuedHandoffAction>> {
         if self.order == HandoffOrder::SourceFirst
             && self.source.held
@@ -455,34 +532,73 @@ impl HandoffCoordinatorCore {
         {
             return Ok(vec![self.issue_submit_prefill()]);
         }
-        if self.source.held && self.destination.reserved && !self.transfer.issued {
+        while self.destination.reserved
+            && self.transfer.active.is_none()
+            && let Some(end_tokens) = self.source.chunks.pop_front()
+        {
             let transfer_timing = self
                 .source
                 .transfer_timing
-                .expect("held source must retain transfer timing");
+                .expect("ready source must retain transfer timing");
             let transferable_prompt_tokens = self
                 .destination
                 .transferable_prompt_tokens
                 .expect("reserved destination must report its transferable footprint");
+            let last = self.source.held && end_tokens == transfer_timing.full_prompt_tokens;
+            let tokens = match transfer_timing.mode {
+                crate::engine::TransferTimingMode::FullPrompt => {
+                    end_tokens.saturating_sub(self.transfer.sent_tokens)
+                }
+                crate::engine::TransferTimingMode::DestinationMissing => {
+                    let prefix_tokens =
+                        self.destination.cached_prompt_tokens.unwrap_or_else(|| {
+                            transfer_timing
+                                .full_prompt_tokens
+                                .saturating_sub(transferable_prompt_tokens)
+                        });
+                    let sent_tokens = self.transfer.sent_tokens.saturating_sub(prefix_tokens);
+                    let remaining_tokens = transferable_prompt_tokens.saturating_sub(sent_tokens);
+                    if last {
+                        remaining_tokens
+                    } else {
+                        end_tokens
+                            .saturating_sub(self.transfer.sent_tokens.max(prefix_tokens))
+                            .min(remaining_tokens)
+                    }
+                }
+            };
+            if tokens == 0 && !last {
+                self.transfer.sent_tokens = end_tokens;
+                continue;
+            }
             let delay_ms = if let Some(curve) = &self.transfer_curve {
-                let tokens = match transfer_timing.mode {
-                    crate::engine::TransferTimingMode::FullPrompt => {
-                        transfer_timing.full_prompt_tokens
-                    }
-                    crate::engine::TransferTimingMode::DestinationMissing => {
-                        transferable_prompt_tokens
-                    }
-                };
                 curve.latency_ms(tokens)?
             } else {
-                transfer_timing
-                    .delay_ms(transferable_prompt_tokens)
-                    .unwrap_or(self.fallback_transfer_delay_ms)
+                HandoffTransferTiming {
+                    mode: crate::engine::TransferTimingMode::FullPrompt,
+                    full_prompt_tokens: tokens,
+                    state_bytes: if last { transfer_timing.state_bytes } else { 0 },
+                    ..transfer_timing
+                }
+                .full_prompt_delay_ms()
+                .unwrap_or(if last {
+                    self.fallback_transfer_delay_ms
+                } else {
+                    0.0
+                })
             };
-            self.transfer.issued = true;
+            let chunk_index = self.transfer.next_chunk_index;
+            self.transfer.next_chunk_index += 1;
+            self.transfer.active = Some(ActiveTransfer {
+                chunk_index,
+                end_tokens,
+                last,
+                scheduled: false,
+            });
             return Ok(vec![self.issue(HandoffAction::StartTransfer {
                 handoff_id: self.handoff_id,
                 delay_ms,
+                chunk_index,
             })]);
         }
         let mut ready = Vec::new();
@@ -670,6 +786,7 @@ mod tests {
             .on_fact(HandoffFact::DestinationReserved {
                 handoff_id,
                 transferable_prompt_tokens: missing_tokens,
+                cached_prompt_tokens: None,
             })?
             .remove(0);
         match transfer.action {
@@ -690,6 +807,7 @@ mod tests {
             .on_fact(HandoffFact::DestinationReserved {
                 handoff_id,
                 transferable_prompt_tokens: 128,
+                cached_prompt_tokens: None,
             })
             .unwrap()
             .remove(0);
@@ -713,9 +831,398 @@ mod tests {
             .on_action_outcome(transfer.id, HandoffActionOutcome::Scheduled)
             .unwrap();
         let ready = coordinator
-            .on_fact(HandoffFact::TransferCompleted { handoff_id })
+            .on_fact(HandoffFact::TransferCompleted {
+                handoff_id,
+                chunk_index: 0,
+            })
             .unwrap();
         (coordinator, ready)
+    }
+
+    fn streaming_handoff(missing_tokens: usize, measured: bool) -> HandoffCoordinatorCore {
+        streaming_handoff_with_prefix(missing_tokens, None, measured)
+    }
+
+    fn streaming_handoff_with_prefix(
+        missing_tokens: usize,
+        cached_prompt_tokens: Option<usize>,
+        measured: bool,
+    ) -> HandoffCoordinatorCore {
+        let handoff_id = HandoffId::new(Uuid::from_u128(3));
+        let mut coordinator = HandoffCoordinatorCore::new_with_fallback(
+            handoff_id,
+            HandoffOrder::DestinationFirst,
+            7.0,
+        );
+        if measured {
+            coordinator.set_transfer_curve(Some(crate::KvTransferCurve::test_curve()));
+        }
+        let reserve = coordinator.start().unwrap().remove(0);
+        coordinator
+            .on_action_outcome(reserve.id, HandoffActionOutcome::Accepted)
+            .unwrap();
+        let submit = coordinator
+            .on_fact(HandoffFact::DestinationReserved {
+                handoff_id,
+                transferable_prompt_tokens: missing_tokens,
+                cached_prompt_tokens,
+            })
+            .unwrap()
+            .remove(0);
+        coordinator
+            .on_action_outcome(submit.id, HandoffActionOutcome::Submitted)
+            .unwrap();
+        coordinator
+    }
+
+    fn chunk_timing() -> HandoffTransferTiming {
+        HandoffTransferTiming {
+            mode: TransferTimingMode::FullPrompt,
+            full_prompt_tokens: 384,
+            kv_bytes_per_token: Some(1_000_000),
+            state_bytes: 0,
+            bandwidth_gb_s: Some(128.0),
+        }
+    }
+
+    #[test]
+    fn sglang_chunks_keep_fifo_boundaries_and_ignore_old_completions() {
+        for measured in [false, true] {
+            let mut coordinator = streaming_handoff(384, measured);
+            let handoff_id = coordinator.handoff_id;
+            let timing = chunk_timing();
+            let mut actions = coordinator
+                .on_fact(HandoffFact::SourceChunkReady {
+                    handoff_id,
+                    ready_tokens: 128,
+                    transfer_timing: timing,
+                })
+                .unwrap();
+            assert!(
+                coordinator
+                    .on_fact(HandoffFact::SourceChunkReady {
+                        handoff_id,
+                        ready_tokens: 256,
+                        transfer_timing: timing,
+                    })
+                    .unwrap()
+                    .is_empty()
+            );
+            assert!(
+                coordinator
+                    .on_fact(HandoffFact::SourceHeld {
+                        handoff_id,
+                        transfer_timing: timing,
+                    })
+                    .unwrap()
+                    .is_empty()
+            );
+            for chunk_index in 0..3 {
+                assert_eq!(actions.len(), 1);
+                let transfer = actions.remove(0);
+                assert_eq!(
+                    transfer.action,
+                    HandoffAction::StartTransfer {
+                        handoff_id,
+                        delay_ms: 1.0,
+                        chunk_index,
+                    }
+                );
+                coordinator
+                    .on_action_outcome(transfer.id, HandoffActionOutcome::Scheduled)
+                    .unwrap();
+                if chunk_index > 0 {
+                    assert!(
+                        coordinator
+                            .on_fact(HandoffFact::TransferCompleted {
+                                handoff_id,
+                                chunk_index: chunk_index - 1,
+                            })
+                            .unwrap()
+                            .is_empty()
+                    );
+                }
+                actions = coordinator
+                    .on_fact(HandoffFact::TransferCompleted {
+                        handoff_id,
+                        chunk_index,
+                    })
+                    .unwrap();
+            }
+            assert_eq!(actions.len(), 2);
+            assert!(matches!(
+                actions[0].action,
+                HandoffAction::ActivateDestination { .. }
+            ));
+            assert!(matches!(
+                actions[1].action,
+                HandoffAction::ReleaseSource { .. }
+            ));
+            assert!(
+                coordinator
+                    .on_fact(HandoffFact::TransferCompleted {
+                        handoff_id,
+                        chunk_index: 2,
+                    })
+                    .unwrap()
+                    .is_empty()
+            );
+        }
+    }
+
+    #[test]
+    fn sglang_chunks_skip_destination_prefix_and_send_state_once() {
+        for missing_tokens in [0, 128] {
+            let mut coordinator = streaming_handoff(missing_tokens, false);
+            let handoff_id = coordinator.handoff_id;
+            let timing = HandoffTransferTiming {
+                mode: TransferTimingMode::DestinationMissing,
+                state_bytes: 128_000_000,
+                ..chunk_timing()
+            };
+            for ready_tokens in [128, 256] {
+                assert!(
+                    coordinator
+                        .on_fact(HandoffFact::SourceChunkReady {
+                            handoff_id,
+                            ready_tokens,
+                            transfer_timing: timing,
+                        })
+                        .unwrap()
+                        .is_empty()
+                );
+            }
+            let actions = coordinator
+                .on_fact(HandoffFact::SourceHeld {
+                    handoff_id,
+                    transfer_timing: timing,
+                })
+                .unwrap();
+            assert_eq!(
+                actions[0].action,
+                HandoffAction::StartTransfer {
+                    handoff_id,
+                    delay_ms: if missing_tokens == 0 { 1.0 } else { 2.0 },
+                    chunk_index: 0,
+                }
+            );
+        }
+    }
+
+    #[test]
+    fn sglang_chunks_separate_cached_prefix_from_partial_page_padding() {
+        let mut coordinator = streaming_handoff_with_prefix(256, Some(128), false);
+        let handoff_id = coordinator.handoff_id;
+        let timing = HandoffTransferTiming {
+            full_prompt_tokens: 257,
+            mode: TransferTimingMode::DestinationMissing,
+            ..chunk_timing()
+        };
+        assert!(
+            coordinator
+                .on_fact(HandoffFact::SourceChunkReady {
+                    handoff_id,
+                    ready_tokens: 128,
+                    transfer_timing: timing,
+                })
+                .unwrap()
+                .is_empty()
+        );
+        let first = coordinator
+            .on_fact(HandoffFact::SourceChunkReady {
+                handoff_id,
+                ready_tokens: 256,
+                transfer_timing: timing,
+            })
+            .unwrap()
+            .remove(0);
+        assert_eq!(
+            first.action,
+            HandoffAction::StartTransfer {
+                handoff_id,
+                delay_ms: 1.0,
+                chunk_index: 0,
+            }
+        );
+        coordinator
+            .on_action_outcome(first.id, HandoffActionOutcome::Scheduled)
+            .unwrap();
+        assert!(
+            coordinator
+                .on_fact(HandoffFact::TransferCompleted {
+                    handoff_id,
+                    chunk_index: 0,
+                })
+                .unwrap()
+                .is_empty()
+        );
+        let last = coordinator
+            .on_fact(HandoffFact::SourceHeld {
+                handoff_id,
+                transfer_timing: timing,
+            })
+            .unwrap()
+            .remove(0);
+        assert_eq!(
+            last.action,
+            HandoffAction::StartTransfer {
+                handoff_id,
+                delay_ms: 1.0,
+                chunk_index: 1,
+            }
+        );
+    }
+
+    #[test]
+    fn sglang_chunks_apply_fixed_fallback_only_to_final_send() {
+        let mut coordinator = streaming_handoff(384, false);
+        let handoff_id = coordinator.handoff_id;
+        let timing = HandoffTransferTiming {
+            bandwidth_gb_s: None,
+            ..chunk_timing()
+        };
+        let transfer = coordinator
+            .on_fact(HandoffFact::SourceChunkReady {
+                handoff_id,
+                ready_tokens: 128,
+                transfer_timing: timing,
+            })
+            .unwrap()
+            .remove(0);
+        assert_eq!(
+            transfer.action,
+            HandoffAction::StartTransfer {
+                handoff_id,
+                delay_ms: 0.0,
+                chunk_index: 0,
+            }
+        );
+        coordinator
+            .on_action_outcome(transfer.id, HandoffActionOutcome::Scheduled)
+            .unwrap();
+        assert!(
+            coordinator
+                .on_fact(HandoffFact::TransferCompleted {
+                    handoff_id,
+                    chunk_index: 0,
+                })
+                .unwrap()
+                .is_empty()
+        );
+        let final_transfer = coordinator
+            .on_fact(HandoffFact::SourceHeld {
+                handoff_id,
+                transfer_timing: timing,
+            })
+            .unwrap()
+            .remove(0);
+        assert_eq!(
+            final_transfer.action,
+            HandoffAction::StartTransfer {
+                handoff_id,
+                delay_ms: 7.0,
+                chunk_index: 1,
+            }
+        );
+    }
+
+    #[test]
+    fn sglang_chunks_reject_changed_identity_and_premature_completion() {
+        let mut coordinator = streaming_handoff(384, false);
+        let handoff_id = coordinator.handoff_id;
+        let timing = chunk_timing();
+        assert!(
+            coordinator
+                .on_fact(HandoffFact::SourceChunkReady {
+                    handoff_id,
+                    ready_tokens: 384,
+                    transfer_timing: timing,
+                })
+                .is_err()
+        );
+        let transfer = coordinator
+            .on_fact(HandoffFact::SourceChunkReady {
+                handoff_id,
+                ready_tokens: 128,
+                transfer_timing: timing,
+            })
+            .unwrap()
+            .remove(0);
+        assert!(
+            coordinator
+                .on_fact(HandoffFact::TransferCompleted {
+                    handoff_id,
+                    chunk_index: 0,
+                })
+                .is_err()
+        );
+        assert!(
+            coordinator
+                .on_fact(HandoffFact::SourceChunkReady {
+                    handoff_id,
+                    ready_tokens: 256,
+                    transfer_timing: HandoffTransferTiming {
+                        full_prompt_tokens: 512,
+                        ..timing
+                    },
+                })
+                .is_err()
+        );
+        coordinator
+            .on_action_outcome(transfer.id, HandoffActionOutcome::Scheduled)
+            .unwrap();
+        assert!(
+            coordinator
+                .on_fact(HandoffFact::TransferCompleted {
+                    handoff_id,
+                    chunk_index: 1,
+                })
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn sglang_chunks_cancel_without_activating_partial_kv() {
+        let mut coordinator = streaming_handoff(384, false);
+        let handoff_id = coordinator.handoff_id;
+        let transfer = coordinator
+            .on_fact(HandoffFact::SourceChunkReady {
+                handoff_id,
+                ready_tokens: 128,
+                transfer_timing: chunk_timing(),
+            })
+            .unwrap()
+            .remove(0);
+        coordinator
+            .on_action_outcome(transfer.id, HandoffActionOutcome::Scheduled)
+            .unwrap();
+        let cleanup = coordinator
+            .on_fact(HandoffFact::Canceled { handoff_id })
+            .unwrap();
+        assert_eq!(cleanup.len(), 2);
+        assert!(matches!(
+            cleanup[0].action,
+            HandoffAction::CancelSource { .. }
+        ));
+        assert!(matches!(
+            cleanup[1].action,
+            HandoffAction::CancelDestination { .. }
+        ));
+        assert!(
+            coordinator
+                .on_fact(HandoffFact::TransferCompleted {
+                    handoff_id,
+                    chunk_index: 0,
+                })
+                .unwrap()
+                .is_empty()
+        );
+        for action in cleanup {
+            coordinator
+                .on_action_outcome(action.id, HandoffActionOutcome::Applied)
+                .unwrap();
+        }
+        assert_eq!(coordinator.completion(), Some(HandoffCompletion::Canceled));
     }
 
     #[test]

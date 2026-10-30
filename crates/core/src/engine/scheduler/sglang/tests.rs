@@ -1409,6 +1409,7 @@ mod destination_lifecycle {
                 handoff_id: reserved_handoff,
                 request_id: reserved_request,
                 transferable_prompt_tokens: 4,
+                cached_prompt_tokens: Some(4),
             }] if *reserved_handoff == handoff_id && *reserved_request == logical_uuid
         ));
         assert!(destination.destination_is_held(handoff_id));
