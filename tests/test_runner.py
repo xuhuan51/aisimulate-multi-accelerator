@@ -116,6 +116,45 @@ def test_public_namespace_exports_engine_runner_contract():
     assert aisimulate.EngineReplayRunnerFactory is EngineReplayRunnerFactory
 
 
+@pytest.mark.parametrize("capture_requests", [False, True])
+def test_sglang_decode_oom_reaches_public_report_and_search_gate(capture_requests):
+    from aisimulate.sweeper.score import request_failure_violations
+
+    pytest.importorskip("aisimulate._runtime")
+    deployment = BackendDeploymentSpec(
+        deployment_mode="agg",
+        backend="sglang",
+        backend_version="0.5.22",
+        num_workers=1,
+        agg_engine_args={
+            "rank": {
+                "backend": "sglang",
+                "block_size": 4,
+                "num_gpu_blocks": 2,
+                "enable_prefix_caching": False,
+                "sglang": {"clip_max_new_tokens": 1, "chunked_prefill_size": 16},
+                "timing_model": {"type": "fixed", "prefill_ms": 2.0, "decode_ms": 1.0},
+            }
+        },
+    )
+    runner = EngineReplayRunnerFactory().create(0)
+    try:
+        report = runner.run(
+            _spec(deployment=deployment, workload={"isl": 3, "osl": 12, "concurrency": 1, "request_count": 2}),
+            output_requirements=ReplayOutputRequirements(capture_per_request=capture_requests),
+        )
+    finally:
+        runner.close()
+    assert report.metrics["num_requests"] == 2
+    assert report.metrics["completed_requests"] == 0
+    assert report.metrics["rejected_requests"] == 2
+    assert report.metrics["failed_requests"] == 0
+    assert report.metrics["canceled_requests"] == 0
+    assert report.metrics["output_throughput_tok_s"] == 0
+    assert report.metrics["num_ttft_samples"] == 0
+    assert request_failure_violations(report.metrics) == ("rejected_requests=2",)
+
+
 def test_legacy_replay_config_preserves_execution_mode() -> None:
     config = ReplayCliConfig(
         trace_files=(),

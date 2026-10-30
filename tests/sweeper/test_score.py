@@ -49,6 +49,36 @@ REPORT = {
 }
 
 
+@pytest.mark.parametrize("failure_metric", ["rejected_requests", "failed_requests"])
+@pytest.mark.parametrize("target", ["throughput", "pareto"])
+def test_request_failures_cannot_win_search_analysis(failure_metric, target):
+    goal = OptimizationGoal(target=target)
+    candidates = [
+        make_candidate(
+            {"used_gpus": 1},
+            dict(REPORT, output_throughput_tok_s=rate, **{failure_metric: failures}),
+            goal.target,
+            pareto_objectives=goal.resolved_pareto_objectives if goal.is_pareto else None,
+        )
+        for rate, failures in [(10000.0, 1.0), (100.0, 0.0)]
+    ]
+    selected = analyze_candidates(candidates, goal)
+    assert selected == [candidates[1]]
+    assert candidates[0].metrics[failure_metric] == 1.0
+
+
+def test_pending_and_canceled_requests_are_not_reported_as_runtime_failures():
+    goal = OptimizationGoal(target="throughput")
+    candidate = make_candidate(
+        {"used_gpus": 1},
+        dict(REPORT, num_requests=20.0, completed_requests=10.0, canceled_requests=3.0),
+        goal.target,
+    )
+    assert analyze_candidates([candidate], goal) == [candidate]
+    assert candidate.metrics["num_requests"] == 20.0
+    assert candidate.metrics["canceled_requests"] == 3.0
+
+
 def test_min_gpus_uses_provisioned_count_not_time_average_or_throughput():
     candidate = make_candidate({"used_gpus": 2}, REPORT, OptimizationTarget.MIN_GPUS)
     assert candidate.score == -2.0  # REPORT's time-averaged GPU count is four.

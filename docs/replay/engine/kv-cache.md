@@ -26,6 +26,14 @@ request with one output token completes after prefill without allocating a
 decode page. Requests with longer outputs compete for decode memory at the
 following decode admission, rather than delaying already sampled first tokens.
 
+Under decode memory pressure, SGLang's default length policy retracts the
+request with the fewest generated tokens, then the longest original prompt.
+Exact ties retract the last request in batch order. If the last surviving
+request still cannot obtain its next KV page after eviction, it is rejected
+and its KV is released. This prevents zero-progress decode retries from
+being interpreted as a valid latency prediction. The replay summary exposes
+the rejection separately from successfully completed requests.
+
 Merge this fragment into an existing `engine` block from the [engine overview](README.md):
 
 ```yaml

@@ -485,6 +485,22 @@ fn zero_output_completion_survives_decode_reservation_failure() {
             ..
         }] if *signal_uuid == zero_uuid
     ));
+
+    for mut request in result.completed_requests {
+        decode::cleanup_completed_request(&mut request, &mut kv_manager, config.block_size);
+    }
+    let next = decode::simulate_decode_step(&mut running, &mut kv_manager, &config, 0.0, false);
+    assert!(running.is_empty());
+    assert!(matches!(
+        next.output_signals.as_slice(),
+        [OutputSignal {
+            uuid: signal_uuid,
+            token_id: Some(_),
+            completed: true,
+            rejected: false,
+            ..
+        }] if *signal_uuid == normal_uuid
+    ));
 }
 
 #[test]
@@ -527,6 +543,102 @@ fn retraction_ratio_is_estimated_from_survivors_before_the_forward() {
     assert_eq!(result.requests[0].uuid, Uuid::from_u128(90_011));
     assert!(running.is_empty(), "r1 completes in this step");
     assert_eq!(result.new_token_ratio_estimate, Some(1.0));
+}
+
+#[test]
+fn sglang_memory_pressure_retraction_order_matches_pinned_runtime() {
+    for (shapes, expected_index) in [
+        ([(4usize, 1usize), (8, 1)], 1),
+        ([(4, 1), (4, 1)], 1),
+        ([(4, 1), (8, 2)], 0),
+    ] {
+        let capacity = shapes
+            .iter()
+            .map(|(prompt, output)| (prompt + output - 1).div_ceil(4) * 4)
+            .sum::<usize>();
+        let config = SglangConfig::from_args(&test_args(capacity / 4, 4, 16));
+        let mut kv_manager = SglangKvManager::new(capacity, 4, KvEventPublishers::default(), 0);
+        let mut running = shapes
+            .iter()
+            .enumerate()
+            .map(|(index, &(prompt, output))| {
+                let start = (index * 100) as u32;
+                let sequence = (start..start + (prompt + output) as u32).collect::<Vec<_>>();
+                let materialized = sequence.len() - 1;
+                let allocation = kv_manager
+                    .allocate_for_request(&sequence[..materialized])
+                    .unwrap();
+                SglangRequest {
+                    is_decode_handoff: false,
+                    uuid: Uuid::from_u128(91_000 + index as u128),
+                    sequence_tokens: sequence,
+                    prompt_len: prompt,
+                    max_output_tokens: 16,
+                    planned_output_ids: None,
+                    kv_lease: allocation.lease,
+                    materialized_tokens: materialized,
+                    allocated_tokens: materialized.div_ceil(4) * 4,
+                }
+            })
+            .collect::<Vec<_>>();
+        let retracted = decode::check_decode_mem(&mut running, &mut kv_manager, &config);
+        assert_eq!(retracted.len(), 1);
+        assert_eq!(retracted[0].uuid, Uuid::from_u128(91_000 + expected_index));
+        assert_eq!(running.len(), 1);
+    }
+}
+
+#[test]
+fn sglang_memory_pressure_aborts_unallocatable_last_request() {
+    for prefix_caching in [false, true] {
+        let mut args = test_args(2, 4, 16);
+        args.enable_prefix_caching = prefix_caching;
+        args.sglang.as_mut().unwrap().clip_max_new_tokens = Some(1);
+        let mut core = SglangCore::new(args);
+        let request_id = Uuid::from_u128(91_100);
+        let mut request = direct_request(vec![1, 2, 3], 12);
+        request.uuid = Some(request_id);
+        core.receive(request);
+        let mut now = 0.0;
+        let mut signals = Vec::new();
+        for _ in 0..8 {
+            let pass = core.execute_hidden_pass(now);
+            now = pass.end_ms;
+            signals.extend(pass.output_signals);
+            if core.num_requests() == 0 {
+                break;
+            }
+        }
+        assert_eq!(core.num_requests(), 0);
+        assert_eq!(
+            signals
+                .iter()
+                .filter(|signal| signal.token_id.is_some())
+                .count(),
+            6
+        );
+        assert!(matches!(
+            signals.last(),
+            Some(OutputSignal {
+                uuid,
+                token_id: None,
+                completed: true,
+                rejected: true,
+                ..
+            }) if *uuid == request_id
+        ));
+        assert_eq!(
+            core.kv_manager.cache().available_tokens() + core.kv_manager.cache().evictable_size,
+            8
+        );
+        let mut replacement = direct_request(vec![100], 1);
+        replacement.uuid = Some(request_id);
+        core.receive(replacement);
+        let pass = core.execute_hidden_pass(now);
+        assert_eq!(core.num_requests(), 0);
+        assert_eq!(pass.output_signals.len(), 1);
+        assert!(pass.output_signals[0].completed && !pass.output_signals[0].rejected);
+    }
 }
 
 #[test]

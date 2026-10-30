@@ -791,6 +791,19 @@ and streaming stubs. Its generated
 records the source identities and event ordering. The upstream source is not
 bundled; the oracle does not execute a full serving runtime or measure memory.
 
+The decode retraction tie ordering and last-request OOM handling in
+`crates/core/src/engine/scheduler/sglang/decode.rs` and its regression tests
+independently reimplement and modify `_get_decode_retraction_order` and
+`retract_decode` from `managers/schedule_batch.py` at the immutable SGLang
+revision `baa9befa381511cd4d56f83980951e5a45fffc6d` above
+(Copyright 2023-2026 SGLang Team and contributors; Apache-2.0).
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/check_decode_memory_pressure.py`
+executes those hash-checked bodies and `estimate_new_token_ratio_after_retract`
+from `managers/scheduler_components/new_token_ratio_tracker.py` with CPU stubs.
+Its generated `production/scheduler-audit-node20-20261030/decode-memory-pressure-oracle.json`
+records ordering, release calls and aborts. Upstream source is not bundled;
+the oracle does not measure hardware performance or validate host KV backup.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

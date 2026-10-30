@@ -99,6 +99,9 @@ pub struct ReplayReport {
 pub struct TraceRequestCounts {
     pub num_requests: usize,
     pub completed_requests: usize,
+    pub rejected_requests: usize,
+    pub failed_requests: usize,
+    pub canceled_requests: usize,
     pub total_input_tokens: usize,
     pub total_output_tokens: usize,
 }
@@ -435,6 +438,9 @@ impl Serialize for ReplayReport {
             "completed_requests",
             &self.request_counts.completed_requests,
         )?;
+        map.serialize_entry("rejected_requests", &self.request_counts.rejected_requests)?;
+        map.serialize_entry("failed_requests", &self.request_counts.failed_requests)?;
+        map.serialize_entry("canceled_requests", &self.request_counts.canceled_requests)?;
         map.serialize_entry(
             "total_input_tokens",
             &self.request_counts.total_input_tokens,
@@ -1858,6 +1864,9 @@ impl TraceCollector {
         let mut total_input_tokens = 0usize;
         let mut total_output_tokens = 0usize;
         let mut completed_requests = 0usize;
+        let mut rejected_requests = 0usize;
+        let mut failed_requests = 0usize;
+        let mut canceled_requests = 0usize;
         let mut observed_start_ms: Option<f64> = None;
         let mut observed_end_ms: Option<f64> = None;
         let mut total_reused_tokens = 0usize;
@@ -1870,6 +1879,12 @@ impl TraceCollector {
             let stats = requests
                 .get(&uuid)
                 .expect("request order must reference retained request");
+            match stats.terminal_status {
+                Some(ReplayTerminalStatus::Rejected) => rejected_requests += 1,
+                Some(ReplayTerminalStatus::Failed) => failed_requests += 1,
+                Some(ReplayTerminalStatus::Canceled) => canceled_requests += 1,
+                _ => {}
+            }
             if stats.first_admit_ms.is_none() {
                 continue;
             }
@@ -1973,6 +1988,9 @@ impl TraceCollector {
             request_counts: TraceRequestCounts {
                 num_requests: request_count,
                 completed_requests,
+                rejected_requests,
+                failed_requests,
+                canceled_requests,
                 total_input_tokens,
                 total_output_tokens,
             },
@@ -3404,23 +3422,47 @@ mod tests {
         assert_eq!(parsed["terminal_status"], "completed");
     }
 
-    #[test]
-    fn terminal_failures_emit_nullable_latencies_and_unfinished_requests_are_omitted() {
+    #[rstest::rstest]
+    fn terminal_failures_emit_nullable_latencies_and_unfinished_requests_are_omitted(
+        #[values(false, true)] bounded: bool,
+        #[values(false, true)] detailed: bool,
+    ) {
         let mut collector = TraceCollector::default();
-        collector.set_capture_per_request(true);
+        collector.set_capture_per_request(detailed);
+        if bounded {
+            collector.begin_batch_reporting();
+        }
         for (uuid_n, status) in [
             (1, ReplayTerminalStatus::Rejected),
             (2, ReplayTerminalStatus::Canceled),
             (3, ReplayTerminalStatus::Failed),
         ] {
             let uuid = Uuid::from_u128(uuid_n);
-            collector.on_arrival(uuid, uuid_n as f64, 64, 2);
+            collector
+                .try_on_arrival(uuid, uuid_n as f64, 64, 2)
+                .unwrap();
             collector.on_terminal(uuid, uuid_n as f64 + 1.0, status);
+            collector.on_terminal(uuid, uuid_n as f64 + 2.0, status);
         }
-        collector.on_arrival(Uuid::from_u128(4), 4.0, 64, 2);
+        collector
+            .try_on_arrival(Uuid::from_u128(4), 4.0, 64, 2)
+            .unwrap();
+        if bounded {
+            collector.prepare_batch_report().unwrap();
+        }
 
         let report = collector.finish();
 
+        let serialized = serde_json::to_value(&report).unwrap();
+        assert_eq!(serialized["num_requests"], 4);
+        assert_eq!(serialized["completed_requests"], 0);
+        assert_eq!(serialized["rejected_requests"], 1);
+        assert_eq!(serialized["failed_requests"], 1);
+        assert_eq!(serialized["canceled_requests"], 1);
+        if !detailed {
+            assert!(report.per_request.is_empty());
+            return;
+        }
         assert_eq!(report.per_request.len(), 3);
         assert_eq!(
             report

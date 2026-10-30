@@ -1,0 +1,381 @@
+{
+  "date": "2026-10-30",
+  "base_revision": "68f8815c31f5ecf400a54361766911906b1cc8a7",
+  "scope": "CPU-only pinned-source, scheduler, report, search, frozen GPU/model and offline replay validation. No NPU or serving measurements.",
+  "upstream_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+  "changes": [
+    "Default length retraction orders by output length, reverse prompt length, reverse batch index.",
+    "Last request that cannot reserve KV after eviction is rejected and released; completed requests are cleaned before another memory attempt.",
+    "Native replay reports explicit rejected/failed/canceled request counts through both summary paths.",
+    "Search excludes rejected/failed requests before sampler observation, scalar and Pareto ranking; cancellation and time cutoffs are not assumed failures.",
+    "Corrected immutable script metadata: 8K/1K N=2C, 32K/1K N=C."
+  ],
+  "tests": {
+    "pinned_source_cases": 6,
+    "rust_core": {
+      "passed": 2101,
+      "ignored": 1
+    },
+    "runner_and_search": {
+      "passed": 622
+    },
+    "frozen_gpu_model_parity": {
+      "passed": 390,
+      "goldens_changed": false
+    },
+    "glm_and_public_api": {
+      "passed": 140,
+      "deselected": 1,
+      "exclusion": "Preexisting test_stable_function_signatures missing op_level_options in its expected signature; unchanged by this phase."
+    },
+    "legal_and_format": "passed"
+  },
+  "before_fix": {
+    "scheduler_regressions": "2 failed: wrong victim and last-request no-progress",
+    "search_regressions": "7 failed: failure counts omitted or failing candidate selected",
+    "intermediate_failures": "Preserved logs include old zero-output cleanup expectation and new fake-sampler test fixture corrections."
+  },
+  "package": {
+    "wheel": "build/scheduler-audit-20261030/memory-pressure-wheels/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl",
+    "wheel_sha256": "526a156ee7e068c2f29004e9629437c74d8ceb40f3c4773a96e561150a3e846f",
+    "native_sha256": "9f4af49ff69537b0bc429533d4e36855f5e3f33958c3cde11d88b54b3b0c5684",
+    "source_files_matched": 2278,
+    "tables": {
+      "aisimulate_core/systems/data/ascend910c/attention/sglang/0.5.22/ascend_attention_perf.parquet": "e1993aedd3ece9a3ad79f696d782d124e56499e8b0988b03edfdb1f5ff9aeafd",
+      "aisimulate_core/systems/data/ascend910c/attention/sglang/0.5.22/ascend_dcp_attention_perf.parquet": "69c0225063d8d7546be38abbfc621d9a8a1c6fbbaf850f4e78d369d49f583f20",
+      "aisimulate_core/systems/data/ascend910c/comm/hccl/9.1.0-b243-drv26.1.1-nodes31-32-v3/hccl_perf.parquet": "b17770797d092572004884d4ac927346b565c5db8f686d593c29c52e7d09d5f8",
+      "aisimulate_core/systems/data/ascend910c/gemm/sglang/0.5.22/ascend_linear_perf.parquet": "fa23597e4a506562eafd6302f2a1a10f619b6316e09840f0613035f92ec29d28",
+      "aisimulate_core/systems/data/ascend910c/kv_transfer/sglang/0.5.22/ascend_pd_perf.parquet": "b8e0fd086dc67529e243ec85e8f588d74edd8e7fc1bcd0bb5b14050bb95c9fb1",
+      "aisimulate_core/systems/data/ascend910c/mla_bmm/sglang/0.5.22/ascend_bmm_perf.parquet": "93ea52d07ac393c94d743754991b1bdcbc0166ae4a28ac617d9a09c5080e6f75",
+      "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_deepep_perf.parquet": "7bab1a8aa5bc69c283846d23d5aee36e39bf26f2838a65b1093bceb57268259c",
+      "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_moe_chain_perf.parquet": "66a7979919f7be83ae2d59a88bff50cd67e0d4297910a4170beb00c6f3489938",
+      "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_moe_tensor_perf.parquet": "b9ae6894e94a233b843918951801b8533d9d921bc297a3c903e6dd9507032f94",
+      "aisimulate_core/systems/data/ascend910c/vector/sglang/0.5.22/ascend_vector_perf.parquet": "cfcc32a50cd4c4c846c2b61e428501e4d0af7031fed00e6989530ea16eadbf1c"
+    },
+    "legal_files_match": true
+  },
+  "offline": {
+    "8192": {
+      "input_tokens": 8192,
+      "execution": {
+        "command": [
+          "docker",
+          "exec",
+          "-w",
+          "/workspace",
+          "-e",
+          "PYTHONPATH=/workspace/python/aisimulate/src",
+          "aisim-node20-validation-20261027-v2",
+          "python3",
+          "-m",
+          "aisimulate",
+          "recommend",
+          "--stack",
+          "engine",
+          "--config",
+          "/workspace/examples/cli/ascend910c-glm52-pd-eager-search.yaml",
+          "--set",
+          "engine.model=/workspace/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata",
+          "--set",
+          "engine.workers.decode.parallelism.attention_data=4",
+          "--set",
+          "engine.workers.decode.parallelism.moe_expert=32",
+          "--set",
+          "traffic.load.concurrency=32",
+          "--set",
+          "traffic.stop.requests=32",
+          "--set",
+          "traffic.source.input_tokens=8192",
+          "--set",
+          "optimizer.parallelism=2",
+          "--output-dir",
+          "/workspace/aisimulate-output/memory-pressure-pd-8192-20261030"
+        ],
+        "log": "/tmp/aisim-memory-pressure-pd-8192.log",
+        "returncode": 0
+      },
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 2,
+        "failed": 0,
+        "feasible": 2,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "metrics": {
+        "completed_requests": 32,
+        "mean_ttft_ms": 11040.637664875952,
+        "mean_tpot_ms": 223.1004763090176,
+        "output_throughput_tok_s": 132.20450907456788,
+        "duration_ms": 247858.41443212595
+      },
+      "best_parallelism": {
+        "prefill_replicas": 2,
+        "decode_replicas": 1,
+        "prefill_tp": 8,
+        "decode_tp": 8,
+        "prefill_attention_dp": 2,
+        "decode_attention_dp": 4,
+        "prefill_moe_ep": 16,
+        "decode_moe_ep": 32
+      },
+      "saved_replay": {
+        "command": [
+          "docker",
+          "exec",
+          "-w",
+          "/workspace",
+          "-e",
+          "PYTHONPATH=/workspace/python/aisimulate/src",
+          "aisim-node20-validation-20261027-v2",
+          "python3",
+          "-m",
+          "aisimulate",
+          "predict",
+          "--stack",
+          "engine",
+          "--config",
+          "/workspace/aisimulate-output/memory-pressure-pd-8192-20261030/recommendations/0001.yaml",
+          "--output-dir",
+          "/workspace/aisimulate-output/memory-pressure-pd-8192-20261030/saved-best-replay"
+        ],
+        "log": "/tmp/aisim-memory-pressure-pd-8192-saved.log",
+        "returncode": 0
+      },
+      "saved_replay_differences": {},
+      "previous_candidate_differences": {},
+      "candidates": [
+        {
+          "prefill_replicas": 1,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 32.0,
+            "mean_ttft_ms": 20853.140824875947,
+            "mean_tpot_ms": 223.1008486571358,
+            "output_throughput_tok_s": 122.50429015213042,
+            "duration_ms": 267484.50980212586
+          }
+        },
+        {
+          "prefill_replicas": 2,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 32.0,
+            "mean_ttft_ms": 11040.637664875952,
+            "mean_tpot_ms": 223.1004763090176,
+            "output_throughput_tok_s": 132.20450907456788,
+            "duration_ms": 247858.41443212595
+          }
+        }
+      ]
+    },
+    "32768": {
+      "input_tokens": 32768,
+      "execution": {
+        "command": [
+          "docker",
+          "exec",
+          "-w",
+          "/workspace",
+          "-e",
+          "PYTHONPATH=/workspace/python/aisimulate/src",
+          "aisim-node20-validation-20261027-v2",
+          "python3",
+          "-m",
+          "aisimulate",
+          "recommend",
+          "--stack",
+          "engine",
+          "--config",
+          "/workspace/examples/cli/ascend910c-glm52-pd-eager-search.yaml",
+          "--set",
+          "engine.model=/workspace/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata",
+          "--set",
+          "engine.workers.decode.parallelism.attention_data=4",
+          "--set",
+          "engine.workers.decode.parallelism.moe_expert=32",
+          "--set",
+          "traffic.load.concurrency=8",
+          "--set",
+          "traffic.stop.requests=8",
+          "--set",
+          "traffic.source.input_tokens=32768",
+          "--set",
+          "optimizer.parallelism=2",
+          "--output-dir",
+          "/workspace/aisimulate-output/memory-pressure-pd-32768-20261030"
+        ],
+        "log": "/tmp/aisim-memory-pressure-pd-32768.log",
+        "returncode": 0
+      },
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 2,
+        "failed": 0,
+        "feasible": 2,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "metrics": {
+        "completed_requests": 8,
+        "mean_ttft_ms": 15890.210070625952,
+        "mean_tpot_ms": 223.06604145552302,
+        "output_throughput_tok_s": 32.84211809183035,
+        "duration_ms": 249435.80000212602
+      },
+      "best_parallelism": {
+        "prefill_replicas": 2,
+        "decode_replicas": 1,
+        "prefill_tp": 8,
+        "decode_tp": 8,
+        "prefill_attention_dp": 2,
+        "decode_attention_dp": 4,
+        "prefill_moe_ep": 16,
+        "decode_moe_ep": 32
+      },
+      "saved_replay": {
+        "command": [
+          "docker",
+          "exec",
+          "-w",
+          "/workspace",
+          "-e",
+          "PYTHONPATH=/workspace/python/aisimulate/src",
+          "aisim-node20-validation-20261027-v2",
+          "python3",
+          "-m",
+          "aisimulate",
+          "predict",
+          "--stack",
+          "engine",
+          "--config",
+          "/workspace/aisimulate-output/memory-pressure-pd-32768-20261030/recommendations/0001.yaml",
+          "--output-dir",
+          "/workspace/aisimulate-output/memory-pressure-pd-32768-20261030/saved-best-replay"
+        ],
+        "log": "/tmp/aisim-memory-pressure-pd-32768-saved.log",
+        "returncode": 0
+      },
+      "saved_replay_differences": {},
+      "previous_candidate_differences": {},
+      "candidates": [
+        {
+          "prefill_replicas": 1,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 8.0,
+            "mean_ttft_ms": 26419.16711137595,
+            "mean_tpot_ms": 223.06646494843605,
+            "output_throughput_tok_s": 30.297137905084202,
+            "duration_ms": 270388.576824126
+          }
+        },
+        {
+          "prefill_replicas": 2,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 8.0,
+            "mean_ttft_ms": 15890.210070625952,
+            "mean_tpot_ms": 223.06604145552302,
+            "output_throughput_tok_s": 32.84211809183035,
+            "duration_ms": 249435.80000212602
+          }
+        }
+      ]
+    },
+    "aggregate": {
+      "execution": {
+        "command": [
+          "docker",
+          "exec",
+          "-w",
+          "/workspace",
+          "-e",
+          "PYTHONPATH=/workspace/python/aisimulate/src",
+          "aisim-node20-validation-20261027-v2",
+          "python3",
+          "-m",
+          "aisimulate",
+          "predict",
+          "--stack",
+          "engine",
+          "--config",
+          "/workspace/examples/cli/ascend910c-glm52-8k1k.yaml",
+          "--set",
+          "engine.model=/workspace/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata",
+          "--set",
+          "engine.estimator_config.op_level.ascend.decode_execution_mode=eager",
+          "--set",
+          "engine.workers.aggregated.scheduler.ignore_eos=true",
+          "--set",
+          "traffic.load.concurrency=8",
+          "--set",
+          "traffic.stop.requests=8",
+          "--output-dir",
+          "/workspace/aisimulate-output/memory-pressure-aggregate-8192-20261030"
+        ],
+        "log": "/tmp/aisim-memory-pressure-aggregate.log",
+        "returncode": 0
+      },
+      "metrics": {
+        "completed_requests": 8,
+        "mean_ttft_ms": 6118.746035,
+        "mean_tpot_ms": 204.94241883773213,
+        "output_throughput_tok_s": 37.965501356828526,
+        "duration_ms": 215774.84050599998
+      },
+      "before_metrics": {
+        "completed_requests": 8,
+        "mean_ttft_ms": 6118.746035,
+        "mean_tpot_ms": 204.94241883773213,
+        "output_throughput_tok_s": 37.965501356828526,
+        "duration_ms": 215774.84050599998
+      },
+      "change_from_previous": {
+        "completed_requests": 0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      }
+    },
+    "public_api": {
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/workspace",
+        "-e",
+        "PYTHONPATH=/workspace/python/aisimulate/src",
+        "aisim-node20-validation-20261027-v2",
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "-c",
+        "pytest.ini",
+        "python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py",
+        "python/aisimulate/tests/cross_package/test_core_public_api.py",
+        "-k",
+        "not test_stable_function_signatures"
+      ],
+      "log": "/tmp/aisim-memory-pressure-public.log",
+      "returncode": 0
+    }
+  },
+  "limitations": [
+    "Finite PD menu contains only 1P1D and 2P1D with fixed rank topology; not a global optimum proof.",
+    "Finite examples do not trigger OOM and preserve prior metrics; no claim of measured accuracy improvement.",
+    "Cross-request sender contention and host/bootstrap/metadata timing remain uncalibrated.",
+    "User deferred NPU and serving measurements."
+  ],
+  "archive": {
+    "path": "benchmarks/evidence/ascend910c-glm52-w8a8/production/scheduler-audit-node20-20261030/decode-memory-pressure-evidence.tar.gz",
+    "sha256": "8bce7b1230a497480d49a5911615631390617ae78916d57c1d7c7344c40ee595",
+    "bytes": 106452
+  }
+}

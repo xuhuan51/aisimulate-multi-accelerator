@@ -16,6 +16,16 @@ refer to ledger rows by stable `candidate_id`; they do not discard the other eva
 The unified `aisimulate recommend` command writes this envelope as `recommendation.json` beside
 the selected `recommendations/*.yaml` prediction inputs.
 
+Native replay reports and candidate metrics retain `num_requests`,
+`completed_requests`, `rejected_requests`, `failed_requests`, and
+`canceled_requests`. A candidate with explicit rejected or failed requests
+is infeasible with reason category `request_failure`: it is excluded before
+optimizer feedback, scalar ranking and Pareto selection. Latencies of the
+successful subset cannot make that candidate win. Cancellation is recorded
+separately, and requests still pending at a configured time cutoff are not
+classified as failures. Older reports or custom runners that omit the failure
+counters cannot certify absence of failures; they retain compatibility.
+
 ```python
 result = sweeper.run(config, top_n=5, candidate_retention="all")
 

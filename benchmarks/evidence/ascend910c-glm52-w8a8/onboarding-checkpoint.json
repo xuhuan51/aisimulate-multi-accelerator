@@ -925,6 +925,30 @@
           "scope": "collection",
           "sha256": "69ceeb4d90b9a7c1bba17de71d7bb165b79ac5b8e8ea6a18d6edcdcba83763cf"
         },
+        "decode_memory_pressure_evidence_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/decode-memory-pressure-evidence.tar.gz",
+          "scope": "validation",
+          "sha256": "8bce7b1230a497480d49a5911615631390617ae78916d57c1d7c7344c40ee595"
+        },
+        "decode_memory_pressure_oracle_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/decode-memory-pressure-oracle.json",
+          "scope": "validation",
+          "sha256": "2cd86ec451d45e8f1e98fe6058cdf8797b9d4ea942d5dc26779c357dc9b4bb01"
+        },
+        "decode_memory_pressure_validation_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/decode-memory-pressure-validation.json",
+          "scope": "validation",
+          "sha256": "42ebc943cb131961259916197c61d645fc3954179acbaabfe8be83844ee71ab9"
+        },
         "deepep_coverage": {
           "archived": true,
           "context_sha256": "2d1ad65620d28377c0d7403caa6aefcb1079c98a8f8184eee177ce45c78a6a87",
@@ -1356,6 +1380,14 @@
           "path": "production/scheduler-audit-node20-20261030/matched-model-path-node20-20261030.json",
           "scope": "validation",
           "sha256": "44374efa40d6688c2a5a968fb3820bfb37f688b087ea0adaa0cddf33dab94923"
+        },
+        "matched_model_path_node20_20261030_v2": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/matched-model-path-node20-20261030-v2.json",
+          "scope": "validation",
+          "sha256": "2b3240cb285ecd50fbe9d8f023aee8f77e8a024751b8e4a9549a13f574f25005"
         },
         "model_engine_canary": {
           "archived": false,
@@ -2198,7 +2230,7 @@
           "Cross-request PD sender contention, host/bootstrap/metadata costs",
           "DCP eager profiles missing"
         ],
-        "next_action": "Continue CPU-only pinned-source scheduler and search audit, fix verified defects with regression evidence. Do not start services or NPU measurements; user deferred them. Use /data_lib/data/models/glm-q metadata and user910c_script workload semantics for future matching.",
+        "next_action": "Complete CPU-only memory-pressure abort/retraction, explicit replay failure counters and search rejection gates; validate native package and installed offline runtime. User deferred serving and NPU measurement.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2262,7 +2294,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Continue CPU-only pinned-source scheduler and search audit, fix verified defects with regression evidence. Do not start services or NPU measurements; user deferred them. Use /data_lib/data/models/glm-q metadata and user910c_script workload semantics for future matching.",
+    "next_action": "Commit verified CPU-only decode memory pressure and search failure fixes; publish and validate offline runtime. Continue to defer all NPU or serving tests.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3041,6 +3073,13 @@
       "chunk_transfer_validation": "Final core2094pass0fail1ignored;390 frozen GPU/model parity pass;140 GLM/public API pass with1 known unrelated stale-signature assertion deselected.7 pinned source-body cases pass.2278packagefiles and10Ascend tables match.8K1K finite EP32 search unchanged;32K1K best2P1D TTFT15890.210070625952ms,19.531061ms lower;TPOT223.06604145552302ms unchanged. Saved YAML replay matches. All provisional failed regression logs retained. Canonical runtime publication pending; not serving-accuracy acceptance.",
       "comparison_runtime": "v0.5.20-cann9.0.0-a3 / local image commit94602c9c2b7cbdb8efd5c52802dac6a1c180089e; RepoDigest unavailable",
       "date": "2026-10-30",
+      "decode_memory_pressure_in_progress": "Pinned-source 6 cases pass. Initial Rust tests reproduced victim tie mismatch and last-request OOM zero-progress; 88 scheduler regressions pass after releasing already-completed requests before decode retry. Search before-fix 7 cases failed, confirming failed requests could win. Core summary and candidate failure gates under final regression.",
+      "decode_memory_pressure_validation": {
+        "accuracy_accepted": false,
+        "archive_sha256": "8bce7b1230a497480d49a5911615631390617ae78916d57c1d7c7344c40ee595",
+        "report": "benchmarks/evidence/ascend910c-glm52-w8a8/production/scheduler-audit-node20-20261030/decode-memory-pressure-validation.json",
+        "summary": "6 upstream cases,2101 Rust core pass1ignored,622 runner/search pass,390 frozen parity pass,140 GLM/API pass1known exclusion. Both finite PD searches and aggregate unchanged; package2278files10tables verified."
+      },
       "eager_alignment_validation": "EngineSpec30 carries eager attention alignment; all relevant operator shapes use TP-aligned rows when MLP sync applies; tensor-MoEADP1 remains unpadded.1871new eager rows replace419old rows,3796other rows unchanged. Rust2073pass1ignored,parity390,Python38.8K/32Ksix PD ratios each,save/replayprimarymetrics exactlyequal. Additional1072padded cases collecting to close batch3/7etc holes; broadprofile readiness not assumed.",
       "eager_collection": "Node20 pinned image:306initial padding cases,65CV rejects. Found CPU numerical verification interrupts warmup before first timing sample. Collector now warms timing execution/events after verification. Recollected complete1872 eager decode cases:allnumerical checks pass,1835CVqualified;onepredefined serial remeasure37 adds36qualified,onegap retained. Original graph/prefill datasets remain unchanged; eager decode data will be replaced by the complete audited campaign, not mixed across collector protocols.",
       "eager_dp_max_len_profiles": "3360 new cases measured:3354 qualified;2 numerical and4 CV failures quarantined. Existing6739 timings preserved; total10093 rows. Final schema31 native1e728bf4 has49 targeted+390 parity passes; packaged2278 files match checkout.1264 DP queries1198passed,66remainingEP32eagerDeepEPbounds. Runtime image publication next. Node19 runtime/driver verified; exact pinned image available, model weights absent; seven EP32 transport cases prepared for authorized19/20 pair.",
@@ -3078,11 +3117,53 @@
         "missing_shards": [],
         "model_path": "/data_lib/data/models/glm-q",
         "observed_at_utc": "2026-10-30T07:49:31.071657+00:00",
-        "script_workload": "United fixed workload sweep uses random-ids,random-range-ratio1,max-concurrency C,num-prompts2C for8K1Kand32K1K,warmup2bydefault.",
+        "script_workload": {
+          "cases": [
+            {
+              "concurrency": [
+                4,
+                8,
+                16,
+                32
+              ],
+              "default_multiplier": 2,
+              "input_tokens": 8192,
+              "multiplier_env": "STANDARD_PROMPT_MULTIPLIER",
+              "output_tokens": 1024,
+              "request_count": "2 * concurrency"
+            },
+            {
+              "concurrency": [
+                1,
+                2,
+                4,
+                8
+              ],
+              "default_multiplier": 1,
+              "input_tokens": 32768,
+              "multiplier_env": "LONG_PROMPT_MULTIPLIER",
+              "output_tokens": 1024,
+              "request_count": "concurrency"
+            }
+          ],
+          "dataset": "random-ids",
+          "defaults_overridable_by_environment": true,
+          "flush_cache_before_point": true,
+          "random_range_ratio": 1,
+          "request_rate": "inf",
+          "script_path": "/home/youxingye/youxingye_data/910c_script/United deployment/tools/run-workload-concurrency-sweep.sh",
+          "script_sha256": "c1d7e587e09babd232831fabb21aac040a14abbd8ba1bd627fcd7bd94ea09cb9",
+          "warmup_requests": 2
+        },
         "serving_started": false,
+        "supersedes": {
+          "correction": "32K/1K uses LONG_PROMPT_MULTIPLIER=1, not STANDARD_PROMPT_MULTIPLIER=2. Old immutable report retained.",
+          "path": "benchmarks/evidence/ascend910c-glm52-w8a8/production/scheduler-audit-node20-20261030/matched-model-path-node20-20261030.json",
+          "sha256": "44374efa40d6688c2a5a968fb3820bfb37f688b087ea0adaa0cddf33dab94923"
+        },
         "user_constraint": "User explicitly deferred starting serving measurements because NPUs may be needed by others. Continue source audit, CPU regression and offline prediction only.",
         "user_scripts": "/home/youxingye/youxingye_data/910c_script",
-        "verification_scope": "Metadata SHA comparison and shard existence/size only; the773GBof weights were not fully hashed or loaded."
+        "verification_scope": "Metadata SHA comparison and shard existence/size only; the 773 GB of weights were not fully hashed or loaded."
       },
       "pd_prebuilt_first_token": "Completed native pass-start emission of the P-sampled first token; N outputs use N-1 ordinary D forwards, activation stores the token without materializing its KV, queued context includes it.24 pinned source cases,2086 core tests(1ignored),390 GPU parity tests pass.140 GLM/public API tests pass,1 existing stale signature expectation verified identical on old/new runtime. 8K1K C32N32 and32K1K C8N8 two-candidate searches and saved replays match. TTFT reductions223.056ms/222.863ms,TPOT nearly unchanged. Runtime publication pending; chunk transfer and sender queues still open.",
       "pd_routing_validation": "Selectable two-level replica/rank round robin implemented, propagated through search/save/replay. Rust2072+34contracts,Python473config+513runner+5native,390parities pass. Functional 8K/32K searches completed six PD ratios each; no ranking accuracy claim.",
@@ -3195,7 +3276,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 99,
+  "revision": 101,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

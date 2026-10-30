@@ -1,0 +1,74 @@
+{
+  "observed_at_utc": "2026-10-30T07:49:31.071657+00:00",
+  "model_path": "/data_lib/data/models/glm-q",
+  "metadata": {
+    "config.json": {
+      "sha256": "817f5fb39ca5d4c4b5648de89ca00deaea7537d8c2f130172a459252a05c1073",
+      "bytes": 3699,
+      "baseline_present": true,
+      "baseline_equal": true
+    },
+    "quant_model_description.json": {
+      "sha256": "3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba",
+      "bytes": 12879067,
+      "baseline_present": true,
+      "baseline_equal": true
+    },
+    "quant_model_weights.safetensors.index.json": {
+      "sha256": "dfa97fa50b5e675ff6cea6ddeae3110795b6b7e971e6dc9cf565a4005fcb079c",
+      "bytes": 19259326,
+      "baseline_present": false,
+      "baseline_equal": false
+    }
+  },
+  "indexed_shards": 182,
+  "indexed_shard_bytes": 773876016944,
+  "missing_shards": [],
+  "verification_scope": "Metadata SHA comparison and shard existence/size only; the 773 GB of weights were not fully hashed or loaded.",
+  "user_constraint": "User explicitly deferred starting serving measurements because NPUs may be needed by others. Continue source audit, CPU regression and offline prediction only.",
+  "serving_started": false,
+  "user_scripts": "/home/youxingye/youxingye_data/910c_script",
+  "script_workload": {
+    "script_path": "/home/youxingye/youxingye_data/910c_script/United deployment/tools/run-workload-concurrency-sweep.sh",
+    "script_sha256": "c1d7e587e09babd232831fabb21aac040a14abbd8ba1bd627fcd7bd94ea09cb9",
+    "dataset": "random-ids",
+    "random_range_ratio": 1,
+    "warmup_requests": 2,
+    "request_rate": "inf",
+    "flush_cache_before_point": true,
+    "defaults_overridable_by_environment": true,
+    "cases": [
+      {
+        "input_tokens": 8192,
+        "output_tokens": 1024,
+        "concurrency": [
+          4,
+          8,
+          16,
+          32
+        ],
+        "request_count": "2 * concurrency",
+        "multiplier_env": "STANDARD_PROMPT_MULTIPLIER",
+        "default_multiplier": 2
+      },
+      {
+        "input_tokens": 32768,
+        "output_tokens": 1024,
+        "concurrency": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "request_count": "concurrency",
+        "multiplier_env": "LONG_PROMPT_MULTIPLIER",
+        "default_multiplier": 1
+      }
+    ]
+  },
+  "supersedes": {
+    "path": "benchmarks/evidence/ascend910c-glm52-w8a8/production/scheduler-audit-node20-20261030/matched-model-path-node20-20261030.json",
+    "sha256": "44374efa40d6688c2a5a968fb3820bfb37f688b087ea0adaa0cddf33dab94923",
+    "correction": "32K/1K uses LONG_PROMPT_MULTIPLIER=1, not STANDARD_PROMPT_MULTIPLIER=2. Old immutable report retained."
+  }
+}

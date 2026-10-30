@@ -49,7 +49,11 @@ from .config import (
 # trace_report keys the report always carries (goodput_* only when an SLA was
 # supplied to the replay). Surfaced into Candidate.metrics for inspection.
 _METRIC_KEYS = (
+    "num_requests",
     "completed_requests",
+    "rejected_requests",
+    "failed_requests",
+    "canceled_requests",
     "num_ttft_samples",
     "num_tpot_samples",
     "num_e2e_latency_samples",
@@ -166,6 +170,24 @@ def minimum_goodput_violations(report: Mapping[str, float], minimum: float | Non
     if value < minimum:
         return (f"goodput_request_throughput_rps={value:g} < min_goodput_rps={minimum:g}",)
     return ()
+
+
+def request_failure_violations(report: Mapping[str, float]) -> tuple[str, ...]:
+    """Exclude explicit request failures without treating a time cutoff or cancellation as failure."""
+    violations = []
+    for name in ("rejected_requests", "failed_requests"):
+        value = report.get(name, 0.0)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or value < 0
+            or value != int(value)
+        ):
+            violations.append(f"{name} is invalid")
+        elif value > 0:
+            violations.append(f"{name}={value:g}")
+    return tuple(violations)
 
 
 def aggregate_sla_violations(
@@ -324,7 +346,7 @@ def analyze_candidates(
     goal: OptimizationGoal,
 ) -> list[Candidate]:
     """Apply strict SLA filtering before scalar ranking or Pareto dominance."""
-    pool = list(candidates)
+    pool = [candidate for candidate in candidates if not request_failure_violations(candidate.metrics)]
     if goal.requires_aggregate_sla:
         assert goal.sla is not None  # OptimizationGoal validates this invariant.
         pool = [candidate for candidate in pool if meets_aggregate_sla(candidate.metrics, goal.sla)]

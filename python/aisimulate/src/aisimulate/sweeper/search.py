@@ -89,7 +89,14 @@ from .result import (
 )
 from .sample import unroll_sample
 from .sampler import BranchSampler, InvalidSuggestionError, Suggestion, make_branch_sampler
-from .score import aggregate_sla_violations, analyze_candidates, is_feasible, make_candidate, minimum_goodput_violations
+from .score import (
+    aggregate_sla_violations,
+    analyze_candidates,
+    is_feasible,
+    make_candidate,
+    minimum_goodput_violations,
+    request_failure_violations,
+)
 from .search_space import BranchSpace, ConditionalDimensionSpace, enumerate_branches
 
 logger = logging.getLogger(__name__)
@@ -950,6 +957,17 @@ def _score_prepared(
             report_metrics=report,
         )
     effective_targets = set(goal.resolved_pareto_objectives) if goal.is_pareto else {goal.target}
+    request_failures = request_failure_violations(report)
+    if request_failures:
+        return _EvalResult(
+            candidate=None,
+            observe_metrics=None,
+            outcome="infeasible",
+            reason=f"replay request failures: {'; '.join(request_failures)}",
+            reason_category=ReasonCategory.REQUEST_FAILURE,
+            runner_metadata=replay_result.metadata,
+            report_metrics=report,
+        )
     if (
         effective_targets.intersection({OptimizationTarget.GOODPUT, OptimizationTarget.GOODPUT_PER_GPU})
         and "goodput_output_throughput_tok_s" not in report

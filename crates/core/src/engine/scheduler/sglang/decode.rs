@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use std::cmp::Reverse;
 use std::time::Duration;
 
 use crate::engine::common::protocols::OutputSignal;
@@ -155,11 +156,9 @@ fn check_decode_mem_for_burst(
             break;
         }
 
-        let Some((idx, _)) = running
-            .iter()
-            .enumerate()
-            .min_by_key(|(_, req)| req.output_len())
-        else {
+        let Some((idx, _)) = running.iter().enumerate().min_by_key(|(index, req)| {
+            (req.output_len(), Reverse(req.prompt_len()), Reverse(*index))
+        }) else {
             break;
         };
 
@@ -414,7 +413,7 @@ fn simulate_step(
         .collect::<Vec<_>>();
     completed_requests.reverse();
 
-    if running.is_empty() {
+    if running.is_empty() || (kind == StepKind::Decode && !completed_requests.is_empty()) {
         return Ok(DecodeResult {
             completed_requests,
             output_signals,
@@ -459,6 +458,36 @@ fn simulate_step(
             requests: retracted,
             pressure_events,
             new_token_ratio_estimate,
+            end_ms: current_time_ms,
+            ..DecodeResult::default()
+        });
+    }
+
+    if decode_page_growth_needed(running, config.block_size, max_burst)
+        > kv_manager.cache().available_tokens()
+    {
+        anyhow::ensure!(
+            running.len() == 1,
+            "decode capacity preflight retained multiple requests without enough pages"
+        );
+        let mut request = running.pop().expect("capacity failure requires a request");
+        kv_manager.retract_in_place(&mut request.kv_lease);
+        request.reset_for_retract();
+        output_signals.push(OutputSignal {
+            uuid: request.uuid,
+            token_id: None,
+            completed: true,
+            rejected: true,
+            cached_tokens: None,
+            handoff_delay_ms: None,
+        });
+        completed_requests.push(request);
+        return Ok(DecodeResult {
+            completed_requests,
+            output_signals,
+            requests: retracted,
+            pressure_events,
+            new_token_ratio_estimate: Some(retraction_ratio_estimate(running)),
             end_ms: current_time_ms,
             ..DecodeResult::default()
         });

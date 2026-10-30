@@ -133,6 +133,9 @@ fn scan(file: &mut File, count: usize, mut visit: impl FnMut(f64)) -> Result<()>
 pub(super) struct BoundedSummary {
     total: usize,
     completed: usize,
+    rejected: usize,
+    failed: usize,
+    canceled: usize,
     input: usize,
     output: usize,
     reused: usize,
@@ -154,6 +157,12 @@ impl BoundedSummary {
 
     pub(super) fn add(&mut self, stats: &TraceRequestStats, sla: SlaThresholds) -> Result<()> {
         self.total += 1;
+        match stats.terminal_status {
+            Some(ReplayTerminalStatus::Rejected) => self.rejected += 1,
+            Some(ReplayTerminalStatus::Failed) => self.failed += 1,
+            Some(ReplayTerminalStatus::Canceled) => self.canceled += 1,
+            _ => {}
+        }
         if stats.first_admit_ms.is_none()
             || stats.terminal_status != Some(ReplayTerminalStatus::Completed)
         {
@@ -202,6 +211,9 @@ impl BoundedSummary {
         report.request_counts = TraceRequestCounts {
             num_requests: self.total,
             completed_requests: self.completed,
+            rejected_requests: self.rejected,
+            failed_requests: self.failed,
+            canceled_requests: self.canceled,
             total_input_tokens: self.input,
             total_output_tokens: self.output,
         };

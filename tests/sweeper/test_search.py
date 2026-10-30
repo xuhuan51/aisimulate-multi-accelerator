@@ -221,6 +221,39 @@ def test_ranks_feasible_best_first_and_passes_replay_specs(monkeypatch):
     assert factory.runner.closed
 
 
+@pytest.mark.parametrize("failure_metric", ["rejected_requests", "failed_requests"])
+def test_request_failure_is_gated_before_optimizer_feedback(monkeypatch, failure_metric):
+    _stub(monkeypatch, _branch(_pc()))
+    observations = []
+
+    class Sampler(_FakeSampler):
+        def __init__(self, branch, study_id, objectives=None, **kwargs):
+            super().__init__(branch, study_id, objectives)
+
+        def observe(self, suggestion, metrics):
+            observations.append(metrics)
+
+        def observe_infeasible(self, suggestion, reason):
+            observations.append(("infeasible", reason))
+
+    class Runner(_FakeRunner):
+        def run(self, spec):
+            report = super().run(spec)
+            partial = spec.backend_deployment.agg_engine_args["max_num_seqs"] == 768
+            return ReplayReport(metrics={**report.metrics, failure_metric: float(partial)})
+
+    result = Sweeper(runner_factory=_FakeRunnerFactory(Runner()), sampler_factory=Sampler, show_progress=False).run(
+        _config(max_trials=3, max_eval_seconds=None), top_n=1
+    )
+    assert result.selected_candidates[0].score == 512.0
+    assert len([entry for entry in observations if isinstance(entry, dict)]) == 2
+    assert len([entry for entry in observations if isinstance(entry, tuple)]) == 1
+    assert result.counts.infeasible == 1
+    rejected = [candidate for candidate in result.candidates if candidate.reason_category is not None]
+    assert rejected[0].reason_category.value == "request_failure"
+    assert rejected[0].metrics[failure_metric] == 1.0
+
+
 @pytest.mark.parametrize(
     ("small_report", "reason", "failed"),
     [
