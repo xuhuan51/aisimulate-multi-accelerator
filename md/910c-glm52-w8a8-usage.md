@@ -81,14 +81,17 @@ EP32 balanced eager通信的1～32 token查询范围已补齐，见对齐说明�
 DCP eager仍未采集，不应把graph记录混入这些候选。
 元数据快照仅足够离线预测；真实部署仍需要完整模型权重。
 
-2026-10-30已重建本机 `aisimulate-910c:glm52-w8a8`，打包源码为 `c2dbc647`、EngineSpec schema31，
+2026-10-30已重建本机 `aisimulate-910c:glm52-w8a8`，打包源码为 `2c1503d4`、EngineSpec schema31，
 包括真实DP batch形状、新增3354条eager注意力数据、EP32 eager通信扩展，以及PD源KV释放、
 首token时序、分块prefill与KV传输重叠、合并部署首token的KV分配时序修复。
+本版还修正decode内存回退顺序、最后请求OOM退出，并在搜索排名前排除有拒绝/失败请求的候选。
 安装后已验证8K/1K、32K/1K的EP32解码实例搜索，以及8K/1K合并部署；主要指标与源码运行结果完全一致。
-上一版镜像保留为 `aisimulate-910c:before-prefill-kv-20261030`；仅回放旧结果时使用。
+上一版镜像保留为 `aisimulate-910c:before-memory-pressure-20261030`；仅回放旧结果时使用。
 运行包、算子表、镜像SHA及回归记录见
-`production/scheduler-audit-node20-20261030/prefill-token-kv-runtime-publication.json`。
+`production/scheduler-audit-node20-20261030/decode-memory-pressure-runtime-publication.json`。
 本机没有默认权重路径时，使用上面的 `model_metadata` 参数即可进行离线预测。
+当前node20的完整模型路径为 `/data_lib/data/models/glm-q`，也可同时将
+`AISIMULATE_910C_MODEL` 和 `engine.model` 指向该路径；离线预测只读取模型元数据。
 
 只想检查环境和命令是否可用，可以先运行65输入、32输出的两条请求：
 

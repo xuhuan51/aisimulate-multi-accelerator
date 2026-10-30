@@ -931,3 +931,10 @@ host KV备份策略。
 候选仍全部完成；保存配置回放、合并部署回归均保持第22节指标。这些正常容量例子
 没有触发新分支，不作为精度提升证据。汇总为 `decode-memory-pressure-validation.json`，
 包含修复前失败日志的归档为 `decode-memory-pressure-evidence.tar.gz`。
+
+本节代码已提交为 `2c1503d4`，并发布到本机默认离线镜像，ID为
+`sha256:9adbc67a84f1d0472c87c6217a08d6c7ccd8f43b44e80a5500549c966517574b`。
+安装后的原生库、schema31和10张算子表校验通过；2个OOM接口案例以及2组PD搜索、
+合并部署结果均与源码验证一致。安装证据为 `decode-memory-pressure-runtime-publication.json`
+和 `decode-memory-pressure-runtime-evidence.tar.gz`；上一版镜像保留为
+`aisimulate-910c:before-memory-pressure-20261030`。没有启动模型服务或执行NPU实测。

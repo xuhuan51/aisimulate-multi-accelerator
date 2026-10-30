@@ -941,6 +941,22 @@
           "scope": "validation",
           "sha256": "2cd86ec451d45e8f1e98fe6058cdf8797b9d4ea942d5dc26779c357dc9b4bb01"
         },
+        "decode_memory_pressure_publication_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/decode-memory-pressure-runtime-publication.json",
+          "scope": "validation",
+          "sha256": "d99c0e3d29935f2ed08f38590551a07c00c394806c44dd1cece5b07334aeccc1"
+        },
+        "decode_memory_pressure_runtime_evidence_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/decode-memory-pressure-runtime-evidence.tar.gz",
+          "scope": "validation",
+          "sha256": "1ca699d8dbd18f1cec879a368442155fc6b69faf40ded08cfe92ae33b8770649"
+        },
         "decode_memory_pressure_validation_20261030": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -2230,7 +2246,7 @@
           "Cross-request PD sender contention, host/bootstrap/metadata costs",
           "DCP eager profiles missing"
         ],
-        "next_action": "Complete CPU-only memory-pressure abort/retraction, explicit replay failure counters and search rejection gates; validate native package and installed offline runtime. User deferred serving and NPU measurement.",
+        "next_action": "User requested current 8K/1K and32K/1K optimal configurations: run CPU-only installed-runtime finite search with explicit 4-node budget and workload counts, preserve candidate failures/coverage and saved best replay. Continue to defer NPU/services.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2294,7 +2310,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Commit verified CPU-only decode memory pressure and search failure fixes; publish and validate offline runtime. Continue to defer all NPU or serving tests.",
+    "next_action": "User requested current 8K/1K and32K/1K optimal configurations: run CPU-only installed-runtime finite search with explicit 4-node budget and workload counts, preserve candidate failures/coverage and saved best replay. Continue to defer NPU/services.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3074,6 +3090,16 @@
       "comparison_runtime": "v0.5.20-cann9.0.0-a3 / local image commit94602c9c2b7cbdb8efd5c52802dac6a1c180089e; RepoDigest unavailable",
       "date": "2026-10-30",
       "decode_memory_pressure_in_progress": "Pinned-source 6 cases pass. Initial Rust tests reproduced victim tie mismatch and last-request OOM zero-progress; 88 scheduler regressions pass after releasing already-completed requests before decode retry. Search before-fix 7 cases failed, confirming failed requests could win. Core summary and candidate failure gates under final regression.",
+      "decode_memory_pressure_publication": {
+        "accuracy_accepted": false,
+        "image_id": "sha256:9adbc67a84f1d0472c87c6217a08d6c7ccd8f43b44e80a5500549c966517574b",
+        "native_sha256": "9f4af49ff69537b0bc429533d4e36855f5e3f33958c3cde11d88b54b3b0c5684",
+        "oom_cases": 2,
+        "schema": 31,
+        "source_installed_match": true,
+        "source_revision": "2c1503d4eb4deff38584051743f1d9ddacefd9eb",
+        "tables_verified": 10
+      },
       "decode_memory_pressure_validation": {
         "accuracy_accepted": false,
         "archive_sha256": "8bce7b1230a497480d49a5911615631390617ae78916d57c1d7c7344c40ee595",
@@ -3276,7 +3302,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 101,
+  "revision": 102,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }
