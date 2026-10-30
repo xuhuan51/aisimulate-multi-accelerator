@@ -973,3 +973,9 @@ Runner/搜索622通过，GLM/公共API140通过、1项已有签名断言排除�
 这里修正的是调度和KV状态语义。主机备份/恢复的复制时间、主机内存不足、显式关闭备份
 以及DeepSeek-V4的重新prefill握手不在当前模型内。触发PD回退的候选仍可能低估TPOT和
 端到端耗时；不能把通过回归测试解释为已经对齐实测精度。本轮没有启动模型服务或使用NPU。
+
+本节代码提交为 `db5f2e72`，已更新本机默认离线镜像 `aisimulate-910c:glm52-w8a8`，
+镜像ID为 `sha256:b3c49d92579f638228c66076901af4768278c8fa309a90d0a002eed79e653cd9`。
+安装后8组PD回放、合并部署回归与源码一致，2个OOM接口案例仍正常排除失败候选。
+安装记录见同目录 `pd-retraction-runtime-publication.json`；旧版保留为
+`aisimulate-910c:before-pd-restore-20261031`。完整搜索复查另行归档。
