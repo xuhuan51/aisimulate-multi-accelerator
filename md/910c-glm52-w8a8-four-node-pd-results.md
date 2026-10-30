@@ -1,5 +1,80 @@
 # 四节点910C：8K/1K与32K/1K的PD搜索结果
 
+## 2026-10-31更新：当前eager运行包
+
+使用本机已安装源码 `2c1503d4` 的离线运行包，模型路径为
+`/data_lib/data/models/glm-q`。搜索于2026-10-30启动，以下汇总于2026-10-31核验。
+预算最多4节点、每节点16个逻辑device，目标为整个部署的输出吞吐；仅比较PD，
+无TTFT/TPOT SLA。关闭graph，使用同步调度；shared-expert内部重叠仍按原模型开启。
+均为固定长度、无prefix cache、`ignore_eos=true`，P/D显存比例0.88/0.90。
+
+8K搜索并发4/8/16/32，各N=2C；32K搜索并发1/2/4/8，各N=C，与用户脚本的
+正式请求数量一致。没有复现脚本的2条预热，也没有启动真实NPU服务。
+P/D分别遍历当前声明的DeepEP和张量MoE结构、全局16/32设备、副本数量及KV容量筛选。
+8组搜索均耗尽各自的有限空间：共4024候选，4018成功、6失败、0超时。
+
+| Workload | 成功候选中的最优并发 / 请求数 | P:D副本数 | P:D节点数 | 输出吞吐 token/s | mean TTFT s | mean TPOT ms/token |
+| --- | --- | --- | --- | ---: | ---: | ---: |
+| 8192/1024 | 32 / 64 | 2:1 | 2:2 | **162.29** | **5.579** | **189.67** |
+| 32768/1024 | 8 / 8 | 2:1 | 2:2 | **38.91** | **17.899** | **188.29** |
+
+这里两个P副本各占1节点；一个D副本跨2节点，不能把“2P:1D副本”理解为只用3节点。
+具体并行配置如下，attention TP是模拟器字段，SGLang的全局TP为attention TP×ADP：
+
+| Workload/角色 | 副本 | 每副本节点 | Attention TP | ADP | 全局TP | MoE-TP | EP | 路径 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 8K P | 2 | 1 | 4 | 4 | 16 | 1 | 16 | DeepEP |
+| 8K D | 1 | 2 | 1 | 32 | 32 | 1 | 32 | DeepEP |
+| 32K P | 2 | 1 | 4 | 4 | 16 | 16 | 1 | 张量MoE |
+| 32K D | 1 | 2 | 1 | 32 | 32 | 1 | 32 | DeepEP |
+
+各并发档位的最高输出吞吐为：
+
+| Workload | 并发 | 请求数 | 评估 / 成功 / 失败 | 最高吞吐 token/s | mean TTFT s | mean TPOT ms |
+| --- | ---: | ---: | --- | ---: | ---: | ---: |
+| 8K/1K | 4 | 8 | 556 / 556 / 0 | 26.81 | 2.463 | 146.93 |
+| 8K/1K | 8 | 16 | 556 / 556 / 0 | 53.87 | 3.080 | 145.65 |
+| 8K/1K | 16 | 32 | 556 / 556 / 0 | 106.02 | 4.583 | 145.72 |
+| 8K/1K | 32 | 64 | 556 / 550 / 6 | 162.29 | 5.579 | 189.67 |
+| 32K/1K | 1 | 1 | 450 / 450 / 0 | 6.51 | 9.409 | 144.48 |
+| 32K/1K | 2 | 2 | 450 / 450 / 0 | 13.03 | 9.409 | 144.48 |
+| 32K/1K | 4 | 4 | 450 / 450 / 0 | 25.43 | 10.551 | 147.14 |
+| 32K/1K | 8 | 8 | 450 / 450 / 0 | 38.91 | 17.899 | 188.29 |
+
+每行对应的并行结构可能不同。特别是32K只搜索到C8，不能据此断言C16/C32一定更差。
+6个失败都发生在8K/C32：D为TP8/ADP2/MoE-TP16/EP1、两个D副本，P结构不同；
+报错为 `Ascend synchronized operator timing requires a pure prefill or pure decode group`。
+失败项未参与排名，详细坐标和异常均保留。该问题列为下一阶段源码审计和修复对象，
+因此8K结果应称为“当前成功评估候选中的最优”，不能声称所有声明组合已有效比较。
+
+所有4018个成功候选均核对了正式请求数、完成数、零拒绝/失败/取消、输入/输出token总数。
+两个第一名的保存配置重新predict后，64/64和8/8条请求均正常完成、每条输出1024token；
+各指标与搜索一致，仅有小于1e-9的浮点舍入差异。复算并不等于真实服务精度验收。
+跨请求发送争用、host时序及同配置eager实测仍未完成校准。
+
+结果和复现入口：
+
+- [本轮汇总与失败原因](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-eager-20261031/report.json)
+- [4024个候选CSV](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-eager-20261031/candidates.csv)
+- [8K第一名配置](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-eager-20261031/best-8192-1024.yaml)
+- [32K第一名配置](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-eager-20261031/best-32768-1024.yaml)
+
+```bash
+cd /home/youxingye/youxingye_data/aisimulate-910c
+AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q bash scripts/run-ascend910c.sh predict \
+  --stack engine \
+  --config benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-eager-20261031/best-8192-1024.yaml \
+  --capture-per-request --output-dir aisimulate-output/eager-best-8k-recheck
+AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q bash scripts/run-ascend910c.sh predict \
+  --stack engine \
+  --config benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-eager-20261031/best-32768-1024.yaml \
+  --capture-per-request --output-dir aisimulate-output/eager-best-32k-recheck
+```
+
+## 历史结果：2026-10-25旧运行包
+
+以下保留旧版本、旧workload设置下的结果，不是当前eager配置的推荐。
+
 运行日期：2026-10-25。模型为当前 `/mnt/raid/user/data/models/glm-q` 的GLM-5.2 ModelSlim W8A8。
 本次运行的是已安装AISimulate镜像中的离线预测，没有启动真实四节点推理服务。
 

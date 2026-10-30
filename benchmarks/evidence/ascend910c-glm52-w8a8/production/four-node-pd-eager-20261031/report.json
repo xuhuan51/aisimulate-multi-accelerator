@@ -1,0 +1,738 @@
+{
+  "reported_date": "2026-10-31",
+  "runtime_source": "2c1503d4eb4deff38584051743f1d9ddacefd9eb",
+  "runtime_image": "sha256:9adbc67a84f1d0472c87c6217a08d6c7ccd8f43b44e80a5500549c966517574b",
+  "scope": {
+    "node_budget": 4,
+    "devices_per_node": 16,
+    "deployment": "PD only",
+    "target": "output throughput",
+    "decode_execution_mode": "eager",
+    "overlap_scheduler": false,
+    "shared_expert_overlap": true,
+    "prefix_caching": false,
+    "ignore_eos": true,
+    "request_counts": "8K:2C;32K:C",
+    "warmup": "not reproduced; cold finite-request replay",
+    "concurrency_8k": [
+      4,
+      8,
+      16,
+      32
+    ],
+    "concurrency_32k": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "accuracy_accepted": false
+  },
+  "cases": [
+    {
+      "name": "isl8192-osl1024-c32-n64",
+      "input_tokens": 8192,
+      "output_tokens": 1024,
+      "concurrency": 32,
+      "requests": 64,
+      "elapsed_seconds": 1528.6866564750671,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 556,
+        "failed": 6,
+        "feasible": 550,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "finite_space_exhausted": true,
+      "created_at_utc": "2026-10-30T15:44:46.976702Z",
+      "best": {
+        "candidate_id": "candidate-000465",
+        "config": {
+          "prefill_tp": 4,
+          "prefill_attention_dp": 4,
+          "prefill_moe_tp": 1,
+          "prefill_moe_ep": 16,
+          "prefill_replicas": 2,
+          "decode_tp": 1,
+          "decode_attention_dp": 32,
+          "decode_moe_tp": 1,
+          "decode_moe_ep": 32,
+          "decode_replicas": 1,
+          "used_gpus": 64,
+          "concurrency": 32,
+          "prefill_nodes": 2,
+          "decode_nodes": 2
+        },
+        "metrics": {
+          "num_requests": 64.0,
+          "completed_requests": 64.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 5578.554847376226,
+          "mean_tpot_ms": 189.6688675279811,
+          "output_throughput_tok_s": 162.29465429353078,
+          "duration_ms": 403808.7408687516
+        }
+      },
+      "all_feasible_request_counts_verified": true,
+      "saved_replay": {
+        "metric_differences": {
+          "num_requests": 0.0,
+          "completed_requests": 0.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": -4.547473508864641e-12,
+          "mean_tpot_ms": 2.842170943040401e-14,
+          "output_throughput_tok_s": 0.0,
+          "duration_ms": 0.0
+        },
+        "request_details_verified": 64
+      }
+    },
+    {
+      "name": "isl32768-osl1024-c8-n8",
+      "input_tokens": 32768,
+      "output_tokens": 1024,
+      "concurrency": 8,
+      "requests": 8,
+      "elapsed_seconds": 1085.375141620636,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 450,
+        "failed": 0,
+        "feasible": 450,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "finite_space_exhausted": true,
+      "created_at_utc": "2026-10-30T15:37:25.166975Z",
+      "best": {
+        "candidate_id": "candidate-000297",
+        "config": {
+          "prefill_tp": 4,
+          "prefill_attention_dp": 4,
+          "prefill_moe_tp": 16,
+          "prefill_moe_ep": 1,
+          "prefill_replicas": 2,
+          "decode_tp": 1,
+          "decode_attention_dp": 32,
+          "decode_moe_tp": 1,
+          "decode_moe_ep": 32,
+          "decode_replicas": 1,
+          "used_gpus": 64,
+          "concurrency": 8,
+          "prefill_nodes": 2,
+          "decode_nodes": 2
+        },
+        "metrics": {
+          "num_requests": 8.0,
+          "completed_requests": 8.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 17898.666092752475,
+          "mean_tpot_ms": 188.2885376402737,
+          "output_throughput_tok_s": 38.91356664193965,
+          "duration_ms": 210517.84009875247
+        }
+      },
+      "all_feasible_request_counts_verified": true,
+      "saved_replay": {
+        "metric_differences": {
+          "num_requests": 0.0,
+          "completed_requests": 0.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 0.0,
+          "mean_tpot_ms": 0.0,
+          "output_throughput_tok_s": 0.0,
+          "duration_ms": 0.0
+        },
+        "request_details_verified": 8
+      }
+    },
+    {
+      "name": "isl8192-osl1024-c16-n32",
+      "input_tokens": 8192,
+      "output_tokens": 1024,
+      "concurrency": 16,
+      "requests": 32,
+      "elapsed_seconds": 1435.2114050388336,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 556,
+        "failed": 0,
+        "feasible": 556,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "finite_space_exhausted": true,
+      "created_at_utc": "2026-10-30T16:01:18.760767Z",
+      "best": {
+        "candidate_id": "candidate-000168",
+        "config": {
+          "prefill_tp": 4,
+          "prefill_attention_dp": 4,
+          "prefill_moe_tp": 1,
+          "prefill_moe_ep": 16,
+          "prefill_replicas": 2,
+          "decode_tp": 16,
+          "decode_attention_dp": 1,
+          "decode_moe_tp": 16,
+          "decode_moe_ep": 1,
+          "decode_replicas": 2,
+          "used_gpus": 64,
+          "concurrency": 16,
+          "prefill_nodes": 2,
+          "decode_nodes": 2
+        },
+        "metrics": {
+          "num_requests": 32.0,
+          "completed_requests": 32.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 4582.7163168062925,
+          "mean_tpot_ms": 145.7179724996945,
+          "output_throughput_tok_s": 106.02164705491188,
+          "duration_ms": 309068.9581819875
+        }
+      },
+      "all_feasible_request_counts_verified": true
+    },
+    {
+      "name": "isl32768-osl1024-c4-n4",
+      "input_tokens": 32768,
+      "output_tokens": 1024,
+      "concurrency": 4,
+      "requests": 4,
+      "elapsed_seconds": 1045.6254947185516,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 450,
+        "failed": 0,
+        "feasible": 450,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "finite_space_exhausted": true,
+      "created_at_utc": "2026-10-30T16:02:14.601151Z",
+      "best": {
+        "candidate_id": "candidate-000108",
+        "config": {
+          "prefill_tp": 8,
+          "prefill_attention_dp": 2,
+          "prefill_moe_tp": 1,
+          "prefill_moe_ep": 16,
+          "prefill_replicas": 2,
+          "decode_tp": 16,
+          "decode_attention_dp": 1,
+          "decode_moe_tp": 16,
+          "decode_moe_ep": 1,
+          "decode_replicas": 2,
+          "used_gpus": 64,
+          "concurrency": 4,
+          "prefill_nodes": 2,
+          "decode_nodes": 2
+        },
+        "metrics": {
+          "num_requests": 4.0,
+          "completed_requests": 4.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 10550.936908010568,
+          "mean_tpot_ms": 147.1369140332357,
+          "output_throughput_tok_s": 25.429621541392635,
+          "duration_ms": 161071.9999640107
+        }
+      },
+      "all_feasible_request_counts_verified": true
+    },
+    {
+      "name": "isl8192-osl1024-c8-n16",
+      "input_tokens": 8192,
+      "output_tokens": 1024,
+      "concurrency": 8,
+      "requests": 16,
+      "elapsed_seconds": 1372.382786989212,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 556,
+        "failed": 0,
+        "feasible": 556,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "finite_space_exhausted": true,
+      "created_at_utc": "2026-10-30T16:24:11.529671Z",
+      "best": {
+        "candidate_id": "candidate-000414",
+        "config": {
+          "prefill_tp": 4,
+          "prefill_attention_dp": 4,
+          "prefill_moe_tp": 1,
+          "prefill_moe_ep": 16,
+          "prefill_replicas": 2,
+          "decode_tp": 16,
+          "decode_attention_dp": 1,
+          "decode_moe_tp": 16,
+          "decode_moe_ep": 1,
+          "decode_replicas": 1,
+          "used_gpus": 48,
+          "concurrency": 8,
+          "prefill_nodes": 2,
+          "decode_nodes": 1
+        },
+        "metrics": {
+          "num_requests": 16.0,
+          "completed_requests": 16.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 3080.0748919938123,
+          "mean_tpot_ms": 145.64911353372432,
+          "output_throughput_tok_s": 53.86669850365168,
+          "duration_ms": 304158.23607398756
+        }
+      },
+      "all_feasible_request_counts_verified": true
+    },
+    {
+      "name": "isl32768-osl1024-c2-n2",
+      "input_tokens": 32768,
+      "output_tokens": 1024,
+      "concurrency": 2,
+      "requests": 2,
+      "elapsed_seconds": 1024.1084742546082,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 450,
+        "failed": 0,
+        "feasible": 450,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "finite_space_exhausted": true,
+      "created_at_utc": "2026-10-30T16:19:18.971829Z",
+      "best": {
+        "candidate_id": "candidate-000444",
+        "config": {
+          "prefill_tp": 16,
+          "prefill_attention_dp": 1,
+          "prefill_moe_tp": 1,
+          "prefill_moe_ep": 16,
+          "prefill_replicas": 2,
+          "decode_tp": 16,
+          "decode_attention_dp": 1,
+          "decode_moe_tp": 16,
+          "decode_moe_ep": 1,
+          "decode_replicas": 2,
+          "used_gpus": 64,
+          "concurrency": 2,
+          "prefill_nodes": 2,
+          "decode_nodes": 2
+        },
+        "metrics": {
+          "num_requests": 2.0,
+          "completed_requests": 2.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 9409.368242023222,
+          "mean_tpot_ms": 144.4830886871945,
+          "output_throughput_tok_s": 13.026699750265989,
+          "duration_ms": 157215.5679690232
+        }
+      },
+      "all_feasible_request_counts_verified": true
+    },
+    {
+      "name": "isl8192-osl1024-c4-n8",
+      "input_tokens": 8192,
+      "output_tokens": 1024,
+      "concurrency": 4,
+      "requests": 8,
+      "elapsed_seconds": 1332.0543298721313,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 556,
+        "failed": 0,
+        "feasible": 556,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "finite_space_exhausted": true,
+      "created_at_utc": "2026-10-30T16:41:29.472452Z",
+      "best": {
+        "candidate_id": "candidate-000308",
+        "config": {
+          "prefill_tp": 8,
+          "prefill_attention_dp": 2,
+          "prefill_moe_tp": 1,
+          "prefill_moe_ep": 16,
+          "prefill_replicas": 2,
+          "decode_tp": 16,
+          "decode_attention_dp": 1,
+          "decode_moe_tp": 16,
+          "decode_moe_ep": 1,
+          "decode_replicas": 2,
+          "used_gpus": 64,
+          "concurrency": 4,
+          "prefill_nodes": 2,
+          "decode_nodes": 2
+        },
+        "metrics": {
+          "num_requests": 8.0,
+          "completed_requests": 8.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 2463.0586020105684,
+          "mean_tpot_ms": 146.92908136461378,
+          "output_throughput_tok_s": 26.811281967131368,
+          "duration_ms": 305543.0176760209
+        }
+      },
+      "all_feasible_request_counts_verified": true
+    },
+    {
+      "name": "isl32768-osl1024-c1-n1",
+      "input_tokens": 32768,
+      "output_tokens": 1024,
+      "concurrency": 1,
+      "requests": 1,
+      "elapsed_seconds": 1017.0929172039032,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 450,
+        "failed": 0,
+        "feasible": 450,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "finite_space_exhausted": true,
+      "created_at_utc": "2026-10-30T16:41:10.880143Z",
+      "best": {
+        "candidate_id": "candidate-000445",
+        "config": {
+          "prefill_tp": 16,
+          "prefill_attention_dp": 1,
+          "prefill_moe_tp": 1,
+          "prefill_moe_ep": 16,
+          "prefill_replicas": 1,
+          "decode_tp": 16,
+          "decode_attention_dp": 1,
+          "decode_moe_tp": 16,
+          "decode_moe_ep": 1,
+          "decode_replicas": 1,
+          "used_gpus": 32,
+          "concurrency": 1,
+          "prefill_nodes": 1,
+          "decode_nodes": 1
+        },
+        "metrics": {
+          "num_requests": 1.0,
+          "completed_requests": 1.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 9409.368242023222,
+          "mean_tpot_ms": 144.4830886871945,
+          "output_throughput_tok_s": 6.513349875132994,
+          "duration_ms": 157215.5679690232
+        }
+      },
+      "all_feasible_request_counts_verified": true
+    }
+  ],
+  "winners": {
+    "8192": {
+      "name": "isl8192-osl1024-c32-n64",
+      "input_tokens": 8192,
+      "output_tokens": 1024,
+      "concurrency": 32,
+      "requests": 64,
+      "elapsed_seconds": 1528.6866564750671,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 556,
+        "failed": 6,
+        "feasible": 550,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "finite_space_exhausted": true,
+      "created_at_utc": "2026-10-30T15:44:46.976702Z",
+      "best": {
+        "candidate_id": "candidate-000465",
+        "config": {
+          "prefill_tp": 4,
+          "prefill_attention_dp": 4,
+          "prefill_moe_tp": 1,
+          "prefill_moe_ep": 16,
+          "prefill_replicas": 2,
+          "decode_tp": 1,
+          "decode_attention_dp": 32,
+          "decode_moe_tp": 1,
+          "decode_moe_ep": 32,
+          "decode_replicas": 1,
+          "used_gpus": 64,
+          "concurrency": 32,
+          "prefill_nodes": 2,
+          "decode_nodes": 2
+        },
+        "metrics": {
+          "num_requests": 64.0,
+          "completed_requests": 64.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 5578.554847376226,
+          "mean_tpot_ms": 189.6688675279811,
+          "output_throughput_tok_s": 162.29465429353078,
+          "duration_ms": 403808.7408687516
+        }
+      },
+      "all_feasible_request_counts_verified": true,
+      "saved_replay": {
+        "metric_differences": {
+          "num_requests": 0.0,
+          "completed_requests": 0.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": -4.547473508864641e-12,
+          "mean_tpot_ms": 2.842170943040401e-14,
+          "output_throughput_tok_s": 0.0,
+          "duration_ms": 0.0
+        },
+        "request_details_verified": 64
+      }
+    },
+    "32768": {
+      "name": "isl32768-osl1024-c8-n8",
+      "input_tokens": 32768,
+      "output_tokens": 1024,
+      "concurrency": 8,
+      "requests": 8,
+      "elapsed_seconds": 1085.375141620636,
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 450,
+        "failed": 0,
+        "feasible": 450,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "finite_space_exhausted": true,
+      "created_at_utc": "2026-10-30T15:37:25.166975Z",
+      "best": {
+        "candidate_id": "candidate-000297",
+        "config": {
+          "prefill_tp": 4,
+          "prefill_attention_dp": 4,
+          "prefill_moe_tp": 16,
+          "prefill_moe_ep": 1,
+          "prefill_replicas": 2,
+          "decode_tp": 1,
+          "decode_attention_dp": 32,
+          "decode_moe_tp": 1,
+          "decode_moe_ep": 32,
+          "decode_replicas": 1,
+          "used_gpus": 64,
+          "concurrency": 8,
+          "prefill_nodes": 2,
+          "decode_nodes": 2
+        },
+        "metrics": {
+          "num_requests": 8.0,
+          "completed_requests": 8.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 17898.666092752475,
+          "mean_tpot_ms": 188.2885376402737,
+          "output_throughput_tok_s": 38.91356664193965,
+          "duration_ms": 210517.84009875247
+        }
+      },
+      "all_feasible_request_counts_verified": true,
+      "saved_replay": {
+        "metric_differences": {
+          "num_requests": 0.0,
+          "completed_requests": 0.0,
+          "rejected_requests": 0.0,
+          "failed_requests": 0.0,
+          "canceled_requests": 0.0,
+          "mean_ttft_ms": 0.0,
+          "mean_tpot_ms": 0.0,
+          "output_throughput_tok_s": 0.0,
+          "duration_ms": 0.0
+        },
+        "request_details_verified": 8
+      }
+    }
+  },
+  "failures": [
+    {
+      "case": "isl8192-osl1024-c32-n64",
+      "candidate_id": "candidate-000165",
+      "reason_category": "replay_runtime",
+      "reason": "replay failed: RuntimeError: AISimulate replay failed: engine error: generalized engine worker 0 is now poisoned because a rank may have been partially mutated: invalid forward pass metrics: Ascend synchronized operator timing requires a pure prefill or pure decode group",
+      "config": {
+        "prefill_tp": 16,
+        "prefill_attention_dp": 1,
+        "prefill_moe_tp": 1,
+        "prefill_moe_ep": 16,
+        "prefill_replicas": 1,
+        "decode_tp": 8,
+        "decode_attention_dp": 2,
+        "decode_moe_tp": 16,
+        "decode_moe_ep": 1,
+        "decode_replicas": 2,
+        "used_gpus": 48,
+        "concurrency": 32
+      }
+    },
+    {
+      "case": "isl8192-osl1024-c32-n64",
+      "candidate_id": "candidate-000178",
+      "reason_category": "replay_runtime",
+      "reason": "replay failed: RuntimeError: AISimulate replay failed: engine error: generalized engine worker 0 is now poisoned because a rank may have been partially mutated: invalid forward pass metrics: Ascend synchronized operator timing requires a pure prefill or pure decode group",
+      "config": {
+        "prefill_tp": 16,
+        "prefill_attention_dp": 2,
+        "prefill_moe_tp": 32,
+        "prefill_moe_ep": 1,
+        "prefill_replicas": 1,
+        "decode_tp": 8,
+        "decode_attention_dp": 2,
+        "decode_moe_tp": 16,
+        "decode_moe_ep": 1,
+        "decode_replicas": 2,
+        "used_gpus": 64,
+        "concurrency": 32
+      }
+    },
+    {
+      "case": "isl8192-osl1024-c32-n64",
+      "candidate_id": "candidate-000181",
+      "reason_category": "replay_runtime",
+      "reason": "replay failed: RuntimeError: AISimulate replay failed: engine error: generalized engine worker 0 is now poisoned because a rank may have been partially mutated: invalid forward pass metrics: Ascend synchronized operator timing requires a pure prefill or pure decode group",
+      "config": {
+        "prefill_tp": 8,
+        "prefill_attention_dp": 2,
+        "prefill_moe_tp": 1,
+        "prefill_moe_ep": 16,
+        "prefill_replicas": 1,
+        "decode_tp": 8,
+        "decode_attention_dp": 2,
+        "decode_moe_tp": 16,
+        "decode_moe_ep": 1,
+        "decode_replicas": 2,
+        "used_gpus": 48,
+        "concurrency": 32
+      }
+    },
+    {
+      "case": "isl8192-osl1024-c32-n64",
+      "candidate_id": "candidate-000203",
+      "reason_category": "replay_runtime",
+      "reason": "replay failed: RuntimeError: AISimulate replay failed: engine error: generalized engine worker 0 is now poisoned because a rank may have been partially mutated: invalid forward pass metrics: Ascend synchronized operator timing requires a pure prefill or pure decode group",
+      "config": {
+        "prefill_tp": 16,
+        "prefill_attention_dp": 2,
+        "prefill_moe_tp": 1,
+        "prefill_moe_ep": 32,
+        "prefill_replicas": 1,
+        "decode_tp": 8,
+        "decode_attention_dp": 2,
+        "decode_moe_tp": 16,
+        "decode_moe_ep": 1,
+        "decode_replicas": 2,
+        "used_gpus": 64,
+        "concurrency": 32
+      }
+    },
+    {
+      "case": "isl8192-osl1024-c32-n64",
+      "candidate_id": "candidate-000299",
+      "reason_category": "replay_runtime",
+      "reason": "replay failed: RuntimeError: AISimulate replay failed: engine error: generalized engine worker 0 is now poisoned because a rank may have been partially mutated: invalid forward pass metrics: Ascend synchronized operator timing requires a pure prefill or pure decode group",
+      "config": {
+        "prefill_tp": 16,
+        "prefill_attention_dp": 1,
+        "prefill_moe_tp": 16,
+        "prefill_moe_ep": 1,
+        "prefill_replicas": 1,
+        "decode_tp": 8,
+        "decode_attention_dp": 2,
+        "decode_moe_tp": 16,
+        "decode_moe_ep": 1,
+        "decode_replicas": 2,
+        "used_gpus": 48,
+        "concurrency": 32
+      }
+    },
+    {
+      "case": "isl8192-osl1024-c32-n64",
+      "candidate_id": "candidate-000508",
+      "reason_category": "replay_runtime",
+      "reason": "replay failed: RuntimeError: AISimulate replay failed: engine error: generalized engine worker 0 is now poisoned because a rank may have been partially mutated: invalid forward pass metrics: Ascend synchronized operator timing requires a pure prefill or pure decode group",
+      "config": {
+        "prefill_tp": 8,
+        "prefill_attention_dp": 2,
+        "prefill_moe_tp": 16,
+        "prefill_moe_ep": 1,
+        "prefill_replicas": 1,
+        "decode_tp": 8,
+        "decode_attention_dp": 2,
+        "decode_moe_tp": 16,
+        "decode_moe_ep": 1,
+        "decode_replicas": 2,
+        "used_gpus": 48,
+        "concurrency": 32
+      }
+    }
+  ],
+  "counts": {
+    "cache_hits": 0,
+    "evaluated": 4024,
+    "failed": 6,
+    "feasible": 4018,
+    "infeasible": 0,
+    "resource_limited": 0,
+    "timed_out": 0,
+    "unsupported": 0
+  },
+  "archive": {
+    "path": "benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-eager-20261031/search-evidence.tar.gz",
+    "sha256": "718260b2d509a216ee101d9d1fc457d924f7f9a5964498c7e5c9145dd2461aea",
+    "bytes": 15254067
+  }
+}
