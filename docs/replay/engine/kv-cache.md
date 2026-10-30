@@ -16,6 +16,16 @@ SPDX-License-Identifier: Apache-2.0
 Recurrent-state models also use `state_cache`; see
 [state cache](#state-cache).
 
+For SGLang, ordinary prefill materializes the prompt and samples the first
+output token. That output token is emitted immediately, but does not own KV
+until the following decode forward consumes it. A non-speculative decode
+forward materializes its input token and samples the next output token. Page
+growth, prefix-cache publication and retraction therefore follow materialized
+input length, which can be one token shorter than the visible sequence. A
+request with one output token completes after prefill without allocating a
+decode page. Requests with longer outputs compete for decode memory at the
+following decode admission, rather than delaying already sampled first tokens.
+
 Merge this fragment into an existing `engine` block from the [engine overview](README.md):
 
 ```yaml

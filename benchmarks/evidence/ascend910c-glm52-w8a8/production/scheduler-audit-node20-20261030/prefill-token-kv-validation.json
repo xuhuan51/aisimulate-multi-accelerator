@@ -1,0 +1,428 @@
+{
+  "base_revision": "38e27b7a03a44b1a900e9d62356a16f84af013c3",
+  "upstream_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+  "behavior": "Ordinary-prefill sampled first output has no KV until a decode forward consumes it. Immediate streaming is independent of the next decode page reservation.",
+  "source_oracle_cases": 12,
+  "core_tests": {
+    "passed": 2096,
+    "failed": 0,
+    "ignored": 1,
+    "command": "cargo test --locked --offline -p aisimulate-core --lib -- --test-threads=8"
+  },
+  "parity_tests": {
+    "passed": 390,
+    "command": "python3 -m pytest -q -c pytest.ini crates/core/parity_tests/perfmodel/test_engine_step_parity.py crates/core/parity_tests/perfmodel/test_compile_engine_parity.py",
+    "goldens_modified": false
+  },
+  "glm_and_public_api_tests": {
+    "passed": 140,
+    "deselected": 1,
+    "command": [
+      "docker",
+      "exec",
+      "-w",
+      "/workspace",
+      "-e",
+      "PYTHONPATH=/workspace/python/aisimulate/src",
+      "aisim-node20-validation-20261027-v2",
+      "python3",
+      "-m",
+      "pytest",
+      "-q",
+      "-c",
+      "pytest.ini",
+      "python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py",
+      "python/aisimulate/tests/cross_package/test_core_public_api.py",
+      "-k",
+      "not test_stable_function_signatures"
+    ],
+    "exclusion": "test_stable_function_signatures is the previously established stale op_level_options signature assertion, unchanged by this phase."
+  },
+  "development_regressions": {
+    "initial_targeted": "83passed3failed: new admission fixture lacked clip_max_new_tokens=1; cached first-token slot expectation and rollback boundary used premature KV growth. Corrected before full suite.",
+    "initial_full": "2094passed2failed1ignored: rank DP admission pressure threshold and cancellation fixture depended on the premature page. Second prompt raised12to16; cancellation now follows actual decode. Final suite passes."
+  },
+  "formatting": {
+    "rustfmt": true,
+    "ruff": true,
+    "git_diff_check": true,
+    "packaged_legal_files": true
+  },
+  "package": {
+    "wheel": "build/scheduler-audit-20261030/prefill-kv-wheels/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl",
+    "wheel_sha256": "7379571ec1ed911621c1cafb06d4e5ca8ba5e8ea5bd2a36fd77594ba4e35754f",
+    "native_sha256": "e3a44d67c4515e23a728a82a661475f1cb892c040d1613b5543e98c5684dede4",
+    "packaged_files_checked": 2278,
+    "mismatches": [],
+    "tables": [
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/attention/sglang/0.5.22/ascend_attention_perf.parquet",
+        "sha256": "e1993aedd3ece9a3ad79f696d782d124e56499e8b0988b03edfdb1f5ff9aeafd"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/attention/sglang/0.5.22/ascend_dcp_attention_perf.parquet",
+        "sha256": "69c0225063d8d7546be38abbfc621d9a8a1c6fbbaf850f4e78d369d49f583f20"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/comm/hccl/9.1.0-b243-drv26.1.1-nodes31-32-v3/hccl_perf.parquet",
+        "sha256": "b17770797d092572004884d4ac927346b565c5db8f686d593c29c52e7d09d5f8"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/gemm/sglang/0.5.22/ascend_linear_perf.parquet",
+        "sha256": "fa23597e4a506562eafd6302f2a1a10f619b6316e09840f0613035f92ec29d28"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/kv_transfer/sglang/0.5.22/ascend_pd_perf.parquet",
+        "sha256": "b8e0fd086dc67529e243ec85e8f588d74edd8e7fc1bcd0bb5b14050bb95c9fb1"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/mla_bmm/sglang/0.5.22/ascend_bmm_perf.parquet",
+        "sha256": "93ea52d07ac393c94d743754991b1bdcbc0166ae4a28ac617d9a09c5080e6f75"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_deepep_perf.parquet",
+        "sha256": "7bab1a8aa5bc69c283846d23d5aee36e39bf26f2838a65b1093bceb57268259c"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_moe_chain_perf.parquet",
+        "sha256": "66a7979919f7be83ae2d59a88bff50cd67e0d4297910a4170beb00c6f3489938"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/moe/sglang/0.5.22/ascend_moe_tensor_perf.parquet",
+        "sha256": "b9ae6894e94a233b843918951801b8533d9d921bc297a3c903e6dd9507032f94"
+      },
+      {
+        "path": "aisimulate_core/systems/data/ascend910c/vector/sglang/0.5.22/ascend_vector_perf.parquet",
+        "sha256": "cfcc32a50cd4c4c846c2b61e428501e4d0af7031fed00e6989530ea16eadbf1c"
+      }
+    ],
+    "legal_files_match": true
+  },
+  "searches": {
+    "8192": {
+      "input_tokens": 8192,
+      "execution": {
+        "command": [
+          "docker",
+          "exec",
+          "-w",
+          "/workspace",
+          "-e",
+          "PYTHONPATH=/workspace/python/aisimulate/src",
+          "aisim-node20-validation-20261027-v2",
+          "python3",
+          "-m",
+          "aisimulate",
+          "recommend",
+          "--stack",
+          "engine",
+          "--config",
+          "/workspace/examples/cli/ascend910c-glm52-pd-eager-search.yaml",
+          "--set",
+          "engine.model=/workspace/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata",
+          "--set",
+          "engine.workers.decode.parallelism.attention_data=4",
+          "--set",
+          "engine.workers.decode.parallelism.moe_expert=32",
+          "--set",
+          "traffic.load.concurrency=32",
+          "--set",
+          "traffic.stop.requests=32",
+          "--set",
+          "traffic.source.input_tokens=8192",
+          "--set",
+          "optimizer.parallelism=2",
+          "--output-dir",
+          "/workspace/aisimulate-output/prefill-kv-pd-8192-20261030"
+        ],
+        "log": "/tmp/aisim-prefill-kv-pd-8192.log",
+        "returncode": 0
+      },
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 2,
+        "failed": 0,
+        "feasible": 2,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "metrics": {
+        "completed_requests": 32,
+        "mean_ttft_ms": 11040.637664875952,
+        "mean_tpot_ms": 223.1004763090176,
+        "output_throughput_tok_s": 132.20450907456788,
+        "duration_ms": 247858.41443212595
+      },
+      "best_parallelism": {
+        "prefill_replicas": 2,
+        "decode_replicas": 1,
+        "prefill_tp": 8,
+        "decode_tp": 8,
+        "prefill_attention_dp": 2,
+        "decode_attention_dp": 4,
+        "prefill_moe_ep": 16,
+        "decode_moe_ep": 32
+      },
+      "saved_replay": {
+        "command": [
+          "docker",
+          "exec",
+          "-w",
+          "/workspace",
+          "-e",
+          "PYTHONPATH=/workspace/python/aisimulate/src",
+          "aisim-node20-validation-20261027-v2",
+          "python3",
+          "-m",
+          "aisimulate",
+          "predict",
+          "--stack",
+          "engine",
+          "--config",
+          "/workspace/aisimulate-output/prefill-kv-pd-8192-20261030/recommendations/0001.yaml",
+          "--output-dir",
+          "/workspace/aisimulate-output/prefill-kv-pd-8192-20261030/saved-best-replay"
+        ],
+        "log": "/tmp/aisim-prefill-kv-pd-8192-saved.log",
+        "returncode": 0
+      },
+      "saved_replay_differences": {},
+      "previous_candidate_differences": {},
+      "candidates": [
+        {
+          "prefill_replicas": 1,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 32.0,
+            "mean_ttft_ms": 20853.140824875947,
+            "mean_tpot_ms": 223.1008486571358,
+            "output_throughput_tok_s": 122.50429015213042,
+            "duration_ms": 267484.50980212586
+          }
+        },
+        {
+          "prefill_replicas": 2,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 32.0,
+            "mean_ttft_ms": 11040.637664875952,
+            "mean_tpot_ms": 223.1004763090176,
+            "output_throughput_tok_s": 132.20450907456788,
+            "duration_ms": 247858.41443212595
+          }
+        }
+      ]
+    },
+    "32768": {
+      "input_tokens": 32768,
+      "execution": {
+        "command": [
+          "docker",
+          "exec",
+          "-w",
+          "/workspace",
+          "-e",
+          "PYTHONPATH=/workspace/python/aisimulate/src",
+          "aisim-node20-validation-20261027-v2",
+          "python3",
+          "-m",
+          "aisimulate",
+          "recommend",
+          "--stack",
+          "engine",
+          "--config",
+          "/workspace/examples/cli/ascend910c-glm52-pd-eager-search.yaml",
+          "--set",
+          "engine.model=/workspace/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata",
+          "--set",
+          "engine.workers.decode.parallelism.attention_data=4",
+          "--set",
+          "engine.workers.decode.parallelism.moe_expert=32",
+          "--set",
+          "traffic.load.concurrency=8",
+          "--set",
+          "traffic.stop.requests=8",
+          "--set",
+          "traffic.source.input_tokens=32768",
+          "--set",
+          "optimizer.parallelism=2",
+          "--output-dir",
+          "/workspace/aisimulate-output/prefill-kv-pd-32768-20261030"
+        ],
+        "log": "/tmp/aisim-prefill-kv-pd-32768.log",
+        "returncode": 0
+      },
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 2,
+        "failed": 0,
+        "feasible": 2,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "metrics": {
+        "completed_requests": 8,
+        "mean_ttft_ms": 15890.210070625952,
+        "mean_tpot_ms": 223.06604145552302,
+        "output_throughput_tok_s": 32.84211809183035,
+        "duration_ms": 249435.80000212602
+      },
+      "best_parallelism": {
+        "prefill_replicas": 2,
+        "decode_replicas": 1,
+        "prefill_tp": 8,
+        "decode_tp": 8,
+        "prefill_attention_dp": 2,
+        "decode_attention_dp": 4,
+        "prefill_moe_ep": 16,
+        "decode_moe_ep": 32
+      },
+      "saved_replay": {
+        "command": [
+          "docker",
+          "exec",
+          "-w",
+          "/workspace",
+          "-e",
+          "PYTHONPATH=/workspace/python/aisimulate/src",
+          "aisim-node20-validation-20261027-v2",
+          "python3",
+          "-m",
+          "aisimulate",
+          "predict",
+          "--stack",
+          "engine",
+          "--config",
+          "/workspace/aisimulate-output/prefill-kv-pd-32768-20261030/recommendations/0001.yaml",
+          "--output-dir",
+          "/workspace/aisimulate-output/prefill-kv-pd-32768-20261030/saved-best-replay"
+        ],
+        "log": "/tmp/aisim-prefill-kv-pd-32768-saved.log",
+        "returncode": 0
+      },
+      "saved_replay_differences": {},
+      "previous_candidate_differences": {},
+      "candidates": [
+        {
+          "prefill_replicas": 1,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 8.0,
+            "mean_ttft_ms": 26419.16711137595,
+            "mean_tpot_ms": 223.06646494843605,
+            "output_throughput_tok_s": 30.297137905084202,
+            "duration_ms": 270388.576824126
+          }
+        },
+        {
+          "prefill_replicas": 2,
+          "decode_replicas": 1,
+          "metrics": {
+            "completed_requests": 8.0,
+            "mean_ttft_ms": 15890.210070625952,
+            "mean_tpot_ms": 223.06604145552302,
+            "output_throughput_tok_s": 32.84211809183035,
+            "duration_ms": 249435.80000212602
+          }
+        }
+      ]
+    },
+    "aggregate": {
+      "execution": {
+        "command": [
+          "docker",
+          "exec",
+          "-w",
+          "/workspace",
+          "-e",
+          "PYTHONPATH=/workspace/python/aisimulate/src",
+          "aisim-node20-validation-20261027-v2",
+          "python3",
+          "-m",
+          "aisimulate",
+          "predict",
+          "--stack",
+          "engine",
+          "--config",
+          "/workspace/examples/cli/ascend910c-glm52-8k1k.yaml",
+          "--set",
+          "engine.model=/workspace/benchmarks/evidence/ascend910c-glm52-w8a8/production/deepep-contract-node19-20261024/model-metadata",
+          "--set",
+          "engine.estimator_config.op_level.ascend.decode_execution_mode=eager",
+          "--set",
+          "engine.workers.aggregated.scheduler.ignore_eos=true",
+          "--set",
+          "traffic.load.concurrency=8",
+          "--set",
+          "traffic.stop.requests=8",
+          "--output-dir",
+          "/workspace/aisimulate-output/prefill-kv-aggregate-8192-20261030"
+        ],
+        "log": "/tmp/aisim-prefill-kv-aggregate.log",
+        "returncode": 0
+      },
+      "metrics": {
+        "completed_requests": 8,
+        "mean_ttft_ms": 6118.746035,
+        "mean_tpot_ms": 204.94241883773213,
+        "output_throughput_tok_s": 37.965501356828526,
+        "duration_ms": 215774.84050599998
+      },
+      "before_metrics": {
+        "completed_requests": 8,
+        "mean_ttft_ms": 6118.746035,
+        "mean_tpot_ms": 204.94241883773213,
+        "output_throughput_tok_s": 37.965501356828526,
+        "duration_ms": 215774.84050599998
+      },
+      "change_from_previous": {
+        "completed_requests": 0,
+        "mean_ttft_ms": 0.0,
+        "mean_tpot_ms": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      }
+    },
+    "public_api": {
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/workspace",
+        "-e",
+        "PYTHONPATH=/workspace/python/aisimulate/src",
+        "aisim-node20-validation-20261027-v2",
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "-c",
+        "pytest.ini",
+        "python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py",
+        "python/aisimulate/tests/cross_package/test_core_public_api.py",
+        "-k",
+        "not test_stable_function_signatures"
+      ],
+      "log": "/tmp/aisim-prefill-kv-public.log",
+      "returncode": 0
+    }
+  },
+  "archive": {
+    "path": "benchmarks/evidence/ascend910c-glm52-w8a8/production/scheduler-audit-node20-20261030/prefill-token-kv-evidence.tar.gz",
+    "sha256": "1a4eba92d5b13273bab3399b5d57cbb5b35c52adffa8d6760adb2f18ccc036d9",
+    "bytes": 95032
+  },
+  "source_file_sha256": {
+    "crates/core/src/engine/scheduler/sglang/decode.rs": "5b8b6c80e69d82b0c60cf36156906d9116d6c01176523e716e59092ddf35331f",
+    "crates/core/src/engine/scheduler/sglang/tests.rs": "78e48c2fe3c862c3e6ebfbf49ecb3df34bd3a6cdbcc2854346dbcdc62162ead1",
+    "crates/core/src/engine/scheduler/rank.rs": "a67493c31bbca7fee2e879eb2fb8c16f7dadc34d1aa63ee71fa72b5281ff482a",
+    "crates/core/src/engine/scheduler/mod.rs": "13dae21671207f960916d39fe09742aab5b4c0b97ca1076b326c349325d9a371",
+    "benchmarks/evidence/ascend910c-glm52-w8a8/production/check_prefill_token_kv.py": "1da5339bf7980c3dcace8d21950b550d40c517df230cdb9ae09087f8e78e4736"
+  },
+  "runtime_publication": "pending subsequent installed-runtime verification",
+  "serving_accuracy": "unaccepted: matched eager serving measurements unavailable; no accuracy improvement inferred from unchanged finite search metrics"
+}

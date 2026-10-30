@@ -1733,6 +1733,30 @@
           "scope": "validation",
           "sha256": "29cd4a69635aa7288da303eb0608dc67d3506116f0ec907029922c6b81b98de3"
         },
+        "prefill_token_kv_evidence_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/prefill-token-kv-evidence.tar.gz",
+          "scope": "validation",
+          "sha256": "1a4eba92d5b13273bab3399b5d57cbb5b35c52adffa8d6760adb2f18ccc036d9"
+        },
+        "prefill_token_kv_oracle_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/prefill-token-kv-oracle.json",
+          "scope": "validation",
+          "sha256": "54def7a23a294b8c2db80f7b63f0fc8323d60b93ed7d8939b6faaa93e04723cd"
+        },
+        "prefill_token_kv_validation_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/prefill-token-kv-validation.json",
+          "scope": "validation",
+          "sha256": "166422b7d118847bbff5fd4b29fe946e35b14cfcc6a3d6f83ddb104a80bea553"
+        },
         "production_foundation_validation": {
           "archived": true,
           "context_sha256": "0e538551d055423298a0a3db1125cecd26b8d08279220467115f14736f660c32",
@@ -2126,7 +2150,7 @@
           "Cross-request PD sender contention, host/bootstrap/metadata costs; aggregate first-output KV accounting still needs correction",
           "DCP eager profiles missing"
         ],
-        "next_action": "Continue cross-request sender queue/port-group mapping and aggregate sampled-token KV audit; validate against matched eager serving when full weights and hardware are available.",
+        "next_action": "Publish verified prefill first-token KV runtime; continue sender queue contention and matched eager serving validation.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2983,6 +3007,8 @@
       "pd_prebuilt_first_token": "Completed native pass-start emission of the P-sampled first token; N outputs use N-1 ordinary D forwards, activation stores the token without materializing its KV, queued context includes it.24 pinned source cases,2086 core tests(1ignored),390 GPU parity tests pass.140 GLM/public API tests pass,1 existing stale signature expectation verified identical on old/new runtime. 8K1K C32N32 and32K1K C8N8 two-candidate searches and saved replays match. TTFT reductions223.056ms/222.863ms,TPOT nearly unchanged. Runtime publication pending; chunk transfer and sender queues still open.",
       "pd_routing_validation": "Selectable two-level replica/rank round robin implemented, propagated through search/save/replay. Rust2072+34contracts,Python473config+513runner+5native,390parities pass. Functional 8K/32K searches completed six PD ratios each; no ranking accuracy claim.",
       "pd_source_release": "SGLang source release and destination activation now proceed independently after transfer completion, each at its own worker boundary. P router accounting retires when source KV is released. Native2083 pass1ignored; pinned source7 cases pass. Runtime not yet rebuilt. Next: audit prebuilt first-token emission, chunk KV sending and sender queues.",
+      "prefill_sampled_token_kv_progress": "Ordinary prefill first output now remains unmaterialized until decode consumes it, matching pinned v0.5.22 source bodies.12 CPU oracle cases pass. Final Rust regression in progress; earlier full run2094passed2failed1ignored exposed two fixtures depending on premature page allocation, now corrected. Canonical installed runtime remains chunk phase; no serving accuracy acceptance.",
+      "prefill_sampled_token_kv_validation": "Core2096pass1ignored;390frozen GPU/model parity pass;140GLM/public API pass1known stale-signature assertion deselected;12source-body oracle cases pass;2278packagefiles/10tables match. Both finite PD searches and aggregate8K1K regression reproduce previous metrics; saved YAML replay matches. Installed runtime publication pending; serving accuracy unaccepted.",
       "primary_digest": "sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443",
       "primary_runtime": "v0.5.22-cann9.1.0-a3 / baa9befa381511cd4d56f83980951e5a45fffc6d",
       "remaining": [
@@ -3086,7 +3112,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 94,
+  "revision": 96,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

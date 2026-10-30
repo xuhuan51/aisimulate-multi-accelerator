@@ -1,0 +1,393 @@
+{
+  "upstream_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+  "source_sha256": {
+    "managers/scheduler_components/batch_result_processor.py": "bf45be863809db610712b68679a69ba9f9c011e63753f4f2244e3ca824ab1432",
+    "managers/schedule_batch.py": "c382bf0066d70e19b4b9e38c92ff0029d39996238f8f0685f4c1dadbfa4e8a96"
+  },
+  "scope": "Unmodified ordinary-prefill result and non-speculative decode preparation bodies. CPU allocator/cache/streaming stubs witness call ordering; no NPU execution or memory measurement.",
+  "cases_passed": 12,
+  "cases": [
+    {
+      "prompt_tokens": 3,
+      "max_output_tokens": 1,
+      "requests": 1,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "release",
+          3
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 3,
+      "max_output_tokens": 1,
+      "requests": 2,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "release",
+          3
+        ],
+        [
+          "release",
+          3
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ],
+            [
+              101
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 3,
+      "max_output_tokens": 2,
+      "requests": 1,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "checkpoint",
+          3
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ]
+          ]
+        ],
+        [
+          "allocate_decode",
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 3,
+      "max_output_tokens": 2,
+      "requests": 2,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "checkpoint",
+          3
+        ],
+        [
+          "checkpoint",
+          3
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ],
+            [
+              101
+            ]
+          ]
+        ],
+        [
+          "allocate_decode",
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 3,
+      "max_output_tokens": 4,
+      "requests": 1,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "checkpoint",
+          3
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ]
+          ]
+        ],
+        [
+          "allocate_decode",
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 3,
+      "max_output_tokens": 4,
+      "requests": 2,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "checkpoint",
+          3
+        ],
+        [
+          "checkpoint",
+          3
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ],
+            [
+              101
+            ]
+          ]
+        ],
+        [
+          "allocate_decode",
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 4,
+      "max_output_tokens": 1,
+      "requests": 1,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "release",
+          4
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 4,
+      "max_output_tokens": 1,
+      "requests": 2,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "release",
+          4
+        ],
+        [
+          "release",
+          4
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ],
+            [
+              101
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 4,
+      "max_output_tokens": 2,
+      "requests": 1,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "checkpoint",
+          4
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ]
+          ]
+        ],
+        [
+          "allocate_decode",
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 4,
+      "max_output_tokens": 2,
+      "requests": 2,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "checkpoint",
+          4
+        ],
+        [
+          "checkpoint",
+          4
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ],
+            [
+              101
+            ]
+          ]
+        ],
+        [
+          "allocate_decode",
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 4,
+      "max_output_tokens": 4,
+      "requests": 1,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "checkpoint",
+          4
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ]
+          ]
+        ],
+        [
+          "allocate_decode",
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "prompt_tokens": 4,
+      "max_output_tokens": 4,
+      "requests": 2,
+      "events": [
+        [
+          "free_group_begin"
+        ],
+        [
+          "checkpoint",
+          4
+        ],
+        [
+          "checkpoint",
+          4
+        ],
+        [
+          "free_group_end"
+        ],
+        [
+          "stream",
+          [
+            [
+              101
+            ],
+            [
+              101
+            ]
+          ]
+        ],
+        [
+          "allocate_decode",
+          2,
+          1
+        ]
+      ]
+    }
+  ]
+}

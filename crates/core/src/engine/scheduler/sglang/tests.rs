@@ -2887,14 +2887,13 @@ mod forward_pass_metrics {
         assert_eq!(fpm.num_prefill_requests, 1);
         assert_eq!(fpm.sum_prefill_tokens, 1);
         assert!(pass.end_ms > now);
-        // The allocator honours the same cap (see `allocation_match_is_capped_like_sglang` for the
-        // lease-level state): the fifth prompt token got its own slot at admission and the first
-        // output token took another; once the in-flight prefix was cached, the fifth token's slot
-        // was deduplicated against the identical cached page, so the pool is one token smaller.
         assert_eq!(core.running.len(), 1);
+        assert_eq!(core.running[0].materialized_tokens, 5);
+        assert_eq!(core.running[0].cached_tokens(), 5);
+        assert_eq!(core.running[0].current_sequence_len(), 6);
         assert_eq!(
             available_before - core.kv_manager.cache().available_tokens(),
-            1
+            0
         );
     }
 
@@ -3072,6 +3071,80 @@ mod forward_pass_metrics {
             pass2.end_ms > pass1.end_ms,
             "the decode pass is the one that takes time"
         );
+    }
+
+    #[test]
+    fn prefill_sampled_token_waits_for_decode_before_owning_kv() {
+        for input_tokens in [3, 4] {
+            let mut core = SglangCore::new(three_page_args());
+            core.receive(DirectRequest {
+                tokens: (0..input_tokens as u32).collect(),
+                max_output_tokens: 3,
+                output_token_ids: Some(vec![41, 42, 43]),
+                uuid: Some(Uuid::from_u128(1)),
+                arrival_timestamp_ms: None,
+                session_id: None,
+            });
+            let mut collector = crate::engine::trace::TraceCollector::default();
+            let prefill = core.execute_pass(&mut collector, 0.0);
+            assert_eq!(prefill.output_signals.len(), 1);
+            assert_eq!(core.running[0].output_tokens(), &[41]);
+            assert_eq!(core.running[0].materialized_tokens, input_tokens);
+            assert_eq!(core.running[0].allocated_tokens, 4);
+            assert_eq!(
+                core.running[0].cached_tokens(),
+                if input_tokens == 3 { 0 } else { 4 }
+            );
+            assert_eq!(core.kv_manager.cache().available_tokens(), 8);
+
+            let decode = core.execute_pass(&mut collector, prefill.end_ms);
+            assert_eq!(decode.output_signals.len(), 1);
+            assert_eq!(core.running[0].output_tokens(), &[41, 42]);
+            assert_eq!(core.running[0].materialized_tokens, input_tokens + 1);
+            assert_eq!(
+                core.running[0].allocated_tokens,
+                if input_tokens == 3 { 4 } else { 8 }
+            );
+            assert_eq!(core.running[0].cached_tokens(), 4);
+            assert_eq!(
+                decode.fpm.as_ref().unwrap().sum_decode_kv_tokens,
+                (input_tokens + 1) as u64
+            );
+        }
+    }
+
+    #[test]
+    fn prefill_emits_all_sampled_tokens_before_decode_memory_retraction() {
+        let mut args = three_page_args();
+        args.sglang.as_mut().unwrap().clip_max_new_tokens = Some(1);
+        let mut core = SglangCore::new(args);
+        for (request_id, start) in [(1, 0), (2, 100)] {
+            core.receive(DirectRequest {
+                tokens: (start..start + 4).collect(),
+                max_output_tokens: 2,
+                output_token_ids: None,
+                uuid: Some(Uuid::from_u128(request_id)),
+                arrival_timestamp_ms: None,
+                session_id: None,
+            });
+        }
+        let mut collector = crate::engine::trace::TraceCollector::default();
+        let prefill = core.execute_pass(&mut collector, 0.0);
+        assert_eq!(prefill.admissions.len(), 2);
+        assert_eq!(prefill.output_signals.len(), 2);
+        assert!(prefill.pressure_events.is_empty());
+        assert!(core.running.iter().all(|request| request.output_len() == 1));
+        assert!(
+            core.running
+                .iter()
+                .all(|request| request.materialized_tokens == 4)
+        );
+        assert_eq!(core.kv_manager.cache().available_tokens(), 4);
+        let decode = core.execute_pass(&mut collector, prefill.end_ms);
+        assert!(!decode.pressure_events.is_empty());
+        assert_eq!(decode.output_signals.len(), 1);
+        assert!(decode.output_signals[0].completed);
+        assert_eq!(core.waiting.len(), 1);
     }
 
     #[test]
@@ -3359,13 +3432,14 @@ mod admission_validation_rollback {
         .into();
         let mut now = core.try_execute_hidden_pass(0.0).unwrap().end_ms;
         assert_eq!(core.running.len(), 2);
-        for _ in 0..3 {
+        for _ in 0..4 {
             now = core.try_execute_hidden_pass(now).unwrap().end_ms;
         }
         assert!(
             core.running
                 .iter()
-                .all(|request| request.current_sequence_len() == 8)
+                .all(|request| request.current_sequence_len() == 9
+                    && request.materialized_tokens == 8)
         );
         fail.store(true, Ordering::Relaxed);
         assert!(core.try_execute_hidden_pass(now).is_err());

@@ -991,7 +991,7 @@ mod tests {
             rank.apply_command_effects(
                 Command::Submit(Request {
                     request_id: second,
-                    tokens: (10..22).collect(),
+                    tokens: (10..26).collect(),
                     max_output_tokens: 1,
                     output_token_ids: None,
                     session_id: None,

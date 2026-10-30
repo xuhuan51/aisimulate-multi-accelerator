@@ -777,6 +777,20 @@ generated `production/scheduler-audit-node20-20261030/pd-chunks-oracle.json`
 records source hashes, page boundaries and ordering. The upstream source is
 not bundled; these checks do not measure transfer latency or serving accuracy.
 
+The ordinary-prefill sampled-token KV behavior in
+`crates/core/src/engine/scheduler/sglang/decode.rs` and the scheduler regression
+tests independently reimplements and modifies the ordering of
+`process_batch_result_prefill` in `managers/scheduler_components/batch_result_processor.py`
+and `prepare_for_decode` in `managers/schedule_batch.py` from
+https://github.com/sgl-project/sglang/tree/baa9befa381511cd4d56f83980951e5a45fffc6d/python/sglang/srt
+(Copyright 2023-2026 SGLang Team and contributors; Apache-2.0).
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/check_prefill_token_kv.py`
+executes the hash-checked original function bodies with CPU allocator, cache
+and streaming stubs. Its generated
+`production/scheduler-audit-node20-20261030/prefill-token-kv-oracle.json`
+records the source identities and event ordering. The upstream source is not
+bundled; the oracle does not execute a full serving runtime or measure memory.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

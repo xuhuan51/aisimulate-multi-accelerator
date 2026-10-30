@@ -244,9 +244,7 @@ pub(super) fn simulate_decode_step(
 /// batch (`check_finished` in `process_batch_result_prefill`) without ever giving that token a KV
 /// slot; the others get their slot at the next decode step (`prepare_for_decode`), where the
 /// decode memory check and retraction live. This is a pure prefill forward, so it never retracts
-/// and takes no decode time. When the first-output slots do not fit even after evicting cached
-/// pages, the continuing requests keep their first token until the next decode step (which is
-/// where SGLang would have to retract for them).
+/// and takes no decode time.
 fn prefill_first_tokens(
     running: &mut Vec<SglangRequest>,
     kv_manager: &mut SglangKvManager,
@@ -288,29 +286,9 @@ fn prefill_first_tokens(
     newly_completed.reverse();
     completed_requests.extend(newly_completed);
 
-    // The rest need a slot for the first output token. Make room by evicting cached pages only.
-    let needed = decode_page_growth_needed(running, config.block_size, 1);
-    let available = kv_manager.cache().available_tokens();
-    if available < needed {
-        kv_manager.evict(needed - available);
-    }
-    let reserved_pages = needed / config.block_size;
-    let Some(mut reservation) = kv_manager.reserve_decode_pages(reserved_pages) else {
-        return DecodeResult {
-            completed_requests,
-            output_signals,
-            end_ms: current_time_ms,
-            ..DecodeResult::default()
-        };
-    };
     for req in running.iter_mut() {
-        let crossing_page_boundary = req.materialized_tokens + 1 > req.allocated_tokens;
-        kv_manager.extend_decode(&mut req.kv_lease, &mut reservation);
-        if crossing_page_boundary {
-            req.allocated_tokens += config.block_size;
-        }
         let token_id = req.next_output_token();
-        req.append_output_token(token_id, config.block_size);
+        req.sequence_tokens.push(token_id);
         cache_materialized_prefix(req, kv_manager, config);
         req.debug_assert_invariants(config.block_size);
         output_signals.push(OutputSignal {
@@ -328,9 +306,6 @@ fn prefill_first_tokens(
             ),
         });
     }
-    debug_assert!(reservation.len() <= reserved_pages);
-    kv_manager.release_decode_reservation(reservation);
-
     DecodeResult {
         completed_requests,
         output_signals,

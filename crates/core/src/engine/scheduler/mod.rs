@@ -552,6 +552,7 @@ mod tests {
             running_request.max_output_tokens = 32;
             core.receive(running_request);
             core.execute_hidden_pass(0.0);
+            core.execute_hidden_pass(1.0);
             assert_eq!(request_metrics(&core).running_requests, 1);
             let active_blocks_before_cancel = request_metrics(&core).active_decode_blocks;
             assert!(
