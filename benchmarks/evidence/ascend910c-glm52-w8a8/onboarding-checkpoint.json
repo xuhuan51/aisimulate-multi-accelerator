@@ -1349,6 +1349,14 @@
           "scope": "collection",
           "sha256": null
         },
+        "matched_model_path_node20_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/matched-model-path-node20-20261030.json",
+          "scope": "validation",
+          "sha256": "44374efa40d6688c2a5a968fb3820bfb37f688b087ea0adaa0cddf33dab94923"
+        },
         "model_engine_canary": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -1716,6 +1724,30 @@
           "path": "production/pd-search-20261024/recommendation.json",
           "scope": "validation",
           "sha256": "8b136d0a699ed712f950c15da4ea9bae5906ff5d21f051a761147a96de34c4ba"
+        },
+        "pd_sender_node19_resources_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/pd-sender-node19-resource-check.log",
+          "scope": "validation",
+          "sha256": "8d0ffe2481e3b9c90c57435fcf5b456cb35fe7a6277c98077b6ddbd4214fbc23"
+        },
+        "pd_sender_node20_resources_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/pd-sender-node20-resource-check.log",
+          "scope": "validation",
+          "sha256": "27d50f24511f2cf89c2db233008b8d57615183b6a03f2d991e90d2a09c392e69"
+        },
+        "pd_sender_queue_audit_20261030": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261030/pd-sender-queue-audit-20261030.json",
+          "scope": "validation",
+          "sha256": "2f7bd3174a7da9867df59f114e8cdff504d0a37f12357732c4a92dca73db80aa"
         },
         "pd_table": {
           "archived": false,
@@ -2161,12 +2193,12 @@
       "progress": {
         "blockers": [
           "Original multi-case transport SIGSEGV unresolved; only isolated samples published",
-          "Matched eager/no-overlap serving measurements absent; configured full weights unavailable on19/20",
+          "Matched eager/no-overlap serving measurements absent; matching full weights found on20, but user explicitly deferred service/NPU measurement",
           "Nonuniform sender traffic and expert skew approximations",
           "Cross-request PD sender contention, host/bootstrap/metadata costs",
           "DCP eager profiles missing"
         ],
-        "next_action": "Continue pinned-runtime cross-request sender queue/transport contention and host costs; obtain matched graph/overlap-off forward and serving measurements before accepting accuracy or PD/parallelism rankings.",
+        "next_action": "Continue CPU-only pinned-source scheduler and search audit, fix verified defects with regression evidence. Do not start services or NPU measurements; user deferred them. Use /data_lib/data/models/glm-q metadata and user910c_script workload semantics for future matching.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2230,7 +2262,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Continue pinned-runtime cross-request sender queue/transport contention and host costs; obtain matched graph/overlap-off forward and serving measurements before accepting accuracy or PD/parallelism rankings.",
+    "next_action": "Continue CPU-only pinned-source scheduler and search audit, fix verified defects with regression evidence. Do not start services or NPU measurements; user deferred them. Use /data_lib/data/models/glm-q metadata and user910c_script workload semantics for future matching.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3020,6 +3052,38 @@
       "installed_ep32_runtime": "Source0d3ce2e0 schema31 installed assha256:c5aa120bc29658ff970bf8fb912913522e65e12f2b13c4c7a8aeb7ad170eefc3.Native1e728bf4;wheel777db704;10packagedtables verified. Installed8K1K C32N32 and32K1K C8N8 searches both2/2ratios, all primary metrics match source for eachcandidate. Pending source audit: P release currently waits for D activation; pinned SGLang P releases independently when transfer succeeds. Chunk-level KV transfer and sender queues also remain.",
       "installed_pd_boundaries": "Source d28b47d1661ba92cb1fea7e9a28cad41c5c9c806 published as sha256:c53639a123c74cdb63491280cf6189bb59340efd5d28537c80facfd119a998e5. schema31/nativea53db3bb/wheel5b163a13.10tables verified;2278packaged sourcefiles match. Both installed EP32eager 8K1K and32K1K finite searches 2/2feasible and primary metrics match source. Source release and prebuilt first-token timing fixed; chunk-level KV sending and sender contention remain to model. No matched serving accuracy claim.",
       "installed_pd_chunks": "Source a63007f2745e40f4c5dd75bd5c486788ce06c7eb installed as sha256:a15e49a0bc8af505b8d67c3f444c5ca9f6c59d56caffe81bdf4958fb001faff2. schema31/nativeaf259be3/wheel155349c9.2278packaged files and10tables verified. Both installed EP32eager searches2/2feasible and all candidate primary metrics match source. Chunk send/compute overlap and per-request FIFO implemented; no cross-request sender contention, aggregate first-output KV correction or matched serving-accuracy acceptance yet. Initial audit snapshot preserved exactly; v2 adds v0.5.20 source comparison as a separate artifact.",
+      "matched_model_path_and_constraint": {
+        "indexed_shard_bytes": 773876016944,
+        "indexed_shards": 182,
+        "metadata": {
+          "config.json": {
+            "baseline_equal": true,
+            "baseline_present": true,
+            "bytes": 3699,
+            "sha256": "817f5fb39ca5d4c4b5648de89ca00deaea7537d8c2f130172a459252a05c1073"
+          },
+          "quant_model_description.json": {
+            "baseline_equal": true,
+            "baseline_present": true,
+            "bytes": 12879067,
+            "sha256": "3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba"
+          },
+          "quant_model_weights.safetensors.index.json": {
+            "baseline_equal": false,
+            "baseline_present": false,
+            "bytes": 19259326,
+            "sha256": "dfa97fa50b5e675ff6cea6ddeae3110795b6b7e971e6dc9cf565a4005fcb079c"
+          }
+        },
+        "missing_shards": [],
+        "model_path": "/data_lib/data/models/glm-q",
+        "observed_at_utc": "2026-10-30T07:49:31.071657+00:00",
+        "script_workload": "United fixed workload sweep uses random-ids,random-range-ratio1,max-concurrency C,num-prompts2C for8K1Kand32K1K,warmup2bydefault.",
+        "serving_started": false,
+        "user_constraint": "User explicitly deferred starting serving measurements because NPUs may be needed by others. Continue source audit, CPU regression and offline prediction only.",
+        "user_scripts": "/home/youxingye/youxingye_data/910c_script",
+        "verification_scope": "Metadata SHA comparison and shard existence/size only; the773GBof weights were not fully hashed or loaded."
+      },
       "pd_prebuilt_first_token": "Completed native pass-start emission of the P-sampled first token; N outputs use N-1 ordinary D forwards, activation stores the token without materializing its KV, queued context includes it.24 pinned source cases,2086 core tests(1ignored),390 GPU parity tests pass.140 GLM/public API tests pass,1 existing stale signature expectation verified identical on old/new runtime. 8K1K C32N32 and32K1K C8N8 two-candidate searches and saved replays match. TTFT reductions223.056ms/222.863ms,TPOT nearly unchanged. Runtime publication pending; chunk transfer and sender queues still open.",
       "pd_routing_validation": "Selectable two-level replica/rank round robin implemented, propagated through search/save/replay. Rust2072+34contracts,Python473config+513runner+5native,390parities pass. Functional 8K/32K searches completed six PD ratios each; no ranking accuracy claim.",
       "pd_source_release": "SGLang source release and destination activation now proceed independently after transfer completion, each at its own worker boundary. P router accounting retires when source KV is released. Native2083 pass1ignored; pinned source7 cases pass. Runtime not yet rebuilt. Next: audit prebuilt first-token emission, chunk KV sending and sender queues.",
@@ -3039,6 +3103,7 @@
       "search_feasibility": "Use known single-turn synthetic ISL+OSL only for KV preflight; preserve runtime context180000 and saved role limits. 8K12candidates and32K6legalPDcandidates completed. Both saved top candidates reproduce completed requests,TTFT,TPOT,throughput exactly. 32KTP4ADP4 is genuinely KV-infeasible; independent parallel axes correctly prune >64device combinations.",
       "search_validation": "Focusedsearch45passed;broader205passed5failedbecauseofflinecontainercannotdownloadHuggingFacemetadata. Short8requestreplays validate pipeline only,notservingaccuracyorsteadystateoptimum.",
       "sender_queue_followup": "Read-only CPU execution of unmodified v0.5.22/v0.5.20 add_transfer_request bodies confirms same-peer FIFO and different-peer hash collisions: destination session port sum modulo configured queue count. Per-request FIFO alone is insufficient. Actual per-sender service and port layout are not captured by isolated whole-transfer curves; no global contention multiplier or new accuracy claim introduced.",
+      "sender_resources_rechecked_20261030": "Fresh read-only inventory: node20 has0NPU processes; node19 has16active SGLang scheduler processes. Requested full weights path absent on both; exact relocated United model path absent on20 too. Source queue audit confirms same-session queue assignment and cross-session hash collisions on both0.5.22/0.5.20. Need per-sender enqueue/service evidence for contention and matched eager forward/serving data; no interference with live services or measured-accuracy acceptance.",
       "status": "in_progress",
       "synchronized_dp_timing": "Implemented pure-PD DCP1 group timing using committed per-rank batches including idle ranks, pinned MAX_LEN/SUM_LEN selection, global dense/expert shapes and conditional HCCL. Corrected post-retraction decode telemetry. Schema31 staging native e91bc58e52a8aa3986fd54c3191ad0ef9848d2ce5fd22a3ce6c2ce1b4a4b2541; runtime publication pending expanded padding profiles. Tests306 sourcecases,2080core+84SGLang,28GLM,390parities+5boundary passed. 8K/32K each6ratios completed and saved-best metrics identical. Expanded probe1140/1264 successful;72missing padding,52EP32eagerDeepEP. Extra3360coordinates collected;2numerical failures quarantined and102CVcases repeated once.",
       "validation": "Rust2063passed1ignored;bothparitysuites390passed;GLMmodel19passed. Prior DCP2negativeKVtest reproduced as obsolete on unchanged old installed wheel. Native eager2requestPDreplaycompleted."
@@ -3130,7 +3195,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 97,
+  "revision": 99,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

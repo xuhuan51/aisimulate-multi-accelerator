@@ -1,0 +1,130 @@
+{
+  "method": "CPU execution of unmodified add_transfer_request bodies with queues and request stubs; no NPU transfer execution",
+  "results": [
+    {
+      "version": "v0.5.22",
+      "source": "build/runtime-audit-20261029/collection/srt/disaggregation/mooncake/conn.py",
+      "sha256": "f879f06f07037483df774ef0ea38232e7efdf9e7f30869ea64779b714576062d",
+      "function_lines": [
+        3025,
+        3077
+      ],
+      "request_destination_sessions": {
+        "1": [
+          "host:10001"
+        ],
+        "2": [
+          "host:10001"
+        ],
+        "3": [
+          "host:10005"
+        ],
+        "4": [
+          "host:10002"
+        ],
+        "5": [
+          "host:10001",
+          "peer:10002"
+        ],
+        "6": [
+          "peer:10002",
+          "host:10001"
+        ]
+      },
+      "queue_room_order": [
+        [],
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          4
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "version": "v0.5.20",
+      "source": "build/scheduler-audit-20261030/v0520/srt/disaggregation/mooncake/conn.py",
+      "sha256": "dbbaff2cad622ef7ba08dad33cf17ec7eb1d868f9b9aeb4a1405fd2c116ee5f7",
+      "function_lines": [
+        2376,
+        2426
+      ],
+      "request_destination_sessions": {
+        "1": [
+          "host:10001"
+        ],
+        "2": [
+          "host:10001"
+        ],
+        "3": [
+          "host:10005"
+        ],
+        "4": [
+          "host:10002"
+        ],
+        "5": [
+          "host:10001",
+          "peer:10002"
+        ],
+        "6": [
+          "peer:10002",
+          "host:10001"
+        ]
+      },
+      "queue_room_order": [
+        [],
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          4
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    }
+  ],
+  "finding": "Same peer groups share one sender queue; different groups may collide depending on dynamically selected session ports. Per-request FIFO alone does not model these constraints. Static worker and Ascend send paths are synchronous until current chunk finishes.",
+  "remaining_work": "Model shared sender queues with enqueue-time ordering across requests, retain already-ready chunks ahead of later requests, and preserve cancellation/draining semantics. Exact cross-peer collision layout requires runtime session identities; do not assume a single global serial link.",
+  "observed_at_utc": "2026-10-30T06:44:03.510779+00:00",
+  "resources": {
+    "node20": {
+      "npu_smi_sha256": "27d50f24511f2cf89c2db233008b8d57615183b6a03f2d991e90d2a09c392e69",
+      "no_running_process_messages": 8,
+      "sglang_process_rows": 0,
+      "scope": "Read-only inventory; no external serving process was changed.",
+      "log_file": "pd-sender-node20-resource-check.log"
+    },
+    "node19": {
+      "npu_smi_sha256": "8d0ffe2481e3b9c90c57435fcf5b456cb35fe7a6277c98077b6ddbd4214fbc23",
+      "no_running_process_messages": 0,
+      "sglang_process_rows": 16,
+      "scope": "Read-only inventory; no external serving process was changed.",
+      "log_file": "pd-sender-node19-resource-check.log"
+    }
+  },
+  "model_availability": {
+    "node20_checked_paths": {
+      "/mnt/raid/user/data/models/glm-q": false,
+      "/mnt/raid/user/data/chengyetai/eplb_pd_agentx_20260928/glm-qq": false,
+      "/tgm_rent_data/data/chengyetai/eplb_pd_agentx_20260928/glm-qq": false
+    },
+    "conclusion": "No matching full weights at the requested path or the exact path in the relocated United script. Metadata-only snapshots support offline prediction, not matched serving validation.",
+    "node19_requested_path": {
+      "path": "/mnt/raid/user/data/models/glm-q",
+      "directory": false,
+      "config": false
+    }
+  },
+  "scope": "Source queue audit and current hardware availability only. Cross-request contention remains unimplemented; no transfer latency or serving accuracy measurement."
+}
