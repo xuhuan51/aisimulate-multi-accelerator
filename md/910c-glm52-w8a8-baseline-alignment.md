@@ -729,3 +729,9 @@ chunk KV 传输、多个发送队列间的竞争、host 开销以及同配置实
 GLM与公共API测试140通过、1失败：既有签名断言漏写`op_level_options`，已核对旧运行包
 与当前代码的签名完全一致，本阶段未改Python公共API。保留该失败记录，不把测试全绿
 作为结论。验证摘要与完整日志归档分别为`pd-prebuilt-validation.json`、`pd-prebuilt-evidence.tar.gz`。
+
+本机公开运行镜像现已更新至源码`d28b47d1`，包含第19、20节两项修复；安装后的8K/1K、
+32K/1K搜索均为2/2候选可行，各候选主要指标与源码完全一致。镜像ID为
+`sha256:c53639a123c74cdb63491280cf6189bb59340efd5d28537c80facfd119a998e5`。
+运行包身份、10张算子表SHA和安装验证见本节目录的`pd-boundary-runtime-publication.json`；
+之前的镜像和二进制已保留，当前仍不声明完成实测准确性验收。
