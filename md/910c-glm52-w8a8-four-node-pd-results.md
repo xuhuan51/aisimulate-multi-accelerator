@@ -1,10 +1,60 @@
 # 四节点910C：8K/1K与32K/1K的PD搜索结果
 
+## 2026-10-31更新：PD恢复修复后的完整复查
+
+当前默认离线镜像的源码为 `db5f2e72`。用相同workload、并发档位和并行菜单重新搜索，
+8组均耗尽有限空间：**4024个候选全部成功，0失败、0超时**。
+逐项检查了请求数、完成数、输入/输出token总数以及零拒绝/失败/取消；
+所有候选的prefill计算token总数均为正式输入总数，D端没有额外prefill重算。
+
+与下方修复前基线相比：6个失败候选恢复成功；290个原成功候选的预测发生变化，
+分布在8K/C8的28个、8K/C16的106个、8K/C32的156个候选。
+其余3728个原成功候选保持一致，包括32K的全部1800个候选。
+每个发生变化的候选都去除了原先多记的8900～53357个D端prefill token。
+队列恢复优先级也影响新请求等待时间，因此TTFT可以上升或下降；
+变化明细保留在报告和CSV中。这些是两个模型版本的预测差异，尚无同配置实测来计算新误差。
+
+两组workload的最高吞吐配置均未改变：
+
+| 输入/输出 | 并发 / 正式请求数 | P:D副本数 | P:D节点数 | mean TTFT s | mean TPOT ms/token | 输出吞吐 token/s |
+| --- | --- | --- | --- | ---: | ---: | ---: |
+| 8192/1024 | 32 / 64 | 2:1 | 2:2 | 5.579 | 189.67 | 162.29 |
+| 32768/1024 | 8 / 8 | 2:1 | 2:2 | 17.899 | 188.29 | 38.91 |
+
+- 8K：P为2个副本，每副本Attention TP4 / ADP4 / MoE-TP1 / EP16；D为1个副本，TP1 / ADP32 / MoE-TP1 / EP32。
+- 32K：P为2个副本，每副本Attention TP4 / ADP4 / MoE-TP16 / EP1；D与8K相同。
+
+每个P副本占1节点，D副本跨2节点。这里的最优限定在当前菜单内：最多64个逻辑device，
+PP1/CP1、固定长度、同步调度、eager decode、无prefix cache、无TTFT/TPOT SLA；
+8K的C为4/8/16/32且N=2C，32K的C为1/2/4/8且N=C，没有复现2条预热。
+不能据此推断未搜索的32K/C16或C32表现。主机KV复制和跨请求发送争用仍需校准。
+两个最佳YAML在当前默认镜像内重新回放，分别完成64/64和8/8条请求、每条输出1024token，
+指标与搜索一致。验证记录为同目录 `best-replay-validation.json`。
+
+本轮结果和可复跑配置：
+
+- [完整复查及290个变化候选](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-restore-20261031/report.json)
+- [4024个候选CSV](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-restore-20261031/candidates.csv)
+- [8K第一名YAML](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-restore-20261031/best-8192-1024.yaml)
+- [32K第一名YAML](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-restore-20261031/best-32768-1024.yaml)
+
+```bash
+cd /home/youxingye/youxingye_data/aisimulate-910c
+AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q bash scripts/run-ascend910c.sh predict \
+  --stack engine \
+  --config benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-restore-20261031/best-8192-1024.yaml \
+  --capture-per-request --output-dir aisimulate-output/pd-restore-best-8k
+AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q bash scripts/run-ascend910c.sh predict \
+  --stack engine \
+  --config benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-restore-20261031/best-32768-1024.yaml \
+  --capture-per-request --output-dir aisimulate-output/pd-restore-best-32k
+```
+
 ## 2026-10-31：PD回退修复前的eager基线
 
 本节保存 `2c1503d4` 的完整搜索结果。当前默认运行包已更新为 `db5f2e72`，
 修复了这里6个失败配置的D端KV恢复流程；6个配置及原两组最佳配置均通过独立回放。
-完整菜单复查进行中，完成后将补充新结果。修复与验证见对齐说明第25节。
+完整菜单已复查完毕，使用上方更新后的结果。修复与验证见对齐说明第25节。
 
 使用本机已安装源码 `2c1503d4` 的离线运行包，模型路径为
 `/data_lib/data/models/glm-q`。搜索于2026-10-30启动，以下汇总于2026-10-31核验。

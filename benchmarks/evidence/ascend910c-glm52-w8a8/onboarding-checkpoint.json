@@ -1781,6 +1781,62 @@
           "scope": "validation",
           "sha256": "f376b515945f5bc672e3cb1e03ecd870fcaa305ad196b4ed0f1700b4ce3f4269"
         },
+        "pd_restore_four_node_20261031_best_32k": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-pd-restore-20261031/best-32768-1024.yaml",
+          "scope": "validation",
+          "sha256": "793b20cccf23003b35798d6ff33250c5aa8915bd4642475800f20f1766744805"
+        },
+        "pd_restore_four_node_20261031_best_8k": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-pd-restore-20261031/best-8192-1024.yaml",
+          "scope": "validation",
+          "sha256": "ccee2cea820891da3f888ad356634e6434b5a5a3bb17a8ad26c74f59d285a1ec"
+        },
+        "pd_restore_four_node_20261031_best_evidence": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-pd-restore-20261031/best-replay-evidence.tar.gz",
+          "scope": "validation",
+          "sha256": "3da78b57b70e8a142b61631322229a133d7cec4af423fa410047ca2f598daec9"
+        },
+        "pd_restore_four_node_20261031_best_validation": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-pd-restore-20261031/best-replay-validation.json",
+          "scope": "validation",
+          "sha256": "e45a79e02148863822e10b147f19ede2a41ec34e76ef4077ba40bde1b2963a5d"
+        },
+        "pd_restore_four_node_20261031_candidates": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-pd-restore-20261031/candidates.csv",
+          "scope": "validation",
+          "sha256": "a12d688ba63551acb166178f3cc8102f6af8dfb1f87d3cdda53472655952e90d"
+        },
+        "pd_restore_four_node_20261031_evidence": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-pd-restore-20261031/search-evidence.tar.gz",
+          "scope": "validation",
+          "sha256": "1d186a7ccd833c1a9cf98ce9e356a1c32dd6239e0f837c35836b0a57aa20bbe1"
+        },
+        "pd_restore_four_node_20261031_report": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-pd-restore-20261031/report.json",
+          "scope": "validation",
+          "sha256": "210bd118689284480b56f254a40aa99326ab0a926622fd60595fc4bde56ca38a"
+        },
         "pd_retraction_evidence_20261031": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -2310,7 +2366,7 @@
           "Cross-request PD sender contention, host/bootstrap/metadata costs",
           "DCP eager profiles missing"
         ],
-        "next_action": "Finish and compare all4024 finite-menu offline candidates on published db5f2e72 runtime. Six previously failed candidates and original two winners validated. User deferred matched eager serving and host-copy timing measurement.",
+        "next_action": "PD retraction restoration and all4024 current-menu candidate replays verified and published. Continue residual sender-queue/host-timing audit and matched eager benchmark preparation; NPU/services remain deferred by user. End-to-end serving accuracy is not accepted.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2374,7 +2430,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Finish and compare all4024 finite-menu offline candidates on published db5f2e72 runtime. Six previously failed candidates and original two winners validated. User deferred matched eager serving and host-copy timing measurement.",
+    "next_action": "PD retraction restoration and all4024 current-menu candidate replays verified and published. Continue residual sender-queue/host-timing audit and matched eager benchmark preparation; NPU/services remain deferred by user. End-to-end serving accuracy is not accepted.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3286,6 +3342,33 @@
         "verification_scope": "Metadata SHA comparison and shard existence/size only; the 773 GB of weights were not fully hashed or loaded."
       },
       "pd_prebuilt_first_token": "Completed native pass-start emission of the P-sampled first token; N outputs use N-1 ordinary D forwards, activation stores the token without materializing its KV, queued context includes it.24 pinned source cases,2086 core tests(1ignored),390 GPU parity tests pass.140 GLM/public API tests pass,1 existing stale signature expectation verified identical on old/new runtime. 8K1K C32N32 and32K1K C8N8 two-candidate searches and saved replays match. TTFT reductions223.056ms/222.863ms,TPOT nearly unchanged. Runtime publication pending; chunk transfer and sender queues still open.",
+      "pd_restore_four_node_search": {
+        "all_request_and_prefill_token_counts_verified": true,
+        "best_32k_unchanged": true,
+        "best_8k_unchanged": true,
+        "changed_cases": {
+          "8K_C16": 106,
+          "8K_C32": 156,
+          "8K_C8": 28
+        },
+        "counts": {
+          "cache_hits": 0,
+          "evaluated": 4024,
+          "failed": 0,
+          "feasible": 4024,
+          "infeasible": 0,
+          "resource_limited": 0,
+          "timed_out": 0,
+          "unsupported": 0
+        },
+        "portable_best_installed_replays": 2,
+        "previously_failed_recovered": 6,
+        "previously_feasible_changed": 290,
+        "previously_feasible_unchanged": 3728,
+        "report": "benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-pd-restore-20261031/report.json",
+        "runtime_source": "db5f2e721670d3eb2a10785fe55ad2d28af81349",
+        "serving_measured": false
+      },
       "pd_retraction_in_progress": {
         "finding": "PD D retraction was requeued through local prefill. Pinned GLM/MLA path restores KV from host and retains output tokens. Existing candidate000165 mixed-mode failure reproduced with published2c1503d4 runtime. Six original-function CPU reservation/restore/priority cases pass. Rust before-fix cases confirmed spurious D prefill; native/full regression pending.",
         "source_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
@@ -3424,7 +3507,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 106,
+  "revision": 107,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

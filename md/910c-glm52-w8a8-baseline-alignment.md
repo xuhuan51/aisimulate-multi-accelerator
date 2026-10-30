@@ -964,8 +964,9 @@ Runner/搜索622通过，GLM/公共API140通过、1项已有签名断言排除�
 10张Ascend算子表未变化。合并部署8K/1K、C8/N8回归指标不变。
 
 原6个失败候选在修复后均完成64个请求，每请求输出1024token；没有额外D端prefill，
-也没有重复首token或请求失败。原两组最佳配置回放指标不变。完整搜索菜单正在重新检查，
-其最终结果及安装包身份以本节后续登记的验证报告为准。
+也没有重复首token或请求失败。完整搜索菜单复查后，4024个候选全部成功、零失败、零超时；
+另有290个原成功候选的预测变化，其余3728个原成功候选不变，原两组最高吞吐配置也不变。
+变化涉及8K/C8的28个、C16的106个、C32的156个候选；32K全部1800个候选不变。
 本阶段源码验证报告为 `production/scheduler-audit-node20-20261031/pd-retraction-validation.json`，
 原函数CPU对照为同目录 `pd-retraction-oracle.json`，原始日志/配置/请求结果归档为
 `pd-retraction-evidence.tar.gz`。
@@ -978,4 +979,5 @@ Runner/搜索622通过，GLM/公共API140通过、1项已有签名断言排除�
 镜像ID为 `sha256:b3c49d92579f638228c66076901af4768278c8fa309a90d0a002eed79e653cd9`。
 安装后8组PD回放、合并部署回归与源码一致，2个OOM接口案例仍正常排除失败候选。
 安装记录见同目录 `pd-retraction-runtime-publication.json`；旧版保留为
-`aisimulate-910c:before-pd-restore-20261031`。完整搜索复查另行归档。
+`aisimulate-910c:before-pd-restore-20261031`。完整搜索复查保存在
+`production/four-node-pd-restore-20261031/`，包含汇总、全部候选CSV、原始证据和最佳配置。
