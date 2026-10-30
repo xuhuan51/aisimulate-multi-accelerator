@@ -1,0 +1,72 @@
+{
+  "target_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+  "target_image": "quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443",
+  "method": "Manual static source audit of pinned container files, plus separate executable CPU source-body oracle. This is not a serving measurement.",
+  "files": {
+    "disaggregation/prefill.py": {
+      "lines": [
+        1369,
+        1418,
+        1473,
+        1670
+      ],
+      "finding": "With overlap scheduling disabled, each ready non-final chunk is sent before the next forward. Non-final ends round down to full pages; final sends include remaining tokens and metadata.",
+      "sha256": "386c5d007000eecead04f3527d2c780f26b14ca5e1e438346afa40eceba666d9"
+    },
+    "hardware_backend/npu/memory_pool_npu.py": {
+      "lines": [
+        837,
+        861
+      ],
+      "finding": "NPU MLA contiguous transfer entries contain K, V and index K buffers (plus index scales when configured).",
+      "sha256": "c38cf698f638dbd6f30be10c61e883e64892661bf5c84447a6c2151e884635b3"
+    },
+    "disaggregation/utils.py": {
+      "lines": [
+        1636,
+        1681
+      ],
+      "finding": "NPU MLA selects kv_buf_groups=3 when index_head_dim is set and does not append a duplicate StateType.DSA final state component.",
+      "sha256": "a8262fd16292a7682a7bcf267e84e5697dc00e5331bd9ec7df1adbf452bbfa4f"
+    },
+    "disaggregation/ascend/conn.py": {
+      "lines": [
+        340,
+        410
+      ],
+      "finding": "Without a custom memory pool, send_kvcache sends all layer buffer blocks in one synchronous transfer batch.",
+      "sha256": "ba9b4862d9f4e732c467ab367c9a2ad57509e5fb4bf3ce01c0e93e85cd0b1935"
+    }
+  },
+  "v0520_function_comparison": [
+    {
+      "function": "process_prefill_chunk",
+      "v0522_present": true,
+      "v0520_present": true,
+      "identical_ast": false
+    },
+    {
+      "function": "_send_kv_chunk",
+      "v0522_present": true,
+      "v0520_present": false,
+      "identical_ast": false
+    }
+  ],
+  "limits": [
+    "Transport queue contention between requests remains unmodeled.",
+    "Metadata/bootstrap latency is not present in the isolated measured KV curves.",
+    "Staging-grid and DCP pack-buffer segmentation are outside the current measured DCP1 contract.",
+    "No matched eager serving accuracy validation is available."
+  ],
+  "v0520_static_comparison": {
+    "source": "disaggregation/prefill.py",
+    "sha256": "f956a3dbe17e8bc470de8ae483358d512b7d9d7350767bd01a30792efeb7c13a",
+    "lines": [
+      1185,
+      1218,
+      1267,
+      1308
+    ],
+    "finding": "The older process_prefill_chunk also sends chunks immediately with overlap disabled. Its send_kv_chunk (not _send_kv_chunk) uses extend_range.end and rounds non-final ends down to full pages. Whole function ASTs differ; the v0.5.22 CPU oracle is not claimed to execute v0.5.20."
+  }
+}

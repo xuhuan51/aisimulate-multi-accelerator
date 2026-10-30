@@ -730,7 +730,7 @@ GLM与公共API测试140通过、1失败：既有签名断言漏写`op_level_opt
 与当前代码的签名完全一致，本阶段未改Python公共API。保留该失败记录，不把测试全绿
 作为结论。验证摘要与完整日志归档分别为`pd-prebuilt-validation.json`、`pd-prebuilt-evidence.tar.gz`。
 
-本机公开运行镜像现已更新至源码`d28b47d1`，包含第19、20节两项修复；安装后的8K/1K、
+本阶段将公开运行镜像更新至源码`d28b47d1`，包含第19、20节两项修复；安装后的8K/1K、
 32K/1K搜索均为2/2候选可行，各候选主要指标与源码完全一致。镜像ID为
 `sha256:c53639a123c74cdb63491280cf6189bb59340efd5d28537c80facfd119a998e5`。
 运行包身份、10张算子表SHA和安装验证见本节目录的`pd-boundary-runtime-publication.json`；
@@ -766,7 +766,7 @@ KV 范围，同一请求的传输按 FIFO 排队，与后续 prefill 计算共�
 另外核对了目标 NPU 的 `NPUMLATokenToKVPool`：K、V、index K缓冲区属于同一组
 逐页传输，不会在最终 chunk 再重复传一遍 DSA 状态。已有910C性能曲线测量的是这组
 缓冲区的复制；无需为这项调度修复重采算子。源码身份和核对位置保存在本节同目录的
-`pd-chunks-source-audit.json`，直接执行固定上游函数体的7组CPU检查保存在
+`pd-chunks-source-audit-v2.json`，直接执行固定上游函数体的7组CPU检查保存在
 `pd-chunks-oracle.json`。
 
 v0.5.20 的对应代码也保留了关闭 overlap 时直接发送 chunk、非最终 chunk 向下取整
@@ -790,6 +790,12 @@ chunk边界，因此结果不变。搜索和保存YAML后直接回放的主要�
 2278个打包源码/数据文件与工作区一致，10张910C算子表未改动。汇总与日志归档为
 `pd-chunks-validation.json`、`pd-chunks-evidence.tar.gz`，包含修复过程中发现并解决的
 页容量回归记录，没有通过修改冻结golden掩盖偏差。
+
+本机 `aisimulate-910c:glm52-w8a8` 现已更新到本节代码 `a63007f2`，镜像ID为
+`sha256:a15e49a0bc8af505b8d67c3f444c5ca9f6c59d56caffe81bdf4958fb001faff2`。
+安装后的8K/1K和32K/1K搜索均为2/2候选可行，各候选主要指标与源码一致。
+旧镜像保留为 `aisimulate-910c:before-pd-chunks-20261030`。身份、表SHA和安装证据见
+`pd-chunks-runtime-publication.json`、`pd-chunks-runtime-evidence.tar.gz`。
 
 当前边界仍需明确：同一请求的分块顺序已建模，不同请求争用发送队列、链路和内存
 带宽的行为尚未校准；bootstrap、最终元数据处理与host开销也没有被这项修复覆盖。

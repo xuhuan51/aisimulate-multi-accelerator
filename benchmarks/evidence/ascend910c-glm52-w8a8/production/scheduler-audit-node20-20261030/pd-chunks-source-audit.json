@@ -57,16 +57,5 @@
     "Metadata/bootstrap latency is not present in the isolated measured KV curves.",
     "Staging-grid and DCP pack-buffer segmentation are outside the current measured DCP1 contract.",
     "No matched eager serving accuracy validation is available."
-  ],
-  "v0520_static_comparison": {
-    "source": "disaggregation/prefill.py",
-    "sha256": "f956a3dbe17e8bc470de8ae483358d512b7d9d7350767bd01a30792efeb7c13a",
-    "lines": [
-      1185,
-      1218,
-      1267,
-      1308
-    ],
-    "finding": "The older process_prefill_chunk also sends chunks immediately with overlap disabled. Its send_kv_chunk (not _send_kv_chunk) uses extend_range.end and rounds non-final ends down to full pages. Whole function ASTs differ; the v0.5.22 CPU oracle is not claimed to execute v0.5.20."
-  }
+  ]
 }

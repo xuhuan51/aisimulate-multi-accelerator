@@ -81,12 +81,13 @@ EP32 balanced eager通信的1～32 token查询范围已补齐，见对齐说明�
 DCP eager仍未采集，不应把graph记录混入这些候选。
 元数据快照仅足够离线预测；真实部署仍需要完整模型权重。
 
-2026-10-30已重建本机 `aisimulate-910c:glm52-w8a8`，打包源码为 `d28b47d1`、EngineSpec schema31，
-包括真实DP batch形状、新增3354条eager注意力数据、EP32 eager通信扩展，以及PD源KV释放和首token时序修复。
+2026-10-30已重建本机 `aisimulate-910c:glm52-w8a8`，打包源码为 `a63007f2`、EngineSpec schema31，
+包括真实DP batch形状、新增3354条eager注意力数据、EP32 eager通信扩展，以及PD源KV释放、
+首token时序、分块prefill与KV传输重叠修复。
 安装后已验证8K/1K、32K/1K的EP32解码实例搜索；各候选的主要指标与源码运行结果完全一致。
-上一版镜像保留为 `aisimulate-910c:before-pd-boundaries-20261030`；仅回放旧结果时使用。
+上一版镜像保留为 `aisimulate-910c:before-pd-chunks-20261030`；仅回放旧结果时使用。
 运行包、算子表、镜像SHA及回归记录见
-`production/scheduler-audit-node20-20261030/pd-boundary-runtime-publication.json`。
+`production/scheduler-audit-node20-20261030/pd-chunks-runtime-publication.json`。
 本机没有默认权重路径时，使用上面的 `model_metadata` 参数即可进行离线预测。
 
 只想检查环境和命令是否可用，可以先运行65输入、32输出的两条请求：
