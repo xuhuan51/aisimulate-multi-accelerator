@@ -18,6 +18,7 @@ use crate::engine::kv_manager::sglang_backend::RadixRequestLease;
 pub(super) struct SglangRequest {
     pub(super) uuid: Uuid,
     pub(super) is_decode_handoff: bool,
+    pub(super) is_decode_resume: bool,
     pub(super) sequence_tokens: Vec<u32>,
     pub(super) prompt_len: usize,
     pub(super) max_output_tokens: usize,
@@ -47,6 +48,7 @@ impl SglangRequest {
         Self {
             uuid: req.uuid.unwrap_or_else(Uuid::new_v4),
             is_decode_handoff: false,
+            is_decode_resume: false,
             sequence_tokens,
             prompt_len,
             max_output_tokens,
@@ -223,6 +225,7 @@ impl SglangRequest {
 
     pub(super) fn reset_for_retract(&mut self) {
         debug_assert!(!self.kv_lease.is_active());
+        self.is_decode_resume = self.is_decode_handoff;
         self.materialized_tokens = 0;
         self.allocated_tokens = 0;
     }

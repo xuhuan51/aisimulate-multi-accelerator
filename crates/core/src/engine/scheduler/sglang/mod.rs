@@ -16,3 +16,6 @@ pub(crate) use core::SglangCore;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod pd_retraction_tests;

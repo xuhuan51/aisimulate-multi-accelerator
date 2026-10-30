@@ -804,6 +804,26 @@ Its generated `production/scheduler-audit-node20-20261030/decode-memory-pressure
 records ordering, release calls and aborts. Upstream source is not bundled;
 the oracle does not measure hardware performance or validate host KV backup.
 
+The PD decode KV restoration, FIFO priority, page footprint and output-preservation
+behavior in `crates/core/src/engine/scheduler/sglang/{core,request,prefill}.rs`,
+`pd_retraction_tests.rs`, `docs/replay/engine/kv-cache.md`,
+`md/910c-glm52-w8a8-baseline-alignment.md` and the associated fixtures independently reimplement
+and modify `DecodePreallocQueue.resume_retracted_reqs`, `_pre_alloc_fill_len`,
+`_prealloc_required_tokens`, `_allocatable_token_budgets`, `_pre_alloc`,
+`Scheduler.process_decode_queue` and `get_next_disagg_decode_batch_to_run` from
+`python/sglang/srt/disaggregation/decode.py`, plus the backup/restore contracts
+in `mem_cache/common.py`, `mem_cache/kv_cache_builder.py` and
+`managers/schedule_batch.py`, `mem_cache/kv_cache_configurator.py`, and
+`hardware_backend/npu/memory_pool_npu.py`, at the same immutable SGLang revision
+`baa9befa381511cd4d56f83980951e5a45fffc6d`
+(https://github.com/sgl-project/sglang/tree/baa9befa381511cd4d56f83980951e5a45fffc6d;
+Copyright 2023-2026 SGLang Team and contributors; Apache-2.0).
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/check_pd_retraction.py`
+executes hash-checked upstream functions with CPU stubs; generated evidence
+under `production/scheduler-audit-node20-20261031/` records reservation,
+restoration and queue behavior. These are modified behavioral adaptations;
+no upstream source files are bundled and host KV copy timing is not measured.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

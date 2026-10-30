@@ -34,6 +34,22 @@ and its KV is released. This prevents zero-progress decode retries from
 being interpreted as a valid latency prediction. The replay summary exposes
 the rejection separately from successfully completed requests.
 
+For a disaggregated SGLang decode worker, a retracted request retains its
+generated output and restores its backed-up KV before continuing decode.
+It does not run a local prefill or emit the first output token again.
+Restoration reserves whole pages for the visible sequence minus its pending
+sampled token, plus `decode_reserved_tokens` for each active or restored request.
+Retracted requests resume in FIFO order; an unresumable head blocks later
+restores and new destination allocations. Cancelling that request releases
+the admission gate. Aggregated SGLang requests still use prefill recomputation.
+
+This models the ordinary PD host-backup path, including GLM's default
+`cpu_tensor` backend in the pinned Ascend runtime. Host backup/restore copy
+latency, host memory exhaustion, explicit backup disabling, and DeepSeek-V4
+prefill rebootstrap are not modeled. The optional vLLM G2 configuration below
+does not calibrate these SGLang copies. Predictions that trigger PD retraction
+therefore retain an unmeasured copy-cost component.
+
 Merge this fragment into an existing `engine` block from the [engine overview](README.md):
 
 ```yaml

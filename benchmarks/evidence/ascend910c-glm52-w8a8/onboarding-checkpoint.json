@@ -1781,6 +1781,30 @@
           "scope": "validation",
           "sha256": "f376b515945f5bc672e3cb1e03ecd870fcaa305ad196b4ed0f1700b4ce3f4269"
         },
+        "pd_retraction_evidence_20261031": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261031/pd-retraction-evidence.tar.gz",
+          "scope": "validation",
+          "sha256": "e68bc2d432a24b4453782d0e055778c24afa43704b1e670e1273ef182defac6d"
+        },
+        "pd_retraction_oracle_20261031": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261031/pd-retraction-oracle.json",
+          "scope": "validation",
+          "sha256": "5d405f9fd8aed6dacfe067ba66a66059687b58b8ab52f6c21349d3125d4d1802"
+        },
+        "pd_retraction_validation_20261031": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/scheduler-audit-node20-20261031/pd-retraction-validation.json",
+          "scope": "validation",
+          "sha256": "5d2623b1bb6bf0a9b7791355b23c88c6e87f203d3fed3b8db5454843fad286c8"
+        },
         "pd_routing_validation_20261030": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -2270,7 +2294,7 @@
           "Cross-request PD sender contention, host/bootstrap/metadata costs",
           "DCP eager profiles missing"
         ],
-        "next_action": "Fix six8K/C32PD search failures in Ascend DP pure-prefill/decode synchronization; audit pinned-runtime prebuilt/decode and retraction readmission. CPU-only, user deferred NPU/services.",
+        "next_action": "Publish verified PD KV restoration runtime and finish eight finite CPU search menus. Host-copy/sender-contention calibration and matched eager serving measurements remain deferred.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -2334,7 +2358,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Fix six8K/C32PD search failures in Ascend DP pure-prefill/decode synchronization; audit pinned-runtime prebuilt/decode and retraction readmission. CPU-only, user deferred NPU/services.",
+    "next_action": "Publish verified PD KV restoration runtime and finish eight finite CPU search menus. Host-copy/sender-contention calibration and matched eager serving measurements remain deferred.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3246,6 +3270,23 @@
         "verification_scope": "Metadata SHA comparison and shard existence/size only; the 773 GB of weights were not fully hashed or loaded."
       },
       "pd_prebuilt_first_token": "Completed native pass-start emission of the P-sampled first token; N outputs use N-1 ordinary D forwards, activation stores the token without materializing its KV, queued context includes it.24 pinned source cases,2086 core tests(1ignored),390 GPU parity tests pass.140 GLM/public API tests pass,1 existing stale signature expectation verified identical on old/new runtime. 8K1K C32N32 and32K1K C8N8 two-candidate searches and saved replays match. TTFT reductions223.056ms/222.863ms,TPOT nearly unchanged. Runtime publication pending; chunk transfer and sender queues still open.",
+      "pd_retraction_in_progress": {
+        "finding": "PD D retraction was requeued through local prefill. Pinned GLM/MLA path restores KV from host and retains output tokens. Existing candidate000165 mixed-mode failure reproduced with published2c1503d4 runtime. Six original-function CPU reservation/restore/priority cases pass. Rust before-fix cases confirmed spurious D prefill; native/full regression pending.",
+        "source_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+        "timing_limit": "Host backup/restore latency remains unmeasured and is not represented as calibrated timing."
+      },
+      "pd_retraction_verified": {
+        "core_passed": 2108,
+        "each_completed": 64,
+        "fixed_candidates": 6,
+        "original_optimum_metrics_unchanged": true,
+        "parity_passed": 390,
+        "pinned_source_cases": 6,
+        "public_api_passed": 140,
+        "report": "benchmarks/evidence/ascend910c-glm52-w8a8/production/scheduler-audit-node20-20261031/pd-retraction-validation.json",
+        "runner_search_passed": 622,
+        "serving_measured": false
+      },
       "pd_routing_validation": "Selectable two-level replica/rank round robin implemented, propagated through search/save/replay. Rust2072+34contracts,Python473config+513runner+5native,390parities pass. Functional 8K/32K searches completed six PD ratios each; no ranking accuracy claim.",
       "pd_source_release": "SGLang source release and destination activation now proceed independently after transfer completion, each at its own worker boundary. P router accounting retires when source KV is released. Native2083 pass1ignored; pinned source7 cases pass. Runtime not yet rebuilt. Next: audit prebuilt first-token emission, chunk KV sending and sender queues.",
       "prefill_sampled_token_kv_progress": "Ordinary prefill first output now remains unmaterialized until decode consumes it, matching pinned v0.5.22 source bodies.12 CPU oracle cases pass. Final Rust regression in progress; earlier full run2094passed2failed1ignored exposed two fixtures depending on premature page allocation, now corrected. Canonical installed runtime remains chunk phase; no serving accuracy acceptance.",
@@ -3356,7 +3397,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 103,
+  "revision": 105,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

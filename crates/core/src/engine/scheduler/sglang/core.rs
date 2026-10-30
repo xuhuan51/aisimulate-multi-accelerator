@@ -447,6 +447,10 @@ impl SglangCore {
     }
 
     pub(crate) fn retry_pending_destinations(&mut self) -> Vec<SchedulerLifecycleEvent> {
+        self.restore_retracted_decodes();
+        if self.waiting.iter().any(|request| request.is_decode_handoff) {
+            return Vec::new();
+        }
         let generation = self.capacity_generation;
         let (mut headroom, retractable) = self.destination_headroom();
         let Some((_, _, request)) = self.pending_destinations.front_due(generation) else {
@@ -491,6 +495,52 @@ impl SglangCore {
         }]
     }
 
+    fn restore_retracted_decodes(&mut self) {
+        while let Some(index) = self
+            .waiting
+            .iter()
+            .position(|request| request.is_decode_handoff)
+        {
+            let request = &self.waiting[index];
+            let materialized_tokens = request.current_sequence_len().saturating_sub(1);
+            let active = self.running.len()
+                + self.prebuilt_ready.len()
+                + self.destination_holds.len()
+                + self
+                    .waiting
+                    .iter()
+                    .filter(|request| !request.is_decode_handoff)
+                    .count();
+            let headroom = SglangDestinationHeadroom {
+                active_tokens: active.saturating_mul(self.config.decode_reserved_tokens),
+                request_tokens: self.config.decode_reserved_tokens,
+                completion_tokens: 0,
+            };
+            let Some(reservation) = self.kv_manager.reserve_destination_with_headroom(
+                &[],
+                materialized_tokens,
+                &headroom,
+            ) else {
+                break;
+            };
+            let mut request = self
+                .waiting
+                .remove(index)
+                .expect("retracted request retained");
+            let allocated_tokens = reservation.allocated_tokens;
+            self.kv_manager.activate_destination_lease(
+                reservation,
+                &request.sequence_tokens[..materialized_tokens],
+                &mut request.kv_lease,
+            );
+            request.materialized_tokens = materialized_tokens;
+            request.allocated_tokens = allocated_tokens;
+            request.debug_assert_invariants(self.config.block_size);
+            self.prebuilt_ready.push_back(request);
+            self.bump_capacity_generation();
+        }
+    }
+
     fn destination_headroom(&self) -> (SglangDestinationHeadroom, usize) {
         let reserved = self.config.decode_reserved_tokens;
         if reserved == 0 {
@@ -527,6 +577,7 @@ impl SglangCore {
             .map(|request| {
                 request
                     .current_sequence_len()
+                    .saturating_sub(1)
                     .div_ceil(self.config.block_size)
                     * self.config.block_size
                     + reserved
@@ -690,7 +741,8 @@ impl SglangCore {
         let capacity_improved = self.kv_manager.abort(std::mem::take(&mut request.kv_lease));
         self.source_holds.remove_request(request_id);
         self.active_destination_handoffs.remove_request(request_id);
-        if capacity_improved || self.config.decode_reserved_tokens > 0 {
+        if capacity_improved || self.config.decode_reserved_tokens > 0 || request.is_decode_handoff
+        {
             self.bump_capacity_generation();
         }
         true
@@ -928,17 +980,16 @@ impl SglangCore {
         // Preserve admission around validation, prediction and duration conversion.
         // The built-in polynomial remains infallible; external providers may fail
         // after accepting geometry. Lease checkpoints are not independent owners.
-        let retracted_only =
-            self.config.decode_reserved_tokens > 0 && self.pending_destinations.has_pending();
+        self.restore_retracted_decodes();
         let admission_checkpoint = (!self.waiting.is_empty()
             && self.config.perf_model.prefill_pass_can_fail())
         .then(|| {
             // FIFO admission only touches an admitted prefix and possibly its
             // first blocked request. LPM may reorder the small queue it scores;
             // keep the complete rollback image in that bounded case.
-            let checkpoint_len = if retracted_only
-                || (self.config.schedule_policy == super::config::SchedulePolicy::Lpm
-                    && self.waiting.len() <= super::config::LPM_FALLBACK_THRESHOLD)
+            let checkpoint_len = if self.config.schedule_policy
+                == super::config::SchedulePolicy::Lpm
+                && self.waiting.len() <= super::config::LPM_FALLBACK_THRESHOLD
             {
                 self.waiting.len()
             } else {
@@ -965,12 +1016,12 @@ impl SglangCore {
         let running_before_admission = self.running.len();
         let (mut admissions, start_output_signals) = self.promote_prebuilt_ready();
         let materialized_waiting = !self.prebuilt_ready.is_empty();
-        apply_schedule_policy(&mut self.waiting, &self.kv_manager, &self.config);
-
-        let retracted_waiting =
-            retracted_only && self.waiting.iter().any(|request| request.is_decode_handoff);
+        let retracted_waiting = self.waiting.iter().any(|request| request.is_decode_handoff);
+        if !retracted_waiting {
+            apply_schedule_policy(&mut self.waiting, &self.kv_manager, &self.config);
+        }
         let admission =
-            AdmissionInvariant::new(self.pending_destinations.has_pending() && !retracted_waiting);
+            AdmissionInvariant::new(self.pending_destinations.has_pending() || retracted_waiting);
         let mut admit = match admission.stage_for(materialized_waiting) {
             AdmissionStage::Materialized | AdmissionStage::PendingDestinationHead => {
                 Default::default()
@@ -981,7 +1032,6 @@ impl SglangCore {
                 &self.config,
                 self.new_token_ratio,
                 &self.running,
-                retracted_only,
             ),
             // Gate the entire prefill entry point, including chunk continuation.
             AdmissionStage::FreshKv => Default::default(),
@@ -1358,6 +1408,7 @@ impl SglangCore {
     ) {
         let mut admissions = Vec::new();
         let mut outputs = Vec::new();
+        let mut promoted = false;
         let available = self
             .config
             .max_running_requests
@@ -1366,6 +1417,12 @@ impl SglangCore {
             let Some(request) = self.prebuilt_ready.pop_front() else {
                 break;
             };
+            promoted = true;
+            if request.is_decode_resume {
+                request.debug_assert_invariants(self.config.block_size);
+                self.running.push(request);
+                continue;
+            }
             admissions.push(crate::engine::scheduler::AdmissionEvent {
                 uuid: request.uuid,
                 reused_input_tokens: 0,
@@ -1387,7 +1444,7 @@ impl SglangCore {
                 self.running.push(request);
             }
         }
-        if self.config.decode_reserved_tokens > 0 && !admissions.is_empty() {
+        if self.config.decode_reserved_tokens > 0 && promoted {
             self.bump_capacity_generation();
         }
         (admissions, outputs)

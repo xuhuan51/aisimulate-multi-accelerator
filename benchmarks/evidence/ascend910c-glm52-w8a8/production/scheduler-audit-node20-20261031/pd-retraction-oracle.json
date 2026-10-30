@@ -1,0 +1,224 @@
+{
+  "source_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+  "source_sha256": {
+    "disaggregation/decode.py": "7a106070dee807c4cc5498dc6d8092b229b23e573bf2dfa44f201ee695815718",
+    "mem_cache/common.py": "e8d3ff0a8a0357e04e048bd18bd56f109ac59d6e44b205d366d9c617b8effc7d"
+  },
+  "scope": "CPU source behavior only; no KV tensor copies or timing measured",
+  "cases": [
+    {
+      "name": "pending_sample_has_no_kv",
+      "available_before": 16,
+      "active_requests": 0,
+      "prompt_output_lengths": [
+        [
+          8,
+          5
+        ]
+      ],
+      "resumed": [
+        0
+      ],
+      "waiting_for_restore": [],
+      "available_after": 4,
+      "events": [
+        [
+          "backup",
+          0
+        ],
+        "deferred",
+        [
+          "allocate",
+          0,
+          12
+        ],
+        [
+          "restore",
+          0
+        ],
+        "fresh"
+      ]
+    },
+    {
+      "name": "active_reserve_exact_fit",
+      "available_before": 20,
+      "active_requests": 1,
+      "prompt_output_lengths": [
+        [
+          8,
+          5
+        ]
+      ],
+      "resumed": [
+        0
+      ],
+      "waiting_for_restore": [],
+      "available_after": 8,
+      "events": [
+        [
+          "backup",
+          0
+        ],
+        "deferred",
+        [
+          "allocate",
+          0,
+          12
+        ],
+        [
+          "restore",
+          0
+        ],
+        "fresh"
+      ]
+    },
+    {
+      "name": "active_reserve_blocks_restore",
+      "available_before": 19,
+      "active_requests": 1,
+      "prompt_output_lengths": [
+        [
+          8,
+          5
+        ]
+      ],
+      "resumed": [],
+      "waiting_for_restore": [
+        0
+      ],
+      "available_after": 19,
+      "events": [
+        [
+          "backup",
+          0
+        ],
+        "deferred"
+      ]
+    },
+    {
+      "name": "fifo_does_not_skip_large_head",
+      "available_before": 20,
+      "active_requests": 0,
+      "prompt_output_lengths": [
+        [
+          20,
+          1
+        ],
+        [
+          8,
+          1
+        ]
+      ],
+      "resumed": [],
+      "waiting_for_restore": [
+        0,
+        1
+      ],
+      "available_after": 20,
+      "events": [
+        [
+          "backup",
+          0
+        ],
+        [
+          "backup",
+          1
+        ],
+        "deferred"
+      ]
+    },
+    {
+      "name": "each_resumed_request_reserves_growth",
+      "available_before": 32,
+      "active_requests": 0,
+      "prompt_output_lengths": [
+        [
+          8,
+          5
+        ],
+        [
+          8,
+          5
+        ]
+      ],
+      "resumed": [
+        0,
+        1
+      ],
+      "waiting_for_restore": [],
+      "available_after": 8,
+      "events": [
+        [
+          "backup",
+          0
+        ],
+        [
+          "backup",
+          1
+        ],
+        "deferred",
+        [
+          "allocate",
+          0,
+          12
+        ],
+        [
+          "restore",
+          0
+        ],
+        [
+          "allocate",
+          1,
+          12
+        ],
+        [
+          "restore",
+          1
+        ],
+        "fresh"
+      ]
+    },
+    {
+      "name": "partial_restore_still_blocks_fresh",
+      "available_before": 28,
+      "active_requests": 0,
+      "prompt_output_lengths": [
+        [
+          8,
+          5
+        ],
+        [
+          8,
+          5
+        ]
+      ],
+      "resumed": [
+        0
+      ],
+      "waiting_for_restore": [
+        1
+      ],
+      "available_after": 16,
+      "events": [
+        [
+          "backup",
+          0
+        ],
+        [
+          "backup",
+          1
+        ],
+        "deferred",
+        [
+          "allocate",
+          0,
+          12
+        ],
+        [
+          "restore",
+          0
+        ]
+      ]
+    }
+  ]
+}

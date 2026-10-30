@@ -938,3 +938,38 @@ host KV备份策略。
 合并部署结果均与源码验证一致。安装证据为 `decode-memory-pressure-runtime-publication.json`
 和 `decode-memory-pressure-runtime-evidence.tar.gz`；上一版镜像保留为
 `aisimulate-910c:before-memory-pressure-20261030`。没有启动模型服务或执行NPU实测。
+
+## 25. 2026-10-31：PD 的 D 端回退应恢复 KV
+
+四节点搜索中的6个8K/1K、C32/N64候选都在D端内存回退后报错：
+`Ascend synchronized operator timing requires a pure prefill or pure decode group`。
+独立回放 `candidate-000165` 复现了相同报错。根因是回退请求进入普通等待队列后，
+被当作需要重新prefill的请求；同一个ADP组的其他rank还在decode，于是形成了混合forward。
+
+固定版本 `baa9befa381511cd4d56f83980951e5a45fffc6d` 的实现是：
+
+1. `schedule_batch.release_req` 在D端回退时保存KV，再释放设备页。
+2. GLM使用 `NPUMLATokenToKVPool`；默认回退备份选择 `cpu_tensor`。
+   NPU实现复制MLA缓存及适用的indexer缓存，复制前后执行同步。
+3. `DecodePreallocQueue.resume_retracted_reqs` 按FIFO尝试恢复，重新计算页数及每请求的
+   decode预留空间。实际KV长度是 `prompt长度 + 已生成长度 - 1`，最后一个采样token尚无KV。
+4. `process_decode_queue` 在还有请求等待恢复时，不给新请求预分配KV。
+5. 已恢复请求进入prebuilt/运行队列继续decode，保留已生成token，不重新发出首token。
+
+模拟器已按这些步骤调整D端恢复、队列优先级和取消唤醒。普通合并部署仍通过prefill重算
+恢复回退请求。页数边界也按实际物化长度计算，避免最后一个未物化token导致多算一页。
+6组上游原函数CPU对照及7项恢复/取消/token完整性回归通过；Rust核心2108通过、1忽略，
+Runner/搜索622通过，GLM/公共API140通过、1项已有签名断言排除。
+冻结GPU/模型390项通过，golden未修改；安装包2278个源码/数据文件与工作区一致，
+10张Ascend算子表未变化。合并部署8K/1K、C8/N8回归指标不变。
+
+原6个失败候选在修复后均完成64个请求，每请求输出1024token；没有额外D端prefill，
+也没有重复首token或请求失败。原两组最佳配置回放指标不变。完整搜索菜单正在重新检查，
+其最终结果及安装包身份以本节后续登记的验证报告为准。
+本阶段源码验证报告为 `production/scheduler-audit-node20-20261031/pd-retraction-validation.json`，
+原函数CPU对照为同目录 `pd-retraction-oracle.json`，原始日志/配置/请求结果归档为
+`pd-retraction-evidence.tar.gz`。
+
+这里修正的是调度和KV状态语义。主机备份/恢复的复制时间、主机内存不足、显式关闭备份
+以及DeepSeek-V4的重新prefill握手不在当前模型内。触发PD回退的候选仍可能低估TPOT和
+端到端耗时；不能把通过回归测试解释为已经对齐实测精度。本轮没有启动模型服务或使用NPU。
