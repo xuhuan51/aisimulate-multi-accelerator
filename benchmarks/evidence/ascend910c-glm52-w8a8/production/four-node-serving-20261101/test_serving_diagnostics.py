@@ -65,6 +65,32 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertEqual(result["counter_quality"]["missing_boundary_series"], 3)
         self.assertEqual(analyze_records([record(1, [])])["scheduler"], {})
 
+    def test_streaming_lifecycle_labels_and_duplicate_replica_endpoints(self):
+        before = record(1, [
+            metric("num_requests_total", 2, is_streaming="true"),
+            metric("num_requests_total", 4, is_streaming="false"),
+            metric("generation_tokens_total", 64, is_streaming="true"),
+        ])
+        after = record(10, [
+            metric("num_requests_total", 10, is_streaming="true"),
+            metric("num_requests_total", 6, is_streaming="false"),
+            metric("generation_tokens_total", 8256, is_streaming="true"),
+        ])
+        for sample in (before, after):
+            sample["endpoints"].append(copy.deepcopy(sample["endpoints"][0]))
+        result = analyze_records([before, after])
+        counters = {(row["metric"], row["labels"]["is_streaming"]): row["delta"] for row in result["lifecycle_counters"]}
+        self.assertEqual(counters[("sglang:num_requests_total", "true")], 8)
+        self.assertEqual(counters[("sglang:num_requests_total", "false")], 2)
+        self.assertEqual(counters[("sglang:generation_tokens_total", "true")], 8192)
+
+    def test_missing_lifecycle_boundary_is_not_assumed_zero(self):
+        result = analyze_records([
+            record(1, []), record(2, [metric("num_requests_total", 8, is_streaming="true")]),
+        ])
+        self.assertEqual(result["lifecycle_counters"], [])
+        self.assertEqual(result["counter_quality"]["missing_boundary_series"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

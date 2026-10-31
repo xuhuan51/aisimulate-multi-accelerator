@@ -20,7 +20,10 @@ HISTOGRAMS = {
     "sglang:per_stage_req_latency_seconds",
 }
 STAGE = "sglang:scheduler_stage_seconds_total"
-COUNTERS = {STAGE} | {name + suffix for name in HISTOGRAMS for suffix in ("_sum", "_count")}
+LIFECYCLE_COUNTERS = {
+    "sglang:num_requests_total", "sglang:prompt_tokens_total", "sglang:generation_tokens_total",
+}
+COUNTERS = {STAGE} | LIFECYCLE_COUNTERS | {name + suffix for name in HISTOGRAMS for suffix in ("_sum", "_count")}
 
 
 def series_key(replica, row):
@@ -110,6 +113,10 @@ def analyze_records(records):
         "window": {"start": first_time, "end": last_time, "complete_samples": measured_samples, "excluded_endpoint_error_samples": excluded_samples},
         "counter_quality": {"reset_series": len(resets), "missing_boundary_series": len(first.keys() ^ last.keys()), "invalid_stage_ranks": len(invalid_stage_ranks)},
         "scheduler": stage_summary,
+        "lifecycle_counters": [{
+            "replica": replica, "role": "decode" if replica.startswith("D") else "prefill",
+            "metric": name, "labels": dict(labels), "delta": delta,
+        } for (replica, name, labels), delta in sorted(deltas.items()) if name in LIFECYCLE_COUNTERS],
         "gauges": [{
             "role": role, "metric": name, "samples": len(samples),
             "mean": statistics.mean(sample["value"] for sample in samples),
@@ -150,7 +157,7 @@ def analyze_matrix(measurement_root, output):
             rows.append(row)
             print(f"Diagnosed {label} concurrency={concurrency}", flush=True)
     result = {
-        "scope": "One-second approximate formal window after warmup log; end boundary precedes final client exit. Queue gauges deduplicate TP by max per replica/DP rank; their means average sampled totals. Ratio gauge mean averages per-rank maxima; rank_peak is the largest reported rank ratio. Scheduler deltas use stable physical-rank series; resets/missing boundaries excluded. Scheduler run_batch is wall time, not device kernel time. Metrics are service-wide and not filtered by benchmark request IDs; health or other traffic can contribute. Histogram means weight reported rank observations, not unique formal requests; missing/zero-count series do not imply zero latency. v1 collection lacks stage/PD-queue metrics.",
+        "scope": "One-second approximate formal window after warmup log; end boundary precedes final client exit. Queue gauges deduplicate TP by max per replica/DP rank; their means average sampled totals. Ratio gauge mean averages per-rank maxima; rank_peak is the largest reported rank ratio. Scheduler deltas use stable physical-rank series; resets/missing boundaries excluded. Scheduler run_batch is wall time, not device kernel time. Metrics are service-wide and not filtered by benchmark request IDs; health or other traffic can contribute. Lifecycle deltas preserve replica and is_streaming labels, deduplicate identical series across replica endpoints and omit reset/missing-boundary series. A non-streaming observation is not automatically a health check, and streaming counts are not validated successful benchmark requests. Histogram means weight reported rank observations, not unique formal requests; missing/zero-count series do not imply zero latency. v1 collection lacks stage/PD-queue metrics.",
         "rows": rows,
     }
     output.parent.mkdir(parents=True, exist_ok=True)

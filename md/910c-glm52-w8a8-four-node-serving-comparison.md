@@ -177,6 +177,10 @@ all-to-all。源码副本已与运行中镜像的文件哈希核对一致，证�
 这些服务级指标没有按本轮压测 request ID 过滤，可能包含探活等流量；因此直方图
 均值不是正式请求的阶段耗时均值，不能把各项相加作为客户端 TTFT。
 
+诊断 JSON 还分别保留各副本的流式/非流式请求与 token 计数增量，用来核对额外流量。
+这些服务端窗口计数没有逐个关联客户端请求 ID，不能替代客户端成功数；非流式请求
+也不能直接全部认定为健康检查。缺少窗口边界的计数系列不会假定初始值为零。
+
 ```bash
 cd '/home/youxingye/youxingye_data/910c_script/PD disaggregation'
 ./check/check-config.sh

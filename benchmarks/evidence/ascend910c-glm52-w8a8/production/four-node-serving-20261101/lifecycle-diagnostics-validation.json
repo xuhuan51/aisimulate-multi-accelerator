@@ -1,0 +1,19 @@
+{
+  "scope": "Postprocessing only; no serving parameters or active sampler changed.",
+  "test_command": "taskset -c 280-281 python3 -m unittest test_serving_diagnostics -v",
+  "tests_passed": 7,
+  "new_coverage": [
+    "streaming/non-streaming labels remain distinct",
+    "same replica counter exposed by multiple endpoints is not summed twice",
+    "missing initial series is not assumed zero"
+  ],
+  "source_sha256": {
+    "analyze_serving_diagnostics.py": "d69213c9b49aafe49e033a1f4fa3018d87bcc1decd4bbae5a35c79462a5d18bd",
+    "test_serving_diagnostics.py": "22d9e7ddb3fde725e0d0df8c4244d5701a6a55f47dbba897cca59b0c6838092b"
+  },
+  "limits": [
+    "Service counters are not matched by formal request ID and can include non-benchmark traffic.",
+    "Counters retain their complete labels; streaming does not itself prove successful completion.",
+    "No full live trace was reparsed during formal benchmarking; final matrix analysis runs afterwards."
+  ]
+}
