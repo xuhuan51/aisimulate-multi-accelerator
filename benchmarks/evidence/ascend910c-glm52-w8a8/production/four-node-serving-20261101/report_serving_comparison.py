@@ -6,6 +6,8 @@ import pathlib
 import statistics
 import tarfile
 
+from analyze_serving_diagnostics import analyze_matrix
+
 
 HERE = pathlib.Path(__file__).resolve().parent
 LABELS = {
@@ -103,6 +105,27 @@ def write_report(measurement_root, prediction_root, output):
         selected = [row for row in comparisons if row["mode"] == mode]
         errors = [statistics.mean(abs(row[f"error_percent_{metric}"]) for row in selected) for metric in ("ttft_ms", "tpot_ms", "output_tok_s")]
         lines.append(f"| {mode} | {errors[0]:.1f}% | {errors[1]:.1f}% | {errors[2]:.1f}% |")
+    diagnostics = analyze_matrix(measurement_root, prediction_root / "serving-stage-diagnostics.json")
+    lines.extend([
+        "", "## 排队与调度阶段诊断", "",
+        "下表来自每秒采样的近似正式窗口。队列按实例/attention-DP rank 对 TP 重复项取最大值后求和；KV列取所有 D rank 上报比例的最大值。run_batch 占比是稳定计数器窗口内的调度墙钟时间占比，包含 CPU 提交、设备执行和同步，不能解释成纯 NPU kernel 时间。汇总包含该角色的空闲实例，不等于单个请求关键路径占比。缺失指标显示 —，不当作零。", "",
+        "| 配置 | 并发 | D 预分配队列峰值 | D 传输队列峰值 | D 单 rank KV 使用率峰值 | D run_batch 占比 |",
+        "|---|---:|---:|---:|---:|---:|",
+    ])
+    for diagnostic in diagnostics:
+        gauges = {row["metric"]: row for row in diagnostic["gauges"] if row["role"] == "decode"}
+        cells = []
+        for name in ("sglang:num_decode_prealloc_queue_reqs", "sglang:num_decode_transfer_queue_reqs"):
+            value = gauges.get(name)
+            cells.append(f"{value['peak']:.0f}" if value is not None else "—")
+        usage = gauges.get("sglang:token_usage")
+        cells.append(f"{100 * usage['rank_peak']:.1f}%" if usage is not None else "—")
+        run_percent = diagnostic["scheduler"].get("decode", {}).get("run_batch_percent")
+        cells.append(f"{run_percent:.2f}%" if run_percent is not None else "—")
+        lines.append(f"| {diagnostic['configuration']} | {diagnostic['concurrency']} | " + " | ".join(cells) + " |")
+    lines.extend([
+        "", "完整阶段增量、KV 传输/分配/引导与请求阶段直方图均值、有效 rank 数、缺失边界和计数器重置信息保存在 predictions/serving-stage-diagnostics.json。直方图按 rank 观测加权，不是唯一请求数；该窗口可能未覆盖最早或最后的指标刷新，不能将各均值相加当成客户端 TTFT。推荐组 C4–C64 使用早期采集字段，缺少新增阶段与 PD 队列指标；C128 和对照组使用扩展字段。", "",
+    ])
     diagnostic_path = measurement_root / "recommended-2p1d-dtp32-20261101/mid-c64-scheduler-window.json"
     if diagnostic_path.exists():
         diagnostic = json.loads(diagnostic_path.read_text())

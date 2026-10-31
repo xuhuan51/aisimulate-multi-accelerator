@@ -117,6 +117,12 @@ all-to-all。源码副本已与运行中镜像的文件哈希核对一致，证�
 
 ## 运行与保存
 
+最终报告还会按并发列出 Decode 预分配/传输队列峰值、KV 使用率峰值和调度
+`run_batch` 墙钟占比。分析脚本从原始逐秒指标计算，不增加服务端 profiling；
+缺失指标与计数器重置会明确标记。调度汇总包含空闲实例，不能当成单个请求的关键
+路径，也不能等同于 NPU kernel 时间。详细结果保存在预测归档中的
+`serving-stage-diagnostics.json`，包含来源哈希、有效时间窗口和直方图观测数量。
+
 ```bash
 cd '/home/youxingye/youxingye_data/910c_script/PD disaggregation'
 ./check/check-config.sh

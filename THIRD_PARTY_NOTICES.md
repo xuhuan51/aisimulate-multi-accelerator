@@ -824,7 +824,8 @@ under `production/scheduler-audit-node20-20261031/` records reservation,
 restoration and queue behavior. These are modified behavioral adaptations;
 no upstream source files are bundled and host KV copy timing is not measured.
 
-The four-node serving comparison guide
+The four-node serving comparison report and metric analysis scripts under
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/`, the guide
 `md/910c-glm52-w8a8-four-node-serving-comparison.md` and the deployment snapshot
 under `benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/deployment/`
 adapt the user-supplied launcher and independently implement SGLang CLI/metrics

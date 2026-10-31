@@ -1,0 +1,30 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Complete remaining serving points and matched offline predictions, then generate the queue/KV/scheduler diagnostics and candidate comparison. Monitor high-concurrency early-allocation queueing against the actual 600-second PD bootstrap timeout; preserve any failures before making changes."
+  },
+  "research": {
+    "four_node_serving_diagnostic_summary_20261101": {
+      "completed_points_at_update": 9,
+      "current_configuration": "control-1p3d-tp16",
+      "current_concurrency": 32,
+      "analysis": "Added postprocessing of saved one-second metrics: TP-deduplicated queue gauges, per-rank KV ratio peaks, physical-rank scheduler stage deltas, and weighted histogram rank observations. No new service instrumentation or timing fit.",
+      "validation": "Five behavioral unit tests passed. Complete 1P3D C4 raw trace parsed successfully: 870 full-window samples, no endpoint failures or counter resets, 80 newly appearing counter series excluded from boundary deltas, 16 P and 48 D scheduler ranks.",
+      "limits": "Scheduler role totals include idle workers. Histograms count rank observations rather than unique requests. Missing fields and boundary data do not imply zero time. Earlier recommended C4-C64 traces lack the extended stage/PD-queue metrics.",
+      "timeout_observation": "Actual workers export SGLANG_DISAGGREGATION_BOOTSTRAP_TIMEOUT=600, allocation policy early; router package default request_timeout_secs=1800 and benchmark client timeout=21600. Higher-concurrency KV-limited controls may expose deployment timeouts; no limit changed based only on this inference.",
+      "accuracy_accepted": false
+    }
+  },
+  "configurations": {
+    "united-tp16-dp2-ep16": {
+      "artifacts": {
+        "four_node_serving_diagnostics_validation": {
+          "path": "production/four-node-serving-20261101/diagnostics-validation.json",
+          "kind": "file",
+          "scope": "validation"
+        }
+      }
+    }
+  }
+}

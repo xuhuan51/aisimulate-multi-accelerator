@@ -1181,6 +1181,14 @@
           "scope": "validation",
           "sha256": "295db664aae62aa038fb06ba23444a88ac03ff18c5c9e2114eb58d9426867a6c"
         },
+        "four_node_serving_diagnostics_validation": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/diagnostics-validation.json",
+          "scope": "validation",
+          "sha256": "1de67b2536249fee0cac2dcc8aed54e57887132c8137b8e1c3749a9098c04f3c"
+        },
         "four_node_serving_logits_layout_audit": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -2894,7 +2902,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Complete the four-configuration serving matrix and matched predictions. Preserve frozen serving and predictor settings for original-recommendation error analysis; report the verified decode LM-head layout difference separately from timing and KV-capacity errors. Serving accuracy remains unaccepted.",
+    "next_action": "Complete remaining serving points and matched offline predictions, then generate the queue/KV/scheduler diagnostics and candidate comparison. Monitor high-concurrency early-allocation queueing against the actual 600-second PD bootstrap timeout; preserve any failures before making changes.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3301,6 +3309,16 @@
         16,
         32
       ]
+    },
+    "four_node_serving_diagnostic_summary_20261101": {
+      "accuracy_accepted": false,
+      "analysis": "Added postprocessing of saved one-second metrics: TP-deduplicated queue gauges, per-rank KV ratio peaks, physical-rank scheduler stage deltas, and weighted histogram rank observations. No new service instrumentation or timing fit.",
+      "completed_points_at_update": 9,
+      "current_concurrency": 32,
+      "current_configuration": "control-1p3d-tp16",
+      "limits": "Scheduler role totals include idle workers. Histograms count rank observations rather than unique requests. Missing fields and boundary data do not imply zero time. Earlier recommended C4-C64 traces lack the extended stage/PD-queue metrics.",
+      "timeout_observation": "Actual workers export SGLANG_DISAGGREGATION_BOOTSTRAP_TIMEOUT=600, allocation policy early; router package default request_timeout_secs=1800 and benchmark client timeout=21600. Higher-concurrency KV-limited controls may expose deployment timeouts; no limit changed based only on this inference.",
+      "validation": "Five behavioral unit tests passed. Complete 1P3D C4 raw trace parsed successfully: 870 full-window samples, no endpoint failures or counter resets, 80 newly appearing counter series excluded from boundary deltas, 16 P and 48 D scheduler ranks."
     },
     "four_node_serving_logits_layout_20261101": {
       "completed_points_at_update": 9,
@@ -4183,7 +4201,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 118,
+  "revision": 119,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

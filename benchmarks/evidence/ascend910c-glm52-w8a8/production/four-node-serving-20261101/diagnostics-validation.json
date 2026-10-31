@@ -1,0 +1,64 @@
+{
+  "unit_tests": {
+    "count": 5,
+    "result": "passed",
+    "cases": [
+      "TP gauge deduplication",
+      "warmup and endpoint-error exclusion",
+      "stage deltas and histogram means",
+      "counter reset exclusion",
+      "missing boundaries remain unavailable"
+    ]
+  },
+  "real_point": {
+    "configuration": "control-1p3d-tp16",
+    "concurrency": 4,
+    "source": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/control-1p3d-tp16-20261101/c4-n8/metrics.jsonl.gz",
+    "source_sha256": "159bc2b66c005023f85ed2aa182cd6265893aa51937816f7aebb5d998612b91f",
+    "window": {
+      "start": 1793478725.7197428,
+      "end": 1793479595.3093262,
+      "complete_samples": 870,
+      "excluded_endpoint_error_samples": 0
+    },
+    "counter_quality": {
+      "reset_series": 0,
+      "missing_boundary_series": 80,
+      "invalid_stage_ranks": 0
+    },
+    "scheduler": {
+      "prefill": {
+        "valid_physical_ranks": 16,
+        "mean_seconds_per_rank": {
+          "get_next_batch_to_run": 504.13293195274997,
+          "idle": 32.23175331393748,
+          "other": 10.588210994437496,
+          "process_batch_result": 0.031839351125,
+          "process_input_requests": 3.1165365493749997,
+          "process_queue": 4.908550719937499,
+          "recv_requests": 266.09575655175,
+          "run_batch": 24.427229997875003,
+          "sanity_check_cache": 24.416419490437505
+        },
+        "run_batch_percent": 2.8078914476600665
+      },
+      "decode": {
+        "valid_physical_ranks": 48,
+        "mean_seconds_per_rank": {
+          "get_next_batch_to_run": 165.19622862702087,
+          "idle": 1.3182427426666663,
+          "other": 0.5320709873333335,
+          "process_batch_result": 0.7407689145625,
+          "process_input_requests": 0.15110116252083333,
+          "process_queue": 3.074314127062503,
+          "recv_requests": 155.33582277264583,
+          "run_batch": 542.2552380062292,
+          "sanity_check_cache": 0.8643386226875001
+        },
+        "run_batch_percent": 62.36631589062687
+      }
+    },
+    "histogram_groups": 17
+  },
+  "limits": "Window includes idle instances; rank-observation histograms are not unique-request counts. Missing-boundary series excluded, not zero-filled."
+}
