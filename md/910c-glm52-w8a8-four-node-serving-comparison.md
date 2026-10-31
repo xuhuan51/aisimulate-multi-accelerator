@@ -241,6 +241,9 @@ CONFIG_LABEL=recommended-2p1d-dtp32 CONCURRENCIES='4 8 16 32 64 128' \
 本次结果根目录：
 `/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison`。
 
+使用 sudo 采集时，后处理也会把结果文件归属交回仓库用户，方便直接查看。
+此处理只修正文件归属，不改测量内容或 SHA256；已有私有权限位保持原样。
+
 - `matrix-progress.json`：当前组、阶段、完成点数、错误。
 - `comparison-progress.json`、`live-summary.csv`：后处理进程每 30 秒更新的逐点进度与结果。
 - `matrix-summary.csv`：已完成点的吞吐、TTFT/TPOT、running batch 汇总。

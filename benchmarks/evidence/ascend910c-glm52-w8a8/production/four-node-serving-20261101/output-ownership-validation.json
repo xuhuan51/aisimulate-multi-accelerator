@@ -1,0 +1,18 @@
+{
+  "status": "validated",
+  "reason": "Recovery supervisor inherited umask077, producing root-owned private results that the user and native CLI could not read.",
+  "change": "Postprocessor transfers ownership of generated measurement outputs and archives to the repository owner; new postprocessor outputs use umask022. Existing file contents and modes are retained.",
+  "expected_uid": 5034,
+  "expected_gid": 5034,
+  "actual_unprivileged_read_check": "runuser -u youxingye reads the control archive, C128 metrics summary, live progress and current 2P2D startup log successfully.",
+  "unchanged_content_checks": {
+    "client_results": 6,
+    "metrics_summaries": 6,
+    "archive_sha256": "90ca5ae464a9ac77c8c500f15f7121380df3ea6ea3ded263e0a7f6bcb2f7157a"
+  },
+  "postprocessor_source_sha256": "145cb42dd0129064b0d1d0990873a9ca432a59792346f1162aa60365d54c6bb0",
+  "matrix_controller_pid_unchanged": 202259,
+  "new_postprocessor_pid": 1734154,
+  "serving_or_benchmark_restarted": false,
+  "checkpoint_save_after_repair": "revision125 saved; only known missing historical United launch script remains"
+}

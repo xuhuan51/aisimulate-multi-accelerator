@@ -3,6 +3,7 @@ import fcntl
 import hashlib
 import importlib.util
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -22,6 +23,22 @@ matrix_summary = importlib.util.module_from_spec(matrix_spec)
 matrix_spec.loader.exec_module(matrix_summary)
 
 
+def publish_result_ownership(*roots):
+    if os.geteuid() != 0:
+        return
+    owner = ROOT.stat()
+    for root in roots:
+        for path in [root, *root.rglob("*")]:
+            if path.is_symlink():
+                continue
+            try:
+                current = path.stat()
+                if (current.st_uid, current.st_gid) != (owner.st_uid, owner.st_gid):
+                    os.chown(path, owner.st_uid, owner.st_gid)
+            except FileNotFoundError:
+                continue
+
+
 def commit(paths, message):
     relative = [str(path.relative_to(ROOT)) for path in paths]
     subprocess.run(["git", "add", "--", *relative], cwd=ROOT, check=True)
@@ -34,6 +51,7 @@ def commit(paths, message):
 
 
 def main():
+    os.umask(0o022)
     parser = argparse.ArgumentParser()
     parser.add_argument("--measurement-root", type=pathlib.Path, required=True)
     parser.add_argument("--prediction-root", type=pathlib.Path, default=ROOT / "aisimulate-output/four-node-serving-matched-20261101")
@@ -49,6 +67,7 @@ def main():
         temporary = state_path.with_suffix(".tmp")
         temporary.write_text(json.dumps(state, indent=2) + "\n")
         temporary.replace(state_path)
+        publish_result_ownership(args.measurement_root, HERE / "measurements")
 
     try:
         while True:
@@ -103,6 +122,7 @@ def main():
             paths.append(destination)
         if args.commit_measurements:
             commit(paths, "test: compare four-node serving measurements with matched offline predictions")
+        publish_result_ownership(args.prediction_root, *paths)
         state["status"] = "compared"
         state["report"] = str(HERE / "comparison-report.md")
         save()

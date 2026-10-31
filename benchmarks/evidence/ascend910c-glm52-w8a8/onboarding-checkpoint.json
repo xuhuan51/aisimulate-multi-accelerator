@@ -1149,6 +1149,30 @@
           "scope": "validation",
           "sha256": "887e13c4cde5c350b52a4ff9b5a535b55ef26bdb1696604b7649f2b8b6a61a83"
         },
+        "four_node_control_1p3d_completed_summary": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/control-1p3d-completed-summary.json",
+          "scope": "validation",
+          "sha256": "b92a594468515cdea31feb4968e17f31f9d916658123867f24c3f9c5c93adcb6"
+        },
+        "four_node_control_1p3d_manifest": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/measurements/control-1p3d-tp16-manifest.json",
+          "scope": "validation",
+          "sha256": "7dfc35bd5be022744d3c8eb506761b0dddc55defb15e161dd4f12dd40252267f"
+        },
+        "four_node_control_1p3d_measurements": {
+          "archived": false,
+          "context_sha256": "2b816747f6f871a818618e6dd7d7b49d90f29e88180b3d25f9ad45c011d0f30d",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/measurements/control-1p3d-tp16.tar.gz",
+          "scope": "collection",
+          "sha256": "90ca5ae464a9ac77c8c500f15f7121380df3ea6ea3ded263e0a7f6bcb2f7157a"
+        },
         "four_node_control_admission_window": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -1204,6 +1228,14 @@
           "path": "production/four-node-serving-20261101/mid-c64-diagnostic-summary.json",
           "scope": "validation",
           "sha256": "e14f1fd747a636b0cbbabc629d7771f0c7877516892e992105cbc2c005592e5e"
+        },
+        "four_node_output_ownership_validation": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/output-ownership-validation.json",
+          "scope": "validation",
+          "sha256": "ddf0c70335091ccce0009c39e1a7368f7dbf978c8dc53d3127d68bbbd812b012"
         },
         "four_node_pd_eager_20261031_csv": {
           "archived": false,
@@ -2910,7 +2942,7 @@
           "Cross-request PD sender contention and host/bootstrap/metadata costs remain approximation limits",
           "DCP eager profiles remain unavailable for broader strategy coverage"
         ],
-        "next_action": "Authorized four-node serving campaign is running: 11/24 complete points, recommended group archived, 1P3D C128 retry after preserved bootstrap timeout. Finish 1P3D, 2P2D and 3P1D; then run 48 matched offline prediction jobs and report accuracy without fitting the frozen model.",
+        "next_action": "12/24 serving points independently validated and both completed configurations archived. Finish the active 2P2D sweep and following 3P1D sweep, then restore recommended serving and run 48 stock/observed-KV predictions with full diagnostics. Do not fit the frozen predictor during the campaign; serving accuracy remains unaccepted.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -3340,6 +3372,13 @@
       "rank_count": 32,
       "run_batch_accounted_wall_share": 0.9852917117619547
     },
+    "four_node_output_access_20261101": {
+      "confidence": "Actual unprivileged reads pass; all six control client results and metric summaries plus archive SHA256 remain unchanged.",
+      "matrix_controller_pid": 202259,
+      "next_action": "Continue the active 2P2D sweep and subsequent 3P1D. Controller202259 unchanged; postprocessor1734154 will preserve user access to future artifacts.",
+      "postprocessor_pid": 1734154,
+      "status": "validated"
+    },
     "four_node_pd_search": {
       "accuracy_acceptance": false,
       "configuration": "Two independent searches:8192/1024 and32768/1024; min=max64devices; PD-only; concurrency8/16/32;64requests; throughput objective; random finite-domain sampling with max10000trials and120s/candidate.",
@@ -3407,9 +3446,9 @@
         "HCCL_BUFFSIZE": 650,
         "SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK": 32
       },
-      "remaining": "complete four-configuration six-concurrency measured matrix and matching offline predictions; serving accuracy is not accepted",
+      "remaining": "Complete 2P2D and 3P1D six-point sweeps, then run 48 matched prediction jobs and final diagnostics/report. Serving accuracy remains unaccepted.",
       "sglang": "0.5.22",
-      "status": "startup_and_first_8k_request_batch_verified",
+      "status": "measuring_remaining_controls",
       "torch_npu": "2.10.0.post6",
       "updated_at": 1793474336.2419555,
       "validation": [
@@ -3432,18 +3471,29 @@
         "output_throughput_tok_s": 84.1188667299702
       },
       "comparison_preflight": "Actual TP/attention-DP/EP, replica count, eager flags and workload validated; no offline prediction runs while serving measurement is active",
+      "completed_configurations": [
+        "recommended-2p1d-dtp32",
+        "control-1p3d-tp16"
+      ],
+      "completed_points": 12,
+      "control_1p3d_result": "All 504 requests succeed with exact 8192/1024 lengths and zero metrics endpoint errors. C128 TTFT843909.386919ms, TPOT417.698208ms, output74.205068tok/s, duration3532.696737s; D active peak36. Archive a037e908 verified against manifest SHA256.",
+      "current_configuration": "control-2p2d-tp16",
       "durability": "Detached matrix supervisor; detached postprocessor will archive stage evidence and perform 48 matched predictions after all 24 serving points finish",
       "live_progress_path": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/matrix-progress.json",
       "measurement_limit": "Two waves per concurrency and one repetition; not a long steady-state throughput estimate or statistical confidence interval",
       "metrics_correction": "aggregation_version=2 filters stale idle-DP gauges using decode token-counter growth; raw samples retained; client latency/throughput unchanged",
       "runtime_identity": "All four nodes match image ID, model config and quantization metadata SHA256, driver and firmware; no claim that all weight shards were hashed",
-      "status": "measuring_recommended_configuration",
+      "status": "measuring_remaining_controls",
+      "validated_formal_requests": 1008,
       "verified_completed_concurrencies": [
         4,
         8,
         16,
-        32
-      ]
+        32,
+        64,
+        128
+      ],
+      "waiting_policy": "C128 control retry succeeds with bootstrap7200s/router21600s. Earlier 11 points retain original600s/1800s limits and interrupted attempt remains excluded. Subsequent configurations use extended limits."
     },
     "four_node_serving_diagnostic_summary_20261101": {
       "accuracy_accepted": false,
@@ -4341,7 +4391,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 124,
+  "revision": 126,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }
