@@ -6,8 +6,9 @@ set -Eeuo pipefail
 # shellcheck source=pd-common.sh
 source "$(dirname "$0")/pd-common.sh"
 
-exec 9>"$PD_ROOT_DIR/.start-pd.lock"
+exec 9>"$(pd_lock_path start)"
 flock -n 9 || die "已有 start-pd.sh 正在运行"
+trap 'flock -u 9' EXIT
 
 for command_name in docker ssh scp curl python3 ip flock ss awk; do
   require_command "$command_name"
@@ -28,6 +29,7 @@ sync_worker_scripts() {
   local files=(
     pd-config.sh
     pd-common.sh
+    pd_lock.py
     container-common.sh
     tune-system.sh
     run-prefill.sh

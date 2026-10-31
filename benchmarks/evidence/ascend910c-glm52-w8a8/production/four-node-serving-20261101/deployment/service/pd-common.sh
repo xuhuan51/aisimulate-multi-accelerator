@@ -35,6 +35,10 @@ prepare_remote_access() {
   export PD_REMOTE_AUTH_READY=1
 }
 
+pd_lock_path() {
+  python3 "$PD_SCRIPT_DIR/pd_lock.py" --root "$PD_ROOT_DIR" --name "$1"
+}
+
 remote_ssh() {
   if [[ -n ${PD_SSH_PASSWORD:-} ]]; then
     SSHPASS=$PD_SSH_PASSWORD sshpass -e ssh "${SSH_OPTIONS[@]}" "$@"

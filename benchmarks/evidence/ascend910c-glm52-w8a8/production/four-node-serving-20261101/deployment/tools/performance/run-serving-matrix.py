@@ -10,11 +10,14 @@ import pathlib
 import shlex
 import shutil
 import subprocess
+import sys
 import time
 
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[1]
+sys.path.insert(0, str(ROOT / "service"))
+from pd_lock import lock_path
 
 
 def environment(configuration, workload, directory):
@@ -82,40 +85,94 @@ def summarize(directories, target):
     return len(rows)
 
 
+def process_is_same(pid, start_ticks):
+    try:
+        fields = pathlib.Path(f"/proc/{pid}/stat").read_text().split()
+    except FileNotFoundError:
+        return False
+    return fields[2] != "Z" and fields[21] == str(start_ticks)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--plan", type=pathlib.Path, default=SCRIPT_DIR / "comparison-configs.json")
     parser.add_argument("--output", type=pathlib.Path, required=True)
     parser.add_argument("--suffix", default="20261101")
     parser.add_argument("--adopt-existing-first", action="store_true")
+    parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--adopt-running-configuration")
+    parser.add_argument("--adopt-pid", type=int)
+    parser.add_argument("--adopt-process-start", type=int)
+    parser.add_argument("--campaign-timeout", type=int, default=43200)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    lock = (ROOT / ".aisim-matrix.lock").open("w")
+    lock = lock_path(ROOT, "matrix").open("a")
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     plan = json.loads(args.plan.read_text())
+    saved_plan = args.output / "comparison-plan.json"
+    if args.resume and saved_plan.exists() and json.loads(saved_plan.read_text()) != plan:
+        raise ValueError("Cannot resume a changed comparison plan")
     (args.output / "comparison-plan.json").write_text(json.dumps(plan, indent=2) + "\n")
     workload = plan["workload"]
     configurations = plan["configurations"]
+    if args.adopt_running_configuration and (not args.resume or args.adopt_pid is None or args.adopt_process_start is None):
+        raise ValueError("Adopting an active sweep requires --resume, its PID and process start ticks")
+    if args.adopt_running_configuration and args.adopt_running_configuration not in {configuration["label"] for configuration in configurations}:
+        raise ValueError("Unknown active configuration")
     directories = [args.output / f'{configuration["label"]}-{args.suffix}' for configuration in configurations]
     state_path = args.output / "matrix-progress.json"
     state = {"status": "running", "started": time.time(), "finished_configurations": [], "warmup_requests": workload["warmup_requests"]}
+    if args.resume:
+        previous_state = json.loads(state_path.read_text())
+        history_path = args.output / f"matrix-state-before-resume-{time.time_ns()}.json"
+        history_path.write_text(json.dumps(previous_state, indent=2) + "\n")
+        state["started"] = previous_state["started"]
+        state["finished_configurations"] = previous_state["finished_configurations"]
+        state["resumed_at"] = time.time()
 
     def save():
         state["updated"] = time.time()
         state["completed_points"] = summarize(directories, args.output / "matrix-summary.csv")
-        state_path.write_text(json.dumps(state, indent=2) + "\n")
+        temporary = state_path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(state, indent=2) + "\n")
+        temporary.replace(state_path)
 
     current_env = None
     try:
         for index, (configuration, directory) in enumerate(zip(configurations, directories)):
             directory.mkdir(parents=True, exist_ok=True)
             env = environment(configuration, workload, directory)
+            if configuration["label"] in state["finished_configurations"]:
+                missing = [concurrency for concurrency in workload["concurrencies"] if not (directory / f'c{concurrency}-n{concurrency * workload["prompt_multiplier"]}' / ".complete").exists()]
+                if missing or not (directory / "worker-logs").is_dir():
+                    raise ValueError(f"Completed configuration has missing evidence: {configuration['label']}")
+                print(f"Resume: retaining completed configuration {configuration['label']}", flush=True)
+                current_env = env
+                continue
+            if args.resume and configuration["label"] != args.adopt_running_configuration:
+                for point in directory.glob("c*-n*"):
+                    if point.is_dir() and not (point / ".complete").exists():
+                        attempts = directory / "failed-attempts"
+                        attempts.mkdir(exist_ok=True)
+                        point.rename(attempts / f"{point.name}-{time.time_ns()}")
             state["configuration"] = configuration["label"]
             state["phase"] = "waiting_for_existing" if index == 0 and args.adopt_existing_first else "starting"
             save()
-            if index == 0 and args.adopt_existing_first:
+            if configuration["label"] == args.adopt_running_configuration:
+                state["phase"] = "adopting_running_sweep"
+                state["adopted_pid"] = args.adopt_pid
+                state["adopted_process_start"] = args.adopt_process_start
+                save()
+                deadline = time.monotonic() + args.campaign_timeout
+                print(f"Adopting live sweep PID {args.adopt_pid}; serving and benchmark remain running", flush=True)
+                while process_is_same(args.adopt_pid, args.adopt_process_start):
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError("Adopted sweep exceeded campaign timeout")
+                    save()
+                    time.sleep(15)
+            elif index == 0 and args.adopt_existing_first:
                 print("Adopting existing recommended-config sweep; waiting for its benchmark lock", flush=True)
-                with (ROOT / ".aisim-benchmark.lock").open("a") as benchmark_lock:
+                with lock_path(ROOT, "benchmark").open("a") as benchmark_lock:
                     while True:
                         try:
                             fcntl.flock(benchmark_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -130,7 +187,7 @@ def main():
                 execute([str(ROOT / "service/start-pd.sh")], env, directory / "startup.log", 3600)
                 state["phase"] = "benchmarking"
                 save()
-                execute([str(SCRIPT_DIR / "run-aisim-comparison.sh")], env, directory / "campaign.log", 21600)
+                execute([str(SCRIPT_DIR / "run-aisim-comparison.sh")], env, directory / "campaign.log", args.campaign_timeout)
             current_env = env
             missing = [concurrency for concurrency in workload["concurrencies"] if not (directory / f'c{concurrency}-n{concurrency * workload["prompt_multiplier"]}' / ".complete").exists()]
             if missing:
@@ -151,6 +208,9 @@ def main():
         state["error"] = str(error)
         save()
         raise
+    finally:
+        fcntl.flock(lock, fcntl.LOCK_UN)
+        lock.close()
 
 
 if __name__ == "__main__":

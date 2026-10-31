@@ -13,8 +13,9 @@ RESUME=${RESUME:-1}
 FIXED_NUM_PROMPTS=${FIXED_NUM_PROMPTS:-}
 [[ $PROMPT_MULTIPLIER =~ ^[1-9][0-9]*$ ]] || die "PROMPT_MULTIPLIER 必须是正整数"
 mkdir -p "$RUN_DIR"
-exec 8>"$PD_ROOT_DIR/.aisim-benchmark.lock"
+exec 8>"$(pd_lock_path benchmark)"
 flock -n 8 || die "已有对照采集正在运行"
+trap 'flock -u 8' EXIT
 cp "$PD_SCRIPT_DIR/pd-config.sh" "$RUN_DIR/pd-config.sh"
 cp "$PD_SCRIPT_DIR/run-prefill.sh" "$RUN_DIR/run-prefill.sh"
 cp "$PD_SCRIPT_DIR/run-decode.sh" "$RUN_DIR/run-decode.sh"

@@ -1,0 +1,32 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Finish the running 1P3D sweep, then 2P2D and 3P1D controls (all C4/8/16/32/64/128, N=2C, warmup2). Finish 48 matched predictions/diagnostics and candidate ranking after measurement. Recommended six-point sweep is archived; serving accuracy remains unaccepted."
+  },
+  "research": {
+    "four_node_serving_recommended_complete_20261101": {
+      "recommended_completed_concurrencies": [4, 8, 16, 32, 64, 128],
+      "recommended_completed_requests": 504,
+      "request_shape": [8192, 1024],
+      "recommended_archive_commit": "55ef2b6c",
+      "completed_total_points_at_update": 7,
+      "current_configuration": "control-1p3d-tp16",
+      "current_phase": "benchmarking concurrency8; adopted original sweep PID without restart",
+      "matched_c4": {"ttft_error_percent": -52.22164390025343, "tpot_error_percent": -42.88000601740792, "output_throughput_error_percent": 75.96484517389679, "observed_kv_changes_result": false},
+      "control_1p3d_c4": {"completed": 8, "mean_ttft_ms": 6916.237972618546, "mean_tpot_ms": 405.0800561703513, "output_tok_s": 9.431073244604415},
+      "lock_repair": "Dedicated tests reproduce flock reacquisition failure on project filesystem even after explicit unlock; equivalent /tmp tests pass. Shared pd_lock.py now uses local locks and validates mutual exclusion/error cleanup.",
+      "handoff": "Post-loop shell EOF did not invalidate six completed request/metrics datasets. Preserve original launcher log; future active-script updates use atomic replacement. Supervisor migration preserved the live 1P3D sweep and serving processes.",
+      "limits": "All formal requests still required; high concurrency TP16/ADP4 controls are KV capacity limited and can take hours. No serving accuracy acceptance or latency fitting."
+    }
+  },
+  "configurations": {
+    "united-tp16-dp2-ep16": {
+      "artifacts": {
+        "four_node_recommended_serving_manifest": {"path": "production/four-node-serving-20261101/measurements/recommended-2p1d-dtp32-manifest.json", "kind": "file", "scope": "validation"},
+        "four_node_initial_c4_matched_comparison": {"path": "production/four-node-serving-20261101/first-matched-c4-comparison.json", "kind": "file", "scope": "validation"},
+        "four_node_controller_lock_validation": {"path": "production/four-node-serving-20261101/lock-lifecycle-validation.json", "kind": "file", "scope": "validation"}
+      }
+    }
+  }
+}

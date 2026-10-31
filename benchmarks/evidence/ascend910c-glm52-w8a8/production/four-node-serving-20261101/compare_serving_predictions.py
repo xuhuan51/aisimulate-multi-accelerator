@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import subprocess
+import time
 
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -138,6 +139,8 @@ def make_jobs(data_root, output_root):
 def run_job(job):
     destination = pathlib.Path(job["destination"])
     destination.mkdir(parents=True, exist_ok=True)
+    if os.geteuid() == 0:
+        os.chown(destination, int(os.environ.get("SUDO_UID") or os.getuid()), int(os.environ.get("SUDO_GID") or os.getgid()))
     execution = destination / "execution.json"
     if execution.exists():
         saved = json.loads(execution.read_text())
@@ -145,6 +148,12 @@ def run_job(job):
         if any(saved.get(key) != job[key] for key in identity):
             raise ValueError(f"Stale comparison result at {destination}")
         return saved["comparison"]
+    previous = [destination / name for name in ("command.log", "result") if (destination / name).exists()]
+    if previous:
+        attempt = destination / "failed-attempts" / str(time.time_ns())
+        attempt.mkdir(parents=True)
+        for path in previous:
+            path.rename(attempt / path.name)
     environment = os.environ.copy()
     environment.update({"AISIMULATE_910C_MODEL": "/data_lib/data/models/glm-q", "AISIMULATE_910C_CPUSET": "280-295", "AISIMULATE_910C_CPUS": "4", "AISIMULATE_910C_MEMORY": "8g"})
     environment["AISIMULATE_910C_IMAGE"] = job["simulator_image_id"]

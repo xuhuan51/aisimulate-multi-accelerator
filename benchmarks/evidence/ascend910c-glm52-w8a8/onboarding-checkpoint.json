@@ -1125,6 +1125,22 @@
           "scope": "validation",
           "sha256": "866415589e065efc00ad49104ffec2c280ef6f9822e6bdabd6e00684c8c3fd13"
         },
+        "four_node_controller_lock_validation": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/lock-lifecycle-validation.json",
+          "scope": "validation",
+          "sha256": "17bd11efd303b185c09faacadd12ef96d15c809b1c8e03ad72edf0ebbad26312"
+        },
+        "four_node_initial_c4_matched_comparison": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/first-matched-c4-comparison.json",
+          "scope": "validation",
+          "sha256": "f4a3a9418942a8bd505aebeb19b97904cb44aedfc20deae7e5a8671d04e39c95"
+        },
         "four_node_mid_c64_diagnostic_summary": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -1156,6 +1172,14 @@
           "path": "production/four-node-pd-eager-20261031/report.json",
           "scope": "validation",
           "sha256": "d06bfbee8ca16deb34657c35bc29ea36e1d0de2ff8efd8d24d2c3c58f1178e4f"
+        },
+        "four_node_recommended_serving_manifest": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/measurements/recommended-2p1d-dtp32-manifest.json",
+          "scope": "validation",
+          "sha256": "295db664aae62aa038fb06ba23444a88ac03ff18c5c9e2114eb58d9426867a6c"
         },
         "four_node_serving_matrix_plan": {
           "archived": false,
@@ -2862,7 +2886,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Complete four configurations x six concurrency measurements (8192/1024, warmup2, N=2C); archive each completed configuration and run matching stock/observed-KV predictions after measurements. Accuracy remains unaccepted.",
+    "next_action": "Finish the running 1P3D sweep, then 2P2D and 3P1D controls (all C4/8/16/32/64/128, N=2C, warmup2). Finish 48 matched predictions/diagnostics and candidate ranking after measurement. Recommended six-point sweep is archived; serving accuracy remains unaccepted.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3268,6 +3292,40 @@
         8,
         16,
         32
+      ]
+    },
+    "four_node_serving_recommended_complete_20261101": {
+      "completed_total_points_at_update": 7,
+      "control_1p3d_c4": {
+        "completed": 8,
+        "mean_tpot_ms": 405.0800561703513,
+        "mean_ttft_ms": 6916.237972618546,
+        "output_tok_s": 9.431073244604415
+      },
+      "current_configuration": "control-1p3d-tp16",
+      "current_phase": "benchmarking concurrency8; adopted original sweep PID without restart",
+      "handoff": "Post-loop shell EOF did not invalidate six completed request/metrics datasets. Preserve original launcher log; future active-script updates use atomic replacement. Supervisor migration preserved the live 1P3D sweep and serving processes.",
+      "limits": "All formal requests still required; high concurrency TP16/ADP4 controls are KV capacity limited and can take hours. No serving accuracy acceptance or latency fitting.",
+      "lock_repair": "Dedicated tests reproduce flock reacquisition failure on project filesystem even after explicit unlock; equivalent /tmp tests pass. Shared pd_lock.py now uses local locks and validates mutual exclusion/error cleanup.",
+      "matched_c4": {
+        "observed_kv_changes_result": false,
+        "output_throughput_error_percent": 75.96484517389679,
+        "tpot_error_percent": -42.88000601740792,
+        "ttft_error_percent": -52.22164390025343
+      },
+      "recommended_archive_commit": "55ef2b6c",
+      "recommended_completed_concurrencies": [
+        4,
+        8,
+        16,
+        32,
+        64,
+        128
+      ],
+      "recommended_completed_requests": 504,
+      "request_shape": [
+        8192,
+        1024
       ]
     },
     "git_stage_policy": {
@@ -4097,7 +4155,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 116,
+  "revision": 117,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

@@ -1,9 +1,11 @@
 import argparse
 import fcntl
 import hashlib
+import importlib.util
 import json
 import pathlib
 import subprocess
+import sys
 import tarfile
 import time
 
@@ -12,6 +14,12 @@ from report_serving_comparison import archive_measurement
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
+sys.path.insert(0, str(HERE / "deployment/service"))
+from pd_lock import lock_path
+
+matrix_spec = importlib.util.spec_from_file_location("pd_matrix_summary", HERE / "deployment/tools/performance/run-serving-matrix.py")
+matrix_summary = importlib.util.module_from_spec(matrix_spec)
+matrix_spec.loader.exec_module(matrix_summary)
 
 
 def commit(paths, message):
@@ -31,7 +39,7 @@ def main():
     parser.add_argument("--prediction-root", type=pathlib.Path, default=ROOT / "aisimulate-output/four-node-serving-matched-20261101")
     parser.add_argument("--commit-measurements", action="store_true")
     args = parser.parse_args()
-    lock = (args.measurement_root / ".comparison-finish.lock").open("a")
+    lock = lock_path(args.measurement_root, "comparison").open("a")
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     state_path = args.measurement_root / "comparison-progress.json"
     state = {"status": "waiting_for_measurements", "archived_configurations": [], "started": time.time()}
@@ -49,8 +57,11 @@ def main():
             except json.JSONDecodeError:
                 time.sleep(1)
                 continue
-            if matrix["status"] == "failed":
-                raise RuntimeError(f"Serving matrix failed: {matrix.get('error')}")
+            plan = json.loads((args.measurement_root / "comparison-plan.json").read_text())
+            directories = [args.measurement_root / f"{configuration['label']}-20261101" for configuration in plan["configurations"]]
+            state["completed_points"] = matrix_summary.summarize(directories, args.measurement_root / "live-summary.csv")
+            state["configuration"] = matrix.get("configuration")
+            state["measurement_phase"] = matrix.get("phase")
             for label in matrix["finished_configurations"]:
                 if label in state["archived_configurations"]:
                     continue
@@ -62,6 +73,8 @@ def main():
                 state["archived_configurations"].append(label)
                 print(f"Archived completed configuration: {label}", flush=True)
             save()
+            if matrix["status"] == "failed":
+                raise RuntimeError(f"Serving matrix failed: {matrix.get('error')}")
             if matrix["status"] == "measured":
                 break
             time.sleep(30)
@@ -77,8 +90,10 @@ def main():
         manifest = HERE / "prediction-manifest.json"
         manifest.write_text(json.dumps({"source": str(args.prediction_root), "archive_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "bytes": archive.stat().st_size, "comparison_jobs": 48, "accuracy_accepted": False}, indent=2) + "\n")
         paths = [archive, manifest, HERE / "comparison-report.md", HERE / "ranking.csv"]
-        for name in ("comparison-plan.json", "matrix-summary.csv", "matrix-progress.json", "host-runtime-identities.json"):
+        for name in ("comparison-plan.json", "matrix-summary.csv", "matrix-progress.json", "host-runtime-identities.json", "matrix-handoff-recovery.json", "matrix-local-lock-migration.json", "live-summary.csv"):
             source = args.measurement_root / name
+            if name.startswith("matrix-") and name.endswith(("recovery.json", "migration.json")) and not source.exists():
+                continue
             destination = HERE / name
             destination.write_bytes(source.read_bytes())
             paths.append(destination)
@@ -96,6 +111,9 @@ def main():
         state["error"] = str(error)
         save()
         raise
+    finally:
+        fcntl.flock(lock, fcntl.LOCK_UN)
+        lock.close()
 
 
 if __name__ == "__main__":

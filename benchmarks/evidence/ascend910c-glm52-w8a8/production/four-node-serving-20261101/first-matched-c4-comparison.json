@@ -1,0 +1,152 @@
+{
+  "scope": "recommended C4/N8, two paired predictions during configuration startup without a formal benchmark running; remaining comparisons pending",
+  "accuracy_accepted": false,
+  "rows": [
+    {
+      "mode": "stock",
+      "comparison": {
+        "configuration": "recommended-2p1d-dtp32",
+        "concurrency": 4,
+        "requests": 8,
+        "mode": "stock",
+        "predicted_ttft_ms": 2937.23875675248,
+        "measured_ttft_ms": 6147.63461225084,
+        "error_percent_ttft_ms": -52.22164390025343,
+        "predicted_tpot_ms": 187.43684303225768,
+        "measured_tpot_ms": 328.1457681689901,
+        "error_percent_tpot_ms": -42.88000601740792,
+        "predicted_input_tok_s": 168.31280405558726,
+        "measured_input_tok_s": 95.65138075690777,
+        "error_percent_input_tok_s": 75.96484517389679,
+        "predicted_output_tok_s": 21.039100506948408,
+        "measured_output_tok_s": 11.956422594613471,
+        "error_percent_output_tok_s": 75.96484517389679
+      },
+      "prediction_path": "/tgm_rent_data/data/youxingye/aisimulate-910c/aisimulate-output/four-node-serving-matched-20261101/recommended-2p1d-dtp32/c4-n8/stock/result/prediction.json",
+      "prediction_sha256": "6f6be1d42a38ca8fb61470508063fb042e4d4bb7c445656eeb38126fcd4f9c06",
+      "measured_sha256": "e22f0683f2825ea794981f4fdbe5507da8f0d21eb0a9087a41cbeb642810f2ff",
+      "simulator_image_id": "sha256:b3c49d92579f638228c66076901af4768278c8fa309a90d0a002eed79e653cd9",
+      "observed_blocks_per_rank": {
+        "prefill": [
+          135,
+          135
+        ],
+        "decode": [
+          968
+        ]
+      },
+      "timing_provenance": {
+        "decode": {
+          "data_identity": null,
+          "data_version": "0.5.22",
+          "data_version_unavailable_reason": null,
+          "estimator": "op_level",
+          "timing_source": "aic"
+        },
+        "kv_transfer": {
+          "data_identity": {
+            "bytes_per_token_per_replica": 109824,
+            "endpoint_scope": "one contiguous attention-DP group per role on distinct nodes",
+            "extrapolation": "boundary-anchored page work with a measured minimum latency floor; estimates outside stated token bounds",
+            "key": {
+              "destination_tp": 1,
+              "page_layout": "contiguous",
+              "source_tp": 4
+            },
+            "maximum_tokens": 16384,
+            "minimum_tokens": 128,
+            "page_size": 128,
+            "runtime_identity_sha256": "c6fb5ef1e628d1bfc8c8b84c256dcc3bb9c7b3056158ae589a2267250445e54e",
+            "scope": "isolated request with source-selected sender fanout; other attention-DP groups excluded; no bootstrap or request contention",
+            "shape_policy": "anchored",
+            "source": "measured_ascend_memfabric"
+          },
+          "data_version": "0.5.22",
+          "data_version_unavailable_reason": null,
+          "estimator": "measured",
+          "timing_source": "ascend_memfabric"
+        },
+        "prefill": {
+          "data_identity": null,
+          "data_version": "0.5.22",
+          "data_version_unavailable_reason": null,
+          "estimator": "op_level",
+          "timing_source": "aic"
+        }
+      }
+    },
+    {
+      "mode": "observed-kv",
+      "comparison": {
+        "configuration": "recommended-2p1d-dtp32",
+        "concurrency": 4,
+        "requests": 8,
+        "mode": "observed-kv",
+        "predicted_ttft_ms": 2937.23875675248,
+        "measured_ttft_ms": 6147.63461225084,
+        "error_percent_ttft_ms": -52.22164390025343,
+        "predicted_tpot_ms": 187.43684303225768,
+        "measured_tpot_ms": 328.1457681689901,
+        "error_percent_tpot_ms": -42.88000601740792,
+        "predicted_input_tok_s": 168.31280405558726,
+        "measured_input_tok_s": 95.65138075690777,
+        "error_percent_input_tok_s": 75.96484517389679,
+        "predicted_output_tok_s": 21.039100506948408,
+        "measured_output_tok_s": 11.956422594613471,
+        "error_percent_output_tok_s": 75.96484517389679
+      },
+      "prediction_path": "/tgm_rent_data/data/youxingye/aisimulate-910c/aisimulate-output/four-node-serving-matched-20261101/recommended-2p1d-dtp32/c4-n8/observed-kv/result/prediction.json",
+      "prediction_sha256": "3c331830002f75e07f113181e7954fb2995c3c3b645bbbc08620ece77068ce38",
+      "measured_sha256": "e22f0683f2825ea794981f4fdbe5507da8f0d21eb0a9087a41cbeb642810f2ff",
+      "simulator_image_id": "sha256:b3c49d92579f638228c66076901af4768278c8fa309a90d0a002eed79e653cd9",
+      "observed_blocks_per_rank": {
+        "prefill": [
+          135,
+          135
+        ],
+        "decode": [
+          968
+        ]
+      },
+      "timing_provenance": {
+        "decode": {
+          "data_identity": null,
+          "data_version": "0.5.22",
+          "data_version_unavailable_reason": null,
+          "estimator": "op_level",
+          "timing_source": "aic"
+        },
+        "kv_transfer": {
+          "data_identity": {
+            "bytes_per_token_per_replica": 109824,
+            "endpoint_scope": "one contiguous attention-DP group per role on distinct nodes",
+            "extrapolation": "boundary-anchored page work with a measured minimum latency floor; estimates outside stated token bounds",
+            "key": {
+              "destination_tp": 1,
+              "page_layout": "contiguous",
+              "source_tp": 4
+            },
+            "maximum_tokens": 16384,
+            "minimum_tokens": 128,
+            "page_size": 128,
+            "runtime_identity_sha256": "c6fb5ef1e628d1bfc8c8b84c256dcc3bb9c7b3056158ae589a2267250445e54e",
+            "scope": "isolated request with source-selected sender fanout; other attention-DP groups excluded; no bootstrap or request contention",
+            "shape_policy": "anchored",
+            "source": "measured_ascend_memfabric"
+          },
+          "data_version": "0.5.22",
+          "data_version_unavailable_reason": null,
+          "estimator": "measured",
+          "timing_source": "ascend_memfabric"
+        },
+        "prefill": {
+          "data_identity": null,
+          "data_version": "0.5.22",
+          "data_version_unavailable_reason": null,
+          "estimator": "op_level",
+          "timing_source": "aic"
+        }
+      }
+    }
+  ]
+}
