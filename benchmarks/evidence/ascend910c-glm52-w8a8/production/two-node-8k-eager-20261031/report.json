@@ -1,0 +1,2714 @@
+{
+  "date": "2026-10-31",
+  "runtime_source": "db5f2e721670d3eb2a10785fe55ad2d28af81349",
+  "native_sha256": "5ee56d5c3b3096d63582604baf040b2cb07d68f73755752de709db80d156cbad",
+  "image_id": "sha256:b3c49d92579f638228c66076901af4768278c8fa309a90d0a002eed79e653cd9",
+  "model": "/data_lib/data/models/glm-q",
+  "model_metadata_sha256": {
+    "config.json": "817f5fb39ca5d4c4b5648de89ca00deaea7537d8c2f130172a459252a05c1073",
+    "quant_model_description.json": "3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba"
+  },
+  "scope": "Exactly32 logical devices,16 per node;8192 input/1024 output;C1..128 powers of2,N=2C;no warmup or SLA;CPU-only,eager,synchronous scheduler.",
+  "counts": {
+    "cache_hits": 0,
+    "evaluated": 416,
+    "failed": 0,
+    "feasible": 416,
+    "infeasible": 0,
+    "resource_limited": 0,
+    "timed_out": 0,
+    "unsupported": 0
+  },
+  "cases": [
+    {
+      "case": "pd-isl8192-osl1024-c1-n2",
+      "concurrency": 1,
+      "requests": 2,
+      "mode": "pd",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 36,
+        "failed": 0,
+        "feasible": 36,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "pd-isl8192-osl1024-c1-n2",
+          "candidate_id": "candidate-000021",
+          "layout": "pd-1p1d",
+          "concurrency": 1,
+          "parallelism": {
+            "prefill": {
+              "tp": 16,
+              "attention_dp": 1,
+              "moe_tp": 1,
+              "moe_ep": 16,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            },
+            "decode": {
+              "tp": 16,
+              "attention_dp": 1,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 2.0,
+            "completed_requests": 2.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 16384.0,
+            "total_output_tokens": 2048.0,
+            "committed_prefill_tokens": 16384.0,
+            "output_throughput_tok_s": 6.817800819615942,
+            "request_throughput_rps": 0.006658008612906194,
+            "duration_ms": 300390.11907000345,
+            "mean_ttft_ms": 2268.8696350017326,
+            "p99_ttft_ms": 2268.8696350017385,
+            "mean_tpot_ms": 144.60038113391985,
+            "p99_tpot_ms": 144.60038113391988,
+            "mean_e2e_latency_ms": 150195.05953500172
+          },
+          "feasible_configurations": 36,
+          "prediction_config": "best-pd-1p1d-c1.yaml"
+        }
+      ],
+      "elapsed_seconds": 110.70900585199706,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "pd-isl8192-osl1024-c2-n4",
+      "concurrency": 2,
+      "requests": 4,
+      "mode": "pd",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 36,
+        "failed": 0,
+        "feasible": 36,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "pd-isl8192-osl1024-c2-n4",
+          "candidate_id": "candidate-000032",
+          "layout": "pd-1p1d",
+          "concurrency": 2,
+          "parallelism": {
+            "prefill": {
+              "tp": 8,
+              "attention_dp": 2,
+              "moe_tp": 1,
+              "moe_ep": 16,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            },
+            "decode": {
+              "tp": 16,
+              "attention_dp": 1,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 4.0,
+            "completed_requests": 4.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 32768.0,
+            "total_output_tokens": 4096.0,
+            "committed_prefill_tokens": 32768.0,
+            "output_throughput_tok_s": 13.405640983565684,
+            "request_throughput_rps": 0.013091446273013363,
+            "duration_ms": 305543.0176760209,
+            "mean_ttft_ms": 2463.0586020105684,
+            "p99_ttft_ms": 2463.0586020105693,
+            "mean_tpot_ms": 146.92908136461378,
+            "p99_tpot_ms": 146.92908136461384,
+            "mean_e2e_latency_ms": 152771.50883801046
+          },
+          "feasible_configurations": 36,
+          "prediction_config": "best-pd-1p1d-c2.yaml"
+        }
+      ],
+      "elapsed_seconds": 113.78548378008418,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "pd-isl8192-osl1024-c4-n8",
+      "concurrency": 4,
+      "requests": 8,
+      "mode": "pd",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 36,
+        "failed": 0,
+        "feasible": 36,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "pd-isl8192-osl1024-c4-n8",
+          "candidate_id": "candidate-000003",
+          "layout": "pd-1p1d",
+          "concurrency": 4,
+          "parallelism": {
+            "prefill": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 1,
+              "moe_ep": 16,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            },
+            "decode": {
+              "tp": 16,
+              "attention_dp": 1,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 8.0,
+            "completed_requests": 8.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 65536.0,
+            "total_output_tokens": 8192.0,
+            "committed_prefill_tokens": 65536.0,
+            "output_throughput_tok_s": 26.353388385115995,
+            "request_throughput_rps": 0.02573573084483984,
+            "duration_ms": 310851.86770998756,
+            "mean_ttft_ms": 3080.074891993812,
+            "p99_ttft_ms": 3080.0748919938187,
+            "mean_tpot_ms": 148.92068324828932,
+            "p99_tpot_ms": 148.92068324828946,
+            "mean_e2e_latency_ms": 155425.93385499378
+          },
+          "feasible_configurations": 36,
+          "prediction_config": "best-pd-1p1d-c4.yaml"
+        }
+      ],
+      "elapsed_seconds": 113.89368519594427,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "pd-isl8192-osl1024-c8-n16",
+      "concurrency": 8,
+      "requests": 16,
+      "mode": "pd",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 36,
+        "failed": 0,
+        "feasible": 36,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "pd-isl8192-osl1024-c8-n16",
+          "candidate_id": "candidate-000003",
+          "layout": "pd-1p1d",
+          "concurrency": 8,
+          "parallelism": {
+            "prefill": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 1,
+              "moe_ep": 16,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            },
+            "decode": {
+              "tp": 16,
+              "attention_dp": 1,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 16.0,
+            "completed_requests": 16.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 131072.0,
+            "total_output_tokens": 16384.0,
+            "committed_prefill_tokens": 131072.0,
+            "output_throughput_tok_s": 53.01082352745594,
+            "request_throughput_rps": 0.05176838235103119,
+            "duration_ms": 309068.9581819875,
+            "mean_ttft_ms": 4582.716316806292,
+            "p99_ttft_ms": 6207.6680049938195,
+            "mean_tpot_ms": 145.71797249969444,
+            "p99_tpot_ms": 145.72212951124112,
+            "mean_e2e_latency_ms": 153652.20218399374
+          },
+          "feasible_configurations": 36,
+          "prediction_config": "best-pd-1p1d-c8.yaml"
+        }
+      ],
+      "elapsed_seconds": 114.0759833699558,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "pd-isl8192-osl1024-c16-n32",
+      "concurrency": 16,
+      "requests": 32,
+      "mode": "pd",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 36,
+        "failed": 0,
+        "feasible": 36,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "pd-isl8192-osl1024-c16-n32",
+          "candidate_id": "candidate-000010",
+          "layout": "pd-1p1d",
+          "concurrency": 16,
+          "parallelism": {
+            "prefill": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 1,
+              "moe_ep": 16,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            },
+            "decode": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 32.0,
+            "completed_requests": 32.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 262144.0,
+            "total_output_tokens": 32768.0,
+            "committed_prefill_tokens": 262144.0,
+            "output_throughput_tok_s": 80.24925522778854,
+            "request_throughput_rps": 0.07836841330838724,
+            "duration_ms": 408327.77708637435,
+            "mean_ttft_ms": 5468.226107562186,
+            "p99_ttft_ms": 12279.145407374363,
+            "mean_tpot_ms": 191.9766732894674,
+            "p99_tpot_ms": 191.9788164868036,
+            "mean_e2e_latency_ms": 201860.36288268704
+          },
+          "feasible_configurations": 36,
+          "prediction_config": "best-pd-1p1d-c16.yaml"
+        }
+      ],
+      "elapsed_seconds": 117.55153445992619,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "pd-isl8192-osl1024-c32-n64",
+      "concurrency": 32,
+      "requests": 64,
+      "mode": "pd",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 36,
+        "failed": 0,
+        "feasible": 36,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "pd-isl8192-osl1024-c32-n64",
+          "candidate_id": "candidate-000010",
+          "layout": "pd-1p1d",
+          "concurrency": 32,
+          "parallelism": {
+            "prefill": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 1,
+              "moe_ep": 16,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            },
+            "decode": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 64.0,
+            "completed_requests": 64.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 524288.0,
+            "total_output_tokens": 65536.0,
+            "committed_prefill_tokens": 524288.0,
+            "output_throughput_tok_s": 77.2146744020328,
+            "request_throughput_rps": 0.07540495547073515,
+            "duration_ms": 848750.5841023745,
+            "mean_ttft_ms": 101036.20207168709,
+            "p99_ttft_ms": 225674.63386037428,
+            "mean_tpot_ms": 207.55287406647113,
+            "p99_tpot_ms": 208.59970933724355,
+            "mean_e2e_latency_ms": 313362.79224168713
+          },
+          "feasible_configurations": 36,
+          "prediction_config": "best-pd-1p1d-c32.yaml"
+        }
+      ],
+      "elapsed_seconds": 125.99555944406893,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "pd-isl8192-osl1024-c64-n128",
+      "concurrency": 64,
+      "requests": 128,
+      "mode": "pd",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 36,
+        "failed": 0,
+        "feasible": 36,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "pd-isl8192-osl1024-c64-n128",
+          "candidate_id": "candidate-000010",
+          "layout": "pd-1p1d",
+          "concurrency": 64,
+          "parallelism": {
+            "prefill": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 1,
+              "moe_ep": 16,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            },
+            "decode": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 128.0,
+            "completed_requests": 128.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 1048576.0,
+            "total_output_tokens": 131072.0,
+            "committed_prefill_tokens": 1048576.0,
+            "output_throughput_tok_s": 87.30636580297171,
+            "request_throughput_rps": 0.08526012285446456,
+            "duration_ms": 1501288.007976374,
+            "mean_ttft_ms": 364568.2677631248,
+            "p99_ttft_ms": 652467.6249643744,
+            "mean_tpot_ms": 207.55672290927396,
+            "p99_tpot_ms": 208.59970933724355,
+            "mean_e2e_latency_ms": 576898.7952993123
+          },
+          "feasible_configurations": 36,
+          "prediction_config": "best-pd-1p1d-c64.yaml"
+        }
+      ],
+      "elapsed_seconds": 141.85485250898637,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "pd-isl8192-osl1024-c128-n256",
+      "concurrency": 128,
+      "requests": 256,
+      "mode": "pd",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 36,
+        "failed": 0,
+        "feasible": 36,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "pd-isl8192-osl1024-c128-n256",
+          "candidate_id": "candidate-000010",
+          "layout": "pd-1p1d",
+          "concurrency": 128,
+          "parallelism": {
+            "prefill": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 1,
+              "moe_ep": 16,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            },
+            "decode": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 256.0,
+            "completed_requests": 256.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 2097152.0,
+            "total_output_tokens": 262144.0,
+            "committed_prefill_tokens": 2097152.0,
+            "output_throughput_tok_s": 93.41327347376809,
+            "request_throughput_rps": 0.09122389987672665,
+            "duration_ms": 2806282.1294193715,
+            "mean_ttft_ms": 882205.4820164839,
+            "p99_ttft_ms": 1304941.8122113743,
+            "mean_tpot_ms": 207.55943261801954,
+            "p99_tpot_ms": 208.59970933724495,
+            "mean_e2e_latency_ms": 1094538.781584717
+          },
+          "feasible_configurations": 36,
+          "prediction_config": "best-pd-1p1d-c128.yaml"
+        }
+      ],
+      "elapsed_seconds": 196.9353141200263,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "agg-isl8192-osl1024-c1-n2",
+      "concurrency": 1,
+      "requests": 2,
+      "mode": "agg",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 16,
+        "failed": 0,
+        "feasible": 16,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "agg-isl8192-osl1024-c1-n2",
+          "candidate_id": "candidate-000006",
+          "layout": "agg-1x2node",
+          "concurrency": 1,
+          "parallelism": {
+            "aggregated": {
+              "tp": 1,
+              "attention_dp": 32,
+              "moe_tp": 1,
+              "moe_ep": 32,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 32,
+              "nodes_per_replica": 2
+            }
+          },
+          "metrics": {
+            "num_requests": 2.0,
+            "completed_requests": 2.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 16384.0,
+            "total_output_tokens": 2048.0,
+            "committed_prefill_tokens": 16384.0,
+            "output_throughput_tok_s": 4.894754482589096,
+            "request_throughput_rps": 0.004780033674403414,
+            "duration_ms": 418407.09422399953,
+            "mean_ttft_ms": 15177.269168000028,
+            "p99_ttft_ms": 15177.269168000057,
+            "mean_tpot_ms": 189.66400581036143,
+            "p99_tpot_ms": 189.66400581036174,
+            "mean_e2e_latency_ms": 209203.54711199977
+          },
+          "feasible_configurations": 10,
+          "prediction_config": "best-agg-1x2node-c1.yaml"
+        },
+        {
+          "case": "agg-isl8192-osl1024-c1-n2",
+          "candidate_id": "candidate-000014",
+          "layout": "agg-2x1node",
+          "concurrency": 1,
+          "parallelism": {
+            "aggregated": {
+              "tp": 16,
+              "attention_dp": 1,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 2,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 2.0,
+            "completed_requests": 2.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 16384.0,
+            "total_output_tokens": 2048.0,
+            "committed_prefill_tokens": 16384.0,
+            "output_throughput_tok_s": 6.8068849356669885,
+            "request_throughput_rps": 0.0066473485699872934,
+            "duration_ms": 300871.8406959999,
+            "mean_ttft_ms": 2509.730447999994,
+            "p99_ttft_ms": 2509.730448,
+            "mean_tpot_ms": 144.60038113391983,
+            "p99_tpot_ms": 144.60038113391983,
+            "mean_e2e_latency_ms": 150435.92034799996
+          },
+          "feasible_configurations": 6,
+          "prediction_config": "best-agg-2x1node-c1.yaml"
+        }
+      ],
+      "elapsed_seconds": 46.4288415950723,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "agg-isl8192-osl1024-c2-n4",
+      "concurrency": 2,
+      "requests": 4,
+      "mode": "agg",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 16,
+        "failed": 0,
+        "feasible": 16,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "agg-isl8192-osl1024-c2-n4",
+          "candidate_id": "candidate-000006",
+          "layout": "agg-1x2node",
+          "concurrency": 2,
+          "parallelism": {
+            "aggregated": {
+              "tp": 1,
+              "attention_dp": 32,
+              "moe_tp": 1,
+              "moe_ep": 32,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 32,
+              "nodes_per_replica": 2
+            }
+          },
+          "metrics": {
+            "num_requests": 4.0,
+            "completed_requests": 4.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 32768.0,
+            "total_output_tokens": 4096.0,
+            "committed_prefill_tokens": 32768.0,
+            "output_throughput_tok_s": 9.789508965178191,
+            "request_throughput_rps": 0.009560067348806827,
+            "duration_ms": 418407.09422399953,
+            "mean_ttft_ms": 15177.269168000028,
+            "p99_ttft_ms": 15177.269168000057,
+            "mean_tpot_ms": 189.66400581036143,
+            "p99_tpot_ms": 189.66400581036174,
+            "mean_e2e_latency_ms": 209203.54711199977
+          },
+          "feasible_configurations": 10,
+          "prediction_config": "best-agg-1x2node-c2.yaml"
+        },
+        {
+          "case": "agg-isl8192-osl1024-c2-n4",
+          "candidate_id": "candidate-000014",
+          "layout": "agg-2x1node",
+          "concurrency": 2,
+          "parallelism": {
+            "aggregated": {
+              "tp": 16,
+              "attention_dp": 1,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 2,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 4.0,
+            "completed_requests": 4.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 32768.0,
+            "total_output_tokens": 4096.0,
+            "committed_prefill_tokens": 32768.0,
+            "output_throughput_tok_s": 13.613769871333977,
+            "request_throughput_rps": 0.013294697139974587,
+            "duration_ms": 300871.8406959999,
+            "mean_ttft_ms": 2509.730447999994,
+            "p99_ttft_ms": 2509.730448,
+            "mean_tpot_ms": 144.60038113391983,
+            "p99_tpot_ms": 144.60038113391983,
+            "mean_e2e_latency_ms": 150435.92034799996
+          },
+          "feasible_configurations": 6,
+          "prediction_config": "best-agg-2x1node-c2.yaml"
+        }
+      ],
+      "elapsed_seconds": 46.911635802011006,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "agg-isl8192-osl1024-c4-n8",
+      "concurrency": 4,
+      "requests": 8,
+      "mode": "agg",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 16,
+        "failed": 0,
+        "feasible": 16,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "agg-isl8192-osl1024-c4-n8",
+          "candidate_id": "candidate-000006",
+          "layout": "agg-1x2node",
+          "concurrency": 4,
+          "parallelism": {
+            "aggregated": {
+              "tp": 1,
+              "attention_dp": 32,
+              "moe_tp": 1,
+              "moe_ep": 32,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 32,
+              "nodes_per_replica": 2
+            }
+          },
+          "metrics": {
+            "num_requests": 8.0,
+            "completed_requests": 8.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 65536.0,
+            "total_output_tokens": 8192.0,
+            "committed_prefill_tokens": 65536.0,
+            "output_throughput_tok_s": 19.579017930356382,
+            "request_throughput_rps": 0.019120134697613655,
+            "duration_ms": 418407.09422399953,
+            "mean_ttft_ms": 15177.269168000028,
+            "p99_ttft_ms": 15177.269168000057,
+            "mean_tpot_ms": 189.66400581036146,
+            "p99_tpot_ms": 189.66400581036174,
+            "mean_e2e_latency_ms": 209203.54711199977
+          },
+          "feasible_configurations": 10,
+          "prediction_config": "best-agg-1x2node-c4.yaml"
+        },
+        {
+          "case": "agg-isl8192-osl1024-c4-n8",
+          "candidate_id": "candidate-000014",
+          "layout": "agg-2x1node",
+          "concurrency": 4,
+          "parallelism": {
+            "aggregated": {
+              "tp": 16,
+              "attention_dp": 1,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 2,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 8.0,
+            "completed_requests": 8.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 65536.0,
+            "total_output_tokens": 8192.0,
+            "committed_prefill_tokens": 65536.0,
+            "output_throughput_tok_s": 26.393105480253887,
+            "request_throughput_rps": 0.025774517070560436,
+            "duration_ms": 310384.08898599976,
+            "mean_ttft_ms": 4883.594256999995,
+            "p99_ttft_ms": 4883.594257000001,
+            "mean_tpot_ms": 146.92908136461378,
+            "p99_tpot_ms": 146.92908136461386,
+            "mean_e2e_latency_ms": 155192.04449299988
+          },
+          "feasible_configurations": 6,
+          "prediction_config": "best-agg-2x1node-c4.yaml"
+        }
+      ],
+      "elapsed_seconds": 46.80387180496473,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "agg-isl8192-osl1024-c8-n16",
+      "concurrency": 8,
+      "requests": 16,
+      "mode": "agg",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 16,
+        "failed": 0,
+        "feasible": 16,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "agg-isl8192-osl1024-c8-n16",
+          "candidate_id": "candidate-000006",
+          "layout": "agg-1x2node",
+          "concurrency": 8,
+          "parallelism": {
+            "aggregated": {
+              "tp": 1,
+              "attention_dp": 32,
+              "moe_tp": 1,
+              "moe_ep": 32,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 32,
+              "nodes_per_replica": 2
+            }
+          },
+          "metrics": {
+            "num_requests": 16.0,
+            "completed_requests": 16.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 131072.0,
+            "total_output_tokens": 16384.0,
+            "committed_prefill_tokens": 131072.0,
+            "output_throughput_tok_s": 39.158035860712765,
+            "request_throughput_rps": 0.03824026939522731,
+            "duration_ms": 418407.09422399953,
+            "mean_ttft_ms": 15177.269168000028,
+            "p99_ttft_ms": 15177.269168000057,
+            "mean_tpot_ms": 189.66400581036146,
+            "p99_tpot_ms": 189.66400581036174,
+            "mean_e2e_latency_ms": 209203.5471119997
+          },
+          "feasible_configurations": 10,
+          "prediction_config": "best-agg-1x2node-c8.yaml"
+        },
+        {
+          "case": "agg-isl8192-osl1024-c8-n16",
+          "candidate_id": "candidate-000014",
+          "layout": "agg-2x1node",
+          "concurrency": 8,
+          "parallelism": {
+            "aggregated": {
+              "tp": 16,
+              "attention_dp": 1,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 2,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 16.0,
+            "completed_requests": 16.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 131072.0,
+            "total_output_tokens": 16384.0,
+            "committed_prefill_tokens": 131072.0,
+            "output_throughput_tok_s": 50.532638350175056,
+            "request_throughput_rps": 0.04934827963884283,
+            "duration_ms": 324226.09495400003,
+            "mean_ttft_ms": 7325.391385499993,
+            "p99_ttft_ms": 9767.188514000001,
+            "mean_tpot_ms": 151.3075817121212,
+            "p99_tpot_ms": 153.69448017595315,
+            "mean_e2e_latency_ms": 162113.047477
+          },
+          "feasible_configurations": 6,
+          "prediction_config": "best-agg-2x1node-c8.yaml"
+        }
+      ],
+      "elapsed_seconds": 46.899589259992354,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "agg-isl8192-osl1024-c16-n32",
+      "concurrency": 16,
+      "requests": 32,
+      "mode": "agg",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 16,
+        "failed": 0,
+        "feasible": 16,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "agg-isl8192-osl1024-c16-n32",
+          "candidate_id": "candidate-000006",
+          "layout": "agg-1x2node",
+          "concurrency": 16,
+          "parallelism": {
+            "aggregated": {
+              "tp": 1,
+              "attention_dp": 32,
+              "moe_tp": 1,
+              "moe_ep": 32,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 32,
+              "nodes_per_replica": 2
+            }
+          },
+          "metrics": {
+            "num_requests": 32.0,
+            "completed_requests": 32.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 262144.0,
+            "total_output_tokens": 32768.0,
+            "committed_prefill_tokens": 262144.0,
+            "output_throughput_tok_s": 78.31607172142553,
+            "request_throughput_rps": 0.07648053879045462,
+            "duration_ms": 418407.09422399953,
+            "mean_ttft_ms": 15177.269168000039,
+            "p99_ttft_ms": 15177.269168000057,
+            "mean_tpot_ms": 189.66400581036146,
+            "p99_tpot_ms": 189.66400581036174,
+            "mean_e2e_latency_ms": 209203.54711199968
+          },
+          "feasible_configurations": 10,
+          "prediction_config": "best-agg-1x2node-c16.yaml"
+        },
+        {
+          "case": "agg-isl8192-osl1024-c16-n32",
+          "candidate_id": "candidate-000014",
+          "layout": "agg-2x1node",
+          "concurrency": 16,
+          "parallelism": {
+            "aggregated": {
+              "tp": 16,
+              "attention_dp": 1,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 2,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 32.0,
+            "completed_requests": 32.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 262144.0,
+            "total_output_tokens": 32768.0,
+            "committed_prefill_tokens": 262144.0,
+            "output_throughput_tok_s": 97.21513978166345,
+            "request_throughput_rps": 0.09493665994303072,
+            "duration_ms": 337066.8403459997,
+            "mean_ttft_ms": 12208.985642499989,
+            "p99_ttft_ms": 19534.377028000003,
+            "mean_tpot_ms": 152.80980892521984,
+            "p99_tpot_ms": 159.97050431671565,
+            "mean_e2e_latency_ms": 168533.42017299985
+          },
+          "feasible_configurations": 6,
+          "prediction_config": "best-agg-2x1node-c16.yaml"
+        }
+      ],
+      "elapsed_seconds": 47.14476358599495,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "agg-isl8192-osl1024-c32-n64",
+      "concurrency": 32,
+      "requests": 64,
+      "mode": "agg",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 16,
+        "failed": 0,
+        "feasible": 16,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "agg-isl8192-osl1024-c32-n64",
+          "candidate_id": "candidate-000006",
+          "layout": "agg-1x2node",
+          "concurrency": 32,
+          "parallelism": {
+            "aggregated": {
+              "tp": 1,
+              "attention_dp": 32,
+              "moe_tp": 1,
+              "moe_ep": 32,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 32,
+              "nodes_per_replica": 2
+            }
+          },
+          "metrics": {
+            "num_requests": 64.0,
+            "completed_requests": 64.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 524288.0,
+            "total_output_tokens": 65536.0,
+            "committed_prefill_tokens": 524288.0,
+            "output_throughput_tok_s": 156.63214344285106,
+            "request_throughput_rps": 0.15296107758090924,
+            "duration_ms": 418407.09422399953,
+            "mean_ttft_ms": 15177.269168000037,
+            "p99_ttft_ms": 15177.269168000057,
+            "mean_tpot_ms": 189.66400581036126,
+            "p99_tpot_ms": 189.66400581036174,
+            "mean_e2e_latency_ms": 209203.5471119997
+          },
+          "feasible_configurations": 10,
+          "prediction_config": "best-agg-1x2node-c32.yaml"
+        },
+        {
+          "case": "agg-isl8192-osl1024-c32-n64",
+          "candidate_id": "candidate-000004",
+          "layout": "agg-2x1node",
+          "concurrency": 32,
+          "parallelism": {
+            "aggregated": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 2,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 64.0,
+            "completed_requests": 64.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 524288.0,
+            "total_output_tokens": 65536.0,
+            "committed_prefill_tokens": 524288.0,
+            "output_throughput_tok_s": 153.45021776608726,
+            "request_throughput_rps": 0.1498537282871946,
+            "duration_ms": 427083.1345440004,
+            "mean_ttft_ms": 10719.728700000018,
+            "p99_ttft_ms": 17151.56592000008,
+            "mean_tpot_ms": 198.26181678592383,
+            "p99_tpot_ms": 204.54904769501493,
+            "mean_e2e_latency_ms": 213541.56727200004
+          },
+          "feasible_configurations": 6,
+          "prediction_config": "best-agg-2x1node-c32.yaml"
+        }
+      ],
+      "elapsed_seconds": 47.29295334999915,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "agg-isl8192-osl1024-c64-n128",
+      "concurrency": 64,
+      "requests": 128,
+      "mode": "agg",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 16,
+        "failed": 0,
+        "feasible": 16,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "agg-isl8192-osl1024-c64-n128",
+          "candidate_id": "candidate-000006",
+          "layout": "agg-1x2node",
+          "concurrency": 64,
+          "parallelism": {
+            "aggregated": {
+              "tp": 1,
+              "attention_dp": 32,
+              "moe_tp": 1,
+              "moe_ep": 32,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 32,
+              "nodes_per_replica": 2
+            }
+          },
+          "metrics": {
+            "num_requests": 128.0,
+            "completed_requests": 128.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 1048576.0,
+            "total_output_tokens": 131072.0,
+            "committed_prefill_tokens": 1048576.0,
+            "output_throughput_tok_s": 281.03194013916055,
+            "request_throughput_rps": 0.274445254042149,
+            "duration_ms": 466395.38529,
+            "mean_ttft_ms": 22765.90375200002,
+            "p99_ttft_ms": 30354.538336000114,
+            "mean_tpot_ms": 205.7006734046921,
+            "p99_tpot_ms": 213.1186935259042,
+            "mean_e2e_latency_ms": 233197.69264499942
+          },
+          "feasible_configurations": 10,
+          "prediction_config": "best-agg-1x2node-c64.yaml"
+        },
+        {
+          "case": "agg-isl8192-osl1024-c64-n128",
+          "candidate_id": "candidate-000004",
+          "layout": "agg-2x1node",
+          "concurrency": 64,
+          "parallelism": {
+            "aggregated": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 2,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 128.0,
+            "completed_requests": 128.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 1048576.0,
+            "total_output_tokens": 131072.0,
+            "committed_prefill_tokens": 1048576.0,
+            "output_throughput_tok_s": 144.27726347769635,
+            "request_throughput_rps": 0.14089576511493784,
+            "duration_ms": 908473.0112050002,
+            "mean_ttft_ms": 115564.79942212511,
+            "p99_ttft_ms": 248834.21482200018,
+            "mean_tpot_ms": 216.45139832044237,
+            "p99_tpot_ms": 226.47375259237555,
+            "mean_e2e_latency_ms": 336994.57990393747
+          },
+          "feasible_configurations": 6,
+          "prediction_config": "best-agg-2x1node-c64.yaml"
+        }
+      ],
+      "elapsed_seconds": 47.81567479891237,
+      "finite_search_exhausted": true
+    },
+    {
+      "case": "agg-isl8192-osl1024-c128-n256",
+      "concurrency": 128,
+      "requests": 256,
+      "mode": "agg",
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 16,
+        "failed": 0,
+        "feasible": 16,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "winners": [
+        {
+          "case": "agg-isl8192-osl1024-c128-n256",
+          "candidate_id": "candidate-000006",
+          "layout": "agg-1x2node",
+          "concurrency": 128,
+          "parallelism": {
+            "aggregated": {
+              "tp": 1,
+              "attention_dp": 32,
+              "moe_tp": 1,
+              "moe_ep": 32,
+              "pp": 1,
+              "replicas": 1,
+              "global_tp": 32,
+              "nodes_per_replica": 2
+            }
+          },
+          "metrics": {
+            "num_requests": 256.0,
+            "completed_requests": 256.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 2097152.0,
+            "total_output_tokens": 262144.0,
+            "committed_prefill_tokens": 2097152.0,
+            "output_throughput_tok_s": 507.5840544101872,
+            "request_throughput_rps": 0.49568755313494844,
+            "duration_ms": 516454.36400599976,
+            "mean_ttft_ms": 37943.1729199999,
+            "p99_ttft_ms": 60709.07667199994,
+            "mean_tpot_ms": 215.3313871779081,
+            "p99_tpot_ms": 237.58544754154445,
+            "mean_e2e_latency_ms": 258227.18200299927
+          },
+          "feasible_configurations": 10,
+          "prediction_config": "best-agg-1x2node-c128.yaml"
+        },
+        {
+          "case": "agg-isl8192-osl1024-c128-n256",
+          "candidate_id": "candidate-000004",
+          "layout": "agg-2x1node",
+          "concurrency": 128,
+          "parallelism": {
+            "aggregated": {
+              "tp": 4,
+              "attention_dp": 4,
+              "moe_tp": 16,
+              "moe_ep": 1,
+              "pp": 1,
+              "replicas": 2,
+              "global_tp": 16,
+              "nodes_per_replica": 1
+            }
+          },
+          "metrics": {
+            "num_requests": 256.0,
+            "completed_requests": 256.0,
+            "rejected_requests": 0.0,
+            "failed_requests": 0.0,
+            "canceled_requests": 0.0,
+            "total_input_tokens": 2097152.0,
+            "total_output_tokens": 262144.0,
+            "committed_prefill_tokens": 2097152.0,
+            "output_throughput_tok_s": 161.74325766616178,
+            "request_throughput_rps": 0.15795240006461111,
+            "duration_ms": 1620741.437897,
+            "mean_ttft_ms": 403287.8921214376,
+            "p99_ttft_ms": 712199.5126260003,
+            "mean_tpot_ms": 216.5865925901147,
+            "p99_tpot_ms": 226.47375259237555,
+            "mean_e2e_latency_ms": 624855.9763411235
+          },
+          "feasible_configurations": 6,
+          "prediction_config": "best-agg-2x1node-c128.yaml"
+        }
+      ],
+      "elapsed_seconds": 72.60006714600604,
+      "finite_search_exhausted": true
+    }
+  ],
+  "winners_by_layout": [
+    {
+      "case": "pd-isl8192-osl1024-c1-n2",
+      "candidate_id": "candidate-000021",
+      "layout": "pd-1p1d",
+      "concurrency": 1,
+      "parallelism": {
+        "prefill": {
+          "tp": 16,
+          "attention_dp": 1,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 16,
+          "attention_dp": 1,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 2.0,
+        "completed_requests": 2.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 16384.0,
+        "total_output_tokens": 2048.0,
+        "committed_prefill_tokens": 16384.0,
+        "output_throughput_tok_s": 6.817800819615942,
+        "request_throughput_rps": 0.006658008612906194,
+        "duration_ms": 300390.11907000345,
+        "mean_ttft_ms": 2268.8696350017326,
+        "p99_ttft_ms": 2268.8696350017385,
+        "mean_tpot_ms": 144.60038113391985,
+        "p99_tpot_ms": 144.60038113391988,
+        "mean_e2e_latency_ms": 150195.05953500172
+      },
+      "feasible_configurations": 36,
+      "prediction_config": "best-pd-1p1d-c1.yaml"
+    },
+    {
+      "case": "pd-isl8192-osl1024-c2-n4",
+      "candidate_id": "candidate-000032",
+      "layout": "pd-1p1d",
+      "concurrency": 2,
+      "parallelism": {
+        "prefill": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 16,
+          "attention_dp": 1,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 4.0,
+        "completed_requests": 4.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 32768.0,
+        "total_output_tokens": 4096.0,
+        "committed_prefill_tokens": 32768.0,
+        "output_throughput_tok_s": 13.405640983565684,
+        "request_throughput_rps": 0.013091446273013363,
+        "duration_ms": 305543.0176760209,
+        "mean_ttft_ms": 2463.0586020105684,
+        "p99_ttft_ms": 2463.0586020105693,
+        "mean_tpot_ms": 146.92908136461378,
+        "p99_tpot_ms": 146.92908136461384,
+        "mean_e2e_latency_ms": 152771.50883801046
+      },
+      "feasible_configurations": 36,
+      "prediction_config": "best-pd-1p1d-c2.yaml"
+    },
+    {
+      "case": "pd-isl8192-osl1024-c4-n8",
+      "candidate_id": "candidate-000003",
+      "layout": "pd-1p1d",
+      "concurrency": 4,
+      "parallelism": {
+        "prefill": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 16,
+          "attention_dp": 1,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 8.0,
+        "completed_requests": 8.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 65536.0,
+        "total_output_tokens": 8192.0,
+        "committed_prefill_tokens": 65536.0,
+        "output_throughput_tok_s": 26.353388385115995,
+        "request_throughput_rps": 0.02573573084483984,
+        "duration_ms": 310851.86770998756,
+        "mean_ttft_ms": 3080.074891993812,
+        "p99_ttft_ms": 3080.0748919938187,
+        "mean_tpot_ms": 148.92068324828932,
+        "p99_tpot_ms": 148.92068324828946,
+        "mean_e2e_latency_ms": 155425.93385499378
+      },
+      "feasible_configurations": 36,
+      "prediction_config": "best-pd-1p1d-c4.yaml"
+    },
+    {
+      "case": "pd-isl8192-osl1024-c8-n16",
+      "candidate_id": "candidate-000003",
+      "layout": "pd-1p1d",
+      "concurrency": 8,
+      "parallelism": {
+        "prefill": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 16,
+          "attention_dp": 1,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 16.0,
+        "completed_requests": 16.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 131072.0,
+        "total_output_tokens": 16384.0,
+        "committed_prefill_tokens": 131072.0,
+        "output_throughput_tok_s": 53.01082352745594,
+        "request_throughput_rps": 0.05176838235103119,
+        "duration_ms": 309068.9581819875,
+        "mean_ttft_ms": 4582.716316806292,
+        "p99_ttft_ms": 6207.6680049938195,
+        "mean_tpot_ms": 145.71797249969444,
+        "p99_tpot_ms": 145.72212951124112,
+        "mean_e2e_latency_ms": 153652.20218399374
+      },
+      "feasible_configurations": 36,
+      "prediction_config": "best-pd-1p1d-c8.yaml"
+    },
+    {
+      "case": "pd-isl8192-osl1024-c16-n32",
+      "candidate_id": "candidate-000010",
+      "layout": "pd-1p1d",
+      "concurrency": 16,
+      "parallelism": {
+        "prefill": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 32.0,
+        "completed_requests": 32.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 262144.0,
+        "total_output_tokens": 32768.0,
+        "committed_prefill_tokens": 262144.0,
+        "output_throughput_tok_s": 80.24925522778854,
+        "request_throughput_rps": 0.07836841330838724,
+        "duration_ms": 408327.77708637435,
+        "mean_ttft_ms": 5468.226107562186,
+        "p99_ttft_ms": 12279.145407374363,
+        "mean_tpot_ms": 191.9766732894674,
+        "p99_tpot_ms": 191.9788164868036,
+        "mean_e2e_latency_ms": 201860.36288268704
+      },
+      "feasible_configurations": 36,
+      "prediction_config": "best-pd-1p1d-c16.yaml"
+    },
+    {
+      "case": "pd-isl8192-osl1024-c32-n64",
+      "candidate_id": "candidate-000010",
+      "layout": "pd-1p1d",
+      "concurrency": 32,
+      "parallelism": {
+        "prefill": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 64.0,
+        "completed_requests": 64.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 524288.0,
+        "total_output_tokens": 65536.0,
+        "committed_prefill_tokens": 524288.0,
+        "output_throughput_tok_s": 77.2146744020328,
+        "request_throughput_rps": 0.07540495547073515,
+        "duration_ms": 848750.5841023745,
+        "mean_ttft_ms": 101036.20207168709,
+        "p99_ttft_ms": 225674.63386037428,
+        "mean_tpot_ms": 207.55287406647113,
+        "p99_tpot_ms": 208.59970933724355,
+        "mean_e2e_latency_ms": 313362.79224168713
+      },
+      "feasible_configurations": 36,
+      "prediction_config": "best-pd-1p1d-c32.yaml"
+    },
+    {
+      "case": "pd-isl8192-osl1024-c64-n128",
+      "candidate_id": "candidate-000010",
+      "layout": "pd-1p1d",
+      "concurrency": 64,
+      "parallelism": {
+        "prefill": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 128.0,
+        "completed_requests": 128.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 1048576.0,
+        "total_output_tokens": 131072.0,
+        "committed_prefill_tokens": 1048576.0,
+        "output_throughput_tok_s": 87.30636580297171,
+        "request_throughput_rps": 0.08526012285446456,
+        "duration_ms": 1501288.007976374,
+        "mean_ttft_ms": 364568.2677631248,
+        "p99_ttft_ms": 652467.6249643744,
+        "mean_tpot_ms": 207.55672290927396,
+        "p99_tpot_ms": 208.59970933724355,
+        "mean_e2e_latency_ms": 576898.7952993123
+      },
+      "feasible_configurations": 36,
+      "prediction_config": "best-pd-1p1d-c64.yaml"
+    },
+    {
+      "case": "pd-isl8192-osl1024-c128-n256",
+      "candidate_id": "candidate-000010",
+      "layout": "pd-1p1d",
+      "concurrency": 128,
+      "parallelism": {
+        "prefill": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 256.0,
+        "completed_requests": 256.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 2097152.0,
+        "total_output_tokens": 262144.0,
+        "committed_prefill_tokens": 2097152.0,
+        "output_throughput_tok_s": 93.41327347376809,
+        "request_throughput_rps": 0.09122389987672665,
+        "duration_ms": 2806282.1294193715,
+        "mean_ttft_ms": 882205.4820164839,
+        "p99_ttft_ms": 1304941.8122113743,
+        "mean_tpot_ms": 207.55943261801954,
+        "p99_tpot_ms": 208.59970933724495,
+        "mean_e2e_latency_ms": 1094538.781584717
+      },
+      "feasible_configurations": 36,
+      "prediction_config": "best-pd-1p1d-c128.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c1-n2",
+      "candidate_id": "candidate-000006",
+      "layout": "agg-1x2node",
+      "concurrency": 1,
+      "parallelism": {
+        "aggregated": {
+          "tp": 1,
+          "attention_dp": 32,
+          "moe_tp": 1,
+          "moe_ep": 32,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 32,
+          "nodes_per_replica": 2
+        }
+      },
+      "metrics": {
+        "num_requests": 2.0,
+        "completed_requests": 2.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 16384.0,
+        "total_output_tokens": 2048.0,
+        "committed_prefill_tokens": 16384.0,
+        "output_throughput_tok_s": 4.894754482589096,
+        "request_throughput_rps": 0.004780033674403414,
+        "duration_ms": 418407.09422399953,
+        "mean_ttft_ms": 15177.269168000028,
+        "p99_ttft_ms": 15177.269168000057,
+        "mean_tpot_ms": 189.66400581036143,
+        "p99_tpot_ms": 189.66400581036174,
+        "mean_e2e_latency_ms": 209203.54711199977
+      },
+      "feasible_configurations": 10,
+      "prediction_config": "best-agg-1x2node-c1.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c1-n2",
+      "candidate_id": "candidate-000014",
+      "layout": "agg-2x1node",
+      "concurrency": 1,
+      "parallelism": {
+        "aggregated": {
+          "tp": 16,
+          "attention_dp": 1,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 2,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 2.0,
+        "completed_requests": 2.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 16384.0,
+        "total_output_tokens": 2048.0,
+        "committed_prefill_tokens": 16384.0,
+        "output_throughput_tok_s": 6.8068849356669885,
+        "request_throughput_rps": 0.0066473485699872934,
+        "duration_ms": 300871.8406959999,
+        "mean_ttft_ms": 2509.730447999994,
+        "p99_ttft_ms": 2509.730448,
+        "mean_tpot_ms": 144.60038113391983,
+        "p99_tpot_ms": 144.60038113391983,
+        "mean_e2e_latency_ms": 150435.92034799996
+      },
+      "feasible_configurations": 6,
+      "prediction_config": "best-agg-2x1node-c1.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c2-n4",
+      "candidate_id": "candidate-000006",
+      "layout": "agg-1x2node",
+      "concurrency": 2,
+      "parallelism": {
+        "aggregated": {
+          "tp": 1,
+          "attention_dp": 32,
+          "moe_tp": 1,
+          "moe_ep": 32,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 32,
+          "nodes_per_replica": 2
+        }
+      },
+      "metrics": {
+        "num_requests": 4.0,
+        "completed_requests": 4.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 32768.0,
+        "total_output_tokens": 4096.0,
+        "committed_prefill_tokens": 32768.0,
+        "output_throughput_tok_s": 9.789508965178191,
+        "request_throughput_rps": 0.009560067348806827,
+        "duration_ms": 418407.09422399953,
+        "mean_ttft_ms": 15177.269168000028,
+        "p99_ttft_ms": 15177.269168000057,
+        "mean_tpot_ms": 189.66400581036143,
+        "p99_tpot_ms": 189.66400581036174,
+        "mean_e2e_latency_ms": 209203.54711199977
+      },
+      "feasible_configurations": 10,
+      "prediction_config": "best-agg-1x2node-c2.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c2-n4",
+      "candidate_id": "candidate-000014",
+      "layout": "agg-2x1node",
+      "concurrency": 2,
+      "parallelism": {
+        "aggregated": {
+          "tp": 16,
+          "attention_dp": 1,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 2,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 4.0,
+        "completed_requests": 4.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 32768.0,
+        "total_output_tokens": 4096.0,
+        "committed_prefill_tokens": 32768.0,
+        "output_throughput_tok_s": 13.613769871333977,
+        "request_throughput_rps": 0.013294697139974587,
+        "duration_ms": 300871.8406959999,
+        "mean_ttft_ms": 2509.730447999994,
+        "p99_ttft_ms": 2509.730448,
+        "mean_tpot_ms": 144.60038113391983,
+        "p99_tpot_ms": 144.60038113391983,
+        "mean_e2e_latency_ms": 150435.92034799996
+      },
+      "feasible_configurations": 6,
+      "prediction_config": "best-agg-2x1node-c2.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c4-n8",
+      "candidate_id": "candidate-000006",
+      "layout": "agg-1x2node",
+      "concurrency": 4,
+      "parallelism": {
+        "aggregated": {
+          "tp": 1,
+          "attention_dp": 32,
+          "moe_tp": 1,
+          "moe_ep": 32,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 32,
+          "nodes_per_replica": 2
+        }
+      },
+      "metrics": {
+        "num_requests": 8.0,
+        "completed_requests": 8.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 65536.0,
+        "total_output_tokens": 8192.0,
+        "committed_prefill_tokens": 65536.0,
+        "output_throughput_tok_s": 19.579017930356382,
+        "request_throughput_rps": 0.019120134697613655,
+        "duration_ms": 418407.09422399953,
+        "mean_ttft_ms": 15177.269168000028,
+        "p99_ttft_ms": 15177.269168000057,
+        "mean_tpot_ms": 189.66400581036146,
+        "p99_tpot_ms": 189.66400581036174,
+        "mean_e2e_latency_ms": 209203.54711199977
+      },
+      "feasible_configurations": 10,
+      "prediction_config": "best-agg-1x2node-c4.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c4-n8",
+      "candidate_id": "candidate-000014",
+      "layout": "agg-2x1node",
+      "concurrency": 4,
+      "parallelism": {
+        "aggregated": {
+          "tp": 16,
+          "attention_dp": 1,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 2,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 8.0,
+        "completed_requests": 8.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 65536.0,
+        "total_output_tokens": 8192.0,
+        "committed_prefill_tokens": 65536.0,
+        "output_throughput_tok_s": 26.393105480253887,
+        "request_throughput_rps": 0.025774517070560436,
+        "duration_ms": 310384.08898599976,
+        "mean_ttft_ms": 4883.594256999995,
+        "p99_ttft_ms": 4883.594257000001,
+        "mean_tpot_ms": 146.92908136461378,
+        "p99_tpot_ms": 146.92908136461386,
+        "mean_e2e_latency_ms": 155192.04449299988
+      },
+      "feasible_configurations": 6,
+      "prediction_config": "best-agg-2x1node-c4.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c8-n16",
+      "candidate_id": "candidate-000006",
+      "layout": "agg-1x2node",
+      "concurrency": 8,
+      "parallelism": {
+        "aggregated": {
+          "tp": 1,
+          "attention_dp": 32,
+          "moe_tp": 1,
+          "moe_ep": 32,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 32,
+          "nodes_per_replica": 2
+        }
+      },
+      "metrics": {
+        "num_requests": 16.0,
+        "completed_requests": 16.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 131072.0,
+        "total_output_tokens": 16384.0,
+        "committed_prefill_tokens": 131072.0,
+        "output_throughput_tok_s": 39.158035860712765,
+        "request_throughput_rps": 0.03824026939522731,
+        "duration_ms": 418407.09422399953,
+        "mean_ttft_ms": 15177.269168000028,
+        "p99_ttft_ms": 15177.269168000057,
+        "mean_tpot_ms": 189.66400581036146,
+        "p99_tpot_ms": 189.66400581036174,
+        "mean_e2e_latency_ms": 209203.5471119997
+      },
+      "feasible_configurations": 10,
+      "prediction_config": "best-agg-1x2node-c8.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c8-n16",
+      "candidate_id": "candidate-000014",
+      "layout": "agg-2x1node",
+      "concurrency": 8,
+      "parallelism": {
+        "aggregated": {
+          "tp": 16,
+          "attention_dp": 1,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 2,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 16.0,
+        "completed_requests": 16.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 131072.0,
+        "total_output_tokens": 16384.0,
+        "committed_prefill_tokens": 131072.0,
+        "output_throughput_tok_s": 50.532638350175056,
+        "request_throughput_rps": 0.04934827963884283,
+        "duration_ms": 324226.09495400003,
+        "mean_ttft_ms": 7325.391385499993,
+        "p99_ttft_ms": 9767.188514000001,
+        "mean_tpot_ms": 151.3075817121212,
+        "p99_tpot_ms": 153.69448017595315,
+        "mean_e2e_latency_ms": 162113.047477
+      },
+      "feasible_configurations": 6,
+      "prediction_config": "best-agg-2x1node-c8.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c16-n32",
+      "candidate_id": "candidate-000006",
+      "layout": "agg-1x2node",
+      "concurrency": 16,
+      "parallelism": {
+        "aggregated": {
+          "tp": 1,
+          "attention_dp": 32,
+          "moe_tp": 1,
+          "moe_ep": 32,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 32,
+          "nodes_per_replica": 2
+        }
+      },
+      "metrics": {
+        "num_requests": 32.0,
+        "completed_requests": 32.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 262144.0,
+        "total_output_tokens": 32768.0,
+        "committed_prefill_tokens": 262144.0,
+        "output_throughput_tok_s": 78.31607172142553,
+        "request_throughput_rps": 0.07648053879045462,
+        "duration_ms": 418407.09422399953,
+        "mean_ttft_ms": 15177.269168000039,
+        "p99_ttft_ms": 15177.269168000057,
+        "mean_tpot_ms": 189.66400581036146,
+        "p99_tpot_ms": 189.66400581036174,
+        "mean_e2e_latency_ms": 209203.54711199968
+      },
+      "feasible_configurations": 10,
+      "prediction_config": "best-agg-1x2node-c16.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c16-n32",
+      "candidate_id": "candidate-000014",
+      "layout": "agg-2x1node",
+      "concurrency": 16,
+      "parallelism": {
+        "aggregated": {
+          "tp": 16,
+          "attention_dp": 1,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 2,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 32.0,
+        "completed_requests": 32.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 262144.0,
+        "total_output_tokens": 32768.0,
+        "committed_prefill_tokens": 262144.0,
+        "output_throughput_tok_s": 97.21513978166345,
+        "request_throughput_rps": 0.09493665994303072,
+        "duration_ms": 337066.8403459997,
+        "mean_ttft_ms": 12208.985642499989,
+        "p99_ttft_ms": 19534.377028000003,
+        "mean_tpot_ms": 152.80980892521984,
+        "p99_tpot_ms": 159.97050431671565,
+        "mean_e2e_latency_ms": 168533.42017299985
+      },
+      "feasible_configurations": 6,
+      "prediction_config": "best-agg-2x1node-c16.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c32-n64",
+      "candidate_id": "candidate-000006",
+      "layout": "agg-1x2node",
+      "concurrency": 32,
+      "parallelism": {
+        "aggregated": {
+          "tp": 1,
+          "attention_dp": 32,
+          "moe_tp": 1,
+          "moe_ep": 32,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 32,
+          "nodes_per_replica": 2
+        }
+      },
+      "metrics": {
+        "num_requests": 64.0,
+        "completed_requests": 64.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 524288.0,
+        "total_output_tokens": 65536.0,
+        "committed_prefill_tokens": 524288.0,
+        "output_throughput_tok_s": 156.63214344285106,
+        "request_throughput_rps": 0.15296107758090924,
+        "duration_ms": 418407.09422399953,
+        "mean_ttft_ms": 15177.269168000037,
+        "p99_ttft_ms": 15177.269168000057,
+        "mean_tpot_ms": 189.66400581036126,
+        "p99_tpot_ms": 189.66400581036174,
+        "mean_e2e_latency_ms": 209203.5471119997
+      },
+      "feasible_configurations": 10,
+      "prediction_config": "best-agg-1x2node-c32.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c32-n64",
+      "candidate_id": "candidate-000004",
+      "layout": "agg-2x1node",
+      "concurrency": 32,
+      "parallelism": {
+        "aggregated": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 2,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 64.0,
+        "completed_requests": 64.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 524288.0,
+        "total_output_tokens": 65536.0,
+        "committed_prefill_tokens": 524288.0,
+        "output_throughput_tok_s": 153.45021776608726,
+        "request_throughput_rps": 0.1498537282871946,
+        "duration_ms": 427083.1345440004,
+        "mean_ttft_ms": 10719.728700000018,
+        "p99_ttft_ms": 17151.56592000008,
+        "mean_tpot_ms": 198.26181678592383,
+        "p99_tpot_ms": 204.54904769501493,
+        "mean_e2e_latency_ms": 213541.56727200004
+      },
+      "feasible_configurations": 6,
+      "prediction_config": "best-agg-2x1node-c32.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c64-n128",
+      "candidate_id": "candidate-000006",
+      "layout": "agg-1x2node",
+      "concurrency": 64,
+      "parallelism": {
+        "aggregated": {
+          "tp": 1,
+          "attention_dp": 32,
+          "moe_tp": 1,
+          "moe_ep": 32,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 32,
+          "nodes_per_replica": 2
+        }
+      },
+      "metrics": {
+        "num_requests": 128.0,
+        "completed_requests": 128.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 1048576.0,
+        "total_output_tokens": 131072.0,
+        "committed_prefill_tokens": 1048576.0,
+        "output_throughput_tok_s": 281.03194013916055,
+        "request_throughput_rps": 0.274445254042149,
+        "duration_ms": 466395.38529,
+        "mean_ttft_ms": 22765.90375200002,
+        "p99_ttft_ms": 30354.538336000114,
+        "mean_tpot_ms": 205.7006734046921,
+        "p99_tpot_ms": 213.1186935259042,
+        "mean_e2e_latency_ms": 233197.69264499942
+      },
+      "feasible_configurations": 10,
+      "prediction_config": "best-agg-1x2node-c64.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c64-n128",
+      "candidate_id": "candidate-000004",
+      "layout": "agg-2x1node",
+      "concurrency": 64,
+      "parallelism": {
+        "aggregated": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 2,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 128.0,
+        "completed_requests": 128.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 1048576.0,
+        "total_output_tokens": 131072.0,
+        "committed_prefill_tokens": 1048576.0,
+        "output_throughput_tok_s": 144.27726347769635,
+        "request_throughput_rps": 0.14089576511493784,
+        "duration_ms": 908473.0112050002,
+        "mean_ttft_ms": 115564.79942212511,
+        "p99_ttft_ms": 248834.21482200018,
+        "mean_tpot_ms": 216.45139832044237,
+        "p99_tpot_ms": 226.47375259237555,
+        "mean_e2e_latency_ms": 336994.57990393747
+      },
+      "feasible_configurations": 6,
+      "prediction_config": "best-agg-2x1node-c64.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c128-n256",
+      "candidate_id": "candidate-000006",
+      "layout": "agg-1x2node",
+      "concurrency": 128,
+      "parallelism": {
+        "aggregated": {
+          "tp": 1,
+          "attention_dp": 32,
+          "moe_tp": 1,
+          "moe_ep": 32,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 32,
+          "nodes_per_replica": 2
+        }
+      },
+      "metrics": {
+        "num_requests": 256.0,
+        "completed_requests": 256.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 2097152.0,
+        "total_output_tokens": 262144.0,
+        "committed_prefill_tokens": 2097152.0,
+        "output_throughput_tok_s": 507.5840544101872,
+        "request_throughput_rps": 0.49568755313494844,
+        "duration_ms": 516454.36400599976,
+        "mean_ttft_ms": 37943.1729199999,
+        "p99_ttft_ms": 60709.07667199994,
+        "mean_tpot_ms": 215.3313871779081,
+        "p99_tpot_ms": 237.58544754154445,
+        "mean_e2e_latency_ms": 258227.18200299927
+      },
+      "feasible_configurations": 10,
+      "prediction_config": "best-agg-1x2node-c128.yaml"
+    },
+    {
+      "case": "agg-isl8192-osl1024-c128-n256",
+      "candidate_id": "candidate-000004",
+      "layout": "agg-2x1node",
+      "concurrency": 128,
+      "parallelism": {
+        "aggregated": {
+          "tp": 4,
+          "attention_dp": 4,
+          "moe_tp": 16,
+          "moe_ep": 1,
+          "pp": 1,
+          "replicas": 2,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 256.0,
+        "completed_requests": 256.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 2097152.0,
+        "total_output_tokens": 262144.0,
+        "committed_prefill_tokens": 2097152.0,
+        "output_throughput_tok_s": 161.74325766616178,
+        "request_throughput_rps": 0.15795240006461111,
+        "duration_ms": 1620741.437897,
+        "mean_ttft_ms": 403287.8921214376,
+        "p99_ttft_ms": 712199.5126260003,
+        "mean_tpot_ms": 216.5865925901147,
+        "p99_tpot_ms": 226.47375259237555,
+        "mean_e2e_latency_ms": 624855.9763411235
+      },
+      "feasible_configurations": 6,
+      "prediction_config": "best-agg-2x1node-c128.yaml"
+    }
+  ],
+  "reference_pd_tp16_adp2_ep16": [
+    {
+      "case": "pd-isl8192-osl1024-c1-n2",
+      "candidate_id": "candidate-000028",
+      "layout": "pd-1p1d",
+      "concurrency": 1,
+      "parallelism": {
+        "prefill": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 2.0,
+        "completed_requests": 2.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 16384.0,
+        "total_output_tokens": 2048.0,
+        "committed_prefill_tokens": 16384.0,
+        "output_throughput_tok_s": 4.917349373392403,
+        "request_throughput_rps": 0.0048020989974535185,
+        "duration_ms": 416484.5416682518,
+        "mean_ttft_ms": 2390.5646371259577,
+        "p99_ttft_ms": 2390.5646371259645,
+        "mean_tpot_ms": 201.2235642199413,
+        "p99_tpot_ms": 201.2235642199413,
+        "mean_e2e_latency_ms": 208242.2708341259
+      }
+    },
+    {
+      "case": "pd-isl8192-osl1024-c2-n4",
+      "candidate_id": "candidate-000028",
+      "layout": "pd-1p1d",
+      "concurrency": 2,
+      "parallelism": {
+        "prefill": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 4.0,
+        "completed_requests": 4.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 32768.0,
+        "total_output_tokens": 4096.0,
+        "committed_prefill_tokens": 32768.0,
+        "output_throughput_tok_s": 9.83164332858053,
+        "request_throughput_rps": 0.009601214188066923,
+        "duration_ms": 416613.9741962518,
+        "mean_ttft_ms": 2455.2809011259515,
+        "p99_ttft_ms": 2455.2809011259524,
+        "mean_tpot_ms": 201.2235642199413,
+        "p99_tpot_ms": 201.2235642199413,
+        "mean_e2e_latency_ms": 208306.9870981259
+      }
+    },
+    {
+      "case": "pd-isl8192-osl1024-c4-n8",
+      "candidate_id": "candidate-000028",
+      "layout": "pd-1p1d",
+      "concurrency": 4,
+      "parallelism": {
+        "prefill": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 8.0,
+        "completed_requests": 8.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 65536.0,
+        "total_output_tokens": 8192.0,
+        "committed_prefill_tokens": 65536.0,
+        "output_throughput_tok_s": 19.527639221517607,
+        "request_throughput_rps": 0.019069960177263288,
+        "duration_ms": 419507.95521525166,
+        "mean_ttft_ms": 3210.143147375942,
+        "p99_ttft_ms": 5071.571902125952,
+        "mean_tpot_ms": 201.2609521436949,
+        "p99_tpot_ms": 201.26132816129072,
+        "mean_e2e_latency_ms": 209100.09719037582
+      }
+    },
+    {
+      "case": "pd-isl8192-osl1024-c8-n16",
+      "candidate_id": "candidate-000028",
+      "layout": "pd-1p1d",
+      "concurrency": 8,
+      "parallelism": {
+        "prefill": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 16.0,
+        "completed_requests": 16.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 131072.0,
+        "total_output_tokens": 16384.0,
+        "committed_prefill_tokens": 131072.0,
+        "output_throughput_tok_s": 38.57958647833815,
+        "request_throughput_rps": 0.0376753774202521,
+        "duration_ms": 424680.5498861261,
+        "mean_ttft_ms": 4523.141537937976,
+        "p99_ttft_ms": 9901.419498125952,
+        "mean_tpot_ms": 201.34986334714083,
+        "p99_tpot_ms": 201.35019766862175,
+        "mean_e2e_latency_ms": 210504.05174206305
+      }
+    },
+    {
+      "case": "pd-isl8192-osl1024-c16-n32",
+      "candidate_id": "candidate-000028",
+      "layout": "pd-1p1d",
+      "concurrency": 16,
+      "parallelism": {
+        "prefill": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 32.0,
+        "completed_requests": 32.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 262144.0,
+        "total_output_tokens": 32768.0,
+        "committed_prefill_tokens": 262144.0,
+        "output_throughput_tok_s": 39.2834174469584,
+        "request_throughput_rps": 0.038362712350545315,
+        "duration_ms": 834143.3136321271,
+        "mean_ttft_ms": 96445.7061827507,
+        "p99_ttft_ms": 216098.56044312616,
+        "mean_tpot_ms": 201.35460963208732,
+        "p99_tpot_ms": 201.36510989345126,
+        "mean_e2e_latency_ms": 302431.47183637595
+      }
+    },
+    {
+      "case": "pd-isl8192-osl1024-c32-n64",
+      "candidate_id": "candidate-000028",
+      "layout": "pd-1p1d",
+      "concurrency": 32,
+      "parallelism": {
+        "prefill": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 64.0,
+        "completed_requests": 64.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 524288.0,
+        "total_output_tokens": 65536.0,
+        "committed_prefill_tokens": 524288.0,
+        "output_throughput_tok_s": 44.806774869603125,
+        "request_throughput_rps": 0.0437566160835968,
+        "duration_ms": 1462635.9560741242,
+        "mean_ttft_ms": 350471.9668666563,
+        "p99_ttft_ms": 628289.552361127,
+        "mean_tpot_ms": 201.35724707053367,
+        "p99_tpot_ms": 201.36510989345126,
+        "mean_e2e_latency_ms": 556460.4306198123
+      }
+    },
+    {
+      "case": "pd-isl8192-osl1024-c64-n128",
+      "candidate_id": "candidate-000028",
+      "layout": "pd-1p1d",
+      "concurrency": 64,
+      "parallelism": {
+        "prefill": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 128.0,
+        "completed_requests": 128.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 1048576.0,
+        "total_output_tokens": 131072.0,
+        "committed_prefill_tokens": 1048576.0,
+        "output_throughput_tok_s": 48.20181280286199,
+        "request_throughput_rps": 0.04707208281529491,
+        "duration_ms": 2719233.8291521184,
+        "mean_ttft_ms": 849299.7072416237,
+        "p99_ttft_ms": 1256745.6559321242,
+        "mean_tpot_ms": 201.3629112372609,
+        "p99_tpot_ms": 201.36510989345126,
+        "mean_e2e_latency_ms": 1055293.965437342
+      }
+    },
+    {
+      "case": "pd-isl8192-osl1024-c128-n256",
+      "candidate_id": "candidate-000028",
+      "layout": "pd-1p1d",
+      "concurrency": 128,
+      "parallelism": {
+        "prefill": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        },
+        "decode": {
+          "tp": 8,
+          "attention_dp": 2,
+          "moe_tp": 1,
+          "moe_ep": 16,
+          "pp": 1,
+          "replicas": 1,
+          "global_tp": 16,
+          "nodes_per_replica": 1
+        }
+      },
+      "metrics": {
+        "num_requests": 256.0,
+        "completed_requests": 256.0,
+        "rejected_requests": 0.0,
+        "failed_requests": 0.0,
+        "canceled_requests": 0.0,
+        "total_input_tokens": 2097152.0,
+        "total_output_tokens": 262144.0,
+        "committed_prefill_tokens": 2097152.0,
+        "output_throughput_tok_s": 48.28871366316427,
+        "request_throughput_rps": 0.04715694693668386,
+        "duration_ms": 5428680.536586117,
+        "mean_ttft_ms": 1851559.993215119,
+        "p99_ttft_ms": 2510837.660668118,
+        "mean_tpot_ms": 201.36110318367375,
+        "p99_tpot_ms": 201.36510989345422,
+        "mean_e2e_latency_ms": 2057552.4017720192
+      }
+    }
+  ],
+  "failures": [],
+  "matches_existing_four_node_search_subset": 144,
+  "archive": {
+    "path": "benchmarks/evidence/ascend910c-glm52-w8a8/production/two-node-8k-eager-20261031/search-evidence.tar.gz",
+    "sha256": "283d3a07750ab5a95a0618b60fd298277ec686ca7b1f2d945a73e4332b2a0352",
+    "bytes": 1318803
+  },
+  "limitations": [
+    "Predictions have not been compared with matching eager two-node serving measurements.",
+    "FiniteN=2C cold runs are not steady-state throughput or a latency-SLA search.",
+    "PP1/CP1;no eager DCP;fixed scheduler and memory controls.",
+    "Host KV backup/restore time, CPU overhead and cross-request sender contention remain uncalibrated.",
+    "balanced expert routing and anchored shape extrapolation remain modeling assumptions."
+  ]
+}

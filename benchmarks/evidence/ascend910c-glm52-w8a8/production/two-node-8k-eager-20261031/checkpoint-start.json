@@ -1,0 +1,59 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Running CPU-only exact32-device8K/1K searches for C1,2,4,8,16,32,64,128 with N=2C, PD and aggregated modes. Continue fidelity audit after prediction results; NPU/services remain deferred. Serving accuracy is not accepted."
+  },
+  "research": {
+    "sglang_pinned_scheduler_alignment": {
+      "two_node_8k_search": {
+        "status": "running",
+        "input_tokens": 8192,
+        "output_tokens": 1024,
+        "concurrencies": [
+          1,
+          2,
+          4,
+          8,
+          16,
+          32,
+          64,
+          128
+        ],
+        "requests": "2*concurrency",
+        "min_devices": 32,
+        "max_devices": 32,
+        "image_id": "sha256:b3c49d92579f638228c66076901af4768278c8fa309a90d0a002eed79e653cd9",
+        "runtime_source": "db5f2e721670d3eb2a10785fe55ad2d28af81349",
+        "execution": "eager, synchronous scheduler, CPU-only",
+        "serving_measured": false
+      }
+    }
+  },
+  "configurations": {
+    "united-tp16-dp2-ep16": {
+      "progress": {
+        "stage": 2,
+        "status": "in_progress",
+        "next_action": "Running CPU-only exact32-device8K/1K searches for C1,2,4,8,16,32,64,128 with N=2C, PD and aggregated modes. Continue fidelity audit after prediction results; NPU/services remain deferred. Serving accuracy is not accepted."
+      },
+      "artifacts": {
+        "two_node_8k_20261031_search_pd_yaml": {
+          "path": "production/two-node-8k-eager-20261031/search-pd.yaml",
+          "kind": "file",
+          "scope": "validation"
+        },
+        "two_node_8k_20261031_search_agg_yaml": {
+          "path": "production/two-node-8k-eager-20261031/search-agg.yaml",
+          "kind": "file",
+          "scope": "validation"
+        },
+        "two_node_8k_20261031_run_search_py": {
+          "path": "production/two-node-8k-eager-20261031/run_search.py",
+          "kind": "file",
+          "scope": "validation"
+        }
+      }
+    }
+  }
+}
