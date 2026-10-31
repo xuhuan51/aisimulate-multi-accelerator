@@ -1181,6 +1181,14 @@
           "scope": "validation",
           "sha256": "f4a3a9418942a8bd505aebeb19b97904cb44aedfc20deae7e5a8671d04e39c95"
         },
+        "four_node_memory_capacity_source_audit_20261101": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/memory-capacity-source-audit.json",
+          "scope": "validation",
+          "sha256": "a7ad5e6f34f891796152e99551f64b2aba5d9dcbbac9b9d0083833336aa04bb6"
+        },
         "four_node_mid_c64_diagnostic_summary": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -2888,13 +2896,13 @@
       },
       "progress": {
         "blockers": [
-          "Original multi-case transport SIGSEGV unresolved; only isolated samples published",
-          "Matched eager/no-overlap serving measurements absent; matching full weights found on20, but user explicitly deferred service/NPU measurement",
-          "Nonuniform sender traffic and expert skew approximations",
-          "Cross-request PD sender contention, host/bootstrap/metadata costs",
-          "DCP eager profiles missing"
+          "Serving accuracy not accepted; matched recommended C4 already shows TTFT -52.22%, TPOT -42.88%, throughput +75.96% prediction errors",
+          "Known decode LM-head/global-TP versus modeled attention-TP layout mismatch; timing contribution not independently isolated",
+          "Remaining serving matrix and full stock/observed-KV comparisons pending",
+          "Cross-request PD sender contention and host/bootstrap/metadata costs remain approximation limits",
+          "DCP eager profiles remain unavailable for broader strategy coverage"
         ],
-        "next_action": "Single-node294 candidates and7 saved-config replays complete. Prepare four-node20/25/31/32 PD scripts and workload comparisons without launching services; serving accuracy unaccepted.",
+        "next_action": "Authorized four-node serving campaign is running: 11/24 complete points, recommended group archived, 1P3D C128 retry after preserved bootstrap timeout. Finish 1P3D, 2P2D and 3P1D; then run 48 matched offline prediction jobs and report accuracy without fitting the frozen model.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -3280,6 +3288,13 @@
         "ROUTER_REQUEST_TIMEOUT": 21600
       },
       "validation": "Positive/invalid timeout configuration checks and prefill/decode exports passed; actual launch-server environments on all four nodes report7200, and the actual router command sets21600. Retried runtime PD/TP/ADP/EP/graph/overlap/quantization parameters match the candidate; prior11 client-file hashes are unchanged; interrupted raw metric gzip integrity passes."
+    },
+    "four_node_capacity_source_audit_20261101": {
+      "accuracy_accepted": false,
+      "confidence": "Frozen predictor source hashes match the audited checkout; original serving startup logs are hashed and retained.",
+      "finding": "EP shared experts already retain full per-rank weights. Runtime/communication overhead uses fixed system constants, while the known decode LM-head layout mismatch also affects weight residency. Neither finding quantifies total capacity or latency error by itself.",
+      "next_action": "Complete the unchanged four-configuration serving matrix, then run paired stock/observed-KV predictions. Preserve allocation-stage and mem_fraction_static distinctions before changing memory accounting.",
+      "status": "source_audited_not_calibrated"
     },
     "four_node_control_c64_complete_20261101": {
       "accuracy_accepted": false,
@@ -4313,7 +4328,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 122,
+  "revision": 123,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

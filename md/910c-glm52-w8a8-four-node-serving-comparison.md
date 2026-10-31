@@ -116,6 +116,19 @@ C64 测试中的额外只读采样确实观察到各 D rank 运行约 3 条，�
 `control-1p3d-c64-admission-window.json`。后续 `observed-kv` 预测正是用来区分
 这种容量/准入偏差与 forward 耗时偏差。
 
+显存源码核对也排除了一个猜测：EP16/32 下，共享专家的 2048 intermediate
+维度按每个 rank 完整计入权重，没有再除以 attention TP。当前容量模型的限制
+是运行时/通信开销仍来自固定系统常数：`nccl_mem=0`，SGLang 的
+`other_mem × 1.2` 约为 1.048 GiB；它没有按本次 HCCL 缓冲区、通信组或
+DeepEP 布局逐项推算。这不等于这些开销都应再次从 KV 预算扣除，必须区分
+分配发生的阶段以及 `mem_fraction_static` 已预留的空间，避免重复扣减。
+
+LM head 布局差异也影响驻留权重：TP16/ADP4 的 D 实际按 TP16 分片，
+冻结模型按 TP4 分片，仅这块 BF16 矩阵的模型估计就多约 0.332 GiB/rank。
+这是矩阵形状推导的差值，不是已测出的总显存误差或 TPOT 归因；实际 allocator
+保留空间与其他张量还需分别核对。上述源码哈希和启动日志证据记录于
+`memory-capacity-source-audit.json`，本轮保持原容量预测与实测容量诊断分开。
+
 ### C128 的等待超时与重测
 
 2026-11-01 06:13（Asia/Shanghai），1P3D C128 的 P 日志明确报告等待 Decode KV

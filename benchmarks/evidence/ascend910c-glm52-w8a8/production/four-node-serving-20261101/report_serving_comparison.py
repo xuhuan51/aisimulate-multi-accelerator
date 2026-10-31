@@ -106,7 +106,7 @@ def write_report(measurement_root, prediction_root, output):
         regret = 100 * (1 - selected["measured_output_tok_s"] / actual_best["measured_output_tok_s"])
         rankings.append({"concurrency": concurrency, "measured_best": actual_best["configuration"], "predicted_choice": selected["configuration"], "selected_measured_tok_s": selected["measured_output_tok_s"], "best_measured_tok_s": actual_best["measured_output_tok_s"], "selection_loss_percent": regret})
         lines.append(f"| {concurrency} | {actual_best['configuration']} | {selected['configuration']} | {selected['measured_output_tok_s']:.2f} | {actual_best['measured_output_tok_s']:.2f} | {regret:.1f}% |")
-    lines.extend(["", "## 实际 KV 容量诊断", "", "下表为所有 24 个点的未加权平均绝对百分比误差。实际容量取同一角色各副本容量的最小值；副本容量不完全一致时，这是保守近似。", "", "| 口径 | TTFT MAPE | TPOT MAPE | 输出吞吐 MAPE |", "|---|---:|---:|---:|"])
+    lines.extend(["", "## 实际 KV 容量诊断", "", "下表为所有 24 个点的未加权平均绝对百分比误差。实际容量取同一角色各副本容量的最小值；副本容量不完全一致时，这是保守近似。", "", "源码核对：EP 模式下共享专家权重已经完整计入每个 rank；运行时/通信开销仍采用固定系统常数，未按 HCCL 缓冲区与 DeepEP 布局分别建模。已知 LM-head 分片差异还会影响驻留权重。不能把全部容量偏差归因于漏计某个缓冲区，或在未核对分配阶段和 mem_fraction_static 预留空间时重复扣减。证据见 memory-capacity-source-audit.json。", "", "| 口径 | TTFT MAPE | TPOT MAPE | 输出吞吐 MAPE |", "|---|---:|---:|---:|"])
     for mode in ("stock", "observed-kv"):
         selected = [row for row in comparisons if row["mode"] == mode]
         errors = [statistics.mean(abs(row[f"error_percent_{metric}"]) for row in selected) for metric in ("ttft_ms", "tpot_ms", "output_tok_s")]

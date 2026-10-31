@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "predictor_revision": "db5f2e721670d3eb2a10785fe55ad2d28af81349",
+  "sources": [
+    {
+      "path": "python/aisimulate/src/aisimulate_core/sdk/models/ascend_glm52.py",
+      "sha256": "7163afc553476e2882a8b4065cc7f48d498cb8a64be93cc3db298062056fb29d",
+      "matches_frozen_predictor_source": true
+    },
+    {
+      "path": "python/aisimulate/src/aisimulate_core/sdk/backends/base_backend.py",
+      "sha256": "ee06a85e323fdce6f25429b6b5d7db2b219fd7add99d269386b654254bbc71d2",
+      "matches_frozen_predictor_source": true
+    },
+    {
+      "path": "python/aisimulate/src/aisimulate_core/sdk/backends/sglang_backend.py",
+      "sha256": "768f8f6ac175a8fd949e40d7fdcd3fc81b96bc7d7418836c4d1fc5f8ccd72c0b",
+      "matches_frozen_predictor_source": true
+    },
+    {
+      "path": "python/aisimulate/src/aisimulate_core/sdk/memory/kv_cache.py",
+      "sha256": "5c82103183c255349b339825ac1fb3787828ee64ad57303b23cafade8f83aa5e",
+      "matches_frozen_predictor_source": true
+    },
+    {
+      "path": "python/aisimulate/src/aisimulate_core/systems/ascend910c.yaml",
+      "sha256": "ae1880b84b576371fa6b775ff6a5d25216ed0c50a32b11394b5e2b7d0db8b05f",
+      "matches_frozen_predictor_source": true
+    }
+  ],
+  "shared_expert_inventory": {
+    "intermediate_size_per_rank": 2048,
+    "moe_layers": 75,
+    "tensor_moe": false,
+    "finding": "Both shared projections retain full intermediate size per rank in EP16/32; attention TP only affects token split, not weight inventory."
+  },
+  "runtime_overhead_model": {
+    "communication_bytes_by_local_tp": {
+      "1": 0,
+      "2": 0,
+      "4": 0,
+      "8": 0,
+      "16": 0
+    },
+    "base_other_memory_bytes": 937753092,
+    "sglang_overhead_multiplier": 1.2,
+    "estimated_runtime_gib": 1.0480207487940787,
+    "finding": "Fixed system constants do not resolve allocations by HCCL_BUFFSIZE, communication group count, or DeepEP layout. Allocation stage and mem_fraction_static headroom must be reconciled before changing KV-budget deductions."
+  },
+  "lm_head_weight_layout": {
+    "control_decode_modeled_tp": 4,
+    "control_decode_actual_tp": 16,
+    "vocab_size": 154880,
+    "hidden_size": 6144,
+    "element_bytes": 2,
+    "modeled_minus_actual_matrix_bytes_per_rank": 356843520,
+    "difference_gib_per_rank": 0.33233642578125,
+    "scope": "Shape-derived BF16 matrix size only; not a measured total-residency error or independently measured latency contribution. Serving flag/source audit is in logits-layout-audit.json."
+  },
+  "startup_log_evidence": [
+    {
+      "path": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/control-1p3d-tp16-20261101/failed-attempts/bootstrap-timeout-1793485208156630119/worker-logs/10.120.72.20-glm52-aisim-eager-prefill-0.log.gz",
+      "sha256": "3fa6f1036e53a58ae1cadddfd8ca5f1e1ef2d916decfbde07815eb21878fa042",
+      "rank_zero_startup_lines": [
+        "[2026-10-31 20:27:45 DP0 TP0 EP0] Load weight begin. avail mem=60.77 GB",
+        "[2026-10-31 20:28:55 DP0 TP0 EP0] Load weight end. elapsed=69.77 s, type=GlmMoeDsaForCausalLM, avail mem=9.08 GB, mem usage=51.69 GB.",
+        "[2026-10-31 20:29:07 DP0 TP0 EP0] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 17408, KV size: 1.79 GB",
+        "[2026-10-31 20:29:07 DP0 TP0 EP0] Memory pool end. avail mem=7.26 GB"
+      ]
+    },
+    {
+      "path": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/control-1p3d-tp16-20261101/failed-attempts/bootstrap-timeout-1793485208156630119/worker-logs/10.120.72.25-glm52-aisim-eager-decode-0.log.gz",
+      "sha256": "7f8c1966a740129bec2c281dcd4aac2f12fc1b70ea375e1159bc7b91ceaa0b5f",
+      "rank_zero_startup_lines": [
+        "[2026-10-31 20:28:33 DP0 TP0 EP0] Load weight begin. avail mem=60.76 GB",
+        "[2026-10-31 20:29:41 DP0 TP0 EP0] Load weight end. elapsed=68.75 s, type=GlmMoeDsaForCausalLM, avail mem=9.41 GB, mem usage=51.35 GB.",
+        "[2026-10-31 20:29:55 DP0 TP0 EP0] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 32512, KV size: 3.34 GB",
+        "[2026-10-31 20:29:55 DP0 TP0 EP0] Memory pool end. avail mem=6.03 GB"
+      ]
+    },
+    {
+      "path": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/control-1p3d-tp16-20261101/failed-attempts/bootstrap-timeout-1793485208156630119/worker-logs/10.120.72.31-glm52-aisim-eager-decode-1.log.gz",
+      "sha256": "595f49c703145a460ed927469419b0f5dfb963c8de36425c189756b4354031f9",
+      "rank_zero_startup_lines": [
+        "[2026-10-31 20:28:30 DP0 TP0 EP0] Load weight begin. avail mem=60.76 GB",
+        "[2026-10-31 20:29:37 DP0 TP0 EP0] Load weight end. elapsed=67.20 s, type=GlmMoeDsaForCausalLM, avail mem=9.41 GB, mem usage=51.36 GB.",
+        "[2026-10-31 20:29:47 DP0 TP0 EP0] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 32384, KV size: 3.33 GB",
+        "[2026-10-31 20:29:47 DP0 TP0 EP0] Memory pool end. avail mem=6.02 GB"
+      ]
+    },
+    {
+      "path": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/control-1p3d-tp16-20261101/failed-attempts/bootstrap-timeout-1793485208156630119/worker-logs/10.120.72.32-glm52-aisim-eager-decode-2.log.gz",
+      "sha256": "104d83f4d00edd86ae19dbd5c82f23130a2878a5aab1208427d96c540f2afa78",
+      "rank_zero_startup_lines": [
+        "[2026-10-31 20:28:30 DP0 TP0 EP0] Load weight begin. avail mem=60.77 GB",
+        "[2026-10-31 20:29:41 DP0 TP0 EP0] Load weight end. elapsed=71.16 s, type=GlmMoeDsaForCausalLM, avail mem=9.41 GB, mem usage=51.36 GB.",
+        "[2026-10-31 20:29:58 DP0 TP0 EP0] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 32512, KV size: 3.34 GB",
+        "[2026-10-31 20:29:58 DP0 TP0 EP0] Memory pool end. avail mem=6.03 GB"
+      ]
+    }
+  ],
+  "predictor_or_serving_configuration_modified": false,
+  "accuracy_accepted": false,
+  "next_action": "After the full serving matrix, compare frozen stock predictions with observed-KV diagnostics; separately reconcile live weight layouts, allocator reservations and allocation lifetimes before calibrating capacity."
+}
