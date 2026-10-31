@@ -1,0 +1,107 @@
+{
+  "serving_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+  "serving_sources": [
+    "python/sglang/srt/models/deepseek_v2.py",
+    "python/sglang/srt/layers/logits_processor.py"
+  ],
+  "predictor_revision": "db5f2e721670d3eb2a10785fe55ad2d28af81349",
+  "predictor_source": "python/aisimulate/src/aisimulate_core/sdk/models/ascend_glm52.py",
+  "finding": "Decode LM-head and logits exchange use global TP in saved serving configuration, but frozen predictor assumes attention-local TP. The recommended decode enables the conditional TP LM-head all-to-all path; TP16 controls disable that option. Enabling it does not prove every batch takes that branch. Full end-to-end error cannot be attributed only to operator latency.",
+  "verified_live_source_sha256": {
+    "python/sglang/srt/models/deepseek_v2.py": "1edf877e54ca6acf37e2d7dccb1704054175e2b78b8737bb9b617ffc97a2134e",
+    "python/sglang/srt/layers/logits_processor.py": "5643e7542ea6540b1f95f0e6c9aaa1b6f8eb1ea49dc8075d6dd327839ff8aa82"
+  },
+  "timing_impact_measured": false,
+  "serving_flags_changed_during_campaign": false,
+  "cases": [
+    {
+      "configuration": "recommended-2p1d-dtp32",
+      "runtime": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/recommended-2p1d-dtp32-20261101/runtime-config.json",
+      "layout": [
+        {
+          "replica": "P0",
+          "role": "prefill",
+          "actual_enable_dp_lm_head": true,
+          "actual_lm_head_tp": 4,
+          "modeled_lm_head_tp": 4,
+          "aligned": true,
+          "actual_enable_tp_lm_head_all_to_all": false,
+          "actual_max_req_input_len": 17274,
+          "scope": "original recommendation replay; known LM-head layout mismatch is reported, not fitted or silently changed"
+        },
+        {
+          "replica": "P1",
+          "role": "prefill",
+          "actual_enable_dp_lm_head": true,
+          "actual_lm_head_tp": 4,
+          "modeled_lm_head_tp": 4,
+          "aligned": true,
+          "actual_enable_tp_lm_head_all_to_all": false,
+          "actual_max_req_input_len": 17274,
+          "scope": "original recommendation replay; known LM-head layout mismatch is reported, not fitted or silently changed"
+        },
+        {
+          "replica": "D0",
+          "role": "decode",
+          "actual_enable_dp_lm_head": false,
+          "actual_lm_head_tp": 32,
+          "modeled_lm_head_tp": 1,
+          "aligned": false,
+          "actual_enable_tp_lm_head_all_to_all": true,
+          "actual_max_req_input_len": 123898,
+          "scope": "original recommendation replay; known LM-head layout mismatch is reported, not fitted or silently changed"
+        }
+      ]
+    },
+    {
+      "configuration": "control-1p3d-tp16",
+      "runtime": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/control-1p3d-tp16-20261101/c4-n8/runtime-config.json",
+      "layout": [
+        {
+          "replica": "P0",
+          "role": "prefill",
+          "actual_enable_dp_lm_head": true,
+          "actual_lm_head_tp": 4,
+          "modeled_lm_head_tp": 4,
+          "aligned": true,
+          "actual_enable_tp_lm_head_all_to_all": false,
+          "actual_max_req_input_len": 17402,
+          "scope": "original recommendation replay; known LM-head layout mismatch is reported, not fitted or silently changed"
+        },
+        {
+          "replica": "D0",
+          "role": "decode",
+          "actual_enable_dp_lm_head": false,
+          "actual_lm_head_tp": 16,
+          "modeled_lm_head_tp": 4,
+          "aligned": false,
+          "actual_enable_tp_lm_head_all_to_all": false,
+          "actual_max_req_input_len": 32506,
+          "scope": "original recommendation replay; known LM-head layout mismatch is reported, not fitted or silently changed"
+        },
+        {
+          "replica": "D1",
+          "role": "decode",
+          "actual_enable_dp_lm_head": false,
+          "actual_lm_head_tp": 16,
+          "modeled_lm_head_tp": 4,
+          "aligned": false,
+          "actual_enable_tp_lm_head_all_to_all": false,
+          "actual_max_req_input_len": 32378,
+          "scope": "original recommendation replay; known LM-head layout mismatch is reported, not fitted or silently changed"
+        },
+        {
+          "replica": "D2",
+          "role": "decode",
+          "actual_enable_dp_lm_head": false,
+          "actual_lm_head_tp": 16,
+          "modeled_lm_head_tp": 4,
+          "aligned": false,
+          "actual_enable_tp_lm_head_all_to_all": false,
+          "actual_max_req_input_len": 32506,
+          "scope": "original recommendation replay; known LM-head layout mismatch is reported, not fitted or silently changed"
+        }
+      ]
+    }
+  ]
+}

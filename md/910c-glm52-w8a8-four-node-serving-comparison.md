@@ -96,6 +96,25 @@ TTFT/TPOT/吞吐；它们不是两个完整的 1K 输出请求。
 结果完全相同，因此低并发误差不能靠容量修正解决。其余点的预测在采集结束后运行；
 当前不能宣称精度已通过验收，也不能据此提前确定四组实测排序。
 
+### 已确认的执行路径差异
+
+冻结模拟器版本 `db5f2e721670d3eb2a10785fe55ad2d28af81349` 的
+`ascend_glm52.py` 按 attention-local TP 划分 LM head 词表和 logits gather。
+实际镜像的 `DeepseekV2ForCausalLM` 与 `LogitsProcessor` 则依据
+`enable_dp_lm_head` 选择 attention TP 或全局 TP。原始 server-info 确认 P 为 true、
+D 为 false；因而推荐 D 是实际 TP32 对模拟 TP1，对照 D 是实际 TP16 对模拟 TP4。
+这不是调度排队差异，而是最后输出层的算子与通信路径尚未对齐。
+
+推荐组 D 的 `enable_tp_lm_head_all_to_all` 为 true，对照组 D 为 false。
+该选项还受每轮 token 布局等条件限制，当前没有逐轮分支记录，不能声称每轮都执行
+all-to-all。源码副本已与运行中镜像的文件哈希核对一致，证据见
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/logits-layout-audit.json`。
+
+当前数据仍按冻结启动配置完整采集，用于复现原推荐和定位误差。不会在中途切换
+该开关、覆盖已有数据，或把该路径差异的影响伪装成纯算子耗时误差。
+每个预测输入会从已保存的完整 server-info 校验哈希并写出 `logits_layout_audit`；
+后续应支持真实的输出层分组，或另做开启 D DP LM-head 的独立对照，才能归因其影响。
+
 ## 运行与保存
 
 ```bash

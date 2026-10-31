@@ -62,6 +62,7 @@ def write_report(measurement_root, prediction_root, output):
         "每档输入 8192、输出 1024 token；并发 C=4/8/16/32/64/128；正式请求数 N=2C；预热 2 条，预热输出由镜像基准脚本限制为 32 token且不计入正式结果。随机种子 910、token-ID 请求、ignore-EOS、流式响应。每个点只测一轮，包含启动填充与末尾排空，不能当成长时间稳态吞吐。", "",
         "服务使用固定 digest 的 SGLang 0.5.22/CANN 9.1.0 A3；关闭 graph、调度 overlap、投机解码和前缀缓存；保留共享专家多流执行。P/D 的 HCCL_BUFFSIZE 均为 650。", "",
         "预测走 AISimulate 原有 predict --stack engine --capture-per-request，使用同一候选、并发和 N=2C。stock 保留原推荐的内存推算；observed-kv 仅替换为实际 KV pool 容量，是定位内存/准入影响的诊断，不是拟合后的新推荐。误差定义为 100×(预测/实测−1)。正值表示预测值偏大。", "",
+        "已知执行路径差异：当前服务 P 开启 enable_dp_lm_head，D 关闭；D 实际 LM head 使用全局 TP，而冻结的 AISimulate Ascend 模型按 attention TP 计算 LM head/Logits gather。推荐组 D 为实际 TP32 对模型 TP1，并开启有条件的 TP LM-head all-to-all；对照组 D 为实际 TP16 对模型 TP4，关闭此 all-to-all 选项。开启选项不代表所有 batch 都满足该分支条件。下面是原推荐的误差基线，虽然 PD/TP/attention-DP/EP 和请求口径一致，尚未做到所有算子路径完全一致。原始 server-info 与 comparison-jobs.json 中的 logits_layout_audit 可核验；本次不在采集中途改服务路径或拟合计时。", "",
         "## 实测与原推荐预测", "",
     ]
     rankings = []

@@ -831,6 +831,8 @@ adapt the user-supplied launcher and independently implement SGLang CLI/metrics
 contracts from `python/sglang/benchmark/serving.py`,
 `python/sglang/srt/observability/metrics_collector.py`,
 `python/sglang/srt/observability/scheduler_stage_metrics.py`,
+`python/sglang/srt/models/deepseek_v2.py`,
+`python/sglang/srt/layers/logits_processor.py`,
 `python/sglang/srt/managers/scheduler_components/metrics_reporter.py`,
 `python/sglang/srt/distributed/parallel_state.py`,
 `python/sglang/srt/arg_groups/parallel_hook.py`, and

@@ -1,0 +1,40 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Complete the four-configuration serving matrix and matched predictions. Preserve frozen serving and predictor settings for original-recommendation error analysis; report the verified decode LM-head layout difference separately from timing and KV-capacity errors. Serving accuracy remains unaccepted."
+  },
+  "research": {
+    "four_node_serving_logits_layout_20261101": {
+      "completed_points_at_update": 9,
+      "total_planned_points": 24,
+      "current_configuration": "control-1p3d-tp16",
+      "current_concurrency": 32,
+      "serving_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+      "predictor_revision": "db5f2e721670d3eb2a10785fe55ad2d28af81349",
+      "sources": [
+        "Saved and hash-verified get_server_info responses for recommended and control-1p3d configurations",
+        "SGLang models/deepseek_v2.py and layers/logits_processor.py, hashes verified against the running pinned container",
+        "Frozen predictor sdk/models/ascend_glm52.py"
+      ],
+      "confidence": "High for parameter/layout mismatch; timing impact not independently measured",
+      "finding": "Prefill enables DP LM head; decode disables it. Actual recommended decode LM-head TP32 differs from modeled attention TP1; TP16 controls differ from modeled attention TP4. Recommended decode also enables conditional TP LM-head all-to-all, while controls disable it; per-batch branch selection is not traced.",
+      "decision": "Continue unchanged measurement matrix; do not modify serving flags or fit operator latencies mid-campaign. Record the original recommendation baseline and the implementation gap explicitly.",
+      "unresolved": [
+        "Independent timing effect of LM-head group and conditional all-to-all",
+        "Remaining control measurements and full matched prediction ranking"
+      ]
+    }
+  },
+  "configurations": {
+    "united-tp16-dp2-ep16": {
+      "artifacts": {
+        "four_node_serving_logits_layout_audit": {
+          "path": "production/four-node-serving-20261101/logits-layout-audit.json",
+          "kind": "file",
+          "scope": "validation"
+        }
+      }
+    }
+  }
+}

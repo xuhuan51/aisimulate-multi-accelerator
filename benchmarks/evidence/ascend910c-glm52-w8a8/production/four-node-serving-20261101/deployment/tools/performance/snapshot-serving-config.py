@@ -20,6 +20,8 @@ FIELDS = (
     "moe_a2a_backend", "deepep_mode", "disable_shared_experts_fusion",
     "load_balance_method", "schedule_policy", "quantization", "kv_cache_dtype",
     "launch_command", "startup_time",
+    "dtype", "enable_dp_lm_head", "enable_tp_lm_head_all_to_all", "enable_fp32_lm_head",
+    "moe_dense_tp_size", "max_req_input_len",
 )
 
 

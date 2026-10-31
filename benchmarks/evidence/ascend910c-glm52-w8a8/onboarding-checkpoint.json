@@ -1181,6 +1181,14 @@
           "scope": "validation",
           "sha256": "295db664aae62aa038fb06ba23444a88ac03ff18c5c9e2114eb58d9426867a6c"
         },
+        "four_node_serving_logits_layout_audit": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/logits-layout-audit.json",
+          "scope": "validation",
+          "sha256": "5dbb6094977585c3873661a049ecb082e48b1e76939bdc275a9239dd69ca1ea8"
+        },
         "four_node_serving_matrix_plan": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -2886,7 +2894,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Finish the running 1P3D sweep, then 2P2D and 3P1D controls (all C4/8/16/32/64/128, N=2C, warmup2). Finish 48 matched predictions/diagnostics and candidate ranking after measurement. Recommended six-point sweep is archived; serving accuracy remains unaccepted.",
+    "next_action": "Complete the four-configuration serving matrix and matched predictions. Preserve frozen serving and predictor settings for original-recommendation error analysis; report the verified decode LM-head layout difference separately from timing and KV-capacity errors. Serving accuracy remains unaccepted.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3292,6 +3300,26 @@
         8,
         16,
         32
+      ]
+    },
+    "four_node_serving_logits_layout_20261101": {
+      "completed_points_at_update": 9,
+      "confidence": "High for parameter/layout mismatch; timing impact not independently measured",
+      "current_concurrency": 32,
+      "current_configuration": "control-1p3d-tp16",
+      "decision": "Continue unchanged measurement matrix; do not modify serving flags or fit operator latencies mid-campaign. Record the original recommendation baseline and the implementation gap explicitly.",
+      "finding": "Prefill enables DP LM head; decode disables it. Actual recommended decode LM-head TP32 differs from modeled attention TP1; TP16 controls differ from modeled attention TP4. Recommended decode also enables conditional TP LM-head all-to-all, while controls disable it; per-batch branch selection is not traced.",
+      "predictor_revision": "db5f2e721670d3eb2a10785fe55ad2d28af81349",
+      "serving_revision": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+      "sources": [
+        "Saved and hash-verified get_server_info responses for recommended and control-1p3d configurations",
+        "SGLang models/deepseek_v2.py and layers/logits_processor.py, hashes verified against the running pinned container",
+        "Frozen predictor sdk/models/ascend_glm52.py"
+      ],
+      "total_planned_points": 24,
+      "unresolved": [
+        "Independent timing effect of LM-head group and conditional all-to-all",
+        "Remaining control measurements and full matched prediction ranking"
       ]
     },
     "four_node_serving_recommended_complete_20261101": {
@@ -4155,7 +4183,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 117,
+  "revision": 118,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

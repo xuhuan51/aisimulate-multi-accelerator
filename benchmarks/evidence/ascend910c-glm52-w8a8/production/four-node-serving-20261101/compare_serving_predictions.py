@@ -1,6 +1,7 @@
 import argparse
 import concurrent.futures
 import csv
+import gzip
 import hashlib
 import json
 import os
@@ -86,6 +87,31 @@ def capacity_overrides(runtime):
     return overrides, capacities
 
 
+def audit_logits_layout(runtime, runtime_path):
+    rows = []
+    for node in runtime["nodes"]:
+        if node.get("effective") is None:
+            continue
+        name = node["endpoint"].split("//", 1)[1].replace(":", "-") + "-server-info.json.gz"
+        with gzip.open(runtime_path.parent / name, "rb") as stream:
+            content = stream.read()
+        if hashlib.sha256(content).hexdigest() != node["sha256"]:
+            raise ValueError(f"Raw server-info integrity mismatch: {name}")
+        info = json.loads(content)
+        attention_tensor = info["tp_size"] // info["attn_dp_size"]
+        observed = attention_tensor if info["enable_dp_lm_head"] else info["tp_size"]
+        rows.append({
+            "replica": node["replica"], "role": info["disaggregation_mode"],
+            "actual_enable_dp_lm_head": info["enable_dp_lm_head"],
+            "actual_lm_head_tp": observed, "modeled_lm_head_tp": attention_tensor,
+            "aligned": observed == attention_tensor,
+            "actual_enable_tp_lm_head_all_to_all": info["enable_tp_lm_head_all_to_all"],
+            "actual_max_req_input_len": info["max_req_input_len"],
+            "scope": "original recommendation replay; known LM-head layout mismatch is reported, not fitted or silently changed",
+        })
+    return rows
+
+
 def make_jobs(data_root, output_root):
     plan = json.loads((data_root / "comparison-plan.json").read_text())
     image = os.environ.get("AISIMULATE_910C_IMAGE", "aisimulate-910c:glm52-w8a8")
@@ -112,6 +138,7 @@ def make_jobs(data_root, output_root):
             runtime = json.loads(runtime_path.read_text())
             validate_runtime(configuration, runtime)
             fixed, capacities = capacity_overrides(runtime)
+            logits_layout = audit_logits_layout(runtime, runtime_path)
             for mode in ("stock", "observed-kv"):
                 destination = output_root / label / point.name / mode
                 command = [
@@ -131,6 +158,7 @@ def make_jobs(data_root, output_root):
                     "runtime_sha256": hashlib.sha256(runtime_path.read_bytes()).hexdigest(),
                     "template_sha256": hashlib.sha256(template.read_bytes()).hexdigest(),
                     "simulator_image_id": image_id,
+                    "logits_layout_audit": logits_layout,
                     "capacity_policy": "minimum across replicas of each role; diagnostic only",
                 })
     return jobs
