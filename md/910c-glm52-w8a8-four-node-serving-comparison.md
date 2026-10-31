@@ -149,3 +149,29 @@ running batch 是不同指标。P 上同一 DP rank 的多个 TP 进程会重复
 
 后续对比保留原始预测，再单独替换实际 KV 容量做诊断，以区分算子/通信耗时偏差、
 容量偏差与排队调度偏差。未完成该对比之前，不宣称预测准确性已通过验收。
+
+## 同口径预测和结果归档
+
+对照工具位于
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/`：
+
+- `compare_serving_predictions.py`：核对实际运行的 PD 实例数、TP/attention-DP/EP、
+  graph/overlap、量化、分页和调度参数。每个实测点各运行一次原推荐容量预测与
+  实际 KV 容量诊断，正式请求数都使用 `N=2C`。模型路径、模拟器镜像 ID、配置文件
+  和测量文件哈希写入执行记录，不复用输入已经改变的旧预测。
+- `report_serving_comparison.py`：生成各配置的指标/误差表，比较同一并发下四个候选
+  的吞吐排序，并记录预测所选配置相对实测最佳候选的吞吐损失。
+- `finish_serving_comparison.py`：独立于终端连接等待采集完成；每组结束即归档，
+  24 个实测点全部完成后再执行 48 个预测/诊断作业。开启 `--commit-measurements`
+  时只提交本次归档的指定文件。任一阶段失败会写入 `comparison-progress.json`，
+  不会把未完成的点标记为成功。
+
+所有正式请求都是完整的 8K/1K；每档只测两波请求、每点一次，因此该结果包含
+填充与排空阶段，不能作为长时间稳态吞吐或统计置信区间。此前固定 256 请求的
+推荐表不能直接用于计算这里低并发点的误差。
+
+归档目录为本阶段的 `measurements/`。Git 保存客户端完整请求明细、基准日志、
+参数、指标摘要和 Worker 日志；较大的原始逐秒 `metrics.jsonl.gz` 留在结果根目录，
+每份的来源、大小和 SHA256 写入 manifest，便于核验与再次分析。
+最终对照写入本阶段的 `comparison-report.md`、`comparison.csv` 和 `ranking.csv`。
+生成这些文件之前，采集与精度验收均不能视为已经完成。

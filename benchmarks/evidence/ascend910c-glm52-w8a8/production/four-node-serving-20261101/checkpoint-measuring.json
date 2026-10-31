@@ -1,0 +1,21 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Complete four configurations x six concurrency measurements (8192/1024, warmup2, N=2C); archive each completed configuration and run matching stock/observed-KV predictions after measurements. Accuracy remains unaccepted."
+  },
+  "research": {
+    "four_node_serving_comparison_20261101_progress": {
+      "status": "measuring_recommended_configuration",
+      "verified_completed_concurrencies": [4, 8, 16, 32],
+      "c32": {"completed": 64, "mean_ttft_ms": 9945.357813434384, "mean_tpot_ms": 367.751737477588, "output_throughput_tok_s": 84.1188667299702},
+      "metrics_correction": "aggregation_version=2 filters stale idle-DP gauges using decode token-counter growth; raw samples retained; client latency/throughput unchanged",
+      "runtime_identity": "All four nodes match image ID, model config and quantization metadata SHA256, driver and firmware; no claim that all weight shards were hashed",
+      "comparison_preflight": "Actual TP/attention-DP/EP, replica count, eager flags and workload validated; no offline prediction runs while serving measurement is active",
+      "durability": "Detached matrix supervisor; detached postprocessor will archive stage evidence and perform 48 matched predictions after all 24 serving points finish",
+      "measurement_limit": "Two waves per concurrency and one repetition; not a long steady-state throughput estimate or statistical confidence interval",
+      "live_progress_path": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/matrix-progress.json",
+      "accuracy_accepted": false
+    }
+  }
+}
