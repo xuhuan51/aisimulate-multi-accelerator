@@ -824,6 +824,25 @@ under `production/scheduler-audit-node20-20261031/` records reservation,
 restoration and queue behavior. These are modified behavioral adaptations;
 no upstream source files are bundled and host KV copy timing is not measured.
 
+The four-node serving comparison guide
+`md/910c-glm52-w8a8-four-node-serving-comparison.md` and the deployment snapshot
+under `benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/deployment/`
+adapt the user-supplied launcher and independently implement SGLang CLI/metrics
+contracts from `python/sglang/benchmark/serving.py`,
+`python/sglang/srt/observability/metrics_collector.py`,
+`python/sglang/srt/distributed/parallel_state.py`,
+`python/sglang/srt/arg_groups/parallel_hook.py`, and
+`python/sglang/srt/model_executor/pool_configurator.py` at
+`baa9befa381511cd4d56f83980951e5a45fffc6d`
+(https://github.com/sgl-project/sglang/tree/baa9befa381511cd4d56f83980951e5a45fffc6d;
+Copyright 2023-2026 SGLang Team and contributors; Apache-2.0).
+These are modified configurations and independent implementations; upstream
+source files are not bundled. The guide's DeepEP investigation also consults
+`csrc/deepep/ops/op_host/cam_moe_dispatch_normal_tiling.cc` and
+`python/deep_ep/README.md` from
+https://github.com/sgl-project/sgl-kernel-npu/tree/0234a271453bb55eb395aa471ace1e815513e92a
+(Copyright (c) 2025 sgl-project; MIT); no kernel source code is copied.
+
 ## DeepSeek model configuration files
 
 The following model configuration files are copied from, or formatting-only

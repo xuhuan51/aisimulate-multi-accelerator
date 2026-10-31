@@ -1149,6 +1149,22 @@
           "scope": "validation",
           "sha256": "d06bfbee8ca16deb34657c35bc29ea36e1d0de2ff8efd8d24d2c3c58f1178e4f"
         },
+        "four_node_serving_matrix_plan": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/deployment/tools/performance/comparison-configs.json",
+          "scope": "validation",
+          "sha256": "aa059af8f92727c7ffb68c2aa444053595eb88376bde7c50bc2317c365983e7b"
+        },
+        "four_node_serving_startup_validation": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/startup-validation.json",
+          "scope": "validation",
+          "sha256": "3b08774ebee8ceaa6966130237477105b5eedcfd7e91f42853c05f53c5be7d8a"
+        },
         "functional_delivery_manifest": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -2182,7 +2198,7 @@
           "sha256": "fafadaab7d8303e342da346d12d32b7a38a93796ff2302dfa8240ebd1e2e4b6f"
         },
         "single_node_8k_20261031_run_search_py": {
-          "archived": false,
+          "archived": true,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
           "kind": "file",
           "path": "production/single-node-8k-eager-20261031/run_search.py",
@@ -2220,6 +2236,14 @@
           "path": "production/single-node-8k-eager-20261031/validate_replays.py",
           "scope": "validation",
           "sha256": "c7888320c8dc2f5e78ea6d1c102669c90efccf4753a22ea489e59418108dff22"
+        },
+        "single_node_8k_run_search_verified_20261101": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/single-node-8k-eager-20261031/run_search.py",
+          "scope": "validation",
+          "sha256": "dca097572f17ab53bd15527d0b5e513bf6cc0183f370f5e8450479c4a69e5ce8"
         },
         "small_dcp_final": {
           "archived": false,
@@ -2830,7 +2854,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Single-node294 candidates and7 saved-config replays complete. Prepare four-node20/25/31/32 PD scripts and workload comparisons without launching services; serving accuracy unaccepted.",
+    "next_action": "Finish running four-node serving matrix (warmup2,8k/1k,N=2C,C4..128), then run matching offline comparisons. Startup fixed; accuracy unaccepted.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3168,6 +3192,33 @@
       ],
       "status": "complete",
       "validation": "All1809feasible candidates complete64requests with exact token totals; each saved rank1YAML replays64requests and matches10metrics. Frozen28files plusmanifest retain full candidate ledgers and top5YAMLs. Temporary post-run ownership helper error was corrected without changing CLI results."
+    },
+    "four_node_serving_comparison_20261101": {
+      "baseline_file": "/tmp/aisim-prefill0-start-failure-20261101.log",
+      "cann": "9.1.0 B243",
+      "deep_ep": "1.0.0+0234a271.cann.9.1.0.b243",
+      "image_digest": "sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443",
+      "independent_probe": "interrupted_to_avoid_concurrent_service_start; not A/B evidence",
+      "node20_driver": "26.1.1",
+      "prefill_changes": {
+        "HCCL_BUFFSIZE": 650,
+        "SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK": 32
+      },
+      "remaining": "complete four-configuration six-concurrency measured matrix and matching offline predictions; serving accuracy is not accepted",
+      "sglang": "0.5.22",
+      "status": "startup_and_first_8k_request_batch_verified",
+      "torch_npu": "2.10.0.post6",
+      "updated_at": 1793474336.2419555,
+      "validation": [
+        "all_worker_health_200",
+        "actual_graph_disabled",
+        "actual_overlap_disabled",
+        "actual_speculative_algorithm_none",
+        "8_requests_input8192_output1024_completed",
+        "shell_syntax",
+        "TP_metrics_deduplication",
+        "invalid_parallelism_rejected"
+      ]
     },
     "git_stage_policy": {
       "author_scope": "Per-command youxingye <youxingye@npu1-32>; no permanent Git author configuration changed.",
@@ -3960,6 +4011,9 @@
       ],
       "status": "Implementation and two measurement campaigns completed; raw data integrity/correctness passed; communication repeatability partial."
     },
+    "single_node_search_reference_refresh": {
+      "reason": "Resume found a stale SHA for run_search.py. The working file matches committed HEAD e85acbba; preserve the old reference and capture the committed version under a new artifact name. No search is rerun and no accuracy acceptance is changed."
+    },
     "stage_commits": {
       "actual_operator_mapping": "2a0ad787",
       "experimental_collection_and_validation": "3f29e55a",
@@ -3985,7 +4039,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 111,
+  "revision": 113,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }
