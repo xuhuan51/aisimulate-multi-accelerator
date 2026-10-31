@@ -67,6 +67,35 @@ def running_by_rank(samples):
     return ranks
 
 
+def decode_tokens_by_rank(samples):
+    ranks = {}
+    for sample in samples:
+        if not sample["replica"].startswith("D"):
+            continue
+        for row in sample.get("metrics", []):
+            if row["name"] != "sglang:realtime_tokens_total" or row["labels"].get("mode") != "decode":
+                continue
+            key = (sample["replica"], row["labels"].get("dp_rank", "0"))
+            ranks[key] = max(ranks.get(key, 0), row["value"])
+    return ranks
+
+
+def aggregate(record, previous_tokens):
+    samples = record["endpoints"]
+    ranks = running_by_rank(samples)
+    decode = {key: value for key, value in ranks.items() if key[0].startswith("D")}
+    counters = decode_tokens_by_rank(samples)
+    active = {key: value for key, value in decode.items() if counters.get(key, 0) > previous_tokens.get(key, 0)}
+    row = {
+        "time": record["time"], "measured_approx": record["measured_approx"],
+        "decode_running": sum(active.values()), "raw_decode_running": sum(decode.values()),
+        "decode_rank_max": max(active.values(), default=0), "decode_rank_count": len(decode),
+        "complete": all("error" not in sample for sample in samples),
+    }
+    previous_tokens.update(counters)
+    return row
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=pathlib.Path, required=True)
@@ -95,6 +124,7 @@ def main():
     reader = threading.Thread(target=copy_output, daemon=True)
     reader.start()
     aggregate_samples = []
+    previous_tokens = {}
     sample_errors = 0
     try:
         with gzip.open(args.output / "metrics.jsonl.gz", "wt") as raw:
@@ -104,11 +134,10 @@ def main():
                     samples = list(executor.map(fetch, args.endpoint))
                     sample_errors += sum("error" in sample for sample in samples)
                     measured = timing["measurement_start_approx"] is not None and started >= timing["measurement_start_approx"]
-                    raw.write(json.dumps({"time": started, "measured_approx": measured, "endpoints": samples}) + "\n")
+                    record = {"time": started, "measured_approx": measured, "endpoints": samples}
+                    raw.write(json.dumps(record) + "\n")
                     raw.flush()
-                    ranks = running_by_rank(samples)
-                    decode = {key: value for key, value in ranks.items() if key[0].startswith("D")}
-                    aggregate_samples.append({"time": started, "measured_approx": measured, "decode_running": sum(decode.values()), "decode_rank_max": max(decode.values(), default=0), "decode_rank_count": len(decode), "complete": all("error" not in sample for sample in samples)})
+                    aggregate_samples.append(aggregate(record, previous_tokens))
                     time.sleep(max(0.0, args.interval - (time.time() - started)))
         exit_code = process.wait()
         reader.join(timeout=10)
@@ -126,8 +155,10 @@ def main():
         "decode_running_mean_when_nonzero": statistics.mean(active) if active else 0,
         "decode_rank_running_peak": max((row["decode_rank_max"] for row in measured), default=0),
         "decode_rank_counts_seen": sorted({row["decode_rank_count"] for row in measured}),
+        "raw_decode_running_peak": max((row["raw_decode_running"] for row in measured), default=0),
         "samples": aggregate_samples,
-        "scope": "1秒采样；同replica/dp_rank的TP副本取最大值后按DP求和；measured窗口由预热结束日志加1秒估计，完整TTFT/TPOT以benchmark为准。",
+        "aggregation_version": 2,
+        "scope": "1秒采样；TP副本去重，仅累计本采样间隔decode token counter增长的DP rank，过滤协同forward期间空闲rank的旧gauge；非精确逐轮batch。measured窗口由预热结束日志加1秒估计。",
     }
     (args.output / "metrics-summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
     sys.exit(exit_code)

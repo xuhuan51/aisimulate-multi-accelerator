@@ -28,8 +28,10 @@ CONFIG_LABEL=recommended-2p1d-dtp32 CONCURRENCIES='4 8 16 32 64 128' \
 结果写入 `results/aisim-comparison/配置名_时间戳/`。各并发子目录保留 JSONL、
 `benchmark.log`、`runtime-config.json`、`metrics.jsonl.gz` 和 `metrics-summary.json`。
 后两者包括一秒采样的 running requests、排队和 KV 指标。跨节点 Decode 采集两台
-节点；同一实例、同一 attention DP rank 的 TP 副本去重。运行批次峰值及非零时均值
-属于离散采样统计，不等于精确的每轮 forward batch trace。
+节点；同一实例、同一 attention DP rank 的 TP 副本去重。DP 协同执行时，空闲 rank
+的 gauge 可能保留旧值，因此汇总只累计本采样间隔 decode token counter 增长的 rank，
+同时保留 `raw_decode_running_peak`。运行批次峰值及非零时均值属于离散采样统计，
+不等于精确的每轮 forward batch trace，可能包含系统探活请求。
 
 比较预测时必须匹配 PD 实例数、各角色 TP/attention DP/EP、请求数、并发、KV 容量、
 chunk、graph/overlap/speculative/prefix-cache 设置。`FIXED_NUM_PROMPTS=256` 可改为

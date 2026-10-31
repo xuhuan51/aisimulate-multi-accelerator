@@ -140,5 +140,12 @@ CONFIG_LABEL=recommended-2p1d-dtp32 CONCURRENCIES='4 8 16 32 64 128' \
 running batch 是不同指标。P 上同一 DP rank 的多个 TP 进程会重复暴露请求数，
 不能直接求和。跨节点 D 要采集两台节点，按全局 DP rank 合并。
 
+实测发现，C8 第一波请求结束后，部分空闲 DP rank 的 running gauge 仍保留 1，
+第二波直接累计得到 16。原始 token counter 显示旧 rank 没有继续输出，因此新版
+汇总只累计当前一秒采样间隔 decode token counter 增长的 rank，C8 的过滤后峰值
+为 8。原始 gauge 峰值也保留，早期汇总另存 `metrics-summary-raw-gauge.json`，
+不会覆盖或伪造原始采样。该方法给出活跃 rank 的离散近似值，可能包含系统探活，
+不能代替逐轮 forward trace；客户端 TTFT/TPOT/吞吐不依赖这项修正。
+
 后续对比保留原始预测，再单独替换实际 KV 容量做诊断，以区分算子/通信耗时偏差、
 容量偏差与排队调度偏差。未完成该对比之前，不宣称预测准确性已通过验收。

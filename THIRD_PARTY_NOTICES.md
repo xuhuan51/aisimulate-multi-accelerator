@@ -830,6 +830,7 @@ under `benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20
 adapt the user-supplied launcher and independently implement SGLang CLI/metrics
 contracts from `python/sglang/benchmark/serving.py`,
 `python/sglang/srt/observability/metrics_collector.py`,
+`python/sglang/srt/managers/scheduler_components/metrics_reporter.py`,
 `python/sglang/srt/distributed/parallel_state.py`,
 `python/sglang/srt/arg_groups/parallel_hook.py`, and
 `python/sglang/srt/model_executor/pool_configurator.py` at

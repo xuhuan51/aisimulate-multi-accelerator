@@ -47,5 +47,6 @@ for concurrency in $CONCURRENCIES; do
     python3 "$SCRIPT_DIR/sample-serving-metrics.py" --output "$point_dir" "${endpoints[@]}" \
     -- "$SCRIPT_DIR/run-benchmark.sh" --disable-tqdm
   touch "$point_dir/.complete"
+  python3 "$SCRIPT_DIR/recompute-serving-metrics.py" "$RUN_DIR"
 done
 echo "采集完成：$RUN_DIR"
