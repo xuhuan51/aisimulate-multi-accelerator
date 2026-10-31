@@ -150,7 +150,7 @@ def analyze_matrix(measurement_root, output):
             rows.append(row)
             print(f"Diagnosed {label} concurrency={concurrency}", flush=True)
     result = {
-        "scope": "One-second approximate formal window after warmup log; end boundary precedes final client exit. Queue gauges deduplicate TP by max per replica/DP rank; their means average sampled totals. Ratio gauge mean averages per-rank maxima; rank_peak is the largest reported rank ratio. Scheduler deltas use stable physical-rank series; resets/missing boundaries excluded. Scheduler run_batch is wall time, not device kernel time. Histogram means weight reported rank observations, not unique requests; missing/zero-count series do not imply zero latency. v1 collection lacks stage/PD-queue metrics.",
+        "scope": "One-second approximate formal window after warmup log; end boundary precedes final client exit. Queue gauges deduplicate TP by max per replica/DP rank; their means average sampled totals. Ratio gauge mean averages per-rank maxima; rank_peak is the largest reported rank ratio. Scheduler deltas use stable physical-rank series; resets/missing boundaries excluded. Scheduler run_batch is wall time, not device kernel time. Metrics are service-wide and not filtered by benchmark request IDs; health or other traffic can contribute. Histogram means weight reported rank observations, not unique formal requests; missing/zero-count series do not imply zero latency. v1 collection lacks stage/PD-queue metrics.",
         "rows": rows,
     }
     output.parent.mkdir(parents=True, exist_ok=True)

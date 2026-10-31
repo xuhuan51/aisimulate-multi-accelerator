@@ -124,7 +124,7 @@ def write_report(measurement_root, prediction_root, output):
         cells.append(f"{run_percent:.2f}%" if run_percent is not None else "—")
         lines.append(f"| {diagnostic['configuration']} | {diagnostic['concurrency']} | " + " | ".join(cells) + " |")
     lines.extend([
-        "", "完整阶段增量、KV 传输/分配/引导与请求阶段直方图均值、有效 rank 数、缺失边界和计数器重置信息保存在 predictions/serving-stage-diagnostics.json。直方图按 rank 观测加权，不是唯一请求数；该窗口可能未覆盖最早或最后的指标刷新，不能将各均值相加当成客户端 TTFT。推荐组 C4–C64 使用早期采集字段，缺少新增阶段与 PD 队列指标；C128 和对照组使用扩展字段。", "",
+        "", "完整阶段增量、KV 传输/分配/引导与请求阶段直方图均值、有效 rank 数、缺失边界和计数器重置信息保存在 predictions/serving-stage-diagnostics.json。这些是服务级指标，未按本轮压测 request ID 过滤，可能包含探活等流量。直方图按 rank 观测加权，不是唯一正式请求数；该窗口也可能未覆盖最早或最后的指标刷新，不能将各均值相加当成客户端 TTFT。推荐组 C4–C64 使用早期采集字段，缺少新增阶段与 PD 队列指标；C128 和对照组使用扩展字段。", "",
     ])
     diagnostic_path = measurement_root / "recommended-2p1d-dtp32-20261101/mid-c64-scheduler-window.json"
     if diagnostic_path.exists():

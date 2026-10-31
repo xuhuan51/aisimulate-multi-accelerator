@@ -1,0 +1,26 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Complete the running 1P3D C128 point and remaining 2P2D/3P1D sweeps; monitor bootstrap timeout under KV pressure and preserve any failed attempt. Then run matched predictions and generate the full error/ranking report."
+  },
+  "research": {
+    "four_node_control_c64_complete_20261101": {
+      "completed_points_at_update": 11,
+      "completed_formal_requests": 752,
+      "current_configuration": "control-1p3d-tp16",
+      "current_concurrency": 128,
+      "control_c64": {"completed": 128, "mean_ttft_ms": 273378.0320004817, "mean_tpot_ms": 416.70709064027074, "output_tok_s": 73.42834006973095, "duration_seconds": 1785.0328616379993},
+      "finding": "1P3D C32 to C64 raises output throughput only from73.000 to73.428 tok/s while mean TTFT grows from14.504 to273.378 seconds. All128 formal requests have exact8192/1024 lengths and no client errors. This agrees with the observed preallocation backlog and approximately36 resident decode requests.",
+      "diagnostic_scope": "Service metrics are not joined to benchmark request IDs. Stage histogram observations can include health or other traffic and TP rank repetitions; they are not per-formal-request component timings and must not be added to reconstruct client TTFT.",
+      "accuracy_accepted": false
+    }
+  },
+  "configurations": {
+    "united-tp16-dp2-ep16": {
+      "artifacts": {
+        "four_node_control_partial_through_c64": {"path": "production/four-node-serving-20261101/control-1p3d-through-c64-summary.json", "kind": "file", "scope": "validation"}
+      }
+    }
+  }
+}
