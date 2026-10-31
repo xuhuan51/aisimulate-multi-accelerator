@@ -2942,7 +2942,7 @@
           "Cross-request PD sender contention and host/bootstrap/metadata costs remain approximation limits",
           "DCP eager profiles remain unavailable for broader strategy coverage"
         ],
-        "next_action": "12/24 serving points independently validated and both completed configurations archived. Finish the active 2P2D sweep and following 3P1D sweep, then restore recommended serving and run 48 stock/observed-KV predictions with full diagnostics. Do not fit the frozen predictor during the campaign; serving accuracy remains unaccepted.",
+        "next_action": "13/24 points validated: recommended and 1P3D complete, first 2P2D C4 valid, 2P2D C8 active. Complete remaining controls, then restore recommended serving and run48 matched stock/observed-KV predictions; no operator fitting during measurement.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -3475,16 +3475,30 @@
         "recommended-2p1d-dtp32",
         "control-1p3d-tp16"
       ],
-      "completed_points": 12,
+      "completed_points": 13,
       "control_1p3d_result": "All 504 requests succeed with exact 8192/1024 lengths and zero metrics endpoint errors. C128 TTFT843909.386919ms, TPOT417.698208ms, output74.205068tok/s, duration3532.696737s; D active peak36. Archive a037e908 verified against manifest SHA256.",
       "current_configuration": "control-2p2d-tp16",
       "durability": "Detached matrix supervisor; detached postprocessor will archive stage evidence and perform 48 matched predictions after all 24 serving points finish",
+      "first_2p2d_c4": {
+        "input_throughput_tok_s": 75.15687246767646,
+        "input_tokens_each": 8192,
+        "mean_tpot_ms": 410.01825072238563,
+        "mean_ttft_ms": 8378.603471865063,
+        "metrics_endpoint_errors": 0,
+        "output_throughput_tok_s": 9.394609058459558,
+        "output_tokens_each": 1024,
+        "requests": 8,
+        "scope": "First point only; no full 2P2D ranking or accuracy acceptance. C8 benchmark running.",
+        "source": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/control-2p2d-tp16-20261101/c4-n8/bench_20261101_073013_c4_1677480.jsonl",
+        "source_sha256": "b747dfe867186f0d12faf50e63451fea697aff2eb09b2e8587fc8ddefd762601",
+        "status": "validated_partial_configuration"
+      },
       "live_progress_path": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/matrix-progress.json",
       "measurement_limit": "Two waves per concurrency and one repetition; not a long steady-state throughput estimate or statistical confidence interval",
       "metrics_correction": "aggregation_version=2 filters stale idle-DP gauges using decode token-counter growth; raw samples retained; client latency/throughput unchanged",
       "runtime_identity": "All four nodes match image ID, model config and quantization metadata SHA256, driver and firmware; no claim that all weight shards were hashed",
       "status": "measuring_remaining_controls",
-      "validated_formal_requests": 1008,
+      "validated_formal_requests": 1016,
       "verified_completed_concurrencies": [
         4,
         8,
@@ -4391,7 +4405,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 126,
+  "revision": 127,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }
