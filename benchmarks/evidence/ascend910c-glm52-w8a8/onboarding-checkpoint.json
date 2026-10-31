@@ -1125,6 +1125,14 @@
           "scope": "validation",
           "sha256": "866415589e065efc00ad49104ffec2c280ef6f9822e6bdabd6e00684c8c3fd13"
         },
+        "four_node_control_admission_window": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/control-1p3d-c64-admission-window.json",
+          "scope": "validation",
+          "sha256": "330de815c1286f5fbf7551b191d954223e3e8d158385ca7bd820dfcc9557b15c"
+        },
         "four_node_controller_lock_validation": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -1180,6 +1188,14 @@
           "path": "production/four-node-serving-20261101/measurements/recommended-2p1d-dtp32-manifest.json",
           "scope": "validation",
           "sha256": "295db664aae62aa038fb06ba23444a88ac03ff18c5c9e2114eb58d9426867a6c"
+        },
+        "four_node_running_sampling_limit": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/running-batch-sampling-note.json",
+          "scope": "validation",
+          "sha256": "2cb9067c7c192cdf58cbfde97e2af286573d5c522074566007f43baa9907bd6b"
         },
         "four_node_serving_diagnostics_validation": {
           "archived": false,
@@ -2902,7 +2918,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Complete remaining serving points and matched offline predictions, then generate the queue/KV/scheduler diagnostics and candidate comparison. Monitor high-concurrency early-allocation queueing against the actual 600-second PD bootstrap timeout; preserve any failures before making changes.",
+    "next_action": "Finish 1P3D C64/C128 and the two remaining PD controls; monitor actual bootstrap timeout behavior under KV pressure. Preserve all client and server evidence, then finish matched predictions and error/ranking report.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3260,6 +3276,22 @@
       ],
       "status": "complete",
       "validation": "All1809feasible candidates complete64requests with exact token totals; each saved rank1YAML replays64requests and matches10metrics. Frozen28files plusmanifest retain full candidate ledgers and top5YAMLs. Temporary post-run ownership helper error was corrected without changing CLI results."
+    },
+    "four_node_serving_admission_window_20261101": {
+      "accuracy_accepted": false,
+      "capacity_observation": "1P3D TP16/ADP4 decode replicas report KV pools 32512/32384/32512 tokens per DP rank, request cap32/rank. Both 8192+1024 full-length and 8192+512 initial-reservation floors are3/rank. Live C64 gauges show approximately36 running across12 DP ranks, with preallocation queues; this is consistent with KV-limited admission rather than the request-count ceiling.",
+      "completed_formal_requests": 624,
+      "completed_points_at_update": 10,
+      "confidence": "Observed configuration and gauges; capacity calculation is a fixed-workload explanation, not a universal scheduler formula",
+      "control_c32": {
+        "completed": 64,
+        "mean_tpot_ms": 415.58955845362715,
+        "mean_ttft_ms": 14504.188146340312,
+        "output_tok_s": 73.00014663956469
+      },
+      "current_concurrency": 64,
+      "current_configuration": "control-1p3d-tp16",
+      "sampling_limit": "C32 contains two active-gauge samples summing to33 despite formal client concurrency32. Preserve values, disclose asynchronous rank refresh/possible health traffic, and do not clamp to client concurrency or claim an exact per-forward batch count."
     },
     "four_node_serving_comparison_20261101": {
       "baseline_file": "/tmp/aisim-prefill0-start-failure-20261101.log",
@@ -4201,7 +4233,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 119,
+  "revision": 120,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

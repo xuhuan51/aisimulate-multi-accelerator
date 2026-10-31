@@ -87,7 +87,7 @@ def write_report(measurement_root, prediction_root, output):
         lines.append("")
     lines.extend([
         "输入吞吐与输出吞吐都使用各自 token 总量除以正式测量时长；由于固定 8192/1024，本次输入吞吐恰为输出吞吐的 8 倍。完整 TTFT/TPOT 百分位、输入吞吐、请求明细与指标摘要见归档和 comparison.csv。", "",
-        "running batch 是每秒采样近似值：按 D 实例和 attention-DP rank 去掉 TP 重复指标，再仅统计该采样间隔 decode token counter 有增长的 rank，避免空闲 rank 残留 gauge 被误当成并发；不是逐轮 forward 的精确 trace。原始 gauge 与未修改的逐秒数据均保留。", "",
+        "running batch 是每秒采样近似值：按 D 实例和 attention-DP rank 去掉 TP 重复指标，再仅统计该采样间隔 decode token counter 有增长的 rank，避免空闲 rank 残留 gauge 被误当成并发；不是逐轮 forward 的精确 trace。不同 rank 的刷新时刻不一致，且可能包含系统探活，采样峰值可能略高于客户端并发。原始 gauge 与未修改的逐秒数据均保留，不按客户端上限强行截断。", "",
         "## 候选集合内的吞吐排序", "",
         "这里以同一并发下的输出吞吐最大为选择标准；没有隐含 TTFT/TPOT SLA。若有延迟限制，必须重新过滤候选。", "",
         "| 并发 | 实测最佳 | 原预测选择 | 原预测所选配置的实测吞吐 | 实测最佳吞吐 | 选择损失 |",

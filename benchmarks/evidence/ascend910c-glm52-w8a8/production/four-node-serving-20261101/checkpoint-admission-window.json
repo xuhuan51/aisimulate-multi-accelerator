@@ -1,0 +1,28 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Finish 1P3D C64/C128 and the two remaining PD controls; monitor actual bootstrap timeout behavior under KV pressure. Preserve all client and server evidence, then finish matched predictions and error/ranking report."
+  },
+  "research": {
+    "four_node_serving_admission_window_20261101": {
+      "completed_points_at_update": 10,
+      "completed_formal_requests": 624,
+      "current_configuration": "control-1p3d-tp16",
+      "current_concurrency": 64,
+      "control_c32": {"completed": 64, "mean_ttft_ms": 14504.188146340312, "mean_tpot_ms": 415.58955845362715, "output_tok_s": 73.00014663956469},
+      "capacity_observation": "1P3D TP16/ADP4 decode replicas report KV pools 32512/32384/32512 tokens per DP rank, request cap32/rank. Both 8192+1024 full-length and 8192+512 initial-reservation floors are3/rank. Live C64 gauges show approximately36 running across12 DP ranks, with preallocation queues; this is consistent with KV-limited admission rather than the request-count ceiling.",
+      "sampling_limit": "C32 contains two active-gauge samples summing to33 despite formal client concurrency32. Preserve values, disclose asynchronous rank refresh/possible health traffic, and do not clamp to client concurrency or claim an exact per-forward batch count.",
+      "confidence": "Observed configuration and gauges; capacity calculation is a fixed-workload explanation, not a universal scheduler formula",
+      "accuracy_accepted": false
+    }
+  },
+  "configurations": {
+    "united-tp16-dp2-ep16": {
+      "artifacts": {
+        "four_node_control_admission_window": {"path": "production/four-node-serving-20261101/control-1p3d-c64-admission-window.json", "kind": "file", "scope": "validation"},
+        "four_node_running_sampling_limit": {"path": "production/four-node-serving-20261101/running-batch-sampling-note.json", "kind": "file", "scope": "validation"}
+      }
+    }
+  }
+}
