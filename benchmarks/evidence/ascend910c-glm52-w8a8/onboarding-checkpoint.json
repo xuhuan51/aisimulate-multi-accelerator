@@ -1125,6 +1125,30 @@
           "scope": "validation",
           "sha256": "866415589e065efc00ad49104ffec2c280ef6f9822e6bdabd6e00684c8c3fd13"
         },
+        "four_node_bootstrap_timeout_first_event": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/control-1p3d-c128-bootstrap-first-event.json",
+          "scope": "validation",
+          "sha256": "f7dee18fb946e1468da06613670e4531976d8d57064995000c7ee4e8d27648bf"
+        },
+        "four_node_bootstrap_timeout_recovery": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/bootstrap-timeout-recovery.json",
+          "scope": "validation",
+          "sha256": "5944fb73c6cdcdc2675acec28da8b8942b03a67dd90b51bd1fd817bd5dec03c4"
+        },
+        "four_node_bootstrap_timeout_source_log": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/control-1p3d-c128-bootstrap-first-event.log.gz",
+          "scope": "validation",
+          "sha256": "887e13c4cde5c350b52a4ff9b5a535b55ef26bdb1696604b7649f2b8b6a61a83"
+        },
         "four_node_control_admission_window": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -1236,6 +1260,14 @@
           "path": "production/four-node-serving-20261101/startup-validation.json",
           "scope": "validation",
           "sha256": "3b08774ebee8ceaa6966130237477105b5eedcfd7e91f42853c05f53c5be7d8a"
+        },
+        "four_node_timeout_extension_validation": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/timeout-extension-validation.json",
+          "scope": "validation",
+          "sha256": "7265a5e8f61a86a48f6ebec4537c75a15ba881dd27f978292141e7696b9fe9d8"
         },
         "functional_delivery_manifest": {
           "archived": false,
@@ -2926,7 +2958,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Complete the running 1P3D C128 point and remaining 2P2D/3P1D sweeps; monitor bootstrap timeout under KV pressure and preserve any failed attempt. Then run matched predictions and generate the full error/ranking report.",
+    "next_action": "Finish the restarted 1P3D C128 point with extended operational waiting limits, followed by the remaining 2P2D and 3P1D sweeps. Then complete48 matched predictions/diagnostics and final ranking/error report. Preserve the interrupted timeout attempt separately; serving accuracy remains unaccepted.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3224,6 +3256,30 @@
       ],
       "node31": "occupiedbyotherworkload;untouched",
       "sessions": "32root24914;19root89706;31root47855"
+    },
+    "four_node_bootstrap_timeout_recovery_20261101": {
+      "accuracy_accepted": false,
+      "action": "Interrupted only the identified benchmark client, finalized its metric gzip, archived all five old service logs, and restarted the same1P3D topology. The incomplete attempt is retained under failed-attempts and excluded from successful performance rows.",
+      "completed_formal_requests_preserved": 752,
+      "completed_points_preserved": 11,
+      "controller_pid": 202259,
+      "current_concurrency": 128,
+      "current_configuration": "control-1p3d-tp16",
+      "current_phase": "benchmarking restarted C128",
+      "defaults": "Normal service defaults remain600/1800; the resumed controller inherits explicit7200/21600 overrides. Manual resumption must preserve those overrides and authorized remote credentials.",
+      "failure": "1P3D C128 prefill logged600-second KVPoll.Bootstrapping timeouts waiting for decode KV indices while decode capacity was limited to approximately3 full8K/1K requests per DP rank.",
+      "failure_observed_at_local": "2026-11-01T06:13:38+08:00",
+      "limits": "Completed earlier points retain their original operational limits. Successful extended-limit measurements must not be described as all succeeding under the original600-second bootstrap policy. No timing coefficient or predictor implementation changed.",
+      "postprocessor_pid": 202548,
+      "previous_limits_seconds": {
+        "PD_BOOTSTRAP_TIMEOUT": 600,
+        "ROUTER_REQUEST_TIMEOUT": 1800
+      },
+      "retry_and_subsequent_limits_seconds": {
+        "PD_BOOTSTRAP_TIMEOUT": 7200,
+        "ROUTER_REQUEST_TIMEOUT": 21600
+      },
+      "validation": "Positive/invalid timeout configuration checks and prefill/decode exports passed; actual launch-server environments on all four nodes report7200, and the actual router command sets21600. Retried runtime PD/TP/ADP/EP/graph/overlap/quantization parameters match the candidate; prior11 client-file hashes are unchanged; interrupted raw metric gzip integrity passes."
     },
     "four_node_control_c64_complete_20261101": {
       "accuracy_accepted": false,
@@ -4257,7 +4313,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 121,
+  "revision": 122,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

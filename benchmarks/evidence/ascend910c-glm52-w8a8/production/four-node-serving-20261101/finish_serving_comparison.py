@@ -90,9 +90,9 @@ def main():
         manifest = HERE / "prediction-manifest.json"
         manifest.write_text(json.dumps({"source": str(args.prediction_root), "archive_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "bytes": archive.stat().st_size, "comparison_jobs": 48, "accuracy_accepted": False}, indent=2) + "\n")
         paths = [archive, manifest, HERE / "comparison-report.md", HERE / "ranking.csv"]
-        for name in ("comparison-plan.json", "matrix-summary.csv", "matrix-progress.json", "host-runtime-identities.json", "matrix-handoff-recovery.json", "matrix-local-lock-migration.json", "live-summary.csv"):
+        for name in ("comparison-plan.json", "matrix-summary.csv", "matrix-progress.json", "host-runtime-identities.json", "matrix-handoff-recovery.json", "matrix-local-lock-migration.json", "bootstrap-timeout-recovery.json", "live-summary.csv"):
             source = args.measurement_root / name
-            if name.startswith("matrix-") and name.endswith(("recovery.json", "migration.json")) and not source.exists():
+            if name.endswith(("recovery.json", "migration.json")) and not source.exists():
                 continue
             destination = HERE / name
             destination.write_bytes(source.read_bytes())

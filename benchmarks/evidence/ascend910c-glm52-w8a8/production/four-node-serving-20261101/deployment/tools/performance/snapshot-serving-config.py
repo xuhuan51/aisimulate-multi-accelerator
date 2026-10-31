@@ -53,7 +53,8 @@ def main():
             compressed.write(content)
         nodes.append({"replica": replica, "endpoint": url, "sha256": hashlib.sha256(content).hexdigest(), "effective": {key: info.get(key) for key in FIELDS}})
         captured_replicas.add(replica)
-    (output / "runtime-config.json").write_text(json.dumps({"captured_at": time.time(), "nodes": nodes}, indent=2) + "\n")
+    limits = {name: os.environ.get(name) for name in ("PD_BOOTSTRAP_TIMEOUT", "ROUTER_REQUEST_TIMEOUT")}
+    (output / "runtime-config.json").write_text(json.dumps({"captured_at": time.time(), "nodes": nodes, "operational_limits_requested_by_launcher": limits}, indent=2) + "\n")
     print(f"已保存 {len(nodes)} 个节点的实际启动配置")
 
 

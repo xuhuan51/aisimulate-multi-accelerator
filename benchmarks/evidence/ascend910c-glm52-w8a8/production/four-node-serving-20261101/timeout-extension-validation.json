@@ -1,0 +1,103 @@
+{
+  "captured_at": "2026-11-01T06:23:40.642085",
+  "phase": "model_startup",
+  "default_limits": {
+    "PD_BOOTSTRAP_TIMEOUT": 600,
+    "ROUTER_REQUEST_TIMEOUT": 1800
+  },
+  "checks": [
+    "1P3D dry-run launch plan accepts7200/21600",
+    "PD bootstrap non-positive value rejected",
+    "Prefill and Decode shell export7200",
+    "all four actual launch-server processes export7200"
+  ],
+  "workers": [
+    {
+      "host": "10.120.72.20",
+      "container": "glm52-aisim-eager-prefill-0",
+      "processes": [
+        {
+          "pid": 7,
+          "values": {
+            "PD_BOOTSTRAP_TIMEOUT": "7200",
+            "SGLANG_DISAGGREGATION_BOOTSTRAP_TIMEOUT": "7200"
+          }
+        }
+      ]
+    },
+    {
+      "host": "10.120.72.25",
+      "container": "glm52-aisim-eager-decode-0",
+      "processes": [
+        {
+          "pid": 7,
+          "values": {
+            "PD_BOOTSTRAP_TIMEOUT": "7200",
+            "SGLANG_DISAGGREGATION_BOOTSTRAP_TIMEOUT": "7200"
+          }
+        }
+      ]
+    },
+    {
+      "host": "10.120.72.31",
+      "container": "glm52-aisim-eager-decode-1",
+      "processes": [
+        {
+          "pid": 7,
+          "values": {
+            "PD_BOOTSTRAP_TIMEOUT": "7200",
+            "SGLANG_DISAGGREGATION_BOOTSTRAP_TIMEOUT": "7200"
+          }
+        }
+      ]
+    },
+    {
+      "host": "10.120.72.32",
+      "container": "glm52-aisim-eager-decode-2",
+      "processes": [
+        {
+          "pid": 7,
+          "values": {
+            "PD_BOOTSTRAP_TIMEOUT": "7200",
+            "SGLANG_DISAGGREGATION_BOOTSTRAP_TIMEOUT": "7200"
+          }
+        }
+      ]
+    }
+  ],
+  "router_runtime_verified": true,
+  "router_command": [
+    "-m",
+    "sglang_router.launch_router",
+    "--pd-disaggregation",
+    "--policy",
+    "round_robin",
+    "--request-timeout-secs",
+    "21600",
+    "--prefill",
+    "http://10.120.72.20:8000",
+    "8998",
+    "--decode",
+    "http://10.120.72.25:8003",
+    "--decode",
+    "http://10.120.72.31:8003",
+    "--decode",
+    "http://10.120.72.32:8003",
+    "--host",
+    "10.120.72.20",
+    "--port",
+    "6688"
+  ],
+  "router_verified_at": "2026-11-01T06:26:07.301300",
+  "retry_runtime_verified_at": "2026-11-01T06:27:59.118467",
+  "retry_runtime_sha256": "fc7d3d87d4a89e1544ff1c24ff4454f074ac0a8df888a0d85456d13fe8c1b867",
+  "retry_operational_limits": {
+    "PD_BOOTSTRAP_TIMEOUT": "7200",
+    "ROUTER_REQUEST_TIMEOUT": "21600"
+  },
+  "previous_successful_client_files_unchanged": true,
+  "interrupted_attempt_exit_code": 1,
+  "interrupted_gzip_integrity": "passed",
+  "candidate_runtime_validation": "passed",
+  "previous_successful_client_files_checked": 11
+}

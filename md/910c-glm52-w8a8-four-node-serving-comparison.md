@@ -116,6 +116,25 @@ C64 测试中的额外只读采样确实观察到各 D rank 运行约 3 条，�
 `control-1p3d-c64-admission-window.json`。后续 `observed-kv` 预测正是用来区分
 这种容量/准入偏差与 forward 耗时偏差。
 
+### C128 的等待超时与重测
+
+2026-11-01 06:13（Asia/Shanghai），1P3D C128 的 P 日志明确报告等待 Decode KV
+索引 600 秒后在 `KVPoll.Bootstrapping` 失败。原尝试已中止，指标文件、启动配置、
+基准日志和五个服务容器的日志保存在该组 `failed-attempts/bootstrap-timeout-*`。
+它是未完成的失败尝试，不计作正式性能点。
+重启前的容器日志同时覆盖此前成功的 C4～C64；重启后的日志另存，按启动时间和
+各点 runtime 配置对应，不能仅看重启后的日志分析旧测试。
+
+为测量长队列下的完成时间，重启后将 `PD_BOOTSTRAP_TIMEOUT` 设为 7200 秒，
+`ROUTER_REQUEST_TIMEOUT` 设为 21600 秒；两项只改变等待时限，PD/TP/ADP/EP 与算子
+执行开关沿用原配置。已经完成的 11 点仍保留原来的 600/1800 秒时限，C128 重测与
+后续配置使用延长的时限，比较时必须保留这个区别。这不意味着吞吐或 KV 容量提高。
+
+这两项现已参数化到 `service/pd-config.sh`，普通启动默认仍为 600/1800 秒。
+继续本次矩阵时需在启动控制脚本的环境中传入 7200/21600；仅修改 benchmark 进程的
+环境不能改变已经启动的服务。恢复过程与新旧参数保存在
+`bootstrap-timeout-recovery.json`，实际进程核验保存在 `timeout-extension-validation.json`。
+
 ### 已确认的执行路径差异
 
 冻结模拟器版本 `db5f2e721670d3eb2a10785fe55ad2d28af81349` 的

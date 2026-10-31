@@ -38,6 +38,28 @@ chunk、graph/overlap/speculative/prefix-cache 设置。`FIXED_NUM_PROMPTS=256` 
 每档固定请求数，但不能直接与默认 `N=2C` 的预测曲线比较。改变启动配置前先结束
 本组采集并停止当前拓扑，重新启动后使用另一个 `CONFIG_LABEL` 保存结果。
 
+PD 引导等待由 `PD_BOOTSTRAP_TIMEOUT` 控制，默认 600 秒；Router 请求时限由
+`ROUTER_REQUEST_TIMEOUT` 控制，默认 1800 秒。它们需要在启动服务时设置，单独给
+benchmark 命令传值不会改变已运行的服务。容量受限的高并发可能在等待 KV 时达到
+这些时限；超时结果应保留为失败尝试，不能混入全请求成功的对照表。
+
+本次 1P3D C128 已实际触发 600 秒引导超时。归档失败日志后，后续采集使用：
+
+```bash
+read -rsp 'SSH/sudo 密码（不回显）：' PD_SSH_PASSWORD
+printf '\n'
+export PD_SSH_PASSWORD
+export PD_SUDO_PASSWORD="$PD_SSH_PASSWORD"
+sudo -E env PD_BOOTSTRAP_TIMEOUT=7200 ROUTER_REQUEST_TIMEOUT=21600 \
+  python3 ./tools/performance/run-serving-matrix.py \
+  --output './results/aisim-comparison' --resume
+unset PD_SSH_PASSWORD PD_SUDO_PASSWORD
+```
+
+此命令会重启相应服务并继续未完成点；已经完成的点保留原始参数与结果。
+仅在前一个控制进程结束后使用。`runtime-config.json` 记录 launcher 请求的时限，
+实际 Worker 环境和 Router 命令另有核验记录。
+
 ## 六组统一测试
 
 ```bash

@@ -68,6 +68,12 @@ def write_report(measurement_root, prediction_root, output):
         "## 实测与原推荐预测", "",
     ]
     rankings = []
+    recovery_path = measurement_root / "bootstrap-timeout-recovery.json"
+    if recovery_path.exists():
+        recovery = json.loads(recovery_path.read_text())
+        previous, current = recovery["previous_limits"], recovery["new_limits"]
+        note = f"等待时限变更：1P3D C128 首次尝试触发 PD bootstrap {previous['PD_BOOTSTRAP_TIMEOUT']} 秒超时，已中止并保留于 failed-attempts，不计入下表。重启后的 C128 重测及后续配置使用 bootstrap {current['PD_BOOTSTRAP_TIMEOUT']} 秒、Router request {current['ROUTER_REQUEST_TIMEOUT']} 秒；此前成功点使用原 bootstrap {previous['PD_BOOTSTRAP_TIMEOUT']} 秒、Router request {previous['ROUTER_REQUEST_TIMEOUT']} 秒。并行参数和执行开关保持各候选定义，延长等待不代表提高计算吞吐；这些结果不能被解释为原超时策略下全部成功。"
+        lines[-2:-2] = [note, ""]
     for configuration in plan["configurations"]:
         label = configuration["label"]
         lines.extend([
