@@ -1125,6 +1125,14 @@
           "scope": "validation",
           "sha256": "866415589e065efc00ad49104ffec2c280ef6f9822e6bdabd6e00684c8c3fd13"
         },
+        "four_node_mid_c64_diagnostic_summary": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/mid-c64-diagnostic-summary.json",
+          "scope": "validation",
+          "sha256": "e14f1fd747a636b0cbbabc629d7771f0c7877516892e992105cbc2c005592e5e"
+        },
         "four_node_pd_eager_20261031_csv": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -3153,6 +3161,26 @@
       "node31": "occupiedbyotherworkload;untouched",
       "sessions": "32root24914;19root89706;31root47855"
     },
+    "four_node_mid_c64_diagnostic_20261101": {
+      "completed_formal_concurrencies": [
+        4,
+        8,
+        16,
+        32,
+        64
+      ],
+      "formal_c64": {
+        "completed": 128,
+        "mean_tpot_ms": 365.6048316710802,
+        "mean_ttft_ms": 13878.771724779654,
+        "output_tok_s": 165.89854800473788
+      },
+      "independent_window_seconds": 30.45221447944641,
+      "inference": "For this window, investigate forward-internal operator/communication/host launch/synchronization before attributing all TPOT error to outer scheduling queues",
+      "limits": "One window in recommended C64 only; host scheduler wall time, not NPU device kernel duration; no forward accuracy acceptance",
+      "rank_count": 32,
+      "run_batch_accounted_wall_share": 0.9852917117619547
+    },
     "four_node_pd_search": {
       "accuracy_acceptance": false,
       "configuration": "Two independent searches:8192/1024 and32768/1024; min=max64devices; PD-only; concurrency8/16/32;64requests; throughput objective; random finite-domain sampling with max10000trials and120s/candidate.",
@@ -4069,7 +4097,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 115,
+  "revision": 116,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

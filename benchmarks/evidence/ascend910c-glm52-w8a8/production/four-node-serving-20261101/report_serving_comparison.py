@@ -102,6 +102,17 @@ def write_report(measurement_root, prediction_root, output):
         selected = [row for row in comparisons if row["mode"] == mode]
         errors = [statistics.mean(abs(row[f"error_percent_{metric}"]) for row in selected) for metric in ("ttft_ms", "tpot_ms", "output_tok_s")]
         lines.append(f"| {mode} | {errors[0]:.1f}% | {errors[1]:.1f}% | {errors[2]:.1f}% |")
+    diagnostic_path = measurement_root / "recommended-2p1d-dtp32-20261101/mid-c64-scheduler-window.json"
+    if diagnostic_path.exists():
+        diagnostic = json.loads(diagnostic_path.read_text())
+        stage_rows = [row for row in diagnostic["counter_deltas"] if row["name"] == "sglang:scheduler_stage_seconds_total"]
+        totals = {category: statistics.mean(row["delta"] for row in stage_rows if row["category"] == category) for category in {row["category"] for row in stage_rows}}
+        interval = diagnostic["last"][0]["time"] - diagnostic["first"][0]["time"]
+        lines.extend([
+            "", "## 单窗口调度诊断", "",
+            f"推荐组 C64 的独立 {interval:.2f} 秒窗口中，32 个 Decode rank 的平均 run_batch 增量为 {totals['run_batch']:.3f} 秒，占已归类调度墙钟时间的 {100*totals['run_batch']/sum(totals.values()):.2f}%。原始首尾计数器和增量保留在 mid-c64-scheduler-window.json。",
+            "这只描述该窗口：主要时间在 run_batch 内，应进一步核对 forward 内部的算子、通信、CPU 提交和同步开销，不能把全部 TPOT 偏差都归因于外层请求排队。run_batch 墙钟时间不等于 NPU kernel 总时间，也不能由这个窗口推断其他并发或配置的占比。",
+        ])
     lines.extend(["", "## 保留的数据与解释范围", "", "- 每个点保留客户端原始 JSONL（含逐请求长度、TTFT、ITL、错误）、基准日志、服务运行参数、指标摘要；每组结束后归档各 Worker/Router 日志。", "- Git 中的 measurements/*.tar.gz 包含上述证据；体积较大的原始逐秒 metrics.jsonl.gz 保留在测量目录，manifest 记录绝对来源、大小和 SHA256。", "- predictions 目录保存预测原始结果、逐请求 trace、执行命令、冻结镜像 ID 和输入哈希；比较失败不会被算成成功采集点。", "- 随机 token workload、两波请求、RR 路由与一次重复的结论不能直接代表真实业务、长期稳态或统计置信区间。warmup 后服务路由游标不一定与空模拟器完全一致。", "- 对照只揭示误差，不自动证明误差来自调度或某个算子；需要结合队列、KV、forward/通信时间进一步区分。此次不改动计时系数来迎合实测。", ""])
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n".join(lines))

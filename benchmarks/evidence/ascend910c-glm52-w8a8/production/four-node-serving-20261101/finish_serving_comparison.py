@@ -7,7 +7,7 @@ import subprocess
 import tarfile
 import time
 
-from report_serving_comparison import archive_measurement, write_report
+from report_serving_comparison import archive_measurement
 
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -70,7 +70,7 @@ def main():
         subprocess.run(["python3", str(HERE / "compare_serving_predictions.py"), "--measurement-root", str(args.measurement_root), "--output", str(args.prediction_root)], cwd=ROOT, check=True)
         state["status"] = "writing_comparison"
         save()
-        write_report(args.measurement_root, args.prediction_root, HERE / "comparison-report.md")
+        subprocess.run(["python3", str(HERE / "report_serving_comparison.py"), "--measurement-root", str(args.measurement_root), "--prediction-root", str(args.prediction_root), "--output", str(HERE / "comparison-report.md")], cwd=ROOT, check=True)
         archive = HERE / "predictions.tar.gz"
         with tarfile.open(archive, "w:gz") as output:
             output.add(args.prediction_root, arcname="predictions")
