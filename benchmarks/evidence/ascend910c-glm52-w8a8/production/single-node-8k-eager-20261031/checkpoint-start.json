@@ -1,0 +1,58 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Run exact16-device single-node8K/1K eager searches across13 concurrency values, then verify saved configurations and record results. NPU/services remain deferred; serving accuracy not accepted."
+  },
+  "research": {
+    "sglang_pinned_scheduler_alignment": {
+      "single_node_8k_search": {
+        "status": "running",
+        "input_tokens": 8192,
+        "output_tokens": 1024,
+        "concurrencies": [
+          1,
+          2,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          32,
+          48,
+          64,
+          96,
+          128
+        ],
+        "requests": "2*concurrency",
+        "min_devices": 16,
+        "max_devices": 16,
+        "runtime_source": "db5f2e721670d3eb2a10785fe55ad2d28af81349",
+        "image_id": "sha256:b3c49d92579f638228c66076901af4768278c8fa309a90d0a002eed79e653cd9",
+        "serving_measured": false
+      }
+    }
+  },
+  "configurations": {
+    "united-tp16-dp2-ep16": {
+      "progress": {
+        "stage": 2,
+        "status": "in_progress",
+        "next_action": "Run exact16-device single-node8K/1K eager searches across13 concurrency values, then verify saved configurations and record results. NPU/services remain deferred; serving accuracy not accepted."
+      },
+      "artifacts": {
+        "single_node_8k_20261031_search_yaml": {
+          "path": "production/single-node-8k-eager-20261031/search.yaml",
+          "kind": "file",
+          "scope": "validation"
+        },
+        "single_node_8k_20261031_run_search_py": {
+          "path": "production/single-node-8k-eager-20261031/run_search.py",
+          "kind": "file",
+          "scope": "validation"
+        }
+      }
+    }
+  }
+}
