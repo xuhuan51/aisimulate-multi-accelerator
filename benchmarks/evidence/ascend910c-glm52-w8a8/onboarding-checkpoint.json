@@ -3663,6 +3663,14 @@
         "python/pyproject_npu.toml deleted"
       ]
     },
+    "serving_metrics_extension_20261101": {
+      "collection_version": 2,
+      "effective_from": "recommended C128 and all later control configurations; C4-C64 preserve original collection scope",
+      "limitations": "No retrospective per-point scheduler or KV transfer counters for C4-C64. No valid forward device timing series on these NPU endpoints; missing is not zero. Scheduler stage wall time is not NPU kernel duration.",
+      "observed_contract": "PD queues have num_decode_* and num_prefill_* names; KV transfer and DP sync histograms expose sum/count; scheduler_stage_seconds_total exposes mutually exclusive per-process loop wall time",
+      "supplemental_snapshot": "recommended-2p1d-dtp32-20261101/additional-metrics-extension-mid-c64.json.gz is a cumulative snapshot midway through C64, not a complete C64 measurement interval",
+      "validation": "Parser checked against live pinned v0.5.22 endpoint; stage, prealloc queue, DP sync histogram sum and retraction gauge present"
+    },
     "serving_start": {
       "container": "glm52-united-v0522",
       "launch_option_spelling_check": "33 original United CLI flags present in v0.5.22 help",
@@ -4061,7 +4069,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 114,
+  "revision": 115,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

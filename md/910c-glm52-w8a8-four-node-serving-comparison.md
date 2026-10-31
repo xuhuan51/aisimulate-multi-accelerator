@@ -147,6 +147,14 @@ running batch 是不同指标。P 上同一 DP rank 的多个 TP 进程会重复
 不会覆盖或伪造原始采样。该方法给出活跃 rank 的离散近似值，可能包含系统探活，
 不能代替逐轮 forward trace；客户端 TTFT/TPOT/吞吐不依赖这项修正。
 
+`collection_version=2` 另外采集镜像实际导出的 PD prealloc/transfer/bootstrap 队列、
+KV 传输直方图的 sum/count、DP 同步等待、scheduler 分阶段累计时间和回退 gauge。
+这项扩展从推荐组 C128 及后续对照组生效；先前 C4～C64 的客户端结果和 running/KV
+采样仍有效，但不能据此补造当时未采集的分阶段时间。
+`scheduler_stage_seconds_total` 是各进程的互斥调度循环墙钟分类，包含同步等待，
+不能直接当成 NPU 算子执行时间。镜像在此环境没有导出有效的 forward 设备计时序列，
+指标缺失不能解释为 forward 时间为零。
+
 后续对比保留原始预测，再单独替换实际 KV 容量做诊断，以区分算子/通信耗时偏差、
 容量偏差与排队调度偏差。未完成该对比之前，不宣称预测准确性已通过验收。
 

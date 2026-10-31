@@ -26,7 +26,20 @@ METRICS = {
     "sglang:num_inflight_reqs", "sglang:prefill_effective_tokens_total",
     "sglang:num_aborted_requests_total", "sglang:prompt_tokens_total",
     "sglang:generation_tokens_total", "sglang:num_requests_total",
+    "sglang:num_retracted_reqs", "sglang:num_decode_prealloc_queue_reqs",
+    "sglang:num_decode_transfer_queue_reqs", "sglang:num_decode_host_receive_queue_reqs",
+    "sglang:num_decode_deferred_kv_release_reqs", "sglang:num_prefill_bootstrap_queue_reqs",
+    "sglang:num_prefill_inflight_queue_reqs", "sglang:scheduler_stage_seconds_total",
+    "sglang:scheduler_process_cpu_seconds_total", "sglang:scheduler_idle_seconds_total",
+    "sglang:dp_attention_steps_total", "sglang:dp_attention_pairs_total",
 }
+HISTOGRAMS = {
+    "sglang:kv_transfer_latency_ms", "sglang:kv_transfer_speed_gb_s",
+    "sglang:kv_transfer_alloc_ms", "sglang:kv_transfer_bootstrap_ms",
+    "sglang:dp_attention_sync_wait_seconds", "sglang:dp_attention_token_imbalance_ratio",
+    "sglang:queue_time_seconds", "sglang:per_stage_req_latency_seconds",
+}
+METRICS.update(name + suffix for name in HISTOGRAMS for suffix in ("_sum", "_count"))
 
 
 def parse_metrics(text):
@@ -134,7 +147,7 @@ def main():
                     samples = list(executor.map(fetch, args.endpoint))
                     sample_errors += sum("error" in sample for sample in samples)
                     measured = timing["measurement_start_approx"] is not None and started >= timing["measurement_start_approx"]
-                    record = {"time": started, "measured_approx": measured, "endpoints": samples}
+                    record = {"time": started, "measured_approx": measured, "endpoints": samples, "collection_version": 2}
                     raw.write(json.dumps(record) + "\n")
                     raw.flush()
                     aggregate_samples.append(aggregate(record, previous_tokens))
@@ -158,6 +171,7 @@ def main():
         "raw_decode_running_peak": max((row["raw_decode_running"] for row in measured), default=0),
         "samples": aggregate_samples,
         "aggregation_version": 2,
+        "collection_version": 2,
         "scope": "1秒采样；TP副本去重，仅累计本采样间隔decode token counter增长的DP rank，过滤协同forward期间空闲rank的旧gauge；非精确逐轮batch。measured窗口由预热结束日志加1秒估计。",
     }
     (args.output / "metrics-summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
