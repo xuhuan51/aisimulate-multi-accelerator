@@ -1964,6 +1964,134 @@ fn sglang_releases_source_kv_while_destination_finishes_a_decode_pass() {
 }
 
 #[test]
+fn sglang_dp_reservation_waits_for_source_registration_at_prefill_boundary() {
+    for prefill_dp in [1, 2] {
+        let mut config = sglang_disagg_config();
+        config.num_prefill_workers = 1;
+        config.num_decode_workers = 1;
+        config.prefill_dp_size = prefill_dp;
+        config.decode_dp_size = 2;
+        for args in [&mut config.prefill_args, &mut config.decode_args] {
+            args.speedup_ratio = 1.0;
+            args.decode_speedup_ratio = 1.0;
+            args.enable_prefix_caching = false;
+            args.timing_model = crate::engine::TimingModelConfig::Fixed {
+                prefill_ms: 10.0,
+                decode_ms: 20.0,
+            };
+        }
+        let pending = crate::replay::normalize_trace_requests(
+            vec![request(1, 128, 2, 0.0), request(2, 128, 2, 2.0)],
+            1.0,
+        )
+        .unwrap();
+        let (collector, _) =
+            DisaggRuntime::from_requests(&config, None, None, pending, ReplayMode::Trace)
+                .unwrap()
+                .with_per_request_records(true)
+                .run()
+                .unwrap();
+        let report = collector.finish();
+        let later = report
+            .per_request
+            .iter()
+            .find(|row| row.uuid == Uuid::from_u128(2).to_string())
+            .unwrap();
+        assert_eq!(
+            later.destination_reserved_ms,
+            Some(if prefill_dp == 1 { 2.0 } else { 10.0 })
+        );
+        assert_eq!(report.request_counts.completed_requests, 2);
+        assert_eq!(report.request_counts.total_output_tokens, 4);
+    }
+}
+
+#[test]
+fn sglang_source_registration_tokenizes_once_before_reservation() {
+    let mut config = sglang_disagg_config();
+    config.num_prefill_workers = 1;
+    config.num_decode_workers = 1;
+    config.prefill_dp_size = 2;
+    for args in [&mut config.prefill_args, &mut config.decode_args] {
+        args.speedup_ratio = 1.0;
+        args.decode_speedup_ratio = 1.0;
+        args.enable_prefix_caching = false;
+        args.timing_model = crate::engine::TimingModelConfig::Fixed {
+            prefill_ms: 10.0,
+            decode_ms: 20.0,
+        };
+    }
+    let pending =
+        crate::replay::normalize_trace_requests(vec![request(1, 128, 1, 0.0)], 1.0).unwrap();
+    let (collector, _) =
+        DisaggRuntime::from_requests(&config, None, None, pending, ReplayMode::Trace)
+            .unwrap()
+            .with_tokenization(TokenizationLatency::new(1, 3.0, 0.0))
+            .with_per_request_records(true)
+            .run()
+            .unwrap();
+    let report = collector.finish();
+    assert_eq!(report.per_request[0].destination_reserved_ms, Some(3.0));
+    assert_eq!(report.per_request[0].prefill_admit_ms, Some(3.0));
+    assert_eq!(report.per_request[0].first_token_ms, Some(13.0));
+}
+
+#[test]
+fn sglang_cancel_while_source_registration_waits_leaves_no_destination_kv() {
+    let mut config = sglang_disagg_config();
+    config.num_prefill_workers = 1;
+    config.num_decode_workers = 1;
+    config.prefill_dp_size = 2;
+    for args in [&mut config.prefill_args, &mut config.decode_args] {
+        args.speedup_ratio = 1.0;
+        args.decode_speedup_ratio = 1.0;
+        args.enable_prefix_caching = false;
+        args.timing_model = crate::engine::TimingModelConfig::Fixed {
+            prefill_ms: 10.0,
+            decode_ms: 20.0,
+        };
+    }
+    let pending = crate::replay::normalize_trace_requests(
+        vec![request(1, 128, 2, 0.0), request(2, 128, 2, 2.0)],
+        1.0,
+    )
+    .unwrap();
+    let mut runtime = DisaggRuntime::from_requests(&config, None, None, pending, ReplayMode::Trace)
+        .unwrap()
+        .with_per_request_records(true);
+    runtime.drain_current_timestamp().unwrap();
+    runtime.advance_now_ms(2.0);
+    runtime.drain_current_timestamp().unwrap();
+    let uuid = Uuid::from_u128(2);
+    assert!(!runtime.state(uuid).unwrap().prefill_bootstrap_registered);
+    assert!(
+        runtime
+            .state(uuid)
+            .unwrap()
+            .prefill_bootstrap_worker_idx
+            .is_some()
+    );
+    let handoff_id = runtime.state(uuid).unwrap().handoff_id;
+    runtime
+        .apply_handoff_fact(uuid, HandoffFact::Canceled { handoff_id })
+        .unwrap();
+    runtime.drain_current_timestamp().unwrap();
+    while !runtime.is_done() {
+        runtime.step().unwrap();
+    }
+    let report = runtime.collector.finish();
+    let canceled = report
+        .per_request
+        .iter()
+        .find(|row| row.uuid == uuid.to_string())
+        .unwrap();
+    assert_eq!(canceled.terminal_status, ReplayTerminalStatus::Canceled);
+    assert_eq!(canceled.destination_reserved_ms, None);
+    assert_eq!(report.request_counts.completed_requests, 1);
+    assert_eq!(report.request_counts.canceled_requests, 1);
+}
+
+#[test]
 fn sglang_prebuilt_first_token_does_not_execute_a_decode_forward() {
     for output_tokens in [1, 2, 4] {
         let mut config = sglang_disagg_config();

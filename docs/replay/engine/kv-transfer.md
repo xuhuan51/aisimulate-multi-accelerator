@@ -103,6 +103,15 @@ Backends order the handoff differently:
 | vLLM, TensorRT-LLM | Source-first: the prefill side finishes and then the decode side reserves space. |
 | SGLang | Destination-first: the decode side reserves space before the transfer. |
 
+For SGLang with multiple attention-DP ranks on prefill, Replay first routes the
+request to its prefill scheduler and registers the source rank at that
+scheduler's next available boundary. Destination reservation waits for this
+registration; prefill computation still waits for destination capacity. This
+models the source-rank lookup used by round-robin DP routing without allocating
+prefill KV during registration. Configured tokenization occurs once, before
+registration. A canceled registration releases its route without allocating
+destination KV. Single-rank prefill requires no rank lookup.
+
 SGLang publishes each completed prefill chunk at its forward completion
 boundary, even with overlap scheduling disabled. Non-final sends end at a full
 KV page; the last send includes the remaining partial page. Transfers for one

@@ -982,6 +982,7 @@ where
     max_sim_time_ms: Option<f64>,
     /// Optional per-worker tokenization between prefill placement and the prefill engine.
     tokenization: Option<TokenizationStage<(Uuid, usize, IssuedHandoffAction)>>,
+    source_registration_required: bool,
     /// Optional scaling component. When set, `run()` seeds recurring `ScalingTick` events.
     scaling_policy: Option<Box<dyn ReplayScalingPolicy>>,
     /// Optional policy-neutral virtual-time telemetry sampler.
@@ -1136,6 +1137,8 @@ where
             traffic: TrafficAccumulators::new(),
             max_sim_time_ms: None,
             tokenization: None,
+            source_registration_required: handoff_order == HandoffOrder::DestinationFirst
+                && prefill_dp_size > 1,
             scaling_policy: None,
             telemetry: None,
             collect_fpm: false,
@@ -1347,7 +1350,7 @@ where
         action: IssuedHandoffAction,
     ) -> Result<()> {
         if self.tokenization.is_none() {
-            return self.submit_prefill(uuid, worker_idx, action);
+            return self.finish_prefill_ingress(uuid, worker_idx, action);
         }
         let (logical_worker_id, _) =
             self.prefill_engine
@@ -1379,9 +1382,30 @@ where
         let changed = !released.is_empty();
         for (tokenized_ms, (uuid, worker_idx, action)) in released {
             self.collector.on_tokenized(uuid, tokenized_ms);
-            self.submit_prefill(uuid, worker_idx, action)?;
+            self.finish_prefill_ingress(uuid, worker_idx, action)?;
         }
         Ok(changed)
+    }
+
+    fn finish_prefill_ingress(
+        &mut self,
+        uuid: Uuid,
+        worker_idx: usize,
+        action: IssuedHandoffAction,
+    ) -> Result<()> {
+        if !matches!(action.action, HandoffAction::ReserveDestination { .. }) {
+            return self.submit_prefill(uuid, worker_idx, action);
+        }
+        self.state_mut(uuid)?.prefill_bootstrap_worker_idx = Some(worker_idx);
+        if self.prefill_engine.worker_is_busy(worker_idx)? {
+            self.flow
+                .action_queues
+                .defer(uuid, action, SimulationWorkerStage::Prefill, worker_idx);
+        } else {
+            self.state_mut(uuid)?.prefill_bootstrap_registered = true;
+            self.flow.action_queues.enqueue_all(uuid, vec![action]);
+        }
+        Ok(())
     }
 
     fn submit_prefill(
@@ -1697,7 +1721,17 @@ where
                         stage: SimulationWorkerStage::Prefill,
                     });
                 }
-                self.route_prefill(uuid, issued)?;
+                if self.state(uuid)?.prefill_bootstrap_registered {
+                    let worker_idx = self
+                        .state(uuid)?
+                        .prefill_bootstrap_worker_idx
+                        .ok_or_else(|| anyhow!("registered source has no prefill worker"))?;
+                    self.state_mut(uuid)?.phase = DisaggPhase::QueuedPrefill;
+                    self.state_mut(uuid)?.select_prefill_dp_rank()?;
+                    self.submit_prefill(uuid, worker_idx, issued)?;
+                } else {
+                    self.route_prefill(uuid, issued)?;
+                }
             }
             HandoffAction::ReserveDestination { .. } => {
                 if !self.decode_engine.has_active_workers() {
@@ -1706,7 +1740,22 @@ where
                         stage: SimulationWorkerStage::Decode,
                     });
                 }
-                self.route_destination(uuid, issued)?;
+                if self.source_registration_required
+                    && !self.state(uuid)?.prefill_bootstrap_registered
+                {
+                    if let Some(worker_idx) = self.state(uuid)?.prefill_bootstrap_worker_idx {
+                        self.finish_prefill_ingress(uuid, worker_idx, issued)?;
+                    } else if !self.prefill_engine.has_active_workers() {
+                        return Ok(ActionExecution::WaitingForWorker {
+                            action: issued,
+                            stage: SimulationWorkerStage::Prefill,
+                        });
+                    } else {
+                        self.route_prefill(uuid, issued)?;
+                    }
+                } else {
+                    self.route_destination(uuid, issued)?;
+                }
             }
             HandoffAction::StartTransfer { delay_ms, .. } => {
                 if let Some(transfer) = self.flow.start_transfer(
