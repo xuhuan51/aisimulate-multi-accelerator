@@ -192,15 +192,78 @@ def phase_timer(original, phase):
 
 
 if os.environ.get("AISIM_PAIRED_PHASES") == "1":
+    import inspect
+    import triton.compiler as triton_compiler
+
     from sglang.srt.disaggregation.decode import DecodePreallocQueue
+    from sglang.srt.hardware_backend.npu.allocator_npu import NPUPagedTokenToKVPoolAllocator
+    from sglang.srt.managers.schedule_batch import ScheduleBatch
 
     for owner, names in (
         (Scheduler, ("process_prefill_chunk", "send_kv_chunk", "process_batch_result_disagg_prefill")),
         (DecodePreallocQueue, ("_pre_alloc", "_send_kv_metadata", "_transfer_page_indices")),
+        (ScheduleBatch, ("prepare_for_extend",)),
     ):
         for name in names:
             original_phase = getattr(owner, name)
             setattr(owner, name, phase_timer(original_phase, f"{owner.__name__}.{name}"))
+
+    original_alloc_extend = NPUPagedTokenToKVPoolAllocator.alloc_extend
+    alloc_signature = inspect.signature(original_alloc_extend)
+    original_compile = triton_compiler.compile
+
+    def write_allocator_record(row):
+        parallel = get_parallel()
+        row.update({"pid": os.getpid(), "dp_rank": parallel.dp_rank or 0,
+                    "attn_tp_rank": parallel.attn_tp_rank})
+        with (Path("/campaign") / f"allocator-events-pid{os.getpid()}.jsonl").open("a") as stream:
+            stream.write(json.dumps(row, separators=(",", ":")) + "\n")
+
+    @functools.wraps(original_alloc_extend)
+    def measured_alloc_extend(self, *args, **kwargs):
+        parallel = get_parallel()
+        if parallel.attn_tp_rank != 0:
+            return original_alloc_extend(self, *args, **kwargs)
+        arguments = alloc_signature.bind(self, *args, **kwargs).arguments
+        row = {"event": "alloc_extend", "page_size": self.page_size,
+               "free_pages_before": len(self.free_pages),
+               "free_pages_alignment_16": self.free_pages.data_ptr() % 16,
+               "free_pages_alignment_512": self.free_pages.data_ptr() % 512,
+               "extend_num_tokens": arguments["extend_num_tokens"],
+               "num_new_pages": arguments.get("num_new_pages"),
+               "cpu_lengths": {name: arguments[name].tolist() for name in ("prefix_lens_cpu", "seq_lens_cpu")
+                               if arguments[name].device.type == "cpu"}}
+        started = time.perf_counter()
+        row["start_unix"] = time.time()
+        succeeded = False
+        try:
+            result = original_alloc_extend(self, *args, **kwargs)
+            succeeded = result is not None
+            return result
+        finally:
+            row.update({"elapsed_ms": 1000 * (time.perf_counter() - started),
+                        "free_pages_after": len(self.free_pages), "succeeded": succeeded})
+            write_allocator_record(row)
+
+    @functools.wraps(original_compile)
+    def measured_compile(*args, **kwargs):
+        source = args[0] if args else kwargs.get("src")
+        row = {"event": "triton_compile", "kernel": getattr(getattr(source, "fn", None), "__name__", None),
+               "signature": str(getattr(source, "signature", None)),
+               "constants": str(getattr(source, "constants", getattr(source, "constexprs", None))),
+               "attributes": str(getattr(source, "attrs", None)), "start_unix": time.time()}
+        started = time.perf_counter()
+        succeeded = False
+        try:
+            result = original_compile(*args, **kwargs)
+            succeeded = True
+            return result
+        finally:
+            row.update({"elapsed_ms": 1000 * (time.perf_counter() - started), "succeeded": succeeded})
+            write_allocator_record(row)
+
+    NPUPagedTokenToKVPoolAllocator.alloc_extend = measured_alloc_extend
+    triton_compiler.compile = measured_compile
 
 for setter_name in (
     "set_prefill_bootstrap_queue_entry_time", "set_bootstrap_done_time", "set_wait_queue_entry_time",

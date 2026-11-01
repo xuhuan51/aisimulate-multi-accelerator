@@ -1,0 +1,19 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Implement evidence-qualified cold request/batch preparation with shared compilation cache and pointer-alignment specialization, preserving closed-loop scheduling and explicit initial cache state. Resolve first-visible-text metric assumptions; do not use per-rank fixed penalties or post-hoc TTFT correction. Original eight TTFT outliers remain."
+  },
+  "research": {
+    "allocator_attribution_20261102": {
+      "completed": "Same pinned1P1D node20/25 TP16/ADP4/EP16,graph/overlap/spec disabled:8192/128 C1/N8 andC4/N8,2warmups each,16formal requests complete. Four512/32 post-measurement requests only drain pending timer observations. All2case batch traces complete,decode count=N*(O-1). No coefficients fitted from these requests.",
+      "accuracy": "C1 TTFT3990.432vs3052.417ms(-23.51percent),TPOT-1.99percent,throughput+3.69percent. C4 TTFT5092.606vs4999.049ms(-1.84percent),TPOT-3.48percent,throughput+3.52percent. C4 decode meanbatch3.77695vs3.79104(+0.37percent),prefill2.28571both. These short-output controls do not replace the earlier full8192/1024 holdout.",
+      "direct_cause": "Firstslow formal request D/DP2 alloc2134.522ms containscompile2132.784ms. Secondslow request P/DP3 alloc2163.331ms containscompile2160.130ms,explaining thepreviouslyunattributed2188.282ms outside-run_batch gap. No-compile formal allocator median0.576774ms. Source/local-clock/rank/PID/window joins recorded; nocross-node clock subtraction.",
+      "state_semantics": "Same4K allocator with different free_pages16-bytealignment hasdifferent Triton attrs. Same observed specialization onother ranks can loadvia compileAPI in~2ms; compileAPIcallisnotnecessarilyfullcompilation. Pinnedcompiler cachekeyincludesmorethan signatures/constants/attrs: backend options andenvironment also matter. Do not inferfixedcostperrank. Healthrequests haveindependentroundrobin counter; theychangeallocator/cachestatebutnotuserroundrobinposition.",
+      "first_text": "Pinned cumulative-text servingclient expandslaterchunks bytoken delta. Complete stream outputtokensminusITLcount identifies firstnonemptychunk cumulative tokens. NewC1sequence1,3,1,1,1,1,3,1. Actual outputvisibilityremainsnotmodeled; nofixed2-token rule added.",
+      "artifacts": "production/prediction-repair-20261102/allocator-cold-validation.md;allocator-validation.json;allocator-validation-manifest.json;allocator-cold-attribution.json.gz;pd-allocator-timeline-analysis.json.gz;pd-allocator-1p1d;allocator-validation-replays. 41remote regularfiles hashverified;image/modelmetadata matched.",
+      "resources": "AllownedP,D,router stopped. node20andnode25 eachnpu-after records8physicalNPUsfree. node25privateDocker ps empty,SSHroot sessionclosed.Otherusersservicesuntouched.",
+      "goal_audit": "Committedforwardbatchproductionrepair completed in586d384b with476Rust+433Python/GPUparity tests. Original23pointTTFTstill15/23within15percent,8outliers,worst53.42percent;TPOT/throughput allwithin5.2percent.Goal remainsactive.Historical217checkpointintegrityissuesunchangedandnotfabricated."
+    }
+  }
+}

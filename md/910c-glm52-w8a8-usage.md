@@ -69,6 +69,12 @@ forward残差只用于对应的P/TP16-D/TP32-D拓扑，不应把固定TP16残差
 未参与拟合。目前23点TPOT最大绝对误差3.65%、吞吐最大5.20%，TTFT仍有8点超出15%。
 已测到首次4K/8K KV分页分配的Triton编译约2秒，后续allocator约0.5ms；该冷状态
 尚未进入模拟，两个warmup不能保证所有副本/rank/shape预热。不能据此承诺低并发冷请求的TTFT SLO。
+
+新16条双节点控制请求进一步将D/P约2.1秒延迟定位到页分配的compile API；
+即使同为4K，free_pages指针16字节对齐不同也会生成不同特化。相同特化可通过
+共享编译缓存快速加载，不能按rank数量推导冷编译次数。健康请求有独立轮询状态，
+会影响页地址和cache状态。详细数据与尚未建模的条件见
+[冷编译归因](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/allocator-cold-validation.md)。
 前一版`request-timing-configs/`和`aisimulate-910c:request-timing-repair-20261102`保留用于对照。
 
 以下保留通用适配入口和原始镜像用法，供未启用上述校准的基线对照：

@@ -1,0 +1,61 @@
+{
+  "created_at": "2026-11-01T23:43:58.305283+00:00",
+  "simulator_commit": "586d384b958f56f0de2d3013b390b489c669f1cd",
+  "serving_image": "sha256:d4c350d7d4e233d3cd203d2f783467c5f5be1453b9eee073f71b758069392edb",
+  "source_sha256": {
+    "sglang/srt/entrypoints/http_server.py": "a89d20bb2fa8a86c511ab4d9d054f74d707423ab220f733ff25e62fcc0e49979",
+    "sglang/srt/managers/data_parallel_controller.py": "ad3cfe599d4b95d7b998d24259f8b8a4d026c5f78c918c11c9ed31f2ce0e947c",
+    "triton/compiler/compiler.py": "4e432986cb567b94d282f9a2c2f9911a6c3718337289fa936f240282a6a5d54b",
+    "sglang/benchmark/serving.py": "365c9a348c16a130a0ab62b8d6141b82dd56cc8542b6baf94cc92d120709cd35"
+  },
+  "calibration": "No new coefficient fitted; all16formal requests are held out from current timing/tokenization profiles. 4post-measurement drain requests are not formal validation.",
+  "comparison": [
+    {
+      "case": "allocator-c1-8k128",
+      "concurrency": 1,
+      "requests": 8,
+      "input_length": 8192,
+      "output_length": 128,
+      "mode": "native",
+      "predicted_ttft_ms": 3052.417324844923,
+      "measured_ttft_ms": 3990.431609985535,
+      "error_percent_ttft_ms": -23.506587177019988,
+      "predicted_tpot_ms": 392.6384806692915,
+      "measured_tpot_ms": 400.6186873366961,
+      "error_percent_tpot_ms": -1.9919706493116585,
+      "predicted_input_tok_s": 154.80699812949257,
+      "measured_input_tok_s": 149.29506263085668,
+      "error_percent_input_tok_s": 3.6919744039121793,
+      "predicted_output_tok_s": 2.4188593457733214,
+      "measured_output_tok_s": 2.3327353536071356,
+      "error_percent_output_tok_s": 3.6919744039121793
+    },
+    {
+      "case": "allocator-c4-8k128",
+      "concurrency": 4,
+      "requests": 8,
+      "input_length": 8192,
+      "output_length": 128,
+      "mode": "native",
+      "predicted_ttft_ms": 4999.049260016047,
+      "measured_ttft_ms": 5092.6056369935395,
+      "error_percent_ttft_ms": -1.8371023331923308,
+      "predicted_tpot_ms": 410.1885902458155,
+      "measured_tpot_ms": 424.9850917826627,
+      "error_percent_tpot_ms": -3.481651903312921,
+      "predicted_input_tok_s": 569.3688954735226,
+      "measured_input_tok_s": 550.0070226324125,
+      "error_percent_input_tok_s": 3.5202955679440873,
+      "predicted_output_tok_s": 8.89638899177379,
+      "measured_output_tok_s": 8.593859728631445,
+      "error_percent_output_tok_s": 3.5202955679440873
+    }
+  ],
+  "remote_manifest_verified_files": 41,
+  "resources": {
+    "prefill_idle_devices": 8,
+    "decode_idle_devices": 8,
+    "task_serving_containers": "all stopped"
+  },
+  "cold_qualification": "Actual compiled specialization and cache state vary with generated health checks; health routing has its own counter. Do not infer one miss per rank or per shape name."
+}

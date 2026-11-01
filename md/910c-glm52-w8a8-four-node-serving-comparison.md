@@ -18,6 +18,15 @@ forward 读取真实batch，并分别统计逻辑worker总量和各attention-DP 
 运行镜像为`aisimulate-910c:forward-batch-repair-20261102`，用`predict --detail time`
 将统计保存到`prediction.json`的`forward_pass_batches`。原23点的TTFT超标项仍需修复。
 
+**冷请求补测已完成（node20/25，16条正式请求）：**新8192/128、C4/N8独立验证
+TTFT误差-1.84%、TPOT-3.48%、输入输出吞吐+3.52%，未重新拟合参数。
+C1/N8仍低估TTFT 23.51%；两条慢请求分别在D/P页分配内观测到2132.78/2160.13ms
+的compile API耗时。此前P在run_batch外约2.17秒的间隙已定位。
+实测证实free_pages指针对齐会产生不同编译特化；健康检查使用独立DP轮询计数器，
+但会改变页分配和cache状态。因此不能按“每rank首请求加2秒”修正预测。
+全部诊断服务已停止，原始数据、完整batch和误差见
+[冷编译归因与独立验证](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/allocator-cold-validation.md)。
+
 **最新修复结果（2026-11-02，活跃DP开销修复）：**原23点中，TPOT的MAPE为1.69%，
 最大绝对误差3.65%；输入/输出吞吐的MAPE为2.49%，最大5.20%。
 TTFT有15/23点进入15%以内，MAPE为14.73%，仍有8点超标、最差53.42%。
