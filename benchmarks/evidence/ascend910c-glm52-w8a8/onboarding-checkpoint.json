@@ -3037,7 +3037,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Complete independently paired TP32/ADP32/EP32 decode calibration and holdout validation; investigate request ingress/bootstrap/cold-start TTFT with request-linked evidence; rerun original matched PD candidates without treating operator calibration as whole-serving acceptance.",
+    "next_action": "Validate the HTTP PD gateway response gate and request-linked client/Tokenizer/Scheduler timings; qualify prefill forward residual independently; reduce remaining TTFT error without fitting original serving validation points.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -4484,6 +4484,15 @@
       "publication": "Local commits only; no remote push.",
       "remaining_work": "Production Ascend query integration, actual-route communication qualification, full-forward and serving prediction accuracy."
     },
+    "tp32_paired_validation_20261102": {
+      "artifacts": "production/prediction-repair-20261102/tp32-paired-validation.md, tp32-paired-validation-manifest.json, dual-eager-serving-comparison.json/csv and eager-overhead-tp32-adp32.json",
+      "calibration": "C1-only median per-forward residual132.11946809305664ms,162 complete32rank steady decode groups. TP16 profile remains197.60911497216992ms; no sharing across topologies.",
+      "checkpoint_integrity": "Resume currently reports1missing historical launch script and216stale historical validation contexts. The saved united configuration draft_request is empty; current immutable source files for the new campaigns are separately SHA256-verified in their manifests. Do not represent these historical checkpoint references as newly accepted.",
+      "completed": "node20+25 TP32/ADP32/EP32 six cases,106 formal requests with exact token counts and zero client errors; services stopped after collection. Pinned0.5.22/CANN9.1 image and model metadata match across both nodes.",
+      "independent_validation": "Control,C4,C8,C32and16K-C4 holdout paired-forward MAPE2.52%,2.83%,4.17%,12.94%,3.02%. Original four-node TP32 recommendation6points TPOT errors-2.21%..-12.56%, throughput+3.44%..+15.56%. Original data were not fitted.",
+      "limits": "Only paired steady eager decode calibrated. Colocated diagnostic prefill uses1024tokens/rank to retain650MBHCCL buffer; this is not PD endpoint timing. TTFT remains unaccepted.",
+      "new_work": "Request-linked 1P1D campaign on20+25 running with explicit clientRID and Tokenizer stage timestamps. HTTP PD gateway source confirms prefill response body is awaited before decode stream is forwarded. Native gate passes473Rust replay tests; Python and end-to-end validation in progress."
+    },
     "worker_memory_collection": {
       "confidence": "All16ranks have6startup boundaries;52992usabletokens and5833850880KVbytes each;5report validation tests passed",
       "container": "aisim-glm52-memory-20261022",
@@ -4502,7 +4511,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 134,
+  "revision": 135,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }
