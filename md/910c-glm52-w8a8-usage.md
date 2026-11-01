@@ -36,17 +36,26 @@ tokenization时序，以及分别校准的TP16/TP32 eager forward开销和真实
 ```bash
 cd /home/youxingye/youxingye_data/aisimulate-910c
 
-sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:active-rank-repair-20261102 \
+sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:forward-batch-repair-20261102 \
   AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q \
   bash scripts/run-ascend910c.sh predict --stack engine \
   --config benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/active-rank-configs/recommended-2p1d-dtp32-8k1k-c8.yaml \
-  --capture-per-request --output-dir aisimulate-output/current-repair-c8
+  --capture-per-request --detail time --output-dir aisimulate-output/current-repair-c8
 ```
 
 该配置占4台机器：2个独立P各TP16/ADP4/EP16，1个D跨2台TP32/ADP32/EP32；
 8192/1024，C8/N16。同目录还有1P3D、2P2D、3P1D的C8对照，以及
 `paired-1p1d-8k1k-c4.yaml`双节点验证配置。修改并发时同时指定
 `--set traffic.load.concurrency=32 --set traffic.stop.requests=64`，并使用新的输出目录。
+
+`--detail time`也导出`prediction.json.forward_pass_batches`：`dp_rank: null`
+表示一个逻辑worker内全部attention-DP rank的真实总batch；数字rank表示该rank。
+平均batch是`request_instances / passes`，峰值是`max_batch_size`，按forward耗时
+加权的平均值是`request_duration_ms / duration_ms`。Prefill、decode、mixed分开计数，
+不含等待队列、padding和未完成forward；它与客户端并发、请求占用量不是同一指标。
+这次新增统计没有改变预测时序。当前完整8K/1K双节点验证的decode平均batch误差
+为-0.19%，prefill为-14.29%；详见
+[逐轮batch对照](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/forward-batch-comparison.md)。
 
 `engine.tokenization`现在可作为固定参数进入`recommend`，保存的候选YAML也保留它；
 `engine.pd_response: sglang_gateway`使客户端首字等待P响应，默认`direct`则直接观察D输出。

@@ -1873,12 +1873,14 @@ fn run_with_input(
     capture_artifacts: bool,
     determinism: ReplayDeterminism,
     tokenization: Option<TokenizationPayload>,
+    capture_forward_passes: bool,
 ) -> crate::replay::ReplayResult<(crate::replay::ReplayReport, Option<ReplayArtifacts>)> {
     let mut replayer = match input {
         Some(input) => Replayer::new(spec, factory)?.with_runtime_input(input),
         None => Replayer::new(spec, factory)?,
     }
     .with_capture_options(ReplayCaptureOptions {
+        capture_forward_passes,
         determinism,
         ..ReplayCaptureOptions::default()
     });
@@ -2486,7 +2488,7 @@ fn execute_json(payload: &str, capture_artifacts: bool) -> Result<String> {
                 ReplayEngineFactory::new,
                 ReplayEngineFactory::with_timing_model,
             );
-            run_with_input(spec, factory, input, capture_artifacts, determinism, tokenization)
+            run_with_input(spec, factory, input, capture_artifacts, determinism, tokenization, capture_performance_diagnostics)
                 .map(|(report, artifacts)| (report, artifacts, resolved_basis))
         }
         ReplayTopology::Disaggregated { .. } => {
@@ -2633,6 +2635,7 @@ fn execute_json(payload: &str, capture_artifacts: bool) -> Result<String> {
                 capture_artifacts,
                 determinism,
                 tokenization,
+                capture_performance_diagnostics,
             )
             .map(|(report, artifacts)| (report, artifacts, resolved_basis))
         }

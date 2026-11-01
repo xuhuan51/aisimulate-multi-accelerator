@@ -1166,6 +1166,8 @@ where
     }
 
     pub(crate) fn with_capture_options(mut self, options: ReplayCaptureOptions) -> Self {
+        self.collector
+            .set_capture_forward_passes(options.capture_forward_passes);
         self.evidence = ReplayEvidenceCollector::new(options);
         self
     }
@@ -2372,6 +2374,8 @@ where
     fn apply_worker_completions(&mut self) -> Result<bool> {
         let mut changed = false;
         while let Some(completion) = pop_ready_worker_completions(&mut self.events, self.now_ms) {
+            let worker_id = completion.worker_id;
+            let stage = completion.stage.into();
             let payloads = match completion.stage {
                 SimulationWorkerStage::Prefill => self
                     .prefill_engine
@@ -2383,6 +2387,11 @@ where
                     bail!("disaggregated replay received an aggregated completion")
                 }
             };
+            self.collector.on_completed_forward(
+                stage,
+                worker_id,
+                payloads.iter().filter_map(|payload| payload.fpm.as_ref()),
+            );
             for payload in payloads {
                 self.process_worker_completion_payload(payload)?;
             }

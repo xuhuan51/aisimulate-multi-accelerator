@@ -92,7 +92,23 @@ rejected. See
 [request tokenization](../engine/README.md#tokenization).
 
 `with_capture_options(ReplayCaptureOptions)` controls capture and canonical
-determinism. Canonical comparison uses the exported schema version, seed and
+determinism.
+
+| Capture field | Default | Behavior |
+| --- | --- | --- |
+| `capture_forward_passes` | `false` | Collect committed forward batch summaries by role, worker, DP rank and phase in `ReplayReport.forward_pass_batches` |
+
+`ReplayForwardBatchSummary.dp_rank = None` denotes the sum across all real ranks
+in one logical-worker forward. Rank rows exclude idle observations. Each row
+contains pass count, request-instance sum, peak batch, batch-size histogram,
+duration, and batch-size × duration sum. Queued requests and padding are
+excluded; canceled requests still contribute to a forward that actually
+completed, while unfinished forwards do not. Capture does not change scheduling
+or performance estimates. Reports after a preparation barrier start fresh
+counters while preserving the capture option. The built-in Python Engine runner
+enables this option together with performance diagnostics.
+
+Canonical comparison uses the exported schema version, seed and
 exclusion definitions rather than arbitrary JSON key order. The default
 round-robin Replayer's `run_with_artifacts` supports fixed single-worker
 aggregated replay with attention DP1 only; a single logical worker with DP2

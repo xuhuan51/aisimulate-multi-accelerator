@@ -35,6 +35,8 @@ impl ReplayDeterminism {
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ReplayCaptureOptions {
     #[serde(default)]
+    pub capture_forward_passes: bool,
+    #[serde(default)]
     pub capture_per_request: bool,
     #[serde(default)]
     pub capture_lifecycle_evidence: bool,

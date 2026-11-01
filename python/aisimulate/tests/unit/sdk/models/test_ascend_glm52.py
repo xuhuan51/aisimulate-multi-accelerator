@@ -618,6 +618,15 @@ def test_pd_group_timing_is_independent_of_diagnostic_capture(model_path):
     for field in ("completed_requests", "mean_ttft_ms", "mean_tpot_ms", "output_throughput_tok_s"):
         assert reports[0].metrics[field] == pytest.approx(reports[1].metrics[field], rel=1e-12)
     assert reports[0].metrics["completed_requests"] == 2
+    assert "native_report" not in reports[0].metadata
+    batches = reports[1].metadata["native_report"]["forward_pass_batches"]
+    decode_groups = [row for row in batches if row["stage"] == "decode" and row["dp_rank"] is None]
+    decode_ranks = [row for row in batches if row["stage"] == "decode" and row["dp_rank"] is not None]
+    assert sum(row["request_instances"] for row in decode_groups) == 6
+    assert sum(row["request_instances"] for row in decode_ranks) == 6
+    assert all(row["phase"] == "decode" for row in decode_groups)
+    assert all(sum(row["batch_histogram"].values()) == row["passes"] for row in batches)
+    assert all(row["max_batch_size"] <= 2 for row in batches)
 
 
 def test_canonical_pd_model_selects_measured_mapping_and_rejects_unknown_geometry(model_path):

@@ -77,6 +77,19 @@ comparing latency or throughput across runs.
 `ReplayOutputRequirements` defaults to summary output. It can request a raw
 report, per-request capture, memory diagnostics or performance diagnostics.
 These controls retain additional evidence without changing the workload.
+`capture_performance_diagnostics=True` also publishes
+`metadata["native_report"]["forward_pass_batches"]` from completed native forwards.
+Each row identifies the serving role, logical worker, phase, and either an
+attention DP rank or the whole logical worker (`dp_rank: null`). The histogram
+and request-instance counters describe actual scheduled batches, excluding
+queued requests, idle ranks, and unfinished forwards. Whole-worker batch sizes
+sum the ranks in one committed grouped forward; padded tensor shapes do not
+inflate these counts. The mean batch size is `request_instances / passes`, and
+the forward-duration-weighted mean is `request_duration_ms / duration_ms` when
+duration is positive. Worker duration is counted once per grouped forward.
+These are forward observations, not periodic occupancy gauges or client
+concurrency. Prefill, decode, and mixed forwards have separate rows; preparation
+epochs are excluded when the runtime starts a new measured report.
 Telemetry fields are part of the shared contract, but the built-in Engine
 JSON runner currently rejects `capture_telemetry=True`; the native Rust
 observer is a separate interface. Analytical EPD does not provide raw native

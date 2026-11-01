@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod bounded;
+mod forward_batches;
+
+use forward_batches::ForwardBatchCollector;
+pub use forward_batches::{ForwardBatchPhase, ReplayForwardBatchSummary};
 
 use ddsketchy::DDSketch;
 use rustc_hash::FxHashMap;
@@ -46,6 +50,7 @@ pub struct ReplayReport {
     /// recomputation. This is measured from native pass metrics, not inferred
     /// from cache reuse ratios; an unfinished pass at a replay cutoff is excluded.
     pub committed_prefill_tokens: u64,
+    pub forward_pass_batches: Option<Vec<ReplayForwardBatchSummary>>,
     pub g3_offload: Option<crate::engine::G3Stats>,
     /// Cluster-shared G2 pools; private G2 caches are not listed.
     pub g2_domains: Vec<G2DomainStats>,
@@ -427,6 +432,9 @@ impl Serialize for ReplayReport {
             map.serialize_entry("kv_eviction_assumption", assumption)?;
         }
         map.serialize_entry("committed_prefill_tokens", &self.committed_prefill_tokens)?;
+        if let Some(batches) = &self.forward_pass_batches {
+            map.serialize_entry("forward_pass_batches", batches)?;
+        }
         if let Some(g3) = &self.g3_offload {
             map.serialize_entry("g3_offload", g3)?;
         }
@@ -995,6 +1003,7 @@ pub struct TraceCollector {
     pub(crate) g3_offload: Option<crate::engine::G3Stats>,
     pub(crate) g2_domains: Vec<G2DomainStats>,
     committed_prefill_tokens: u64,
+    forward_pass_batches: Option<ForwardBatchCollector>,
     requests: FxHashMap<Uuid, TraceRequestStats>,
     batch_reporting: bool,
     bounded_summary: Option<bounded::BoundedSummary>,
@@ -1200,6 +1209,21 @@ impl TraceCollector {
     /// estimates incorrect; only the committed pass describes executed work.
     pub(crate) fn on_completed_prefill_work(&mut self, tokens: u64) {
         self.committed_prefill_tokens += tokens;
+    }
+
+    pub(crate) fn set_capture_forward_passes(&mut self, capture: bool) {
+        self.forward_pass_batches = capture.then(ForwardBatchCollector::default);
+    }
+
+    pub(crate) fn on_completed_forward<'a>(
+        &mut self,
+        stage: crate::replay::WorkerStage,
+        worker_id: usize,
+        snapshots: impl Iterator<Item = &'a crate::replay::protocol::ForwardPassSnapshot>,
+    ) {
+        if let Some(batches) = &mut self.forward_pass_batches {
+            batches.observe(stage, worker_id, snapshots);
+        }
     }
 
     pub(crate) fn contains_request(&self, uuid: Uuid) -> bool {
@@ -1743,6 +1767,10 @@ impl TraceCollector {
         debug_assert!(report_end_ms.is_finite() && report_end_ms >= self.report_start_ms);
         let mut next = Self {
             report_start_ms: report_end_ms,
+            forward_pass_batches: self
+                .forward_pass_batches
+                .as_ref()
+                .map(|_| ForwardBatchCollector::default()),
             defer_token_timeline_finalization: self.defer_token_timeline_finalization,
             capture_per_request: self.capture_per_request,
             sla: self.sla,
@@ -1981,6 +2009,7 @@ impl TraceCollector {
             kv_eviction_policy: crate::engine::KvEvictionPolicy::Lru,
             kv_eviction_assumption: None,
             committed_prefill_tokens: self.committed_prefill_tokens,
+            forward_pass_batches: self.forward_pass_batches.map(ForwardBatchCollector::finish),
             g3_offload: self
                 .g3_offload
                 .map(|stats| g3_since(stats, self.g3_profile_baseline.as_ref())),

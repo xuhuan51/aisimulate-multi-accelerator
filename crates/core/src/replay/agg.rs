@@ -193,6 +193,8 @@ where
     }
 
     pub(crate) fn with_capture_options(mut self, options: ReplayCaptureOptions) -> Self {
+        self.collector
+            .set_capture_forward_passes(options.capture_forward_passes);
         self.evidence = ReplayEvidenceCollector::new(options);
         self
     }
@@ -654,10 +656,16 @@ where
         // Preserve this lower-rank-first tie-break for now. Atomic settlement requires
         // splitting router state mutation from pending-admission draining.
         while let Some(completion) = pop_ready_worker_completions(&mut self.events, self.now_ms) {
-            for payload in self
+            let worker_id = completion.worker_id;
+            let payloads = self
                 .engine
-                .on_scheduled_completion(completion, self.now_ms)?
-            {
+                .on_scheduled_completion(completion, self.now_ms)?;
+            self.collector.on_completed_forward(
+                crate::replay::WorkerStage::Aggregated,
+                worker_id,
+                payloads.iter().filter_map(|payload| payload.fpm.as_ref()),
+            );
+            for payload in payloads {
                 self.process_worker_completion_payload(payload)?;
             }
             changed = true;

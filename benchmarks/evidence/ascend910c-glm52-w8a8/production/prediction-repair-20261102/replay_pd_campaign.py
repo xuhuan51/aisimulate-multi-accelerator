@@ -72,6 +72,7 @@ def main():
     parser.add_argument("--client-arrivals", action="store_true")
     parser.add_argument("--cases", nargs="+")
     parser.add_argument("--workers", type=int, default=2)
+    parser.add_argument("--forward-batches", action="store_true")
     args = parser.parse_args()
     campaign = args.campaign.resolve()
     state = json.loads((campaign / "progress.json").read_text())
@@ -100,6 +101,8 @@ def main():
         destination = args.output.resolve() / case["name"]
         command = ["bash", str(REPO / "scripts/run-ascend910c.sh"), "predict", "--stack", "engine", "--config", str(template),
                    "--capture-per-request", "--output-dir", str(destination / "result")]
+        if args.forward_batches:
+            command.extend(["--detail", "time"])
         settings = {"engine.workers.decode.parallelism.replicas": 1, "traffic.source.input_tokens": case["input_length"],
                     "traffic.source.output_tokens": case["output_length"], "traffic.stop.requests": case["requests"],
                     "traffic.load.concurrency": case["concurrency"],
