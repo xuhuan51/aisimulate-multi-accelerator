@@ -19,6 +19,12 @@ MAPE分别为6.49%和7.79%；TTFT有16/23点进入15%以内，MAPE为14.84%。
 本页后续记录保留各阶段历史结果；使用当前修复需显式选择
 `aisimulate-910c:request-timing-repair-20261102`，原默认镜像作为冻结基线保留。
 
+随后完成24条新的冷启动/重复访问控制请求，参数未重拟合：8K/128的稳态C4/N16
+TTFT误差为-13.86%、TPOT为-6.93%、吞吐为+9.07%。C1/N8包含首次访问rank的
+慢请求，整体TTFT仍低估22.16%；其中重复访问六条均值与预测相差-3.68%，
+该子集只用于定位，不能替代整体误差。失败的32K请求因实际KV容量不足被排除，
+详见[冷启动与重复请求对照](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/cold-warm-validation.md)。
+
 按当前已完成数据整理的总表见
 [22 个已完成点的即时对照](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/available-comparison-22points.md)。
 该表不等剩余测试，只列已核验实测；尚未运行的同口径预测标为“—”。

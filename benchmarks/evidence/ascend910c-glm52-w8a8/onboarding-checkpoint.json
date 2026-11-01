@@ -3037,7 +3037,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Complete the cold-rank-cycle and warm C4/32K controls on20+25; use host-forward and request-stage records to isolate first-use costs outside NPU forward timing. Low-concurrency TTFT remains open despite majority initial accuracy target being reached.",
+    "next_action": "Complete fresh phase-instrumented 1P1D on20/25 to isolate first-use preallocation, metadata and KV-send delays. Preserve original23 and all-request error; no cold penalty fitted yet.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3194,6 +3194,14 @@
       "confidence": "high",
       "finding": "Guided FPM onboarding currently allows only framework=vllm. No SGLang profile was fabricated or accepted.",
       "source": "stage1/runtime-v0522/onboard-init-help.stdout.txt"
+    },
+    "cold_rank_validation_20261102": {
+      "causal_observations": "C1 first observed visits to two ranks after2warmups TTFT5554/6801ms; repeated6mean3169ms vs3052pred(-3.68percent). All8remain in aggregate. FirstcoldD allocation/metadata2116ms; secondcoldP forward interval minus host run_batch2151ms. First visible text sometimestoken3/4; generated-first-token not identical to clientTTFT.",
+      "evidence": "production/prediction-repair-20261102/cold-warm-validation.md,json,csv,manifest.json; pd-cold-1p1d; cold-warm-replays. 20remote regularfiles verifiedSHA256 after stop. Source socketfiles excluded as non-artifacts.",
+      "limitations": "Original23majority accuracy target reached,7lowCTTFT outliers remain. Exact cause of outside-forward first-use time still under measurement; no inference promoted to a universal timing constant. Old checkpoint integrity issues remain separately documented.",
+      "rejected_32k": "The attempted32768input control failed workload token validation despiteHTTP200. Actual Pmax_total17408/max_input17402,D32384/32378,configuredcontext180000. Preserved failure; no32Ktokenizer calibration derived from failedwarmups.",
+      "resources": "Cold campaign containers stopped. Newaisim-phase-pd on20+25 with opt-in timing of _pre_alloc,_send_kv_metadata,_transfer_page_indices,process_prefill_chunk,send_kv_chunk,process_batch_result_disagg_prefill. No added NPU events/synchronization; original collector copies frozen. Others' services untouched.",
+      "validation": "24 formal8K/128 requests completed. C1/N8 TTFT3921.253real/3052.417pred(-22.16percent),TPOT398.432/392.638(-1.45percent),throughput+3.04percent. WarmC4/N16 TTFT5136.579/4424.743(-13.86percent),TPOT422.410/393.151(-6.93percent),throughput+9.07percent. No parameters refitted."
     },
     "collection_cleanup": {
       "local": "Seven task profiler directories removed after exporting and hashing evidence; United healthy; CPU validation container stopped with cache retained.",
@@ -4523,7 +4531,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 136,
+  "revision": 137,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

@@ -69,6 +69,7 @@ def main():
     parser.add_argument("--tokenizer-profile", type=Path)
     parser.add_argument("--prefill-profile", type=Path)
     parser.add_argument("--client-arrivals", action="store_true")
+    parser.add_argument("--cases", nargs="+")
     parser.add_argument("--workers", type=int, default=2)
     args = parser.parse_args()
     campaign = args.campaign.resolve()
@@ -82,6 +83,8 @@ def main():
     jobs = []
     for case in state["cases"]:
         if case["status"] != "completed":
+            continue
+        if args.cases and case["name"] not in args.cases:
             continue
         runtime_path = campaign / case["name"] / "runtime-config.json"
         runtime = json.loads(runtime_path.read_text())

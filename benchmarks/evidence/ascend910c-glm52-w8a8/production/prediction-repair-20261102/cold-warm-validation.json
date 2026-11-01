@@ -1,0 +1,67 @@
+{
+  "scope": "Independent 1P1D same pinned software, no new fitted parameter; all24 successful formal requests retained. Repeated-rank subset is a diagnostic, not a replacement for all-request accuracy.",
+  "rows": [
+    {
+      "case": "cold-rank-cycle-c1",
+      "concurrency": 1,
+      "requests": 8,
+      "input_length": 8192,
+      "output_length": 128,
+      "mode": "native",
+      "predicted_ttft_ms": 3052.417324844923,
+      "measured_ttft_ms": 3921.2529604847077,
+      "error_percent_ttft_ms": -22.157092245647615,
+      "predicted_tpot_ms": 392.6384806692914,
+      "measured_tpot_ms": 398.43203125791496,
+      "error_percent_tpot_ms": -1.454087556748973,
+      "predicted_input_tok_s": 154.80699812949257,
+      "measured_input_tok_s": 150.24356144004076,
+      "error_percent_input_tok_s": 3.037359235705406,
+      "predicted_output_tok_s": 2.4188593457733214,
+      "measured_output_tok_s": 2.347555647500637,
+      "error_percent_output_tok_s": 3.037359235705406
+    },
+    {
+      "case": "warm-validation-c4",
+      "concurrency": 4,
+      "requests": 16,
+      "input_length": 8192,
+      "output_length": 128,
+      "mode": "native",
+      "predicted_ttft_ms": 4424.743145945521,
+      "measured_ttft_ms": 5136.5786231835955,
+      "error_percent_ttft_ms": -13.858163759535458,
+      "predicted_tpot_ms": 393.1508678763527,
+      "measured_tpot_ms": 422.41008263433076,
+      "error_percent_tpot_ms": -6.926732093018472,
+      "predicted_input_tok_s": 599.8576004355605,
+      "measured_input_tok_s": 549.9906166358743,
+      "error_percent_input_tok_s": 9.066879014174356,
+      "predicted_output_tok_s": 9.372775006805632,
+      "measured_output_tok_s": 8.593603384935536,
+      "error_percent_output_tok_s": 9.066879014174356
+    }
+  ],
+  "repeated_rank_c1_ttft_error_percent": -3.684061916525927,
+  "exclusions": [
+    {
+      "case": "long-prefill-validation-c4",
+      "status": "invalid_workload",
+      "runtime_limits": {
+        "10.120.72.20-19000-server-info.json.gz": {
+          "context_length": 180000,
+          "max_req_input_len": 17402,
+          "max_total_num_tokens": 17408,
+          "mem_fraction_static": 0.88
+        },
+        "10.120.72.25-19003-server-info.json.gz": {
+          "context_length": 180000,
+          "max_req_input_len": 32378,
+          "max_total_num_tokens": 32384,
+          "mem_fraction_static": 0.9
+        }
+      },
+      "reason": "32768 input tokens exceed both actual per-rank admission limits; HTTP200 does not make the requested token workload successful."
+    }
+  ]
+}
