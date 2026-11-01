@@ -212,6 +212,9 @@ explicit Ascend controls.
 | `enable_dp_lm_head` | `true` | Matches SGLang's output-layer grouping. `true` retains attention-local TP; `false` uses global TP, sums actual output-request counts across attention DP, and includes DP hidden-state reduction and TP logits exchange. Set separately for each worker role to match its launch flags. |
 | `enable_tp_lm_head_all_to_all` | `false` | With global LM head, uses measured all-to-all only for equal nonzero row counts with attention DP equal to global TP; other batches use all-gather. Local logits cast is measured; additional reordering/scatter and CPU synchronization remain unqualified. This path is reported as estimated composition. |
 | `eager_runtime_overhead` | omitted | Optional additive per-forward residual calibrated from unprofiled forward telemetry. Requires `calibration_id`, `attention_tp`, `attention_dp`, `moe_ep_size`, `prefill_ms`, and `decode_ms`. Timings must be finite and nonnegative. The topology must match the canonical identity; currently restricted to SGLang 0.5.22 and eager execution. |
+| `eager_runtime_overhead.decode_per_extra_active_rank_ms` | `0` | Optional finite nonnegative decode residual per additional attention-DP rank with real requests. Uses the actual synchronized rank vector before padding, not batch size or total configured DP. Fit separately from the base `decode_ms` and retain independent validation. |
+| `kv_transfer_page_layout` | `contiguous` | Selects the measured PD page pattern: `contiguous` or `fragmented`. Both role models must agree; applies when `engine.kv_transfer.type: measured`. |
+| `shape_policy` | `measured` | `measured` requires measured interpolation brackets. `anchored` preserves covered queries and estimates missing numeric coordinates using same-identity boundary measurements and analytical work ratios. It never substitutes hardware, precision, kernel, topology or graph capture buckets. Both PD roles must agree. |
 
 `eager_runtime_overhead` preserves the raw operator estimates and adds a separately
 named, `estimated` runtime contribution once per nonempty forward, including
@@ -222,8 +225,16 @@ the referenced raw observations, calibration rule, software/environment identity
 and held-out validation with the calibration ID. No default overhead is inferred
 from hardware/model names or copied to unmeasured parallel strategies. Static
 diagnostics, replay, and search use the same serialized control.
-| `kv_transfer_page_layout` | `contiguous` | Selects the measured PD page pattern: `contiguous` or `fragmented`. Both role models must agree; applies when `engine.kv_transfer.type: measured`. |
-| `shape_policy` | `measured` | `measured` requires measured interpolation brackets. `anchored` preserves covered queries and estimates missing numeric coordinates using same-identity boundary measurements and analytical work ratios. It never substitutes hardware, precision, kernel, topology or graph capture buckets. Both PD roles must agree. |
+
+For a nonempty decode group with `active` real attention-DP ranks, the optional
+rank term gives `decode_ms + (active - 1) * decode_per_extra_active_rank_ms`.
+Padded empty ranks do not increase this cost. Prefill uses only `prefill_ms`.
+Static per-rank diagnostics assume the configured ranks are uniformly active;
+request-vector estimates and replay use their actual rank occupancy. The default
+zero slope preserves previous constant-overhead profiles. This models steady
+execution residuals, not first-use compilation, gateway buffering, or KV setup.
+EngineSpec schema 32 records the new operator fields; rebuild binary engine
+caches from older schema versions rather than reusing them.
 
 The GLM adapter requires the local checkpoint's `config.json` and
 `quant_model_description.json`. It validates the full ModelSlim precision

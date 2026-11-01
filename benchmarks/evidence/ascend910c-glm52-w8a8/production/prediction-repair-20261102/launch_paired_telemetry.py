@@ -147,6 +147,61 @@ DeviceTimer.wrap = paired_wrap
 Scheduler.run_batch = paired_run_batch
 Req.__init__ = paired_req_init
 TokenizerManager._send_one_request = paired_send_one_request
+
+
+def phase_timer(original, phase):
+    @functools.wraps(original)
+    def wrapped(self, *args, **kwargs):
+        parallel = get_parallel()
+        if parallel.attn_tp_rank != 0:
+            return original(self, *args, **kwargs)
+        requests = {}
+        for value in (*args, *kwargs.values(), getattr(self, "last_batch", None)):
+            candidates = getattr(value, "reqs", None)
+            if candidates is None:
+                candidates = [getattr(value, "req", value)]
+            for request in candidates:
+                if hasattr(request, "rid"):
+                    requests[request.rid] = {
+                        "rid": request.rid,
+                        "bootstrap_room": getattr(request, "bootstrap_room", None),
+                    }
+        started = time.perf_counter()
+        start_unix = time.time()
+        succeeded = False
+        try:
+            result = original(self, *args, **kwargs)
+            succeeded = True
+            return result
+        finally:
+            elapsed_ms = 1000 * (time.perf_counter() - started)
+            if requests or elapsed_ms >= 1:
+                row = {
+                    "phase": phase,
+                    "start_monotonic": started,
+                    "start_unix": start_unix,
+                    "elapsed_ms": elapsed_ms,
+                    "dp_rank": parallel.dp_rank or 0,
+                    "requests": list(requests.values()),
+                    "succeeded": succeeded,
+                }
+                destination = Path("/campaign") / f"host-phases-rank{row['dp_rank']}.jsonl"
+                with destination.open("a") as stream:
+                    stream.write(json.dumps(row, separators=(",", ":")) + "\n")
+    return wrapped
+
+
+if os.environ.get("AISIM_PAIRED_PHASES") == "1":
+    from sglang.srt.disaggregation.decode import DecodePreallocQueue
+
+    for owner, names in (
+        (Scheduler, ("process_prefill_chunk", "send_kv_chunk", "process_batch_result_disagg_prefill")),
+        (DecodePreallocQueue, ("_pre_alloc", "_send_kv_metadata", "_transfer_page_indices")),
+    ):
+        for name in names:
+            original_phase = getattr(owner, name)
+            setattr(owner, name, phase_timer(original_phase, f"{owner.__name__}.{name}"))
+
 for setter_name in (
     "set_prefill_bootstrap_queue_entry_time", "set_bootstrap_done_time", "set_wait_queue_entry_time",
     "set_prefill_transfer_queue_entry_time", "set_prefill_kv_transfer_finish_time",

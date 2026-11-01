@@ -18,6 +18,7 @@ def main():
     parser.add_argument("--role", choices=["prefill", "decode"], required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--container-prefix", default="aisim-paired-pd")
+    parser.add_argument("--phases", action="store_true")
     args = parser.parse_args()
     role = args.role
     node = 20 if role == "prefill" else 25
@@ -62,6 +63,8 @@ def main():
                         "SGLANG_NPU_PROFILING": "0", "SGLANG_ENABLE_OVERLAP_PLAN_STREAM": "0",
                         "SGLANG_DISAGGREGATION_BOOTSTRAP_TIMEOUT": "600", "TRANSFORMERS_VERBOSITY": "error",
                         "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"})
+    if args.phases:
+        environment["AISIM_PAIRED_PHASES"] = "1"
     destination.mkdir(parents=True)
     shutil.copyfile(ROOT / "launch_paired_telemetry.py", destination / "launch_paired_telemetry.py")
     (destination / "npu-before.txt").write_text(inventory)

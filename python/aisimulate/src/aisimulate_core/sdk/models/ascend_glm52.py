@@ -538,6 +538,8 @@ def configure_ascend_glm52(model, raw_config):
                         "scale_factor": 1.0,
                         "latency_ms": overhead["prefill_ms" if context else "decode_ms"],
                         "calibration_id": overhead["calibration_id"],
+                        "per_extra_active_rank_ms": 0.0 if context else overhead["decode_per_extra_active_rank_ms"],
+                        "active_ranks": attention_dp,
                     }
                 }
             )

@@ -147,12 +147,18 @@ impl GroupShape {
         let execution_mode = if self.graph { "graph" } else { "eager" };
         let mut operation = operation.clone();
         let query_tokens = match &mut operation {
-            Op::AscendEagerOverhead(_) => {
+            Op::AscendEagerOverhead(overhead) => {
                 if self.graph {
                     return Err(invalid(
                         "Eager runtime overhead cannot be applied to a graph batch",
                     ));
                 }
+                overhead.active_ranks = Some(
+                    self.request_counts
+                        .iter()
+                        .filter(|count| **count > 0)
+                        .count() as u32,
+                );
                 return Ok(Some(operation));
             }
             Op::AscendLogits(logits) => {
@@ -315,6 +321,28 @@ mod tests {
                 .mode,
             DpPaddingMode::MaxLen
         );
+    }
+
+    #[test]
+    fn eager_overhead_counts_real_active_ranks_before_padding() {
+        let operation = Op::AscendEagerOverhead(
+            crate::operators::ascend_eager_overhead::AscendEagerOverheadOp {
+                name: "actual-active-ranks".into(),
+                scale_factor: 1.0,
+                latency_ms: 2.5,
+                calibration_id: "hand-derived-base-2.5-extra-rank-0.75".into(),
+                per_extra_active_rank_ms: 0.75,
+                active_ranks: Some(4),
+            },
+        );
+        let shape = GroupShape::new(&decode(&[2, 2, 0, 0]), 4, &[]).unwrap();
+        assert_eq!(shape.local_tokens, [4; 4]);
+        let bound = shape.bind(&operation, 0, 2, false).unwrap().unwrap();
+        let Op::AscendEagerOverhead(overhead) = bound else {
+            panic!("Expected eager runtime overhead");
+        };
+        assert_eq!(overhead.active_ranks, Some(2));
+        assert_eq!(overhead.query(2).unwrap().latency_ms, 3.25);
     }
 
     #[test]

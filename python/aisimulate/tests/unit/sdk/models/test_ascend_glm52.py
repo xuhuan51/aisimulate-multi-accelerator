@@ -500,7 +500,12 @@ def test_eager_runtime_overhead_is_once_per_forward_with_explicit_topology(model
     contribution = next(row for row in diagnostics if row["name"] == "generation_eager_runtime_overhead")
     assert contribution["latency_ms"] == 7.5
     assert contribution["source"] == "estimated"
-    for changed in ({"attention_tp": 8}, {"decode_ms": -1.0}, {"calibration_id": ""}):
+    for changed in (
+        {"attention_tp": 8},
+        {"decode_ms": -1.0},
+        {"decode_per_extra_active_rank_ms": -1.0},
+        {"calibration_id": ""},
+    ):
         with pytest.raises(ValueError, match="overhead"):
             transfer_model(
                 model_path,
@@ -523,6 +528,38 @@ def test_eager_runtime_overhead_is_once_per_forward_with_explicit_topology(model
                 }
             },
         )
+
+
+def test_eager_extra_active_rank_overhead_ignores_padding_and_request_count(model_path):
+    options = {"decode_execution_mode": "eager", "shape_policy": "anchored", "enable_dp_lm_head": False}
+    profile = {
+        "calibration_id": "hand-derived-base-2.5-extra-rank-0.75",
+        "attention_tp": 4,
+        "attention_dp": 4,
+        "moe_ep_size": 16,
+        "prefill_ms": 0.0,
+        "decode_ms": 2.5,
+        "decode_per_extra_active_rank_ms": 0.75,
+    }
+    baseline = transfer_model(
+        model_path, "decode", tp=4, attention_dp=4, estimator_config={"op_level": {"ascend": options}}
+    )
+    calibrated = transfer_model(
+        model_path,
+        "decode",
+        tp=4,
+        attention_dp=4,
+        estimator_config={"op_level": {"ascend": {**options, "eager_runtime_overhead": profile}}},
+    )
+    for counts, expected in [((1, 0, 0, 0), 2.5), ((2, 2, 0, 0), 3.25), ((9, 1, 0, 0), 3.25), ((1, 1, 1, 1), 4.75)]:
+        metrics = [
+            {"scheduled_requests": {"num_decode_requests": count, "sum_decode_kv_tokens": count * 8193}}
+            for count in counts
+        ]
+        assert calibrated.estimate_forward_pass_time_ms(metrics) - baseline.estimate_forward_pass_time_ms(
+            metrics
+        ) == pytest.approx(expected)
+    assert calibrated.estimate_forward_pass_time_ms([{"scheduled_requests": {}}] * 4) == 0
 
 
 def test_pd_group_timing_is_independent_of_diagnostic_capture(model_path):

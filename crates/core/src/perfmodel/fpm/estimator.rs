@@ -68,6 +68,8 @@ pub struct AscendEagerRuntimeOverhead {
     pub moe_ep_size: u32,
     pub prefill_ms: f64,
     pub decode_ms: f64,
+    #[serde(default)]
+    pub decode_per_extra_active_rank_ms: f64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -86,9 +88,13 @@ impl OpLevelConfig {
                     || overhead.attention_tp == 0
                     || overhead.attention_dp == 0
                     || overhead.moe_ep_size == 0
-                    || [overhead.prefill_ms, overhead.decode_ms]
-                        .iter()
-                        .any(|value| !value.is_finite() || *value < 0.0)
+                    || [
+                        overhead.prefill_ms,
+                        overhead.decode_ms,
+                        overhead.decode_per_extra_active_rank_ms,
+                    ]
+                    .iter()
+                    .any(|value| !value.is_finite() || *value < 0.0)
                 {
                     return Err(AicError::InvalidEngineConfig("Ascend eager runtime overhead needs finite nonnegative timings, calibration identity, positive topology and eager execution".into()));
                 }

@@ -1,0 +1,172 @@
+{
+  "scope": "Isolated runtime metadata allocator and request map, no model weights or distributed communication. Synchronizes only this probe to separate host launch and completion. First use is observed in a fresh process; kernel.run includes JIT/load/launch and is not pure device kernel latency. Not an end-to-end timing calibration.",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post6",
+  "page_size": 128,
+  "allocator_class": "NPUPagedTokenToKVPoolAllocator",
+  "sources_sha256": {
+    "/sgl-workspace/sglang/python/sglang/srt/hardware_backend/npu/allocator_npu.py": "de63fdd354c691ef07f59b946746da948179182f4c1668fec44996330211036d",
+    "/sgl-workspace/sglang/python/sglang/srt/mem_cache/memory_pool.py": "8251fab74646427510d9dc2a358668816c26c35d928c6817bf31fd6d7c8ed92c",
+    "/usr/local/python3.12.13/lib/python3.12/site-packages/triton/runtime/jit.py": "8f170a849331e9ce75b0d2d05e0bcd6ad2f9de838bfb277e823617982d672aad",
+    "/usr/local/python3.12.13/lib/python3.12/site-packages/triton/compiler/compiler.py": "4e432986cb567b94d282f9a2c2f9911a6c3718337289fa936f240282a6a5d54b",
+    "/usr/local/python3.12.13/lib/python3.12/site-packages/sgl_kernel_npu/mem_cache/allocator.py": "246e8def385c3f28cab5c6cf041a74176c557085906d878baa906c413642214a"
+  },
+  "rows": [
+    {
+      "input_tokens": 1,
+      "repetition": 0,
+      "new_pages": 1,
+      "allocator_host_ms": 11525.568691082299,
+      "allocator_synchronized_ms": 11525.655974983238,
+      "write_host_ms": 0.20642904564738274,
+      "write_synchronized_ms": 0.2432899782434106,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 11498.525612987578
+        }
+      ],
+      "kernel_compile_calls": [
+        {
+          "host_ms": 2187.533805030398
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 1,
+      "repetition": 1,
+      "new_pages": 1,
+      "allocator_host_ms": 0.8375679608434439,
+      "allocator_synchronized_ms": 0.8748399559408426,
+      "write_host_ms": 0.07863296195864677,
+      "write_synchronized_ms": 0.10408402886241674,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.1822380581870675
+        }
+      ],
+      "kernel_compile_calls": [],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 1,
+      "repetition": 2,
+      "new_pages": 1,
+      "allocator_host_ms": 0.4299789434298873,
+      "allocator_synchronized_ms": 0.5196429556235671,
+      "write_host_ms": 0.06895302794873714,
+      "write_synchronized_ms": 0.0926250359043479,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.1268060877919197
+        }
+      ],
+      "kernel_compile_calls": [],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 4096,
+      "repetition": 0,
+      "new_pages": 32,
+      "allocator_host_ms": 2064.79167600628,
+      "allocator_synchronized_ms": 2065.1286110514775,
+      "write_host_ms": 0.12210500426590443,
+      "write_synchronized_ms": 0.15583704225718975,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 2064.204168971628
+        }
+      ],
+      "kernel_compile_calls": [
+        {
+          "host_ms": 2063.295479048975
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 4096,
+      "repetition": 1,
+      "new_pages": 32,
+      "allocator_host_ms": 0.5179330473765731,
+      "allocator_synchronized_ms": 0.7796449353918433,
+      "write_host_ms": 0.07496308535337448,
+      "write_synchronized_ms": 0.09826407767832279,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.14152599032968283
+        }
+      ],
+      "kernel_compile_calls": [],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 4096,
+      "repetition": 2,
+      "new_pages": 32,
+      "allocator_host_ms": 0.4136379575356841,
+      "allocator_synchronized_ms": 0.6851010257378221,
+      "write_host_ms": 0.068343011662364,
+      "write_synchronized_ms": 0.09154400322586298,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.11740508489310741
+        }
+      ],
+      "kernel_compile_calls": [],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 8192,
+      "repetition": 0,
+      "new_pages": 64,
+      "allocator_host_ms": 2070.8886979846284,
+      "allocator_synchronized_ms": 2071.5311460662633,
+      "write_host_ms": 0.11142506264150143,
+      "write_synchronized_ms": 0.1379860332235694,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 2070.305611938238
+        }
+      ],
+      "kernel_compile_calls": [
+        {
+          "host_ms": 2069.4555739173666
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 8192,
+      "repetition": 1,
+      "new_pages": 64,
+      "allocator_host_ms": 0.5231129471212626,
+      "allocator_synchronized_ms": 1.0795480338856578,
+      "write_host_ms": 0.07711409125477076,
+      "write_synchronized_ms": 0.09973498526960611,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.13753597158938646
+        }
+      ],
+      "kernel_compile_calls": [],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 8192,
+      "repetition": 2,
+      "new_pages": 64,
+      "allocator_host_ms": 0.41775801219046116,
+      "allocator_synchronized_ms": 0.9915539994835854,
+      "write_host_ms": 0.06818294059485197,
+      "write_synchronized_ms": 0.09064399637281895,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.11922500561922789
+        }
+      ],
+      "kernel_compile_calls": [],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    }
+  ]
+}

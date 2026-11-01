@@ -8,18 +8,21 @@
 `aisimulate-output/four-node-serving-matched-20261101`。
 完整矩阵的完成情况以 `matrix-progress.json` 和各点 `.complete` 为准。
 
-**最新修复结果（2026-11-02）：**原23点中，TPOT和输入/输出吞吐均进入15%以内，
-MAPE分别为6.49%和7.79%；TTFT有16/23点进入15%以内，MAPE为14.84%。
-仍有7个低并发TTFT点超标，最差约54%，因此整体准确性目标继续推进。
+**最新修复结果（2026-11-02，活跃DP开销修复）：**原23点中，TPOT的MAPE为1.69%，
+最大绝对误差3.65%；输入/输出吞吐的MAPE为2.49%，最大5.20%。
+TTFT有15/23点进入15%以内，MAPE为14.73%，仍有8点超标、最差53.42%。
+上一版TTFT为16/23；Decode时长改善改变闭环到达和Prefill分批，个别TTFT变差，
+因此整体准确性目标继续推进，不能把吞吐改善说成所有指标都已达标。
 新增同镜像1P1D、8192/1024、C4/N8的独立验证：TTFT实测/预测为
-5424.56/5016.35ms（-7.53%），TPOT为424.13/394.44ms（-7.00%），
-输出吞吐为9.310/10.015 token/s（+7.58%）。
-完整23点、新增5点、running口径、参数来源与限制见
-[请求时序修复总表](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/request-timing-repair-comparison.md)。
+5424.56/4998.83ms（-7.85%），TPOT为424.13/413.49ms（-2.51%），
+输出吞吐为9.310/9.560 token/s（+2.68%）。
+完整23点、新增9组82条请求、训练与验证划分、冷编译证据见
+[活跃DP修复总表](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/active-rank-serving-comparison.md)。
+上一版结果保留在[请求时序修复总表](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/request-timing-repair-comparison.md)。
 本页后续记录保留各阶段历史结果；使用当前修复需显式选择
-`aisimulate-910c:request-timing-repair-20261102`，原默认镜像作为冻结基线保留。
+`aisimulate-910c:active-rank-repair-20261102`，原默认镜像和上一版修复镜像均保留。
 
-随后完成24条新的冷启动/重复访问控制请求，参数未重拟合：8K/128的稳态C4/N16
+在上一版参数下完成24条新的冷启动/重复访问控制请求：8K/128的稳态C4/N16
 TTFT误差为-13.86%、TPOT为-6.93%、吞吐为+9.07%。C1/N8包含首次访问rank的
 慢请求，整体TTFT仍低估22.16%；其中重复访问六条均值与预测相差-3.68%，
 该子集只用于定位，不能替代整体误差。失败的32K请求因实际KV容量不足被排除，

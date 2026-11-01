@@ -68,6 +68,7 @@ def main():
     parser.add_argument("--campaign", type=Path, default=ROOT / "pd-paired-1p1d")
     parser.add_argument("--tokenizer-profile", type=Path)
     parser.add_argument("--prefill-profile", type=Path)
+    parser.add_argument("--decode-profile", type=Path, default=ROOT / "eager-overhead-tp16-adp4.json")
     parser.add_argument("--client-arrivals", action="store_true")
     parser.add_argument("--cases", nargs="+")
     parser.add_argument("--workers", type=int, default=2)
@@ -76,7 +77,9 @@ def main():
     state = json.loads((campaign / "progress.json").read_text())
     template = ROOT.parent / "four-node-serving-plan-20261031/control-1p3d-tp16.yaml"
     image_id = subprocess.check_output(["docker", "image", "inspect", "--format", "{{.Id}}", args.image], text=True).strip()
-    profile = json.loads((ROOT / "eager-overhead-tp16-adp4.json").read_text())
+    profile = json.loads(args.decode_profile.read_text())
+    if (profile["attention_tp"], profile["attention_dp"], profile["moe_ep_size"]) != (4, 4, 16):
+        raise ValueError("Decode topology does not match its calibration")
     configuration = {"label": "paired-1p1d-tp16", "PREFILL_TP_SIZE": 16, "PREFILL_DP_SIZE": 4, "PREFILL_EP_SIZE": 16,
                      "DECODE_TP_SIZE": 16, "DECODE_DP_SIZE": 4, "DECODE_EP_SIZE": 16, "DECODE_NNODES": 1,
                      "DECODE_MAX_RUNNING_REQUESTS": 128, "PREFILL_NODES": "10.120.72.20:19000:19998", "DECODE_NODES": "10.120.72.25:19003"}
@@ -137,10 +140,12 @@ def main():
                      "runtime_sha256": digest(runtime_path), "template_sha256": digest(template), "image_id": image_id})
         if args.client_arrivals:
             jobs[-1]["arrival_trace_sha256"] = digest(trace_path)
+    if not jobs:
+        raise ValueError("No completed measured cases match the requested selection")
     args.output.mkdir(parents=True, exist_ok=True)
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
         rows = list(pool.map(run_job, jobs))
-    (args.output / "comparison.json").write_text(json.dumps({"scope": "Independent node20+25 paired PD collection; unchanged node20 C1 eager decode calibration", "rows": rows}, indent=2) + "\n")
+    (args.output / "comparison.json").write_text(json.dumps({"scope": "Independent node20+25 paired PD collection; explicit topology-qualified forward and request timing calibrations", "decode_profile": profile, "rows": rows}, indent=2) + "\n")
     with (args.output / "comparison.csv").open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator="\n")
         writer.writeheader()

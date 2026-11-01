@@ -967,6 +967,8 @@ mod tests {
                     scale_factor: 1.0,
                     latency_ms: 2.5,
                     calibration_id: "synthetic-wire-roundtrip".into(),
+                    per_extra_active_rank_ms: 0.75,
+                    active_ranks: Some(2),
                 },
             ),
         ];

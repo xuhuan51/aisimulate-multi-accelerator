@@ -31,15 +31,15 @@ KV容量推导 → 请求调度模拟 → PD传输 → 配置搜索。
 
 2026-11-02的精度修复已另建本机镜像，原默认镜像保留用于对照。需要复现最新
 同配置结果时，先使用下面这组已验证配置；其中包含HTTP PD网关等待P响应、
-tokenization时序，以及分别校准的TP16/TP32 eager forward开销。
+tokenization时序，以及分别校准的TP16/TP32 eager forward开销和真实活跃DP数量。
 
 ```bash
 cd /home/youxingye/youxingye_data/aisimulate-910c
 
-sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:request-timing-repair-20261102 \
+sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:active-rank-repair-20261102 \
   AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q \
   bash scripts/run-ascend910c.sh predict --stack engine \
-  --config benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/request-timing-configs/recommended-2p1d-dtp32-8k1k-c8.yaml \
+  --config benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/active-rank-configs/recommended-2p1d-dtp32-8k1k-c8.yaml \
   --capture-per-request --output-dir aisimulate-output/current-repair-c8
 ```
 
@@ -53,7 +53,14 @@ sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:request-timing-repair-20261102 \
 forward残差只用于对应的P/TP16-D/TP32-D拓扑，不应把固定TP16残差用于其他ADP/EP搜索候选。
 这些校准目前限于固定v0.5.22/CANN9.1镜像、graph/调度overlap/投机解码关闭、相同模型。
 完整对照和仍未解决的低并发TTFT偏差见
-[请求时序修复结果](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/request-timing-repair-comparison.md)。
+[活跃DP修复结果](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/active-rank-serving-comparison.md)。
+
+新增`decode_per_extra_active_rank_ms`按真实非空attention-DP rank计数，padding出来的
+空rank不收费。原C1基值保持不变；两个额外逐轮工况用于拟合该项，原23个端到端点
+未参与拟合。目前23点TPOT最大绝对误差3.65%、吞吐最大5.20%，TTFT仍有8点超出15%。
+已测到首次4K/8K KV分页分配的Triton编译约2秒，后续allocator约0.5ms；该冷状态
+尚未进入模拟，两个warmup不能保证所有副本/rank/shape预热。不能据此承诺低并发冷请求的TTFT SLO。
+前一版`request-timing-configs/`和`aisimulate-910c:request-timing-repair-20261102`保留用于对照。
 
 以下保留通用适配入口和原始镜像用法，供未启用上述校准的基线对照：
 

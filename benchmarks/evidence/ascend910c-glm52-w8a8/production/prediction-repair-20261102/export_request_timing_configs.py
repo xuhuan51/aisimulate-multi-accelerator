@@ -1,3 +1,4 @@
+import argparse
 import json
 from pathlib import Path
 
@@ -26,12 +27,17 @@ def export(command, destination):
 
 
 def main():
-    jobs = json.loads((REPO / "aisimulate-output/four-node-request-timing-20261102/comparison-jobs.json").read_text())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--jobs", type=Path, default=REPO / "aisimulate-output/four-node-request-timing-20261102/comparison-jobs.json")
+    parser.add_argument("--paired-execution", type=Path, default=REPO / "aisimulate-output/pd-ingress-closed-loop-20261102/validation-c4-8k1k/execution.json")
+    parser.add_argument("--output", type=Path, default=ROOT / "request-timing-configs")
+    args = parser.parse_args()
+    jobs = json.loads(args.jobs.read_text())
     for job in jobs:
         if job["mode"] == "stock" and job["concurrency"] == 8:
-            export(job["command"], ROOT / "request-timing-configs" / f"{job['configuration']}-8k1k-c8.yaml")
-    execution = json.loads((REPO / "aisimulate-output/pd-ingress-closed-loop-20261102/validation-c4-8k1k/execution.json").read_text())
-    export(execution["command"], ROOT / "request-timing-configs/paired-1p1d-8k1k-c4.yaml")
+            export(job["command"], args.output / f"{job['configuration']}-8k1k-c8.yaml")
+    execution = json.loads(args.paired_execution.read_text())
+    export(execution["command"], args.output / "paired-1p1d-8k1k-c4.yaml")
 
 
 if __name__ == "__main__":

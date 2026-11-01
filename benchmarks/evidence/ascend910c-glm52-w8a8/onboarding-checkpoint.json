@@ -3037,11 +3037,22 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Complete fresh phase-instrumented 1P1D on20/25 to isolate first-use preallocation, metadata and KV-send delays. Preserve original23 and all-request error; no cold penalty fitted yet.",
+    "next_action": "Model measured first-use KV-allocation compilation and warmup/cache state at request/batch scheduling boundaries, plus first-nonempty-text visibility; do not hide coldTTFT in steady operator tables. Eight original low/medium-concurrency TTFT outliers remain despite all23 TPOT and throughput errors now below5.2percent.",
     "stage": 2,
     "status": "in_progress"
   },
   "research": {
+    "active_rank_repair_20261102": {
+      "artifacts": "production/prediction-repair-20261102/active-rank-serving-comparison.md,json,csv; active-rank-repair-manifest.json; active-rank-code-validation.json.gz; active-rank-configs; active-rank-replays; pd-phases-1p1d; allocator-probe andallocator-compile-probe-v2. New imageaisimulate-910c:active-rank-repair-20261102; old baseline andrequest-timing images retained.",
+      "calibration_split": "Retained frozen C1 bases197.609115ms TP16/ADP4 and132.119468ms TP32/ADP32. Extra-rank slopes6.373190ms and1.497163ms fit only prior paired-forward TP16 validation-c4 andTP32 validation-c8, explicitly reclassified as training. Original23 serving points and new9PD controls not used for the added slope; TP32 calibration-c1 remains base training.",
+      "cold_cause": "Fresh phase-instrumented1P1D16formal requests completes. D _pre_alloc first8K roughly2.1s. Isolated same-image singleNPU metadata allocator reproduces~2s first4K/8K; compiler-hook v2 attributes2063/2069ms to Triton compile call, subsequent no compile and~0.5ms allocator. 24+9 successful metadata numerical checks; failed hook attempt preserved. P outside-run_batch interval2.17s remains not fully attributed; no arbitrary cold constant applied.",
+      "independent_full_workload": "1P1D TP16/ADP4/EP16 8192/1024 C4/N8: measured/predicted TTFT5424.559/4998.827ms(-7.848percent),TPOT424.131/413.491ms(-2.509percent),input74.4808/76.4788tok/s,output9.31010/9.55985tok/s(+2.683percent). Total9newPD controls82formal requests retain all cold requests.",
+      "original23_validation": "46 replays complete. Default-memory23-point MAPE: TTFT14.7291percent(15/23within15percent,worst53.4198),TPOT1.6901percent(all23,worst3.6467),input/outputthroughput2.4933percent(all23,worst5.1958). PreviousTTFT16/23,so no claim of uniform improvement. Same-C outputTPS winner agrees6/6among completed candidates.",
+      "production_change": "Rust-owned optional decode_per_extra_active_rank_ms in canonical Ascend eager calibration; actual active rank vector before padding, zero for empty batches, no prefill slope. EngineSpec32. Python only composes/passes serialized controls; no result-table correction.",
+      "remaining_scope": "Cold shape compilation/cache state and client first-visible-text are not yet modeled. Exact committed runningbatch remains unavailable from JSONrunner,occupancyproxy labelled separately. The attempted32K control is excluded for actualKVcapacity rejection. Historicalcheckpoint217integrity issues remain separate; no hash rewriting or fabricated validation. Goal remains in progress.",
+      "resources": "All owned PD diagnostic containers andallocator probes exited; node25privateDocker has no running containers,SSH root session closed. Other users' services untouched. No model services started on19/31/32.",
+      "validation": "1031Rust perfmodel tests pass,1existingR17external-fixture test ignored;433packaged Python/Ascend/model/OpSpec/single-oracle/twoGPUparity tests pass,no golden changes. Native focusedAscend57pass. Canonical savedpredict and one-candidate recommend-save-predict roundtrips match all7 workload/latency/throughput metrics within1e-10relative/1e-7absolute."
+    },
     "actual_operator_inputs": {
       "checkpoint_sha256": "41795173ae457a64056e1c05be9bbbf889f935431f4a42fa4f4e4c6a32aa931c",
       "geometry": "C1decodeattentionM8,denseM16,shared/routerM1. C1prefillattentionM8192,denseM8192,shared/routerM1024. C10latewith5activeperDPusesattentionM8,denseM16,shared/routerM1. PaddingKVlengths0; lateactive9094..9097. Contextcapacityphysical417pages,blocktabledecodewidth1407.",
@@ -4531,7 +4542,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 137,
+  "revision": 138,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

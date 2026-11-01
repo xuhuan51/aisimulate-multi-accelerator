@@ -1,0 +1,363 @@
+{
+  "scope": "Isolated runtime metadata allocator and request map, no model weights or distributed communication. Synchronizes only this probe to separate host launch and completion. First use is observed in a fresh process; kernel.run includes JIT/load/launch and is not pure device kernel latency. Not an end-to-end timing calibration.",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post6",
+  "page_size": 128,
+  "allocator_class": "NPUPagedTokenToKVPoolAllocator",
+  "sources_sha256": {
+    "/sgl-workspace/sglang/python/sglang/srt/hardware_backend/npu/allocator_npu.py": "de63fdd354c691ef07f59b946746da948179182f4c1668fec44996330211036d",
+    "/sgl-workspace/sglang/python/sglang/srt/mem_cache/memory_pool.py": "8251fab74646427510d9dc2a358668816c26c35d928c6817bf31fd6d7c8ed92c",
+    "/usr/local/python3.12.13/lib/python3.12/site-packages/triton/runtime/jit.py": "8f170a849331e9ce75b0d2d05e0bcd6ad2f9de838bfb277e823617982d672aad",
+    "/usr/local/python3.12.13/lib/python3.12/site-packages/sgl_kernel_npu/mem_cache/allocator.py": "246e8def385c3f28cab5c6cf041a74176c557085906d878baa906c413642214a"
+  },
+  "rows": [
+    {
+      "input_tokens": 1,
+      "repetition": 0,
+      "new_pages": 1,
+      "allocator_host_ms": 11562.89478810504,
+      "allocator_synchronized_ms": 11562.982402043417,
+      "write_host_ms": 0.1997490180656314,
+      "write_synchronized_ms": 0.23043109104037285,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 11536.303868982941
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 1,
+      "repetition": 1,
+      "new_pages": 1,
+      "allocator_host_ms": 0.7156520150601864,
+      "allocator_synchronized_ms": 0.7495239842683077,
+      "write_host_ms": 0.07626297883689404,
+      "write_synchronized_ms": 0.0993839930742979,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.17058802768588066
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 1,
+      "repetition": 2,
+      "new_pages": 1,
+      "allocator_host_ms": 0.392377027310431,
+      "allocator_synchronized_ms": 0.4841519985347986,
+      "write_host_ms": 0.06108195520937443,
+      "write_synchronized_ms": 0.08272298146039248,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.11326500680297613
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 16,
+      "repetition": 0,
+      "new_pages": 1,
+      "allocator_host_ms": 2024.0566469728947,
+      "allocator_synchronized_ms": 2024.1406409768388,
+      "write_host_ms": 0.10837498120963573,
+      "write_synchronized_ms": 0.1361659960821271,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 2023.4728109790012
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 16,
+      "repetition": 1,
+      "new_pages": 1,
+      "allocator_host_ms": 0.6402679719030857,
+      "allocator_synchronized_ms": 0.7108809659257531,
+      "write_host_ms": 0.08651404641568661,
+      "write_synchronized_ms": 0.11516606900840998,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.19572896417230368
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 16,
+      "repetition": 2,
+      "new_pages": 1,
+      "allocator_host_ms": 0.40480797179043293,
+      "allocator_synchronized_ms": 0.49518304876983166,
+      "write_host_ms": 0.060811988078057766,
+      "write_synchronized_ms": 0.08312298450618982,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.11799496132880449
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 32,
+      "repetition": 0,
+      "new_pages": 1,
+      "allocator_host_ms": 2117.8259410662577,
+      "allocator_synchronized_ms": 2117.9175350116566,
+      "write_host_ms": 0.1314859837293625,
+      "write_synchronized_ms": 0.17050793394446373,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 2117.167331976816
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 32,
+      "repetition": 1,
+      "new_pages": 1,
+      "allocator_host_ms": 0.5320940399542451,
+      "allocator_synchronized_ms": 0.6139380857348442,
+      "write_host_ms": 0.07722305599600077,
+      "write_synchronized_ms": 0.10078400373458862,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.13965601101517677
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 32,
+      "repetition": 2,
+      "new_pages": 1,
+      "allocator_host_ms": 0.40539796464145184,
+      "allocator_synchronized_ms": 0.5014429334551096,
+      "write_host_ms": 0.0681229867041111,
+      "write_synchronized_ms": 0.09055400732904673,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.11920498218387365
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 128,
+      "repetition": 0,
+      "new_pages": 1,
+      "allocator_host_ms": 2024.0913389716297,
+      "allocator_synchronized_ms": 2024.165882030502,
+      "write_host_ms": 0.10843505151569843,
+      "write_synchronized_ms": 0.13687601312994957,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 2023.5223929630592
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 128,
+      "repetition": 1,
+      "new_pages": 1,
+      "allocator_host_ms": 0.5113719962537289,
+      "allocator_synchronized_ms": 0.5969560006633401,
+      "write_host_ms": 0.07465400267392397,
+      "write_synchronized_ms": 0.09712495375424623,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.14079594984650612
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 128,
+      "repetition": 2,
+      "new_pages": 1,
+      "allocator_host_ms": 0.4093180177733302,
+      "allocator_synchronized_ms": 0.5010820459574461,
+      "write_host_ms": 0.0668129650875926,
+      "write_synchronized_ms": 0.0893039396032691,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.11869496665894985
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 4096,
+      "repetition": 0,
+      "new_pages": 32,
+      "allocator_host_ms": 2024.3296100525185,
+      "allocator_synchronized_ms": 2024.6570040471852,
+      "write_host_ms": 0.1114249462261796,
+      "write_synchronized_ms": 0.13914599549025297,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 2023.7505140248686
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 4096,
+      "repetition": 1,
+      "new_pages": 32,
+      "allocator_host_ms": 0.5172030068933964,
+      "allocator_synchronized_ms": 0.7781439926475286,
+      "write_host_ms": 0.07472396828234196,
+      "write_synchronized_ms": 0.09747501462697983,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.14130596537142992
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 4096,
+      "repetition": 2,
+      "new_pages": 32,
+      "allocator_host_ms": 0.40823896415531635,
+      "allocator_synchronized_ms": 0.6783709395676851,
+      "write_host_ms": 0.06760307587683201,
+      "write_synchronized_ms": 0.09056401904672384,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.1188749447464943
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 8192,
+      "repetition": 0,
+      "new_pages": 64,
+      "allocator_host_ms": 2027.937310980633,
+      "allocator_synchronized_ms": 2028.5841099685058,
+      "write_host_ms": 0.11191493831574917,
+      "write_synchronized_ms": 0.1379359746351838,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 2027.369765099138
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 8192,
+      "repetition": 1,
+      "new_pages": 64,
+      "allocator_host_ms": 0.5144430324435234,
+      "allocator_synchronized_ms": 1.0831779800355434,
+      "write_host_ms": 0.0732840271666646,
+      "write_synchronized_ms": 0.09684509132057428,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.13210601173341274
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 8192,
+      "repetition": 2,
+      "new_pages": 64,
+      "allocator_host_ms": 0.3856769762933254,
+      "allocator_synchronized_ms": 0.9861639700829983,
+      "write_host_ms": 0.06440305151045322,
+      "write_synchronized_ms": 0.08704396896064281,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.10451499838382006
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 16384,
+      "repetition": 0,
+      "new_pages": 128,
+      "allocator_host_ms": 2095.9185109240934,
+      "allocator_synchronized_ms": 2097.1571159316227,
+      "write_host_ms": 0.12196600437164307,
+      "write_synchronized_ms": 0.15578698366880417,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 2095.3398449346423
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 16384,
+      "repetition": 1,
+      "new_pages": 128,
+      "allocator_host_ms": 0.5025629652664065,
+      "allocator_synchronized_ms": 1.6754550160840154,
+      "write_host_ms": 0.07545400876551867,
+      "write_synchronized_ms": 0.09987503290176392,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.1391560072079301
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 16384,
+      "repetition": 2,
+      "new_pages": 128,
+      "allocator_host_ms": 0.41764904744923115,
+      "allocator_synchronized_ms": 1.5991820255294442,
+      "write_host_ms": 0.0774129293859005,
+      "write_synchronized_ms": 0.10228401515632868,
+      "kernel_launch_calls": [
+        {
+          "host_ms": 0.11914502829313278
+        }
+      ],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 32768,
+      "repetition": 0,
+      "new_pages": 256,
+      "allocator_host_ms": 52.38221294712275,
+      "allocator_synchronized_ms": 52.43252497166395,
+      "write_host_ms": 0.06615300662815571,
+      "write_synchronized_ms": 0.09161396883428097,
+      "kernel_launch_calls": [],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 32768,
+      "repetition": 1,
+      "new_pages": 256,
+      "allocator_host_ms": 1.9480370683595538,
+      "allocator_synchronized_ms": 1.9881990738213062,
+      "write_host_ms": 0.06541307084262371,
+      "write_synchronized_ms": 0.0901640160009265,
+      "kernel_launch_calls": [],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    },
+    {
+      "input_tokens": 32768,
+      "repetition": 2,
+      "new_pages": 256,
+      "allocator_host_ms": 1.6693150391802192,
+      "allocator_synchronized_ms": 1.7052569892257452,
+      "write_host_ms": 0.06028194911777973,
+      "write_synchronized_ms": 0.08495396468788385,
+      "kernel_launch_calls": [],
+      "numerical_check": "exact_contiguous_unique_indices_and_request_pool_write"
+    }
+  ]
+}
