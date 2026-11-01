@@ -1,3 +1,4 @@
+import argparse
 import json
 import subprocess
 import time
@@ -24,12 +25,36 @@ def save(state):
 
 
 def main():
-    state = {'status': 'waiting_for_health', 'scope': 'Dedicated single-node forward telemetry; original four-node PD measurements remain unchanged', 'cases': []}
+    global ROOT, CONTAINER, CASES
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--paired', action='store_true')
+    parser.add_argument('--tp32', action='store_true')
+    args = parser.parse_args()
+    if args.paired:
+        ROOT = Path(__file__).resolve().parent / 'forward-paired-node20'
+        CONTAINER = 'aisim-forward-paired-20261102'
+    port = 18080
+    if args.tp32:
+        ROOT = Path(__file__).resolve().parent / 'tp32-paired-node20-25/node0'
+        CONTAINER = 'aisim-paired-tp32-node0-20261102'
+        port = 19180
+        CASES = [
+            ('telemetry-control', 8192, 64, 4),
+            ('calibration-c1', 8192, 128, 1),
+            ('validation-c4', 8192, 128, 4),
+            ('validation-c8', 8192, 128, 8),
+            ('validation-c32-alltoall', 1024, 64, 32),
+            ('validation-16k-c4', 16384, 128, 4),
+        ]
+    if (ROOT / 'progress.json').exists():
+        raise FileExistsError(ROOT / 'progress.json')
+    state = {'status': 'waiting_for_health', 'scope': 'Phase-separated forward telemetry; original four-node PD measurements remain unchanged', 'cases': []}
     save(state)
-    deadline = time.monotonic() + 900
+    deadline = time.monotonic() + 1800
     while True:
         try:
-            urllib.request.urlopen('http://127.0.0.1:18080/health', timeout=5).close()
+            endpoint = 'ready' if args.tp32 else 'health'
+            urllib.request.urlopen(f'http://127.0.0.1:{port}/{endpoint}', timeout=5).close()
             break
         except (urllib.error.URLError, TimeoutError):
             if time.monotonic() > deadline:
@@ -41,7 +66,7 @@ def main():
         command = [
             'docker', 'exec', '-e', 'PYTHONUNBUFFERED=1', CONTAINER,
             'python3', '-m', 'sglang.benchmark.serving', '--backend', 'sglang',
-            '--host', '127.0.0.1', '--port', '18080', '--model', '/models/glm-q',
+            '--host', '127.0.0.1', '--port', str(port), '--model', '/models/glm-q',
             '--served-model-name', 'glm-5', '--dataset-name', 'random-ids',
             '--num-prompts', str(concurrency * 2), '--max-concurrency', str(concurrency),
             '--random-input-len', str(input_length), '--random-output-len', str(output_length),

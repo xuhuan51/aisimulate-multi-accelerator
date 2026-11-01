@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import socket
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -14,17 +15,22 @@ CONTAINER = 'aisim-forward-diagnostic-20261102'
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--forward-metrics', action='store_true')
+    parser.add_argument('--paired-forward-metrics', action='store_true')
     args = parser.parse_args()
-    container = 'aisim-forward-metrics-20261102' if args.forward_metrics else CONTAINER
+    if args.paired_forward_metrics:
+        args.forward_metrics = True
+    container = 'aisim-forward-paired-20261102' if args.paired_forward_metrics else ('aisim-forward-metrics-20261102' if args.forward_metrics else CONTAINER)
     inventory = subprocess.check_output(['npu-smi', 'info'], text=True)
     if inventory.count('No running processes found in NPU') != 8:
         raise RuntimeError('NPU processes already exist; preserve their workloads')
-    destination = ROOT / ('forward-metrics-node20' if args.forward_metrics else 'forward-diagnostic-node20')
+    destination = ROOT / ('forward-paired-node20' if args.paired_forward_metrics else ('forward-metrics-node20' if args.forward_metrics else 'forward-diagnostic-node20'))
     if destination.exists():
         raise FileExistsError(destination)
     with socket.socket() as probe:
         probe.bind(('0.0.0.0', 18080))
     destination.mkdir()
+    if args.paired_forward_metrics:
+        shutil.copyfile(ROOT / 'launch_paired_telemetry.py', destination / 'launch_paired_telemetry.py')
     (destination / 'npu-before.txt').write_text(inventory)
     setup = json.loads((ROOT.parent / 'serving-setup.json').read_text())
     environment = {key: value for key, value in setup['environment'].items() if value is not None}
@@ -65,7 +71,8 @@ def main():
             command.extend(['--mount', f'type=bind,src={path},dst={path},readonly'])
     for key, value in environment.items():
         command.extend(['-e', f'{key}={value}'])
-    command.extend(['--entrypoint', 'python3', IMAGE, '-m', 'sglang.launch_server', *arguments])
+    entrypoint = ['/campaign/launch_paired_telemetry.py'] if args.paired_forward_metrics else ['-m', 'sglang.launch_server']
+    command.extend(['--entrypoint', 'python3', IMAGE, *entrypoint, *arguments])
     result = subprocess.run(command, capture_output=True, text=True)
     record = {
         'scope': 'Single-node TP16/ADP4/EP16 colocated forward diagnostic; not a replacement for measured four-node PD results',

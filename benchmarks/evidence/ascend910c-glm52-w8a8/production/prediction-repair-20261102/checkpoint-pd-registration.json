@@ -1,0 +1,19 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Complete independently paired TP32/ADP32/EP32 decode calibration and holdout validation; investigate request ingress/bootstrap/cold-start TTFT with request-linked evidence; rerun original matched PD candidates without treating operator calibration as whole-serving acceptance."
+  },
+  "research": {
+    "pd_request_validation_20261102": {
+      "completed": "node20 Prefill + node25 Decode, TP16/ADP4/EP16 both roles; five completed cases,42 formal requests including8192/1024 C4/N8; exact token counts and client errors validated. Original four-node data preserved.",
+      "full_workload_result": "Unchanged197.609ms decode calibration: real/predicted TPOT421.2696/394.8268ms(-6.28%), output throughput9.35446/10.06451(+7.59%), input throughput74.8357/80.5161; TTFT6282.1826/3066.7041ms(-51.18%). TTFT acceptance remains open.",
+      "mechanism_evidence": "Request stages joined by bootstrap_room, durations measured within each host monotonic clock. First C1 decode allocation/metadata about2164ms vs next request about5ms. First-visible text may occur at generated token2..4. Source KV hold after compute is not always client-critical transfer latency.",
+      "native_fix": "Multi-attention-DP SGLang source-rank registration precedes decode reservation and waits for the prefill worker scheduling boundary. Tokenization occurs once; cancellation before registration does not allocate destination KV.470 Rust replay tests pass, including three new behavioral regressions. This semantic fix does not remove synchronous-arrival TTFT bias in current fixed cases.",
+      "artifacts": "production/prediction-repair-20261102/paired-pd-validation.md, paired-pd-validation-manifest.json, pd-request-timeline-analysis.json and pd-paired-1p1d/",
+      "resource_state": "TP16 diagnostic P/D/Router stopped. node19/31/32 occupied by unrelated models and untouched. TP32 phase-separated paired telemetry now runs on20+25, same pinned image and650MB HCCL buffer.",
+      "tp32_retry": "First colocated diagnostic prefill4096tokens/rank required1781MB HCCL buffer and failed before formal benchmarks. Frozen attempt preserved. Retry uses1024tokens/rank only for diagnostic prefill while retaining target decode settings; first control case completed at335.19ms meanTPOT. No TP32 calibration accepted yet.",
+      "remaining": "Independent TP32 holdouts; calibrated ingress and remaining low-concurrency TTFT; candidate-search accuracy. Initial historical launch-script artifact remains missing, but current frozen launch/image/model sources were verified."
+    }
+  }
+}

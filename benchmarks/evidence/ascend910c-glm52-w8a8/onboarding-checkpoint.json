@@ -388,7 +388,7 @@
       "archived": false,
       "context_sha256": null,
       "kind": "file",
-      "path": "../../../../../../../home/youxingye/United deployment/service/start-united-v0522.sh",
+      "path": "../../../../home/youxingye/United deployment/service/start-united-v0522.sh",
       "scope": "input",
       "sha256": "d968fc71655c383ef056ce1de5c54b81facbf28f0bb1f57991dfae218e7c1b2f"
     },
@@ -3037,7 +3037,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Complete iteration-paired forward telemetry, isolate prefill and PD bootstrap residuals, qualify TP32 separately, and rerun matched serving configurations. Whole-search accuracy remains unaccepted.",
+    "next_action": "Complete independently paired TP32/ADP32/EP32 decode calibration and holdout validation; investigate request ingress/bootstrap/cold-start TTFT with request-linked evidence; rerun original matched PD candidates without treating operator calibration as whole-serving acceptance.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3867,6 +3867,16 @@
       "status": "Source mapping and observed United kernel selection established for exact 8192/1024 single request.",
       "unresolved": "Group-list contents and actual seq lengths not encoded by kernel shape exports; formal consumer integration remains absent."
     },
+    "paired_forward_20261102": {
+      "completed": "Seven node20 TP16/ADP4/EP16 cases using unchanged NPU timing events and scheduler batch snapshots paired at event creation. The existing197.609ms decode calibration was not refit.",
+      "confidence": "Strong request-level evidence for bounded TP16 decode correction; TTFT/PD mechanism and TP32 remain under investigation. Whole-search accuracy unaccepted.",
+      "node25_runtime": "The pinned image was absent and the system filesystem had only about10GB free. Started an isolated Docker daemon on /data_lib/data/youxingye/aisim-docker-20261102 with socket /run/aisim-docker-20261102.sock; original Docker unchanged. Pinned digest pulled successfully and image ID matches node20 d4c350d7d4e233d3cd203d2f783467c5f5be1453b9eee073f71b758069392edb.",
+      "node_state": "Node19 runs another model(/models/q397); node31 and32 also have occupied NPUs. Node25 had16 free NPUs and is reused under earlier four-node authorization. No unrelated processes were stopped.",
+      "pd_campaign": "Independent node20 Prefill + node25 Decode, bothTP16/ADP4/EP16; same8192input, warmup2, eager, no scheduler overlap/speculation/prefix cache. Short diagnostic runs then a full8192/1024 C4/N8 validation and repeat diagnostic. Status in production/prediction-repair-20261102/pd-paired-1p1d/progress.json.",
+      "serving_change": "Added optional diagnostic hooks for request-stage timestamps and timed forward IDs. No extra NPU events or device synchronization. Request pairing uses bootstrap room identifiers across PD roles.",
+      "source_audit": "Seven scheduler/timer/disaggregation source files in the actual pinned image exactly match local audit SHA256 values; revision baa9befa381511cd4d56f83980951e5a45fffc6d.",
+      "validation": "Per-case pure-decode mean absolute error3.13..9.30%; raw operator estimates had about49.73..54.66% errors. Prefill remains diagnostic, not calibrated from asynchronously mispaired wall times."
+    },
     "parallel_extension": {
       "active_probe": "32 owned MoETP16EP1withADP2 server launching; observing boundaries to extend the tensor path.19 idle.31 untouched.",
       "arbitrary_workload_gap": "FixedTP8/ADP2/EP16 aggandPD each pass1k128,2k512,4k2k,8k4k,12k1k.16k1k/32k1kfailprefix12288;65/32failshortdecodedsequence. GPU DSA hasSOL-anchored extrapolation;Ascenddoesnotyet. Neither8kexample successnorallparallelshapes impliesarbitraryshape coverage.",
@@ -3936,6 +3946,16 @@
       "domain": "attentionTP4/8,ADP4/2,EP16;P/Dreplicas1/2;concurrency8/16/32;budget64devices;prefillchunk4096;8kinput1koutput64requests;throughput_per_gpu objective.",
       "saved_candidate": "Best saved YAML replayed through standard predict successfully. Predictions are not measured serving metrics; best is relative to the finite declared domain.",
       "status": "48_of_48_candidates_completed_without_failures"
+    },
+    "pd_request_validation_20261102": {
+      "artifacts": "production/prediction-repair-20261102/paired-pd-validation.md, paired-pd-validation-manifest.json, pd-request-timeline-analysis.json and pd-paired-1p1d/",
+      "completed": "node20 Prefill + node25 Decode, TP16/ADP4/EP16 both roles; five completed cases,42 formal requests including8192/1024 C4/N8; exact token counts and client errors validated. Original four-node data preserved.",
+      "full_workload_result": "Unchanged197.609ms decode calibration: real/predicted TPOT421.2696/394.8268ms(-6.28%), output throughput9.35446/10.06451(+7.59%), input throughput74.8357/80.5161; TTFT6282.1826/3066.7041ms(-51.18%). TTFT acceptance remains open.",
+      "mechanism_evidence": "Request stages joined by bootstrap_room, durations measured within each host monotonic clock. First C1 decode allocation/metadata about2164ms vs next request about5ms. First-visible text may occur at generated token2..4. Source KV hold after compute is not always client-critical transfer latency.",
+      "native_fix": "Multi-attention-DP SGLang source-rank registration precedes decode reservation and waits for the prefill worker scheduling boundary. Tokenization occurs once; cancellation before registration does not allocate destination KV.470 Rust replay tests pass, including three new behavioral regressions. This semantic fix does not remove synchronous-arrival TTFT bias in current fixed cases.",
+      "remaining": "Independent TP32 holdouts; calibrated ingress and remaining low-concurrency TTFT; candidate-search accuracy. Initial historical launch-script artifact remains missing, but current frozen launch/image/model sources were verified.",
+      "resource_state": "TP16 diagnostic P/D/Router stopped. node19/31/32 occupied by unrelated models and untouched. TP32 phase-separated paired telemetry now runs on20+25, same pinned image and650MB HCCL buffer.",
+      "tp32_retry": "First colocated diagnostic prefill4096tokens/rank required1781MB HCCL buffer and failed before formal benchmarks. Frozen attempt preserved. Retry uses1024tokens/rank only for diagnostic prefill while retaining target decode settings; first control case completed at335.19ms meanTPOT. No TP32 calibration accepted yet."
     },
     "pd_transport_audit": {
       "active_jobs": [],
@@ -4482,7 +4502,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 132,
+  "revision": 134,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

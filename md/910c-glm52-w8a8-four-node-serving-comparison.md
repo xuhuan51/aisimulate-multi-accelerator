@@ -56,6 +56,28 @@ forward记录，其他并发、4K/16K输入及原来的17个PD实测点用于核
 因此这里只采用C1稳态区间校准Decode，Prefill将补充携带轮次标识的计时记录。
 本轮55项Ascend Rust测试、421项模型与GPU parity测试通过；准确性目标仍未完成。
 
+之后又完成七组按实际forward轮次配对的验证：保留相同197.609ms残差，不再拟合，
+各工况Decode平均绝对误差为3.13%～9.30%。这次直接将batch快照绑定到计时事件，
+解决原生FPM异步回收时可能配到相邻batch的问题；完整结果见
+[逐轮配对验证](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/paired-forward-validation.md)。
+Prefill和PD握手开销继续单独检查，不把这些逐轮结果等同于端到端TTFT已经达标。
+
+node20+25 的独立1P1D补测已完成五组、42条正式请求。完整8192/1024、C4/N8、
+P/D均TP16/ADP4/EP16时，实测/预测TPOT为421.270/394.827ms（-6.28%），
+输出吞吐为9.354/10.065 token/s（+7.59%），输入吞吐为74.836/80.516 token/s。
+TTFT仍为6282.183/3066.704ms（-51.18%），尚未满足准确性目标。
+完整表格、running batch和逐请求分解见
+[双节点PD独立验证](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/paired-pd-validation.md)。
+
+这次记录直接关联P/D的bootstrap_room，确认首次KV分配、首次shape执行、错峰入队
+以及客户端“首个非空text”口径都会影响TTFT。已修复多attention-DP的SGLang
+源端登记顺序：先在P调度边界登记DP rank，再允许D预留；tokenization只执行一次，
+取消请求不会遗留预留KV。470项Rust回放测试通过。该修复没有消除本组完全同步
+合成到达造成的TTFT差距，仍保留修复前后结果，不宣称全局搜索已经准确。
+
+node19、31、32被其他服务占用，本次使用此前授权且空闲的node25。TP16诊断服务
+已停止，接着单独补测node20+25的全局TP32/ADP32/EP32解码；不复用TP16残差。
+
 ## 推荐配置与默认部署
 
 脚本目录：`/home/youxingye/youxingye_data/910c_script/PD disaggregation`。
