@@ -1,6 +1,6 @@
 # 910C + GLM-5.2 W8A8：离线预测与配置搜索
 
-更新时间：2026-10-31。本文面向当前仓库和本机运行镜像；历史32节点命令仍可复用。
+更新时间：2026-11-02。本文面向当前仓库和本机运行镜像；历史32节点命令仍可复用。
 适配原理、源码位置和与GPU版的区别见 [实现说明](910c-glm52-w8a8-implementation.md)。
 最多四节点、64-device预算下的两组完整PD搜索已运行，结果见
 [8K/1K与32K/1K搜索报告](910c-glm52-w8a8-four-node-pd-results.md)。
@@ -28,6 +28,34 @@ KV容量推导 → 请求调度模拟 → PD传输 → 配置搜索。
 当前正在对齐0.5.22调度和执行模式；完整forward、TTFT、TPOT仍需匹配部署的实测验收。
 
 ## 1. 在当前节点运行
+
+2026-11-02的精度修复已另建本机镜像，原默认镜像保留用于对照。需要复现最新
+同配置结果时，先使用下面这组已验证配置；其中包含HTTP PD网关等待P响应、
+tokenization时序，以及分别校准的TP16/TP32 eager forward开销。
+
+```bash
+cd /home/youxingye/youxingye_data/aisimulate-910c
+
+sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:request-timing-repair-20261102 \
+  AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q \
+  bash scripts/run-ascend910c.sh predict --stack engine \
+  --config benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/request-timing-configs/recommended-2p1d-dtp32-8k1k-c8.yaml \
+  --capture-per-request --output-dir aisimulate-output/current-repair-c8
+```
+
+该配置占4台机器：2个独立P各TP16/ADP4/EP16，1个D跨2台TP32/ADP32/EP32；
+8192/1024，C8/N16。同目录还有1P3D、2P2D、3P1D的C8对照，以及
+`paired-1p1d-8k1k-c4.yaml`双节点验证配置。修改并发时同时指定
+`--set traffic.load.concurrency=32 --set traffic.stop.requests=64`，并使用新的输出目录。
+
+`engine.tokenization`现在可作为固定参数进入`recommend`，保存的候选YAML也保留它；
+`engine.pd_response: sglang_gateway`使客户端首字等待P响应，默认`direct`则直接观察D输出。
+forward残差只用于对应的P/TP16-D/TP32-D拓扑，不应把固定TP16残差用于其他ADP/EP搜索候选。
+这些校准目前限于固定v0.5.22/CANN9.1镜像、graph/调度overlap/投机解码关闭、相同模型。
+完整对照和仍未解决的低并发TTFT偏差见
+[请求时序修复结果](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/request-timing-repair-comparison.md)。
+
+以下保留通用适配入口和原始镜像用法，供未启用上述校准的基线对照：
 
 以下命令都在仓库根目录运行，需要本机Docker及已构建的
 `aisimulate-910c:glm52-w8a8` 镜像。使用新的输出目录保存每次实验。

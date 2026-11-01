@@ -17,6 +17,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--role", choices=["prefill", "decode"], required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--container-prefix", default="aisim-paired-pd")
     args = parser.parse_args()
     role = args.role
     node = 20 if role == "prefill" else 25
@@ -52,7 +53,7 @@ def main():
     original = shlex.split(line.split("：", 1)[1])
     if original[:3] != ["python3", "-m", "sglang.launch_server"]:
         raise ValueError("Unexpected serving entrypoint")
-    container = f"aisim-paired-pd-{role}-20261102"
+    container = f"{args.container_prefix}-{role}-20261102"
     command = ["python3", "/campaign/launch_paired_telemetry.py", *original[3:],
                "--enable-forward-pass-metrics", "--forward-pass-metrics-worker-id", container,
                "--forward-pass-metrics-ipc-name", "ipc:///campaign/forward-metrics"]

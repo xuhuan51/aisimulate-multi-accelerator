@@ -2975,12 +2975,28 @@ def test_prediction_rejects_invalid_tokenization(tokenization) -> None:
         _tokenization_prediction(tokenization)
 
 
-def test_recommendation_rejects_tokenization() -> None:
+def test_recommendation_preserves_fixed_tokenization() -> None:
+    from aisimulate.config.engine import EngineRecommendationConfig
+
+    config = EngineRecommendationConfig.model_validate(
+        {
+            "model": "example/model",
+            "hardware": "h200_sxm",
+            "mode": "aggregated",
+            "workers": {"aggregated": {}},
+            "tokenization": {"base_ms": 1},
+        }
+    )
+    assert config.tokenization.to_replay_config() == {"workers": 1, "base_ms": 1, "per_input_token_ms": 0}
+
+
+@pytest.mark.parametrize("value", [{"base_ms": {"choices": [1, 2]}}, {"workers": 0}, {"per_input_token_us": -1}])
+def test_recommendation_rejects_invalid_tokenization(value) -> None:
     from aisimulate.config.engine import EngineRecommendationConfig
 
     with pytest.raises(ValidationError, match="tokenization"):
         EngineRecommendationConfig.model_validate(
-            {"model": "example/model", "hardware": "h200_sxm", "tokenization": {"base_ms": 1}}
+            {"model": "example/model", "hardware": "h200_sxm", "tokenization": value}
         )
 
 

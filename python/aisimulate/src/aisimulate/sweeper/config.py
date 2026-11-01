@@ -36,7 +36,7 @@ from ..config.common import (
     is_active_engine_model_control,
     requested_backend_version,
 )
-from ..config.engine import NgramSpeculationConfig
+from ..config.engine import NgramSpeculationConfig, TokenizationConfig
 
 
 class OptimizationTarget(str, Enum):
@@ -643,6 +643,7 @@ class SearchSpace(BaseModel):
     kv_transfer_provider: Literal["measured"] | None = None
     pd_routing: Literal["rank_round_robin", "replica_round_robin"] | None = None
     pd_response: Literal["direct", "sglang_gateway"] | None = None
+    tokenization: TokenizationConfig | None = None
     engine_float_ranges: dict[str, list[float]] = Field(default_factory=dict)
     engine_log_ranges: list[str] = Field(default_factory=list)
     engine_log_discrete: list[str] = Field(default_factory=list)
@@ -975,6 +976,8 @@ class SearchSpace(BaseModel):
 
     @model_validator(mode="after")
     def _validate_engine_controls(self):
+        if self.tokenization is not None and "afd" in set(self.deployment_mode):
+            raise ValueError("tokenization requires agg or disagg deployment_mode")
         if self.pd_routing is not None and set(self.deployment_mode) != {"disagg"}:
             raise ValueError("pd_routing requires deployment_mode=disagg")
         if self.pd_response is not None and set(self.deployment_mode) != {"disagg"}:

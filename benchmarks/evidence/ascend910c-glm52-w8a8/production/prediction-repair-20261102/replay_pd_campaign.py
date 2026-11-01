@@ -30,7 +30,7 @@ def run_job(job):
     execution = destination / "execution.json"
     if execution.exists():
         previous = json.loads(execution.read_text())
-        if any(previous.get(key) != job[key] for key in ("command", "measured_sha256", "runtime_sha256", "template_sha256", "image_id")):
+        if any(previous.get(key) != job.get(key) for key in ("command", "measured_sha256", "runtime_sha256", "template_sha256", "image_id", "arrival_trace_sha256")):
             raise ValueError(f"Stale result: {destination}")
         return previous["comparison"]
     if (destination / "result").exists():
@@ -66,6 +66,9 @@ def main():
     parser.add_argument("--ingress-base-ms", type=float)
     parser.add_argument("--pd-response", choices=("direct", "sglang_gateway"))
     parser.add_argument("--campaign", type=Path, default=ROOT / "pd-paired-1p1d")
+    parser.add_argument("--tokenizer-profile", type=Path)
+    parser.add_argument("--prefill-profile", type=Path)
+    parser.add_argument("--client-arrivals", action="store_true")
     parser.add_argument("--workers", type=int, default=2)
     args = parser.parse_args()
     campaign = args.campaign.resolve()
@@ -105,14 +108,32 @@ def main():
             settings.update({"engine.tokenization.workers": 1, "engine.tokenization.base_ms": args.ingress_base_ms})
         if args.pd_response is not None:
             settings["engine.pd_response"] = args.pd_response
+        if args.tokenizer_profile is not None:
+            tokenizer = json.loads(args.tokenizer_profile.read_text())
+            if tokenizer["input_tokens"] != case["input_length"] or args.ingress_base_ms is not None:
+                raise ValueError("The measured tokenizer profile is qualified only for its input length")
+            settings["engine.tokenization"] = tokenizer["config"]
+        if args.prefill_profile is not None:
+            prefill_profile = json.loads(args.prefill_profile.read_text())
+            if (prefill_profile["attention_tp"], prefill_profile["attention_dp"], prefill_profile["moe_ep_size"]) != (4, 4, 16):
+                raise ValueError("Prefill topology does not match its calibration")
+            settings["engine.workers.prefill.timing.estimator_config.op_level.ascend.eager_runtime_overhead"] = prefill_profile
+        if args.client_arrivals:
+            trace_path = campaign / case["name"] / "client-arrivals.jsonl"
+            if len(trace_path.read_text().splitlines()) != case["requests"]:
+                raise ValueError("Incomplete measured arrival trace")
+            settings = {key: value for key, value in settings.items() if not key.startswith("traffic.")}
+            settings["traffic"] = {"source": {"type": "trace", "format": "mooncake", "paths": [str(trace_path)], "block_size": 128}, "load": {"type": "trace_timestamps", "speedup": 1.0}, "stop": None}
         for key, value in settings.items():
             command.extend(["--set", f"{key}={json.dumps(value, separators=(',', ':'))}"])
         jobs.append({"case": case["name"], "concurrency": case["concurrency"], "requests": case["requests"],
                      "input_length": case["input_length"], "output_length": case["output_length"],
-                     "mode": "native" if args.ingress_base_ms is None else f"ingress-sensitivity-{args.ingress_base_ms}ms",
+                     "mode": "conditional-measured-arrivals" if args.client_arrivals else "native" if args.ingress_base_ms is None else f"ingress-sensitivity-{args.ingress_base_ms}ms",
                      "command": command, "destination": str(destination), "measured": measured,
                      "measured_path": str(raw_path), "measured_sha256": digest(raw_path), "runtime_path": str(runtime_path),
                      "runtime_sha256": digest(runtime_path), "template_sha256": digest(template), "image_id": image_id})
+        if args.client_arrivals:
+            jobs[-1]["arrival_trace_sha256"] = digest(trace_path)
     args.output.mkdir(parents=True, exist_ok=True)
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
         rows = list(pool.map(run_job, jobs))

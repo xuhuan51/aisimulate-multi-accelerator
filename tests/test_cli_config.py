@@ -1218,6 +1218,7 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_ro
     raw["engine"]["backend_version"] = "0.5.22"
     raw["engine"]["pd_routing"] = pd_routing
     raw["engine"]["pd_response"] = pd_response
+    raw["engine"]["tokenization"] = {"workers": 2, "base_ms": 0.8, "per_input_token_us": 0.5}
     for role in ("prefill", "decode"):
         raw["engine"]["workers"][role].update(
             timing={"type": "fixed", "prefill_ms": 1.0, "decode_ms": 1.0},
@@ -1257,6 +1258,7 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_ro
     deployment = build_backend_deployment(sample, backend_version="0.5.22")
     assert deployment.pd_routing == pd_routing
     assert deployment.pd_response == pd_response
+    assert deployment.tokenization == {"workers": 2, "base_ms": 0.8, "per_input_token_ms": 0.0005}
     assert deployment.decode_engine_args["sglang"] == {
         "decode_reserved_tokens": 512,
         "chunked_prefill_size": 4096,
@@ -1270,6 +1272,7 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_ro
     compiled = prediction_to_replay_spec(restored).backend_deployment
     assert compiled.pd_routing == pd_routing
     assert compiled.pd_response == pd_response
+    assert compiled.tokenization == deployment.tokenization
     assert compiled.decode_engine_args["sglang"] == deployment.decode_engine_args["sglang"]
     assert compiled.prefill_engine_args["sglang"] == {
         "chunked_prefill_size": 16384,

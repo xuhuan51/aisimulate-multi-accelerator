@@ -11,7 +11,7 @@ from typing import Any
 
 from ..capacity import estimate_kv_bytes_per_token, materialize_aic_num_gpu_blocks
 from ..config.common import ENGINE_MODEL_CONTROL_FIELDS, is_active_engine_model_control, omit_inactive_moe_controls
-from ..config.engine import NgramSpeculationConfig, resolve_block_size
+from ..config.engine import NgramSpeculationConfig, TokenizationConfig, resolve_block_size
 from .replay import BackendDeploymentSpec, EncoderPoolSpec, ForwardPassEstimatorSpec
 
 
@@ -285,6 +285,11 @@ def build_backend_deployment(
         )
 
     common = {
+        "tokenization": (
+            TokenizationConfig.model_validate(sample["tokenization"]).to_replay_config()
+            if sample.get("tokenization") is not None
+            else None
+        ),
         "forward_pass_estimators": forward_pass_estimators,
         "encoder": encoder,
         "deployment_mode": mode,

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from pydantic import Field, PrivateAttr, StrictBool, field_validator, model_serializer, model_validator
+from pydantic import Field, JsonValue, PrivateAttr, StrictBool, field_validator, model_serializer, model_validator
 
 from aisimulate.fpm_profile import FpmModelProfile
 
@@ -477,6 +477,15 @@ class TokenizationConfig(StrictModel):
     base_ms: NonNegativeFloat = 0.0
     per_input_token_us: NonNegativeFloat = 0.0
 
+    def to_replay_config(self) -> dict[str, JsonValue] | None:
+        if self.base_ms == 0 and self.per_input_token_us == 0:
+            return None
+        return {
+            "workers": self.workers,
+            "base_ms": self.base_ms,
+            "per_input_token_ms": self.per_input_token_us / 1000.0,
+        }
+
 
 class EstimatorPolicyConfig(StrictModel):
     nextn: NonNegativeInt = Field(default=0, le=5)
@@ -846,6 +855,7 @@ class EngineRecommendationConfig(EstimatorPolicyConfig):
     kv_transfer: KvTransferConfig | None = None
     pd_routing: PdRouting | None = None
     pd_response: PdResponse | None = None
+    tokenization: TokenizationConfig | None = None
     afd: AFDSearchRecommendationConfig | None = None
 
     @field_validator("model", "hardware")
@@ -858,6 +868,8 @@ class EngineRecommendationConfig(EstimatorPolicyConfig):
     @model_validator(mode="after")
     def _validate_roles(self) -> EngineRecommendationConfig:
         modes = set(self.mode.choices) if isinstance(self.mode, Choices) else {self.mode}
+        if self.tokenization is not None and "afd" in modes:
+            raise ValueError("engine.tokenization requires aggregated or disaggregated mode")
         if self.pd_routing is not None and modes != {"disaggregated"}:
             raise ValueError("engine.pd_routing requires mode=disaggregated")
         if self.pd_response is not None and modes != {"disaggregated"}:

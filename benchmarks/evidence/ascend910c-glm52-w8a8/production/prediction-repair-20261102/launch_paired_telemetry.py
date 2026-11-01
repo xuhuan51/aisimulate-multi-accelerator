@@ -124,10 +124,22 @@ def paired_run_batch(self, batch, *args, **kwargs):
             "requests": [{"rid": request.rid, "bootstrap_room": request.bootstrap_room,
                           "prompt_tokens": len(request.origin_input_ids), "output_tokens": len(request.output_ids)} for request in batch.reqs],
         }
+    host_started = time.perf_counter()
+    succeeded = False
     try:
-        return original_run_batch(self, batch, *args, **kwargs)
+        result = original_run_batch(self, batch, *args, **kwargs)
+        succeeded = True
+        return result
     finally:
         if enabled:
+            row = {
+                **timer._aisim_snapshot,
+                "host_run_batch_ms": 1000 * (time.perf_counter() - host_started),
+                "host_return_unix": time.time(),
+                "succeeded": succeeded,
+            }
+            with (Path("/campaign") / f"host-forward-rank{row['dp_rank']}.jsonl").open("a") as stream:
+                stream.write(json.dumps(row, separators=(",", ":")) + "\n")
             timer._aisim_snapshot = None
 
 

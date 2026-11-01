@@ -8,6 +8,17 @@
 `aisimulate-output/four-node-serving-matched-20261101`。
 完整矩阵的完成情况以 `matrix-progress.json` 和各点 `.complete` 为准。
 
+**最新修复结果（2026-11-02）：**原23点中，TPOT和输入/输出吞吐均进入15%以内，
+MAPE分别为6.49%和7.79%；TTFT有16/23点进入15%以内，MAPE为14.84%。
+仍有7个低并发TTFT点超标，最差约54%，因此整体准确性目标继续推进。
+新增同镜像1P1D、8192/1024、C4/N8的独立验证：TTFT实测/预测为
+5424.56/5016.35ms（-7.53%），TPOT为424.13/394.44ms（-7.00%），
+输出吞吐为9.310/10.015 token/s（+7.58%）。
+完整23点、新增5点、running口径、参数来源与限制见
+[请求时序修复总表](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/request-timing-repair-comparison.md)。
+本页后续记录保留各阶段历史结果；使用当前修复需显式选择
+`aisimulate-910c:request-timing-repair-20261102`，原默认镜像作为冻结基线保留。
+
 按当前已完成数据整理的总表见
 [22 个已完成点的即时对照](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/available-comparison-22points.md)。
 该表不等剩余测试，只列已核验实测；尚未运行的同口径预测标为“—”。

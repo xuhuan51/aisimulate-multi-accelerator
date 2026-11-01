@@ -1,0 +1,21 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Complete the cold-rank-cycle and warm C4/32K controls on20+25; use host-forward and request-stage records to isolate first-use costs outside NPU forward timing. Low-concurrency TTFT remains open despite majority initial accuracy target being reached."
+  },
+  "research": {
+    "request_timing_repair_20261102": {
+      "original_validation": "All46 matched replays complete for23original serving points: TTFT16/23within15percent, MAPE14.8408percent; TPOT23/23within15percent, MAPE6.4869percent; input/outputthroughput23/23within15percent, MAPE7.7859percent. Seven low-concurrency TTFT points remain outside15percent; worst53.56percent.",
+      "independent_validation": "New1P1D five cases42formal requests complete. Full8192/1024,C4/N8: real/predicted TTFT5424.559/5016.353ms(-7.53percent),TPOT424.131/394.437ms(-7.00percent),output9.31010/10.01542tok/s(+7.58percent). Original measurements not replaced.",
+      "source_fix": "HTTP PD gateway awaitsPrefillresponsebody before exposing Decode stream. Explicit pd_response=sglang_gateway models output/completion buffering while D computes. P source registration order also repaired.473native replay and1407Python/model/GPU checks pass.",
+      "search_identity": "Fixed engine.tokenization now survives recommendation, candidate sample/cache, savedYAML and predict.995packaged caller/config tests pass. Five executable configs exported; one full-workload savedYAML rerun numerically matches source prediction.",
+      "calibration": "P eager offset91.62454ms from8paired formal forwards in prior shortC4; P tokenizer/dispatch0.843507ms from twoC1 API records,8192pretokenized IDs,1worker. D offsets remain197.609115ms TP16 and132.119468ms TP32. Profiles explicit and topology-specific, no original23serving point fitted.",
+      "graph_checks": "Both role normalized cuda_graph_config prefill/decode backend=disabled,disable_overlap_schedule=true,speculative_algorithm=null. Legacy disable_cuda_graph=false is not evidence that graphs are enabled in this image.",
+      "artifacts": "production/prediction-repair-20261102/request-timing-repair-comparison.md,json,original23.csv,manifest.json,request-timing-configs/,request-timing-config-validation.json. Usage and main comparisonMD updated.",
+      "cold_investigation": "Fresh1P1D C1 rank cycle with2warmups: first two formalTTFT about5554/6801ms; six repeated-rank requests mostly2994..3073ms,one3950ms. Second cold requestPcompute5284ms but twoScheduler.run_batch hostcalls sum3133ms,leavingabout2151ms outside forward. No invented cold penalty added; warmC4 and32Kcontrols ongoing.",
+      "resources": "Original PD-ingress diagnostic services stopped and logs frozen. Fresh aisim-cold-pd services on20+25 only. Other users' services untouched. node25usesexisting privateDocker socket/run/aisim-docker-20261102.sock.",
+      "ranking_scope": "Same-concurrency throughput winner agrees6/6among completed original candidates; not proof of global optimum or unmeasuredtopologies. Exact committed forward-batch telemetry unavailable in JSON runner; report labels activation-to-last-token occupancy proxy separately from measured runningbatch."
+    }
+  }
+}

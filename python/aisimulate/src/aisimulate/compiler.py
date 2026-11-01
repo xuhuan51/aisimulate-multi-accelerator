@@ -187,13 +187,7 @@ def _prediction_encoder(config: CorePredictionConfig, workload):
 
 def _tokenization(engine: EnginePredictionConfig) -> dict[str, JSONValue] | None:
     tokenization = getattr(engine, "tokenization", None)
-    if tokenization is None or (tokenization.base_ms == 0 and tokenization.per_input_token_us == 0):
-        return None
-    return {
-        "workers": tokenization.workers,
-        "base_ms": tokenization.base_ms,
-        "per_input_token_ms": tokenization.per_input_token_us / 1000.0,
-    }
+    return tokenization.to_replay_config() if tokenization is not None else None
 
 
 def _deployment(

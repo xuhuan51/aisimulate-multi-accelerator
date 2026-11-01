@@ -24,6 +24,10 @@ def main():
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--overhead-profile', type=Path, action='append', default=[])
     parser.add_argument('--configurations', nargs='+')
+    parser.add_argument('--ingress-base-ms', type=float)
+    parser.add_argument('--pd-response', choices=('direct', 'sglang_gateway'))
+    parser.add_argument('--tokenizer-profile', type=Path)
+    parser.add_argument('--prefill-profile', type=Path)
     args = parser.parse_args()
     os.environ['AISIMULATE_910C_IMAGE'] = args.image
     jobs = comparison.make_jobs(args.measurement_root, args.output)
@@ -43,6 +47,26 @@ def main():
             job['command'].extend(['--set', f'engine.workers.decode.timing.estimator_config.op_level.ascend.eager_runtime_overhead={encoded}'])
             job['eager_runtime_overhead'] = matches[0]
     for job in jobs:
+        if args.pd_response is not None:
+            job['command'].extend(['--set', f'engine.pd_response={args.pd_response}'])
+        if args.tokenizer_profile is not None:
+            tokenizer = json.loads(args.tokenizer_profile.read_text())
+            if tokenizer['input_tokens'] != 8192 or args.ingress_base_ms is not None:
+                raise ValueError('Tokenizer calibration requires this exact8192-input workload')
+            job['command'].extend(['--set', 'engine.tokenization=' + json.dumps(tokenizer['config'], separators=(',', ':'))])
+            job['tokenizer_calibration'] = tokenizer
+        if args.prefill_profile is not None:
+            prefill_profile = json.loads(args.prefill_profile.read_text())
+            plan = json.loads((args.measurement_root / 'comparison-plan.json').read_text())
+            entry = next(entry for entry in plan['configurations'] if entry['label'] == job['configuration'])
+            actual = (entry['PREFILL_TP_SIZE'] // entry['PREFILL_DP_SIZE'], entry['PREFILL_DP_SIZE'], entry['PREFILL_EP_SIZE'])
+            if (prefill_profile['attention_tp'], prefill_profile['attention_dp'], prefill_profile['moe_ep_size']) != actual:
+                raise ValueError('Prefill topology does not match its calibration')
+            job['command'].extend(['--set', 'engine.workers.prefill.timing.estimator_config.op_level.ascend.eager_runtime_overhead=' + json.dumps(prefill_profile, separators=(',', ':'))])
+            job['prefill_calibration'] = prefill_profile
+        if args.ingress_base_ms is not None:
+            job['command'].extend(['--set', 'engine.tokenization.workers=1', '--set', f'engine.tokenization.base_ms={args.ingress_base_ms}'])
+            job['ingress_diagnostic'] = {'scope': 'Sensitivity experiment: serialized request ingress; not a measured tokenizer profile', 'base_ms': args.ingress_base_ms}
         job['original_logits_layout_audit'] = copy.deepcopy(job['logits_layout_audit'])
         for audit in job['logits_layout_audit']:
             audit['modeled_lm_head_tp'] = audit['actual_lm_head_tp']
