@@ -152,6 +152,9 @@ def configure_ascend_glm52(model, raw_config):
         "attention_dp_load": "uniform",
         "decode_graph_buckets": graph_buckets,
         "decode_execution_mode": decode_mode,
+        "enable_dp_lm_head": settings["enable_dp_lm_head"],
+        "enable_tp_lm_head_all_to_all": settings["enable_tp_lm_head_all_to_all"],
+        "global_lm_head_limit": "Reorder/scatter and host synchronization require separate timing qualification",
         "decode_eager_token_multiple": eager_alignment,
         "kv_pool_tokens": 53248,
         "kv_pool_scope": "operator timing reference; capacity is resolved separately by the native memory model",
@@ -190,7 +193,8 @@ def configure_ascend_glm52(model, raw_config):
                     "bias": bias,
                     "token_axis": "requests" if requests else "tokens",
                     "token_split": split,
-                    "token_multiple": max(1, padding // split) * (attention_dp if global_tokens else 1),
+                    "token_multiple": max(1, (1 if requests and mode == "eager" else padding) // split)
+                    * (attention_dp if global_tokens else 1),
                 }
             }
             return (
@@ -207,7 +211,8 @@ def configure_ascend_glm52(model, raw_config):
                     "key": {"role": role, "dimensions": dimensions, "execution_mode": mode},
                     "token_axis": "requests" if requests else "tokens",
                     "token_split": split,
-                    "token_multiple": max(1, padding // split) * (attention_dp if global_tokens else 1),
+                    "token_multiple": max(1, (1 if requests and mode == "eager" else padding) // split)
+                    * (attention_dp if global_tokens else 1),
                     "resident_copies": resident_copies,
                 }
             }
@@ -224,7 +229,7 @@ def configure_ascend_glm52(model, raw_config):
                 return None
             elements = width * (attention_dp if global_tokens else 1)
             split = local_tp if shard else 1
-            if not context:
+            if not context and not (requests and mode == "eager"):
                 elements *= padding // split
                 split = padding
             result = {
@@ -492,9 +497,30 @@ def configure_ascend_glm52(model, raw_config):
                 *([] if fused_final_norm else [vector("final_residual_add", "shared_add", [6144], split=local_tp)]),
                 *([] if tensor_moe else [collective("sparse_output_gather", "all_gather", local_tp, 75, shard=True)]),
                 vector("final_norm", "add_rms_bias" if fused_final_norm else "rms_bias", [6144]),
-                linear("logits_gemm", vocabulary, 6144, "bfloat16", requests=True),
-                collective("logits_gather", "all_gather", local_tp, width=vocabulary, requests=True),
-                vector("logits_finalize", "logits_finalize", [local_tp, 154880], requests=True),
+                *(
+                    [
+                        linear("logits_gemm", vocabulary, 6144, "bfloat16", requests=True),
+                        collective("logits_gather", "all_gather", local_tp, width=vocabulary, requests=True),
+                        vector("logits_finalize", "logits_finalize", [local_tp, 154880], requests=True),
+                    ]
+                    if settings["enable_dp_lm_head"]
+                    else [
+                        {
+                            "AscendLogits": {
+                                "name": phase + "_global_logits",
+                                "scale_factor": 1.0,
+                                "global_tp": global_tp,
+                                "attention_dp": attention_dp,
+                                "vocabulary": 154880,
+                                "hidden_size": 6144,
+                                "execution_mode": mode,
+                                "enable_all_to_all": settings["enable_tp_lm_head_all_to_all"],
+                                "request_counts": None,
+                                "rank": 0,
+                            }
+                        }
+                    ]
+                ),
             ]
         )
         operations = [core.op_from_spec_json(json.dumps(entry)) for entry in entries if entry is not None]

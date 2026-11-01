@@ -2968,13 +2968,13 @@
       },
       "progress": {
         "blockers": [
-          "Serving accuracy not accepted; matched recommended C4 already shows TTFT -52.22%, TPOT -42.88%, throughput +75.96% prediction errors",
-          "Known decode LM-head/global-TP versus modeled attention-TP layout mismatch; timing contribution not independently isolated",
-          "Remaining serving matrix and full stock/observed-KV comparisons pending",
-          "Cross-request PD sender contention and host/bootstrap/metadata costs remain approximation limits",
-          "DCP eager profiles remain unavailable for broader strategy coverage"
+          "Serving accuracy remains unaccepted",
+          "Unmodeled eager execution overhead",
+          "TTFT and bootstrap/cold-shape contributions require further isolation",
+          "TP32 independent forward telemetry is not yet available",
+          "DCP eager profiles remain unavailable"
         ],
-        "next_action": "15/24 serving points and1064 successful exact8192/1024 requests validated. Complete remaining2P2D C32/C64/C128 and3P1D, restore recommended topology, then execute48 matched predictions and final diagnostics. Accuracy remains unaccepted.",
+        "next_action": "Complete forward-telemetry qualification and matched replay error reduction; keep direct-FPM profile acceptance separate.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -3038,7 +3038,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Finish remaining3P1D C64/C128 measurements; then48 matched predictions and stage diagnostics. Deliver one24-row actual/stock-predicted table with TTFT/TPOT/input-output throughput errors and CSV; preserve observed-KV diagnostic separation and accuracy-unaccepted status.",
+    "next_action": "Qualify unprofiled forward telemetry, model eager execution overhead separately from operator latencies, and compare held-out workloads and the original 23 completed PD measurements. Serving accuracy remains unaccepted.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3967,6 +3967,20 @@
         "stage1/runtime-v0522/runtime-image-inventory.json"
       ]
     },
+    "prediction_repair_20261102": {
+      "accuracy": "C4 after layout repair still has TPOT errors -42.48% recommended and -51.58%/-51.90%/-53.16% controls. Layout repair does not resolve the dominant timing gap.",
+      "baseline_predictions": "46 completed runs: 23 stock and 23 observed-KV diagnostics. Original image and data retained.",
+      "code_repair": "Global TP decode LM head, conditional all-to-all, unpadded eager logits requests, canonical configuration and bincode coverage.",
+      "collection": "Node20 became free; 30 TP32 BF16 LM-head cases completed, 29 qualified, one rejected for CV26.6%. Existing curves preserved; packaged table now2917rows.",
+      "confidence": "High for runtime flags, raw measurements and persisted before/after results; execution-overhead model and serving accuracy not yet qualified.",
+      "excluded": "3P1D C128 did not complete; connection to Router failed. No successful latency result is assigned to it.",
+      "forward_diagnostic": "Three profiler runs on dedicated node20 TP16/ADP4/EP16 same pinned image; substantial eager non-kernel time observed. Profiler timing is perturbed and cannot be calibration truth. Built-in FPM telemetry now collecting unprofiled per-forward shapes and event durations; calibration and validation workloads named separately.",
+      "remaining_integrity_issue": "Historical /home/youxingye/United deployment/service/start-united-v0522.sh is absent; no reconstructed file substituted for its recorded hash.",
+      "resource_state": "Node20 task-owned diagnostic service; node19 has other SGLang processes consuming about63GB per device and was not modified.",
+      "serving_completed_points": 23,
+      "successful_formal_requests": 1760,
+      "validation": "54 Ascend Rust tests and420 Python model/GPU parity tests passed; source formatting and legal-package checks passed."
+    },
     "priority_20261022": {
       "decision": "Pause numerical-prediction accuracy optimization and heldout threshold chasing. Prioritize complete necessaryoperatorcollection,canonicalFPEcomposition,memory/PDandpredict/recommend usability. Preserve basicnumerical execution checks,source/shape/precisionmatchingand honestcoverage. Measured predictionaccuracy remainsuncalibrated; failed10%gates do notblockfunctionalbringup.",
       "next_action": "Finishmixedindexerlinearpublication; implementremainingNPUattention/indexer/BMM/vector/MoE/DeepEPoperatorcontractsandcollecttheirrequiredgrids,wireactualshapecomposition,thenmemoryandPD/search. Noadditionaldensitytuningorheldoutcampaigns now.",
@@ -4458,7 +4472,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 130,
+  "revision": 131,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

@@ -603,6 +603,7 @@ impl Availability<'_> {
                 _ => self.db.hccl.ensure_key(&comm.key),
             },
             AscendLinear(linear) => linear.ensure_ready(self.db),
+            AscendLogits(logits) => logits.ensure_ready(self.db),
             AscendAttention(attention) => attention.ensure_ready(self.db),
             AscendDcpAttention(attention) => attention.ensure_ready(self.db),
             AscendBmm(bmm) => bmm.ensure_ready(self.db),

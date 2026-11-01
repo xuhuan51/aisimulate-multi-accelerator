@@ -1,14 +1,47 @@
 # 四节点 GLM5.2 W8A8：实测与 AISimulate 对照
 
-更新日期：2026-11-01，Asia/Shanghai。目标是修复实际 PD 启动、采集相同工作负载下的
-多配置实测，再与未调参的算子级预测比较。推荐组、1P3D、2P2D 各六档已完成，
-3P1D 的 C4/C8/C16/C32 也已完成，共 22/24 点、1632 条正式请求全部成功；
-剩余 3P1D 的 C64 正在采集，随后测 C128。核验记录见 `completed-measurements-22points.json`。
+更新日期：2026-11-02，Asia/Shanghai。目标是修复实际 PD 启动、采集相同工作负载下的
+多配置实测，再与算子级预测比较。推荐组、1P3D、2P2D 各六档已完成，
+3P1D 的 C4/C8/C16/C32/C64 也已完成，共 23/24 点、1760 条正式请求全部成功。
+3P1D C128 未完成，连接 Router 失败，该点不计入结果。原始预测的 46 次运行
+（23 点各包含默认内存、实测 KV 容量两种口径）均已完成，保留在
+`aisimulate-output/four-node-serving-matched-20261101`。
 完整矩阵的完成情况以 `matrix-progress.json` 和各点 `.complete` 为准。
 
 按当前已完成数据整理的总表见
 [22 个已完成点的即时对照](../benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/available-comparison-22points.md)。
 该表不等剩余测试，只列已核验实测；尚未运行的同口径预测标为“—”。
+
+## 2026-11-02 的修复与误差定位
+
+已修复 Decode 的 LM-head 并行组：实际 D 使用全局 TP 分片，P 使用 attention TP
+分片；补上全局隐藏态汇集、logits 汇集与等长请求条件下的 all-to-all 分支。
+eager 的 logits 行数改为实际请求数，与 MLP 为 TP 对齐而填充的 token 行数分别处理。
+这些开关由 Rust 配置持有，保存在角色 timing 配置中。
+
+在当前 node20 补采全局 TP32 的 BF16 LM-head：30 个 shape/执行模式组合均完成，
+29 点通过数值及稳定性检查，1 点因 CV=26.6% 被排除。原始记录及失败记录均保留；
+性能表从 2888 行增加到 2917 行，原有曲线未替换。
+
+相同 C4/N8 的重跑说明，这项修复的主要价值是执行语义正确，不能消除当前主要误差：
+
+| 配置 | 实测 TPOT ms | 修复后预测 ms | 相对误差 |
+| --- | ---: | ---: | ---: |
+| 2P1D，D 全局 TP32/ADP32 | 328.146 | 188.763 | -42.48% |
+| 1P3D，D 全局 TP16/ADP4 | 405.080 | 196.155 | -51.58% |
+| 2P2D，D 全局 TP16/ADP4 | 410.018 | 197.216 | -51.90% |
+| 3P1D，D 全局 TP16/ADP4 | 420.997 | 197.216 | -53.16% |
+
+新的同节点 TP16/ADP4/EP16 诊断服务已用同一镜像完成三轮 profiler。
+轨迹显示 eager decode 存在大量 CPU 提交及核间空闲区间，不能以 kernel 时长之和
+表示整轮 forward。Profiler 自身会增加耗时，其时间不能直接作为未插桩的校准值。
+因此继续使用镜像内置 Forward Pass Metrics 的 NPU 事件计时，采集独立的逐轮
+shape/耗时，再区分校准请求与验证请求。该服务为单节点合并部署的诊断服务，
+其 TTFT 不代替原四节点 PD 测量。
+
+当前完成 54 项 Ascend Rust 测试、420 项模型及两套 GPU parity 测试；
+serving 精度尚未验收，仍需修复执行开销和核对 TTFT。完整证据位于
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102`。
 
 ## 推荐配置与默认部署
 

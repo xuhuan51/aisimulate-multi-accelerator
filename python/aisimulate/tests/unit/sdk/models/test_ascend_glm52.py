@@ -239,6 +239,8 @@ def test_explicit_serial_shared_experts_survive_saved_engine_identity(model_path
     assert saved["op_level"]["ascend"] == {
         "shared_expert_overlap": False,
         "decode_execution_mode": "graph",
+        "enable_dp_lm_head": True,
+        "enable_tp_lm_head_all_to_all": False,
         "routing": "balanced",
         "kv_transfer_page_layout": "contiguous",
     }
@@ -265,6 +267,49 @@ def test_eager_decode_uses_eager_profiles_and_preserves_partitioning(model_path)
     assert ops["generation_dense_input_gather"][1]["elements_per_token"] == 6144
     assert ops["generation_dense_input_gather"][1]["token_split"] == 8
     assert model.get_resident_weights_bytes() == baseline.get_resident_weights_bytes()
+
+
+@pytest.mark.parametrize("global_tp,attention_dp", [(16, 4), (32, 32)])
+def test_global_logits_retains_runtime_partition_and_canonical_options(model_path, global_tp, attention_dp):
+    config = configuration()
+    config.tp_size = global_tp // attention_dp
+    config.attention_dp_size = attention_dp
+    config.moe_ep_size = global_tp
+    config.op_level_config = OpLevelCompileConfig(
+        {
+            "ascend": {
+                "decode_execution_mode": "eager",
+                "enable_dp_lm_head": False,
+                "enable_tp_lm_head_all_to_all": global_tp == 32,
+            }
+        },
+        system="ascend910c",
+        backend="sglang",
+    )
+    model = get_model(model_path, config, "sglang")
+    entries = flattened(model.generation_ops)
+    kind, logits = entries["generation_global_logits"]
+    assert kind == "AscendLogits"
+    assert logits["global_tp"] == global_tp
+    assert logits["attention_dp"] == attention_dp
+    assert logits["request_counts"] is None
+    assert logits["vocabulary"] // logits["global_tp"] == (9680 if global_tp == 16 else 4840)
+    assert "generation_logits_gemm" not in entries
+    assert "generation_logits_gather" not in entries
+    assert model.execution_assumptions["enable_dp_lm_head"] is False
+    engine = _engine_config_dict(
+        model=model,
+        model_path=model_path,
+        system="ascend910c",
+        backend="sglang",
+        backend_version="0.5.22",
+        kv_block_size=128,
+        systems_path=None,
+        nextn=0,
+    )
+    restored = json.loads(engine["extra"]["estimator_config"])["op_level"]["ascend"]
+    assert restored["enable_dp_lm_head"] is False
+    assert restored["enable_tp_lm_head_all_to_all"] == (global_tp == 32)
 
 
 def test_eager_decode_rejects_unmeasured_dcp_profiles(model_path):
@@ -294,6 +339,8 @@ def test_eager_alignment_follows_mlp_sync_requirement(model_path, local_tp, atte
     assert ops["generation_attention"][1]["eager_token_multiple"] == alignment
     assert ops["generation_qkv_a"][1]["token_multiple"] == alignment
     assert ops["generation_attention"][1]["graph_buckets"] == []
+    assert ops["generation_logits_gemm"][1]["token_multiple"] == 1
+    assert ops["generation_logits_finalize"][1]["token_multiple"] == 1
 
 
 def test_anchored_shape_policy_survives_model_and_engine_identity(model_path):

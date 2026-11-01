@@ -18,6 +18,7 @@ pub mod ascend_bmm;
 pub mod ascend_dcp_attention;
 pub mod ascend_deepep;
 pub mod ascend_linear;
+pub mod ascend_logits;
 pub mod ascend_moe_chain;
 pub mod ascend_moe_tensor;
 pub mod ascend_vector;

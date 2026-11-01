@@ -32,6 +32,8 @@ pub struct OpLevelConfig {
 pub struct AscendOpLevelConfig {
     pub shared_expert_overlap: bool,
     pub decode_execution_mode: AscendExecutionMode,
+    pub enable_dp_lm_head: bool,
+    pub enable_tp_lm_head_all_to_all: bool,
     pub routing: String,
     pub kv_transfer_page_layout: String,
     #[serde(
@@ -45,6 +47,8 @@ impl Default for AscendOpLevelConfig {
         Self {
             shared_expert_overlap: true,
             decode_execution_mode: AscendExecutionMode::Graph,
+            enable_dp_lm_head: true,
+            enable_tp_lm_head_all_to_all: false,
             routing: "balanced".into(),
             kv_transfer_page_layout: "contiguous".into(),
             shape_policy: Default::default(),
@@ -109,6 +113,13 @@ mod ascend_tests {
         options.resolve_for("ascend910c", "sglang").unwrap();
         assert!(options.ascend.as_ref().unwrap().shared_expert_overlap);
         options.ascend.as_mut().unwrap().shared_expert_overlap = false;
+        assert!(options.ascend.as_ref().unwrap().enable_dp_lm_head);
+        options.ascend.as_mut().unwrap().enable_dp_lm_head = false;
+        options
+            .ascend
+            .as_mut()
+            .unwrap()
+            .enable_tp_lm_head_all_to_all = true;
         let json = serde_json::to_string(&options).unwrap();
         let mut restored: OpLevelConfig = serde_json::from_str(&json).unwrap();
         restored.resolve_for("ascend910c", "sglang").unwrap();

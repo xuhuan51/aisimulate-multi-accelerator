@@ -213,9 +213,10 @@ def main():
     parser.add_argument("--measurement-root", type=pathlib.Path, required=True)
     parser.add_argument("--output", type=pathlib.Path, default=ROOT / "aisimulate-output/four-node-serving-matched-20261101")
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--completed-only", action="store_true")
     args = parser.parse_args()
     state = json.loads((args.measurement_root / "matrix-progress.json").read_text())
-    if not args.prepare_only and state["status"] != "measured":
+    if not args.prepare_only and state["status"] != "measured" and not (args.completed_only and state["status"] == "failed"):
         raise RuntimeError("Wait until the serving matrix finishes; avoid CPU contention during measured runs")
     jobs = make_jobs(args.measurement_root, args.output)
     args.output.mkdir(parents=True, exist_ok=True)
@@ -224,7 +225,7 @@ def main():
     if args.prepare_only:
         print(f"Prepared {len(jobs)} comparison jobs; no predictions executed")
         return
-    if len(jobs) != 48:
+    if not args.completed_only and len(jobs) != 48:
         raise ValueError(f"Expected 24 measured points and 48 paired diagnostics; got {len(jobs)}")
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         rows = list(executor.map(run_job, jobs))

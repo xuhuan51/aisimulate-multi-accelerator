@@ -949,6 +949,18 @@ mod tests {
                 },
                 graph_buckets: vec![8, 16, 24, 32],
             }),
+            OpSpec::AscendLogits(crate::operators::ascend_logits::AscendLogitsOp {
+                name: "ascend_global_logits".into(),
+                scale_factor: 1.0,
+                global_tp: 32,
+                attention_dp: 32,
+                vocabulary: 154880,
+                hidden_size: 6144,
+                execution_mode: "eager".into(),
+                enable_all_to_all: true,
+                request_counts: Some(vec![1; 32]),
+                rank: 0,
+            }),
         ];
 
         // Exhaustiveness guard: if a variant is added to `Op`, this match
@@ -1010,6 +1022,9 @@ mod tests {
                 | OpSpec::Glm53Primitive(_)
                 | OpSpec::Dsv41Linear(_)
                 | OpSpec::TokenScale(_) => {}
+                OpSpec::AscendLogits(logits) => {
+                    logits.shape(1).unwrap();
+                }
             }
         }
         ops

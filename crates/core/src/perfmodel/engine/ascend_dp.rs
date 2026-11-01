@@ -8,6 +8,7 @@ use crate::{AicError, ForwardPassMetrics};
 pub(super) struct GroupShape {
     pub local_tokens: Vec<u32>,
     pub global_tokens: u32,
+    pub request_counts: Vec<u32>,
     pub max_tokens: u32,
     pub mode: DpPaddingMode,
     pub decode: bool,
@@ -87,6 +88,16 @@ impl GroupShape {
         )
         .map_err(|_| invalid("Ascend DP global buffer overflow"))?;
         Ok(Self {
+            request_counts: metrics
+                .iter()
+                .map(|rank| {
+                    if has_prefill {
+                        rank.scheduled_requests.num_prefill_requests
+                    } else {
+                        rank.scheduled_requests.num_decode_requests
+                    }
+                })
+                .collect(),
             max_tokens: local_tokens.iter().copied().max().unwrap(),
             local_tokens,
             global_tokens,
@@ -132,10 +143,20 @@ impl GroupShape {
         } else {
             self.local_tokens[rank]
         };
-        let request_tokens = if self.decode { tokens } else { requests };
+        let request_tokens = if self.graph { tokens } else { requests };
         let execution_mode = if self.graph { "graph" } else { "eager" };
         let mut operation = operation.clone();
         let query_tokens = match &mut operation {
+            Op::AscendLogits(logits) => {
+                logits.request_counts = Some(if self.graph {
+                    self.local_tokens.clone()
+                } else {
+                    self.request_counts.clone()
+                });
+                logits.rank = rank;
+                logits.execution_mode = execution_mode.into();
+                return Ok(Some(operation));
+            }
             Op::TokenScale(scale) => {
                 if global
                     || scale.numerator as usize != self.local_tokens.len()

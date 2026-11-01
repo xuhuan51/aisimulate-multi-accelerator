@@ -740,6 +740,21 @@ balanced routing; DeepEP timing uses the measured maximum-sender profile.
 The independently written `production/plan_dp_padding_extension.py` evidence
 planner and its frozen eager MAX_LEN collection archive retain this attribution.
 
+The independently implemented global output-layer geometry in
+`crates/core/src/perfmodel/operators/ascend_logits.rs`,
+`crates/core/src/perfmodel/engine/ascend_dp.rs`,
+`python/aisimulate/src/aisimulate_core/sdk/models/ascend_glm52.py`, and the
+global LM-head cases in `python/aisimulate/collector/sglang/ascend_linear_cases.py`
+follow `python/sglang/srt/layers/logits_processor.py`,
+`python/sglang/srt/layers/dp_attention.py`, and
+`python/sglang/srt/models/deepseek_v2.py` at SGLang revision
+`baa9befa381511cd4d56f83980951e5a45fffc6d` (Copyright 2023-2026 SGLang Team
+and contributors; Apache-2.0).
+Source: https://github.com/sgl-project/sglang/tree/baa9befa381511cd4d56f83980951e5a45fffc6d/python/sglang/srt
+These implementations are modified for offline timing composition; runtime
+source is not bundled. Unmeasured reordering and host overhead are not claimed
+to be covered by the measured GEMM and collective components.
+
 The SGLang handoff release behavior in `crates/core/src/replay/handoff.rs` and
 its independent regression tests in `crates/core/src/replay/disagg_tests.rs`
 follow `process_disagg_prefill_inflight_queue` in

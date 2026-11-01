@@ -112,6 +112,7 @@ def get_ascend_linear_cases(model_path, case_root=None):
             add(f"o.tp{parallel}.bias{int(bias)}", "w8a8", hidden, heads * config["v_head_dim"], bias)
         add(f"lm_head.tp{parallel}", "bfloat16", config["vocab_size"] // parallel, hidden, requests=True)
     for parallel in profile["global_tensor_parallel_sizes"]:
+        add(f"lm_head_global.tp{parallel}", "bfloat16", config["vocab_size"] // parallel, hidden, requests=True)
         if config["intermediate_size"] % parallel:
             raise ValueError("Declared dense TP does not divide intermediate size")
         intermediate = config["intermediate_size"] // parallel
