@@ -16,6 +16,36 @@ LABELS = {
     "control-2p2d-tp16": "2P2D：P/D TP16/ADP4/EP16",
     "control-3p1d-tp16": "3P1D：P/D TP16/ADP4/EP16",
 }
+TABLE_LABELS = {
+    "recommended-2p1d-dtp32": "2P1D（D TP32）",
+    "control-1p3d-tp16": "1P3D（D TP16）",
+    "control-2p2d-tp16": "2P2D（D TP16）",
+    "control-3p1d-tp16": "3P1D（D TP16）",
+}
+
+
+def comparison_table(plan, indexed, measurements):
+    lines = [
+        "每个性能单元格依次为 **实测 / 原预测 / 相对误差**；TTFT 使用秒，TPOT 使用毫秒，吞吐使用 token/s。正误差表示预测偏大，负误差表示预测偏小。running batch 只列服务端实测采样值，不能与客户端设置的并发混为一谈。", "",
+        "| 配置 | 并发 C / 请求数 N | TTFT 秒：实测 / 预测 / 误差 | TPOT ms：实测 / 预测 / 误差 | 输入 tok/s：实测 / 预测 / 误差 | 输出 tok/s：实测 / 预测 / 误差 | 实测活跃 D running 峰值 / 非零均值 |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    metrics = (("ttft_ms", 1000, 3), ("tpot_ms", 1, 2), ("input_tok_s", 1, 2), ("output_tok_s", 1, 2))
+    for configuration in plan["configurations"]:
+        label = configuration["label"]
+        for concurrency in plan["workload"]["concurrencies"]:
+            row = indexed[(label, concurrency, "stock")]
+            measured = measurements[(label, concurrency)]
+            cells = [TABLE_LABELS[label], f"{concurrency} / {row['requests']}"]
+            for metric, scale, precision in metrics:
+                cells.append(
+                    f"{row[f'measured_{metric}'] / scale:.{precision}f} / "
+                    f"{row[f'predicted_{metric}'] / scale:.{precision}f} / "
+                    f"{row[f'error_percent_{metric}']:+.1f}%"
+                )
+            cells.append(f"{float(measured['decode_running_peak']):.0f} / {float(measured['decode_running_mean_when_nonzero']):.2f}")
+            lines.append("| " + " | ".join(cells) + " |")
+    return lines + [""]
 
 
 def archive_measurement(configuration, source, destination):
@@ -74,23 +104,9 @@ def write_report(measurement_root, prediction_root, output):
         previous, current = recovery["previous_limits"], recovery["new_limits"]
         note = f"等待时限变更：1P3D C128 首次尝试触发 PD bootstrap {previous['PD_BOOTSTRAP_TIMEOUT']} 秒超时，已中止并保留于 failed-attempts，不计入下表。重启后的 C128 重测及后续配置使用 bootstrap {current['PD_BOOTSTRAP_TIMEOUT']} 秒、Router request {current['ROUTER_REQUEST_TIMEOUT']} 秒；此前成功点使用原 bootstrap {previous['PD_BOOTSTRAP_TIMEOUT']} 秒、Router request {previous['ROUTER_REQUEST_TIMEOUT']} 秒。并行参数和执行开关保持各候选定义，延长等待不代表提高计算吞吐；这些结果不能被解释为原超时策略下全部成功。"
         lines[-2:-2] = [note, ""]
-    for configuration in plan["configurations"]:
-        label = configuration["label"]
-        lines.extend([
-            f"### {LABELS[label]}", "",
-            "| 并发/N | 实测 TTFT 秒 | 预测 TTFT 秒 | 实测 TPOT ms | 预测 TPOT ms | 实测输出 tok/s | 预测输出 tok/s | 吞吐误差 | 活跃 D running 峰值/均值 |",
-            "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
-        ])
-        for concurrency in plan["workload"]["concurrencies"]:
-            row = indexed[(label, concurrency, "stock")]
-            measured = measurements[(label, concurrency)]
-            lines.append(
-                f"| {concurrency}/{row['requests']} | {row['measured_ttft_ms']/1000:.3f} | {row['predicted_ttft_ms']/1000:.3f} | "
-                f"{row['measured_tpot_ms']:.2f} | {row['predicted_tpot_ms']:.2f} | {row['measured_output_tok_s']:.2f} | "
-                f"{row['predicted_output_tok_s']:.2f} | {row['error_percent_output_tok_s']:+.1f}% | "
-                f"{float(measured['decode_running_peak']):.0f}/{float(measured['decode_running_mean_when_nonzero']):.2f} |"
-            )
-        lines.append("")
+    lines.extend([f"- {LABELS[configuration['label']]}。" for configuration in plan["configurations"]])
+    lines.extend(["", "2P1D 的 D 是跨两台物理节点的一个实例；四种配置都占用四台节点。attention DP 简写为 ADP。", ""])
+    lines.extend(comparison_table(plan, indexed, measurements))
     lines.extend([
         "输入吞吐与输出吞吐都使用各自 token 总量除以正式测量时长；由于固定 8192/1024，本次输入吞吐恰为输出吞吐的 8 倍。完整 TTFT/TPOT 百分位、输入吞吐、请求明细与指标摘要见归档和 comparison.csv。", "",
         "running batch 是每秒采样近似值：按 D 实例和 attention-DP rank 去掉 TP 重复指标，再仅统计该采样间隔 decode token counter 有增长的 rank，避免空闲 rank 残留 gauge 被误当成并发；不是逐轮 forward 的精确 trace。不同 rank 的刷新时刻不一致，且可能包含系统探活，采样峰值可能略高于客户端并发。原始 gauge 与未修改的逐秒数据均保留，不按客户端上限强行截断。", "",

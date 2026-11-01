@@ -1133,6 +1133,14 @@
           "scope": "validation",
           "sha256": "8f3d5a3f72aba0fdb30b1b1d2da3beabc95c4986d1476b42f085933c4ef057e0"
         },
+        "four_node_available_comparison_22points": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/available-comparison-22points.md",
+          "scope": "validation",
+          "sha256": "b3db669958373792e8f7f903379c02bf9a089cb366337316c2ce4119db87c3f9"
+        },
         "four_node_bootstrap_timeout_first_event": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -1156,6 +1164,22 @@
           "path": "production/four-node-serving-20261101/control-1p3d-c128-bootstrap-first-event.log.gz",
           "scope": "validation",
           "sha256": "887e13c4cde5c350b52a4ff9b5a535b55ef26bdb1696604b7649f2b8b6a61a83"
+        },
+        "four_node_combined_table_validation": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/combined-table-validation.json",
+          "scope": "validation",
+          "sha256": "3170fbd24c1643681ad8d3925297cfa5bf8d125b91eec0de31ad257313fa5ee0"
+        },
+        "four_node_completed_measurements_22points": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/completed-measurements-22points.json",
+          "scope": "validation",
+          "sha256": "fb80762caa8e8071cc6d9bfcfef95847e796068bb8aaaebb958340c3b5ac8221"
         },
         "four_node_control_1p3d_completed_summary": {
           "archived": false,
@@ -3014,7 +3038,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Finish the restarted 1P3D C128 point with extended operational waiting limits, followed by the remaining 2P2D and 3P1D sweeps. Then complete48 matched predictions/diagnostics and final ranking/error report. Preserve the interrupted timeout attempt separately; serving accuracy remains unaccepted.",
+    "next_action": "Finish remaining3P1D C64/C128 measurements; then48 matched predictions and stage diagnostics. Deliver one24-row actual/stock-predicted table with TTFT/TPOT/input-output throughput errors and CSV; preserve observed-KV diagnostic separation and accuracy-unaccepted status.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3472,6 +3496,7 @@
     },
     "four_node_serving_comparison_20261101_progress": {
       "accuracy_accepted": false,
+      "available_table": "production/four-node-serving-20261101/available-comparison-22points.md",
       "c32": {
         "completed": 64,
         "mean_tpot_ms": 367.751737477588,
@@ -3482,15 +3507,27 @@
       "completed_2p2d_concurrencies": [
         4,
         8,
-        16
+        16,
+        32,
+        64,
+        128
+      ],
+      "completed_3p1d_concurrencies": [
+        4,
+        8,
+        16,
+        32
       ],
       "completed_configurations": [
         "recommended-2p1d-dtp32",
-        "control-1p3d-tp16"
+        "control-1p3d-tp16",
+        "control-2p2d-tp16"
       ],
-      "completed_points": 15,
+      "completed_points": 22,
       "control_1p3d_result": "All 504 requests succeed with exact 8192/1024 lengths and zero metrics endpoint errors. C128 TTFT843909.386919ms, TPOT417.698208ms, output74.205068tok/s, duration3532.696737s; D active peak36. Archive a037e908 verified against manifest SHA256.",
-      "current_configuration": "control-2p2d-tp16",
+      "control_2p2d_result": "All six points / 504 requests valid; archive commit1295d6a8 and manifest digest checked. D running peak24 for C32/C64/C128; C128 meanTTFT1420092.022184ms, meanTPOT417.993188ms, output54.071524tok/s.",
+      "current_concurrency": 64,
+      "current_configuration": "control-3p1d-tp16",
       "durability": "Detached matrix supervisor; detached postprocessor will archive stage evidence and perform 48 matched predictions after all 24 serving points finish",
       "first_2p2d_c4": {
         "input_throughput_tok_s": 75.15687246767646,
@@ -3509,10 +3546,12 @@
       "live_progress_path": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/matrix-progress.json",
       "measurement_limit": "Two waves per concurrency and one repetition; not a long steady-state throughput estimate or statistical confidence interval",
       "metrics_correction": "aggregation_version=2 filters stale idle-DP gauges using decode token-counter growth; raw samples retained; client latency/throughput unchanged",
-      "next_action": "C32 benchmark now running, then C64/C128 and the six 3P1D points. Full matched predictions remain deferred until all formal measurement ends.",
+      "next_action": "Finish3P1D C64 andC128, restore recommended service, then48 matched prediction jobs, diagnostics, unified table, ranking and evidence commits.",
+      "report_validation": "combined-table-validation.json: real cachedC4 cell values, unit conversions and signs checked; renderer compiles; no predictor/serving changes.",
       "runtime_identity": "All four nodes match image ID, model config and quantization metadata SHA256, driver and firmware; no claim that all weight shards were hashed",
-      "status": "measuring_remaining_controls",
-      "validated_formal_requests": 1064,
+      "status": "measuring_last_two_points",
+      "user_report_requirement": "User requests listing currently available data immediately, excluding unfinished points. available-comparison-22points.md lists22 validated measurements and the only completed matching stockprediction (recommended C4/N8); other21 predictions explicitly unavailable. Ongoing measurement jobs continue unchanged.",
+      "validated_formal_requests": 1632,
       "verified_completed_concurrencies": [
         4,
         8,
@@ -4419,7 +4458,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 128,
+  "revision": 130,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }
