@@ -642,6 +642,7 @@ class SearchSpace(BaseModel):
     kv_transfer_timing_mode: str = "destination_missing"
     kv_transfer_provider: Literal["measured"] | None = None
     pd_routing: Literal["rank_round_robin", "replica_round_robin"] | None = None
+    pd_response: Literal["direct", "sglang_gateway"] | None = None
     engine_float_ranges: dict[str, list[float]] = Field(default_factory=dict)
     engine_log_ranges: list[str] = Field(default_factory=list)
     engine_log_discrete: list[str] = Field(default_factory=list)
@@ -976,6 +977,10 @@ class SearchSpace(BaseModel):
     def _validate_engine_controls(self):
         if self.pd_routing is not None and set(self.deployment_mode) != {"disagg"}:
             raise ValueError("pd_routing requires deployment_mode=disagg")
+        if self.pd_response is not None and set(self.deployment_mode) != {"disagg"}:
+            raise ValueError("pd_response requires deployment_mode=disagg")
+        if self.pd_response == "sglang_gateway" and set(self.backend) != {"sglang"}:
+            raise ValueError("pd_response=sglang_gateway requires backend=sglang")
         for role in ("agg", "prefill", "decode"):
             for field in ("chunked_prefill_size", "max_prefill_tokens", "ignore_eos"):
                 if getattr(self, f"{role}_{field}") is not None and set(self.backend) != {"sglang"}:

@@ -983,6 +983,7 @@ where
     /// Optional per-worker tokenization between prefill placement and the prefill engine.
     tokenization: Option<TokenizationStage<(Uuid, usize, IssuedHandoffAction)>>,
     source_registration_required: bool,
+    wait_for_prefill_response: bool,
     /// Optional scaling component. When set, `run()` seeds recurring `ScalingTick` events.
     scaling_policy: Option<Box<dyn ReplayScalingPolicy>>,
     /// Optional policy-neutral virtual-time telemetry sampler.
@@ -1139,6 +1140,7 @@ where
             tokenization: None,
             source_registration_required: handoff_order == HandoffOrder::DestinationFirst
                 && prefill_dp_size > 1,
+            wait_for_prefill_response: false,
             scaling_policy: None,
             telemetry: None,
             collect_fpm: false,
@@ -1191,6 +1193,14 @@ where
     pub(crate) fn with_tokenization(mut self, latency: Option<TokenizationLatency>) -> Self {
         self.tokenization = latency.map(TokenizationStage::new);
         self
+    }
+
+    pub(crate) fn with_prefill_response_gate(mut self, enabled: bool) -> Result<Self> {
+        if enabled && self.flow.handoff_order != HandoffOrder::DestinationFirst {
+            bail!("sglang_gateway PD response requires SGLang prefill and decode workers");
+        }
+        self.wait_for_prefill_response = enabled;
+        Ok(self)
     }
 
     /// Attach a scaling policy and enable tick-scoped FPM collection.
@@ -1986,12 +1996,18 @@ where
     fn complete_handoff(&mut self, uuid: Uuid) -> Result<()> {
         match self.state(uuid)?.coordinator.completion() {
             Some(HandoffCompletion::Success) => {
+                self.state_mut(uuid)?.prefill_response_ready = true;
+                let pending_outputs =
+                    std::mem::take(&mut self.state_mut(uuid)?.pending_client_outputs);
                 self.complete_prefill_route(uuid)?;
                 if self
                     .flow
                     .complete_successful_handoff(uuid, self.now_ms, &mut self.stats)?
                 {
                     self.notify_quiescent(uuid)?;
+                }
+                for signal in pending_outputs {
+                    self.process_decode_signal(signal)?;
                 }
             }
             Some(HandoffCompletion::Canceled) => {
@@ -2266,6 +2282,15 @@ where
         if !self.admission.is_agentic_preparing()
             && self.admission.knows_preparation_request(signal.uuid)
         {
+            return Ok(());
+        }
+        if self.wait_for_prefill_response
+            && !signal.rejected
+            && !self.state(signal.uuid)?.prefill_response_ready
+        {
+            self.state_mut(signal.uuid)?
+                .pending_client_outputs
+                .push(signal);
             return Ok(());
         }
         if let Some(token_id) = signal.token_id {

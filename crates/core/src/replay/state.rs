@@ -9,7 +9,7 @@ use crate::replay::handoff::{
     HandoffCoordinatorCore, HandoffId, HandoffOrder, IssuedHandoffAction,
 };
 use crate::replay::loadgen::{ReplayRequestHashes, ReplayRequestPayload};
-use crate::replay::protocol::DirectRequest;
+use crate::replay::protocol::{DirectRequest, OutputSignal};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum AggRequestPhase {
@@ -106,6 +106,8 @@ pub(crate) struct DisaggRequestState {
     pub(crate) prefill_routed: bool,
     pub(crate) prefill_bootstrap_worker_idx: Option<usize>,
     pub(crate) prefill_bootstrap_registered: bool,
+    pub(crate) prefill_response_ready: bool,
+    pub(crate) pending_client_outputs: Vec<OutputSignal>,
     pub(crate) destination_routed: bool,
     pub(crate) pending_prefill_action: Option<IssuedHandoffAction>,
     pub(crate) pending_destination_action: Option<IssuedHandoffAction>,
@@ -164,6 +166,8 @@ impl DisaggRequestState {
             prefill_routed: false,
             prefill_bootstrap_worker_idx: None,
             prefill_bootstrap_registered: false,
+            prefill_response_ready: false,
+            pending_client_outputs: Vec::new(),
             destination_routed: false,
             pending_prefill_action: None,
             pending_destination_action: None,

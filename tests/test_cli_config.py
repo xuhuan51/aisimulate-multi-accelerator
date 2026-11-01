@@ -1207,7 +1207,8 @@ def test_decode_headroom_rejects_invalid_prediction_configuration(backend, role,
 
 
 @pytest.mark.parametrize("pd_routing", [None, "rank_round_robin", "replica_round_robin"])
-def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_routing):
+@pytest.mark.parametrize("pd_response", [None, "direct", "sglang_gateway"])
+def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_routing, pd_response):
     import yaml
 
     from aisimulate.compiler import prediction_to_replay_spec
@@ -1216,6 +1217,7 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_ro
     raw["engine"]["backend"] = "sglang"
     raw["engine"]["backend_version"] = "0.5.22"
     raw["engine"]["pd_routing"] = pd_routing
+    raw["engine"]["pd_response"] = pd_response
     for role in ("prefill", "decode"):
         raw["engine"]["workers"][role].update(
             timing={"type": "fixed", "prefill_ms": 1.0, "decode_ms": 1.0},
@@ -1254,6 +1256,7 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_ro
     )
     deployment = build_backend_deployment(sample, backend_version="0.5.22")
     assert deployment.pd_routing == pd_routing
+    assert deployment.pd_response == pd_response
     assert deployment.decode_engine_args["sglang"] == {
         "decode_reserved_tokens": 512,
         "chunked_prefill_size": 4096,
@@ -1266,6 +1269,7 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_ro
     restored = CorePredictionConfig.model_validate(yaml.safe_load(yaml.safe_dump(saved)))
     compiled = prediction_to_replay_spec(restored).backend_deployment
     assert compiled.pd_routing == pd_routing
+    assert compiled.pd_response == pd_response
     assert compiled.decode_engine_args["sglang"] == deployment.decode_engine_args["sglang"]
     assert compiled.prefill_engine_args["sglang"] == {
         "chunked_prefill_size": 16384,
@@ -1312,6 +1316,34 @@ def test_pd_routing_rejects_aggregated_mode(recommend):
     raw["engine"].update(mode="aggregated", pd_routing="replica_round_robin", workers={"aggregated": {}})
     config_type = CoreRecommendationConfig if recommend else CorePredictionConfig
     with pytest.raises(ValueError, match="pd_routing"):
+        config_type.model_validate(raw)
+
+
+@pytest.mark.parametrize("value", ["unknown", True, 1])
+@pytest.mark.parametrize("recommend", [False, True])
+def test_pd_response_rejects_invalid_policy(value, recommend):
+    raw = _pd_hardware_config(recommend=recommend)
+    raw["engine"].update(backend="sglang", pd_response=value)
+    config_type = CoreRecommendationConfig if recommend else CorePredictionConfig
+    with pytest.raises(ValueError, match="pd_response"):
+        config_type.model_validate(raw)
+
+
+@pytest.mark.parametrize("recommend", [False, True])
+def test_pd_response_rejects_aggregated_mode(recommend):
+    raw = _pd_hardware_config(recommend=recommend)
+    raw["engine"].update(mode="aggregated", pd_response="direct", workers={"aggregated": {}})
+    config_type = CoreRecommendationConfig if recommend else CorePredictionConfig
+    with pytest.raises(ValueError, match="pd_response"):
+        config_type.model_validate(raw)
+
+
+@pytest.mark.parametrize("recommend", [False, True])
+def test_pd_response_gateway_rejects_other_backends(recommend):
+    raw = _pd_hardware_config(recommend=recommend)
+    raw["engine"].update(backend="vllm", pd_response="sglang_gateway")
+    config_type = CoreRecommendationConfig if recommend else CorePredictionConfig
+    with pytest.raises(ValueError, match="pd_response"):
         config_type.model_validate(raw)
 
 

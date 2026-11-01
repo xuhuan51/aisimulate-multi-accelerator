@@ -1113,6 +1113,12 @@ def _materialize_engine_execution_spec(
         if spec.adapters:
             raise ValueError("pd_routing requires the engine stack without adapters")
         placement_config = {"pd_routing": deployment.pd_routing}
+    if deployment.pd_response is not None:
+        if deployment_mode != "disagg" or deployment.pd_response not in {"direct", "sglang_gateway"}:
+            raise ValueError("pd_response requires disagg mode and a supported response policy")
+        if spec.adapters:
+            raise ValueError("pd_response requires the engine stack without adapters")
+        placement_config = {**(placement_config or {}), "pd_response": deployment.pd_response}
 
     execution_spec: dict[str, JSONValue] = {
         "version": 1,

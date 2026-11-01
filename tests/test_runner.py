@@ -1537,7 +1537,8 @@ def test_runner_lowers_disaggregated_grouped_engines(backend):
     assert runtime.execution_spec["engine"]["decode"]["rank"]["backend"] == backend
 
 
-def test_public_sglang_scheduler_limits_reach_native_execution_rank():
+@pytest.mark.parametrize("pd_response", [None, "direct", "sglang_gateway"])
+def test_public_sglang_scheduler_limits_reach_native_execution_rank(pd_response):
     raw = {
         "engine": {
             "mode": "disaggregated",
@@ -1546,6 +1547,7 @@ def test_public_sglang_scheduler_limits_reach_native_execution_rank():
             "backend": "sglang",
             "context_length": 4096,
             "pd_routing": "replica_round_robin",
+            "pd_response": pd_response,
             "workers": {
                 role: {
                     "parallelism": {"attention_data": 2},
@@ -1567,7 +1569,10 @@ def test_public_sglang_scheduler_limits_reach_native_execution_rank():
     public = CorePredictionConfig.model_validate(raw)
     EngineReplayRunnerFactory(runtime=runtime).create(0).run(prediction_to_replay_spec(public))
     assert runtime.execution_spec["spec"]["engine"]["decode"]["rank"]["sglang"]["decode_reserved_tokens"] == 512
-    assert runtime.execution_spec["spec"]["adapters"]["placement"]["config"] == {"pd_routing": "replica_round_robin"}
+    expected_placement = {"pd_routing": "replica_round_robin"}
+    if pd_response is not None:
+        expected_placement["pd_response"] = pd_response
+    assert runtime.execution_spec["spec"]["adapters"]["placement"]["config"] == expected_placement
     for role in ("prefill", "decode"):
         rank = runtime.execution_spec["spec"]["engine"][role]["rank"]
         assert rank["sglang"]["chunked_prefill_size"] == 16384

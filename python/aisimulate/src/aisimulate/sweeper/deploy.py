@@ -360,5 +360,6 @@ def build_backend_deployment(
         num_decode_workers=int(sample["decode_replicas"]),
         kv_transfer_provider=sample.get("kv_transfer_provider"),
         pd_routing=sample.get("pd_routing"),
+        pd_response=sample.get("pd_response"),
         **common,
     )

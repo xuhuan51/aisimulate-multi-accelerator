@@ -1964,6 +1964,75 @@ fn sglang_releases_source_kv_while_destination_finishes_a_decode_pass() {
 }
 
 #[test]
+fn sglang_gateway_buffers_decode_output_until_prefill_response_finishes() {
+    for gated in [false, true] {
+        for output_tokens in [1, 4] {
+            let mut config = sglang_disagg_config();
+            config.num_prefill_workers = 1;
+            config.num_decode_workers = 1;
+            for args in [&mut config.prefill_args, &mut config.decode_args] {
+                args.speedup_ratio = 1.0;
+                args.decode_speedup_ratio = 1.0;
+                args.block_size = 128;
+                args.enable_prefix_caching = false;
+                args.timing_model = crate::engine::TimingModelConfig::Fixed {
+                    prefill_ms: 2.0,
+                    decode_ms: 0.25,
+                };
+            }
+            config.prefill_args.kv_transfer_bytes_per_token = Some(1_000_000);
+            config.prefill_args.kv_transfer_bandwidth = Some(128.0);
+            let pending = crate::replay::normalize_trace_requests(
+                vec![request(1, 128, output_tokens, 0.0), request(2, 128, 1, 2.5)],
+                1.0,
+            )
+            .unwrap();
+            let (collector, _) =
+                DisaggRuntime::from_requests(&config, None, None, pending, ReplayMode::Trace)
+                    .unwrap()
+                    .with_prefill_response_gate(gated)
+                    .unwrap()
+                    .with_per_request_records(true)
+                    .run()
+                    .unwrap();
+            let report = collector.finish();
+            let first = report
+                .per_request
+                .iter()
+                .find(|row| row.uuid == Uuid::from_u128(1).to_string())
+                .unwrap();
+            assert_eq!(first.destination_activated_ms, Some(3.0));
+            assert_eq!(first.source_released_ms, Some(4.5));
+            assert_eq!(first.first_token_ms, Some(if gated { 4.5 } else { 3.0 }));
+            assert_eq!(
+                first.terminal_time_ms,
+                if gated {
+                    4.5
+                } else {
+                    3.0 + 0.25 * (output_tokens - 1) as f64
+                }
+            );
+            assert_eq!(report.request_counts.completed_requests, 2);
+            assert_eq!(report.request_counts.total_output_tokens, output_tokens + 1);
+        }
+    }
+}
+
+#[test]
+fn sglang_gateway_response_policy_rejects_other_backends() {
+    let config = disagg_config();
+    let runtime = DisaggRuntime::from_requests(
+        &config,
+        None,
+        None,
+        VecDeque::from([request(1, 128, 1, 0.0)]),
+        ReplayMode::Trace,
+    )
+    .unwrap();
+    assert!(runtime.with_prefill_response_gate(true).is_err());
+}
+
+#[test]
 fn sglang_dp_reservation_waits_for_source_registration_at_prefill_boundary() {
     for prefill_dp in [1, 2] {
         let mut config = sglang_disagg_config();

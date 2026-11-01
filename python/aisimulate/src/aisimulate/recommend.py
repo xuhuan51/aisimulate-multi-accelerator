@@ -166,6 +166,8 @@ def recommendation_to_sweeper(
     engine = config.engine.model_dump(mode="python", exclude_none=True)
     if engine.get("pd_routing") is not None and (stack != "engine" or adapter_configs):
         raise ValueError("engine.pd_routing requires the engine stack without adapters")
+    if engine.get("pd_response") is not None and (stack != "engine" or adapter_configs):
+        raise ValueError("engine.pd_response requires the engine stack without adapters")
     optimization = config.optimization
     mode_values = _choices(engine.get("mode"), default=["aggregated", "disaggregated"])
     modes = [_legacy_mode(str(value)) for value in mode_values]
@@ -195,6 +197,7 @@ def recommendation_to_sweeper(
         "backend": [str(value) for value in backend_values],
         "backend_version": engine.get("backend_version"),
         "pd_routing": engine.get("pd_routing"),
+        "pd_response": engine.get("pd_response"),
         "model_name": model,
         "hardware_sku": hardware,
         "gpu_budget": optimization.constraints.max_candidate_gpus,
@@ -882,7 +885,7 @@ def _candidate_prediction(
         engine["systems_paths"] = sample["systems_paths"]
     if sample.get("fpm_profile") is not None:
         engine["fpm_profile"] = deepcopy(sample["fpm_profile"])
-    for name in (*ENGINE_MODEL_CONTROL_FIELDS, "enable_chunked_prefill", "nextn_accepted", "pd_routing"):
+    for name in (*ENGINE_MODEL_CONTROL_FIELDS, "enable_chunked_prefill", "nextn_accepted", "pd_routing", "pd_response"):
         if sample.get(name) is not None:
             engine[name] = sample[name]
     if sample.get("aic_nextn"):

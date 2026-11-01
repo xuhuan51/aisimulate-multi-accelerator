@@ -160,6 +160,7 @@ class BackendDeploymentSpec:
     tokenization: dict[str, JSONValue] | None = field(default=None, metadata={OMIT_IF_NONE: True})
     kv_transfer_provider: str | None = field(default=None, metadata={OMIT_IF_NONE: True})
     pd_routing: str | None = field(default=None, metadata={OMIT_IF_NONE: True})
+    pd_response: str | None = field(default=None, metadata={OMIT_IF_NONE: True})
 
 
 @dataclass(frozen=True)

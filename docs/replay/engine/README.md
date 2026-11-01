@@ -96,6 +96,7 @@ Field tables on these pages use the following columns:
 | `engine.context_length` | `max` | fixed | Positive prompt-plus-output token limit, or `max`. With a number, prompts at or above the limit are rejected and generation stops at the limit. `max` applies the model config's maximum on vLLM; SGLang and TensorRT-LLM then run without a limit. |
 | `engine.workers` | Required | Per mode | Role mappings; see [Worker roles](#worker-roles). A role may be `{}` to use all defaults. |
 | `engine.pd_routing` | Unset (`rank_round_robin`) | fixed | Offline engine PD only. `rank_round_robin` rotates over flattened attention-DP ranks; `replica_round_robin` selects a replica first, then rotates that replica's local ranks. |
+| `engine.pd_response` | Unset (`direct`) | fixed | Offline engine PD without adapters. `direct` exposes destination output immediately. `sglang_gateway` buffers destination output until the prefill response finishes, matching the SGLang HTTP PD gateway; requires SGLang workers. |
 | `engine.tokenization` | Unset (off) | predict only | Optional `workers` (positive integer, default `1`), `base_ms` and `per_input_token_us` (finite and non-negative, default `0`). Tokenizes each request on its worker before the engine; see [Request tokenization](#tokenization). Aggregated and disaggregated token replay on `--stack engine` only; online replay, worker scaling, AFD and analytical EPD are rejected. |
 
 For a PD deployment with a round-robin external router and round-robin

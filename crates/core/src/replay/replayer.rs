@@ -58,6 +58,10 @@ pub trait ReplayComposition {
         Ok(())
     }
 
+    fn wait_for_prefill_response(&self, _spec: &ReplaySpec) -> ReplayResult<bool> {
+        Ok(false)
+    }
+
     fn create_aggregated_placement(
         &mut self,
         dp_size: u32,
@@ -257,9 +261,18 @@ enum PdRouting {
 }
 
 #[derive(Default, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum PdResponse {
+    #[default]
+    Direct,
+    SglangGateway,
+}
+
+#[derive(Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields)]
 struct RoundRobinConfig {
     pd_routing: PdRouting,
+    pd_response: PdResponse,
 }
 
 fn round_robin_config(spec: &ReplaySpec) -> ReplayResult<RoundRobinConfig> {
@@ -290,6 +303,13 @@ impl ReplayComposition for RoundRobinComposition {
     type Observation = NoEngineEvents;
     type AggregatedPlacement = AggregatedRoundRobinPlacement<()>;
     type DisaggregatedPlacement = PoolRoundRobinPlacement<()>;
+
+    fn wait_for_prefill_response(&self, spec: &ReplaySpec) -> ReplayResult<bool> {
+        Ok(matches!(
+            round_robin_config(spec)?.pd_response,
+            PdResponse::SglangGateway
+        ))
+    }
 
     fn validate_spec(&self, spec: &ReplaySpec) -> ReplayResult<()> {
         if spec.adapters.placement.provider != "round_robin" {
@@ -663,6 +683,11 @@ impl<C: ReplayComposition> Replayer<C> {
                 )
                 .with_max_sim_time_ms(self.spec.max_sim_time_ms)
                 .with_tokenization(tokenization);
+                runtime = runtime
+                    .with_prefill_response_gate(
+                        self.composition.wait_for_prefill_response(&self.spec)?,
+                    )
+                    .map_err(runtime_error)?;
                 if let Some(policy) = scaling {
                     runtime = runtime.with_scaling_policy(Box::new(ScalingPolicyBoundary(policy)));
                 }
@@ -1181,6 +1206,28 @@ mod generated_replay_tests {
         }
         input.topology = ReplayTopology::aggregated(2);
         input.adapters.placement.config = serde_json::json!({"pd_routing": "replica_round_robin"});
+        assert!(RoundRobinComposition.validate_spec(&input).is_err());
+    }
+
+    #[test]
+    fn pd_response_policy_is_explicit_and_survives_native_spec_round_trip() {
+        let mut input = spec(Backend::Sglang, true, 2, false);
+        for (policy, gated) in [("direct", false), ("sglang_gateway", true)] {
+            input.adapters.placement.config = serde_json::json!({"pd_response": policy});
+            let restored: ReplaySpec =
+                serde_json::from_value(serde_json::to_value(&input).unwrap()).unwrap();
+            RoundRobinComposition.validate_spec(&restored).unwrap();
+            assert_eq!(
+                RoundRobinComposition
+                    .wait_for_prefill_response(&restored)
+                    .unwrap(),
+                gated
+            );
+        }
+        input.adapters.placement.config = serde_json::json!({"pd_response": "unknown"});
+        assert!(RoundRobinComposition.validate_spec(&input).is_err());
+        input.topology = ReplayTopology::aggregated(1);
+        input.adapters.placement.config = serde_json::json!({"pd_response": "sglang_gateway"});
         assert!(RoundRobinComposition.validate_spec(&input).is_err());
     }
 

@@ -64,9 +64,11 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--image", default="aisimulate-910c:eager-overhead-20261102")
     parser.add_argument("--ingress-base-ms", type=float)
+    parser.add_argument("--pd-response", choices=("direct", "sglang_gateway"))
+    parser.add_argument("--campaign", type=Path, default=ROOT / "pd-paired-1p1d")
     parser.add_argument("--workers", type=int, default=2)
     args = parser.parse_args()
-    campaign = ROOT / "pd-paired-1p1d"
+    campaign = args.campaign.resolve()
     state = json.loads((campaign / "progress.json").read_text())
     template = ROOT.parent / "four-node-serving-plan-20261031/control-1p3d-tp16.yaml"
     image_id = subprocess.check_output(["docker", "image", "inspect", "--format", "{{.Id}}", args.image], text=True).strip()
@@ -101,6 +103,8 @@ def main():
                 settings[f"engine.workers.{role}.timing.estimator_config.op_level.ascend.{key}"] = rows[0][f"actual_{key}"]
         if args.ingress_base_ms is not None:
             settings.update({"engine.tokenization.workers": 1, "engine.tokenization.base_ms": args.ingress_base_ms})
+        if args.pd_response is not None:
+            settings["engine.pd_response"] = args.pd_response
         for key, value in settings.items():
             command.extend(["--set", f"{key}={json.dumps(value, separators=(',', ':'))}"])
         jobs.append({"case": case["name"], "concurrency": case["concurrency"], "requests": case["requests"],

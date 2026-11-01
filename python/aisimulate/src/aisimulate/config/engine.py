@@ -33,6 +33,7 @@ NonNegativeFloat = Annotated[float, Field(strict=True, ge=0, allow_inf_nan=False
 Fraction = Annotated[float, Field(strict=True, gt=0, le=1, allow_inf_nan=False)]
 EngineMode = Literal["aggregated", "disaggregated", "afd"]
 PdRouting = Literal["rank_round_robin", "replica_round_robin"]
+PdResponse = Literal["direct", "sglang_gateway"]
 Backend = Literal["vllm", "sglang", "trtllm"]
 KvBytesPerToken = PositiveInt | Literal["auto"]
 AFDPhase = Literal["prefill", "decode", "both"]
@@ -610,6 +611,7 @@ class EnginePredictionConfig(EstimatorPolicyConfig):
     workers: WorkersPredictionConfig = Field(default_factory=WorkersPredictionConfig)
     kv_transfer: KvTransferConfig | None = None
     pd_routing: PdRouting | None = None
+    pd_response: PdResponse | None = None
     tokenization: TokenizationConfig | None = None
     afd: AFDTopologyPredictionConfig | None = None
 
@@ -631,6 +633,10 @@ class EnginePredictionConfig(EstimatorPolicyConfig):
     def _validate_roles(self) -> EnginePredictionConfig:
         if self.pd_routing is not None and self.mode != "disaggregated":
             raise ValueError("engine.pd_routing requires mode=disaggregated")
+        if self.pd_response is not None and self.mode != "disaggregated":
+            raise ValueError("engine.pd_response requires mode=disaggregated")
+        if self.pd_response == "sglang_gateway" and self.backend != "sglang":
+            raise ValueError("engine.pd_response=sglang_gateway requires backend=sglang")
         _validate_fpm_profile(self, {self.mode}, {self.backend})
         if self.decoder_replay:
             # Keep the pre-supervision configuration path lightweight. Import
@@ -839,6 +845,7 @@ class EngineRecommendationConfig(EstimatorPolicyConfig):
     workers: WorkersRecommendationConfig = Field(default_factory=WorkersRecommendationConfig)
     kv_transfer: KvTransferConfig | None = None
     pd_routing: PdRouting | None = None
+    pd_response: PdResponse | None = None
     afd: AFDSearchRecommendationConfig | None = None
 
     @field_validator("model", "hardware")
@@ -853,7 +860,11 @@ class EngineRecommendationConfig(EstimatorPolicyConfig):
         modes = set(self.mode.choices) if isinstance(self.mode, Choices) else {self.mode}
         if self.pd_routing is not None and modes != {"disaggregated"}:
             raise ValueError("engine.pd_routing requires mode=disaggregated")
+        if self.pd_response is not None and modes != {"disaggregated"}:
+            raise ValueError("engine.pd_response requires mode=disaggregated")
         backends = set(self.backend.choices) if isinstance(self.backend, Choices) else {self.backend}
+        if self.pd_response == "sglang_gateway" and backends != {"sglang"}:
+            raise ValueError("engine.pd_response=sglang_gateway requires backend=sglang")
         _validate_fpm_profile(self, modes, backends)
         if self.workers.aggregated is not None and self.workers.aggregated.context_length is not None:
             raise ValueError("workers.aggregated.context_length must be set as engine.context_length")

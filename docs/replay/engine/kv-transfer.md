@@ -96,6 +96,21 @@ even when compute time does not change. `state_bytes` is the prefill role's
 The reported TTFT includes prefill queueing, prefill compute and the transfer.
 Transfer events share one virtual clock with compute and arrivals.
 
+`engine.pd_response` selects the client response boundary. `direct` (the
+default) reports tokens as the decode worker emits them. `sglang_gateway`
+models the HTTP PD gateway waiting for the prefill response before exposing
+the decode stream to the client. In this mode, source KV release must also
+finish at a prefill scheduler boundary. A busy prefill worker can delay the
+first visible token even while decode continues generating tokens. Buffered
+tokens and completion become visible together when the prefill response is
+ready; compute and KV lifetimes retain their normal scheduling.
+
+This fixed policy is preserved by recommendation, saved candidate YAML and
+prediction. `sglang_gateway` requires disaggregated SGLang workers in the
+offline engine stack without adapters. It covers the response ordering of
+the HTTP PD gateway, not additional HTTP, tokenizer or detokenizer latency.
+Choose `direct` when measuring decode-worker output without that gateway.
+
 Backends order the handoff differently:
 
 | Backend | Order |
