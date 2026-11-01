@@ -1125,6 +1125,14 @@
           "scope": "validation",
           "sha256": "866415589e065efc00ad49104ffec2c280ef6f9822e6bdabd6e00684c8c3fd13"
         },
+        "four_node_2p2d_through_c16_summary": {
+          "archived": false,
+          "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
+          "kind": "file",
+          "path": "production/four-node-serving-20261101/control-2p2d-through-c16-summary.json",
+          "scope": "validation",
+          "sha256": "8f3d5a3f72aba0fdb30b1b1d2da3beabc95c4986d1476b42f085933c4ef057e0"
+        },
         "four_node_bootstrap_timeout_first_event": {
           "archived": false,
           "context_sha256": "38bb35234a82127d6e86c52bf51901df708e878b9fae392065c353619fa59a96",
@@ -2942,7 +2950,7 @@
           "Cross-request PD sender contention and host/bootstrap/metadata costs remain approximation limits",
           "DCP eager profiles remain unavailable for broader strategy coverage"
         ],
-        "next_action": "13/24 points validated: recommended and 1P3D complete, first 2P2D C4 valid, 2P2D C8 active. Complete remaining controls, then restore recommended serving and run48 matched stock/observed-KV predictions; no operator fitting during measurement.",
+        "next_action": "15/24 serving points and1064 successful exact8192/1024 requests validated. Complete remaining2P2D C32/C64/C128 and3P1D, restore recommended topology, then execute48 matched predictions and final diagnostics. Accuracy remains unaccepted.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -3471,11 +3479,16 @@
         "output_throughput_tok_s": 84.1188667299702
       },
       "comparison_preflight": "Actual TP/attention-DP/EP, replica count, eager flags and workload validated; no offline prediction runs while serving measurement is active",
+      "completed_2p2d_concurrencies": [
+        4,
+        8,
+        16
+      ],
       "completed_configurations": [
         "recommended-2p1d-dtp32",
         "control-1p3d-tp16"
       ],
-      "completed_points": 13,
+      "completed_points": 15,
       "control_1p3d_result": "All 504 requests succeed with exact 8192/1024 lengths and zero metrics endpoint errors. C128 TTFT843909.386919ms, TPOT417.698208ms, output74.205068tok/s, duration3532.696737s; D active peak36. Archive a037e908 verified against manifest SHA256.",
       "current_configuration": "control-2p2d-tp16",
       "durability": "Detached matrix supervisor; detached postprocessor will archive stage evidence and perform 48 matched predictions after all 24 serving points finish",
@@ -3496,9 +3509,10 @@
       "live_progress_path": "/home/youxingye/youxingye_data/910c_script/PD disaggregation/results/aisim-comparison/matrix-progress.json",
       "measurement_limit": "Two waves per concurrency and one repetition; not a long steady-state throughput estimate or statistical confidence interval",
       "metrics_correction": "aggregation_version=2 filters stale idle-DP gauges using decode token-counter growth; raw samples retained; client latency/throughput unchanged",
+      "next_action": "C32 benchmark now running, then C64/C128 and the six 3P1D points. Full matched predictions remain deferred until all formal measurement ends.",
       "runtime_identity": "All four nodes match image ID, model config and quantization metadata SHA256, driver and firmware; no claim that all weight shards were hashed",
       "status": "measuring_remaining_controls",
-      "validated_formal_requests": 1016,
+      "validated_formal_requests": 1064,
       "verified_completed_concurrencies": [
         4,
         8,
@@ -4405,7 +4419,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 127,
+  "revision": 128,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }
