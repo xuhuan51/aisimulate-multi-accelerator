@@ -147,6 +147,14 @@ impl GroupShape {
         let execution_mode = if self.graph { "graph" } else { "eager" };
         let mut operation = operation.clone();
         let query_tokens = match &mut operation {
+            Op::AscendEagerOverhead(_) => {
+                if self.graph {
+                    return Err(invalid(
+                        "Eager runtime overhead cannot be applied to a graph batch",
+                    ));
+                }
+                return Ok(Some(operation));
+            }
             Op::AscendLogits(logits) => {
                 logits.request_counts = Some(if self.graph {
                     self.local_tokens.clone()

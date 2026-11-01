@@ -961,6 +961,14 @@ mod tests {
                 request_counts: Some(vec![1; 32]),
                 rank: 0,
             }),
+            OpSpec::AscendEagerOverhead(
+                crate::operators::ascend_eager_overhead::AscendEagerOverheadOp {
+                    name: "ascend_eager_runtime_overhead".into(),
+                    scale_factor: 1.0,
+                    latency_ms: 2.5,
+                    calibration_id: "synthetic-wire-roundtrip".into(),
+                },
+            ),
         ];
 
         // Exhaustiveness guard: if a variant is added to `Op`, this match
@@ -1024,6 +1032,9 @@ mod tests {
                 | OpSpec::TokenScale(_) => {}
                 OpSpec::AscendLogits(logits) => {
                     logits.shape(1).unwrap();
+                }
+                OpSpec::AscendEagerOverhead(overhead) => {
+                    overhead.validate().unwrap();
                 }
             }
         }
@@ -1189,7 +1200,17 @@ mod tests {
             "Ascend DCP attention appended index moved"
         );
         assert_eq!(
+            index_of(&all_op_variants()[55]),
             55,
+            "Ascend logits appended index moved"
+        );
+        assert_eq!(
+            index_of(&all_op_variants()[56]),
+            56,
+            "Ascend eager overhead appended index moved"
+        );
+        assert_eq!(
+            57,
             all_op_variants().len(),
             "all_op_variants() must cover exactly the pinned variant count"
         );

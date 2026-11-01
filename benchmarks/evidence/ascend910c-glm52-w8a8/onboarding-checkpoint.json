@@ -2968,13 +2968,12 @@
       },
       "progress": {
         "blockers": [
-          "Serving accuracy remains unaccepted",
-          "Unmodeled eager execution overhead",
-          "TTFT and bootstrap/cold-shape contributions require further isolation",
-          "TP32 independent forward telemetry is not yet available",
+          "Low-concurrency TTFT remains inaccurate",
+          "TP32 independent eager forward telemetry unavailable while node19 is occupied",
+          "Do not extrapolate empirical overhead across parallel geometries",
           "DCP eager profiles remain unavailable"
         ],
-        "next_action": "Complete forward-telemetry qualification and matched replay error reduction; keep direct-FPM profile acceptance separate.",
+        "next_action": "Qualify paired prefill timing and PD bootstrap/completion latency before accepting serving accuracy.",
         "stage": 2,
         "status": "in_progress"
       },
@@ -3038,7 +3037,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Qualify unprofiled forward telemetry, model eager execution overhead separately from operator latencies, and compare held-out workloads and the original 23 completed PD measurements. Serving accuracy remains unaccepted.",
+    "next_action": "Complete iteration-paired forward telemetry, isolate prefill and PD bootstrap residuals, qualify TP32 separately, and rerun matched serving configurations. Whole-search accuracy remains unaccepted.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3981,6 +3980,17 @@
       "successful_formal_requests": 1760,
       "validation": "54 Ascend Rust tests and420 Python model/GPU parity tests passed; source formatting and legal-package checks passed."
     },
+    "prediction_repair_20261102_eager": {
+      "accuracy_scope": "The17 original PD measurements were not used to fit the C1 residual. However this is an empirical runtime calibration for one geometry; do not infer validity for TP32, graph, new weights or arbitrary runtime versions.",
+      "calibration": "Node20 same pinned runtime TP16/ADP4/EP16, C1 formal decode positions40..120:162 bounded four-rank groups; median elapsed-minus-native estimate197.60911497216992ms. Explicit opt-in Rust per-forward residual; raw operator data unchanged.",
+      "confidence": "Moderate for bounded TP16 decode residual and high for the17 matched request-level comparisons; low-concurrency TTFT and TP32 prediction remain unresolved.",
+      "forward_validation": "Other C4/C8/C12 and4K/16K inputs: per-case mean absolute error4.66..10.28%, P95 up to17.66%.",
+      "resource_state": "Prior two node20 diagnostic containers stopped. New task-owned node20 paired-timing diagnostic starting. Node19 still has16 occupied NPUs around63GB/device; preserved the unrelated service.",
+      "serving_validation": "34 replays against17 original completed control points, stock and observed-KV: TPOT error -2.79..-7.93%, input/output throughput +5.90..+8.80%; low-concurrency TTFT remains -36..-65%.",
+      "source": "benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/forward-metrics-node20/forward-metrics.jsonl.gz",
+      "timing_caveat": "Pinned FPM accumulates asynchronously completed device events before publishing the current batch. Steady decode remains validated at request level; prefill or transition durations cannot safely be assigned by arrival grouping alone. A paired scheduler-forward ID diagnostic is being collected.",
+      "validation": "55 Ascend Rust tests and421 model/GPU parity tests passed. Bincode pinned variant count updated to include appended logits and overhead operators; full wire tests run separately."
+    },
     "priority_20261022": {
       "decision": "Pause numerical-prediction accuracy optimization and heldout threshold chasing. Prioritize complete necessaryoperatorcollection,canonicalFPEcomposition,memory/PDandpredict/recommend usability. Preserve basicnumerical execution checks,source/shape/precisionmatchingand honestcoverage. Measured predictionaccuracy remainsuncalibrated; failed10%gates do notblockfunctionalbringup.",
       "next_action": "Finishmixedindexerlinearpublication; implementremainingNPUattention/indexer/BMM/vector/MoE/DeepEPoperatorcontractsandcollecttheirrequiredgrids,wireactualshapecomposition,thenmemoryandPD/search. Noadditionaldensitytuningorheldoutcampaigns now.",
@@ -4472,7 +4482,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 131,
+  "revision": 132,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

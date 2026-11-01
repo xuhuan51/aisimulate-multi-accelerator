@@ -345,6 +345,23 @@ impl ForwardPassPerfModelConfig {
         self.estimator_config
             .op_level
             .validate_for(&self.system, self.backend.as_str())?;
+        if let Some(overhead) = self
+            .estimator_config
+            .op_level
+            .ascend
+            .as_ref()
+            .and_then(|options| options.eager_runtime_overhead.as_ref())
+        {
+            if overhead.attention_tp != self.tp
+                || overhead.attention_dp != self.attention_dp
+                || Some(overhead.moe_ep_size) != self.moe_ep_size
+                || self.backend_version.as_deref() != Some("0.5.22")
+            {
+                return Err(invalid_config(
+                    "Ascend eager runtime overhead must match its calibrated TP/attention-DP/EP and SGLang0.5.22 identity",
+                ));
+            }
+        }
         if self.estimator_config.fpm_interpolation.collect_coverage
             && (self.estimation_mode != EstimationMode::FpmInterpolation
                 || self.fallback_policy != ForwardPassFallbackPolicy::Deny

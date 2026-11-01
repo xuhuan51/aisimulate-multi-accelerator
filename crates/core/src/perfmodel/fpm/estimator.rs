@@ -34,6 +34,8 @@ pub struct AscendOpLevelConfig {
     pub decode_execution_mode: AscendExecutionMode,
     pub enable_dp_lm_head: bool,
     pub enable_tp_lm_head_all_to_all: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub eager_runtime_overhead: Option<AscendEagerRuntimeOverhead>,
     pub routing: String,
     pub kv_transfer_page_layout: String,
     #[serde(
@@ -49,11 +51,23 @@ impl Default for AscendOpLevelConfig {
             decode_execution_mode: AscendExecutionMode::Graph,
             enable_dp_lm_head: true,
             enable_tp_lm_head_all_to_all: false,
+            eager_runtime_overhead: None,
             routing: "balanced".into(),
             kv_transfer_page_layout: "contiguous".into(),
             shape_policy: Default::default(),
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AscendEagerRuntimeOverhead {
+    pub calibration_id: String,
+    pub attention_tp: u32,
+    pub attention_dp: u32,
+    pub moe_ep_size: u32,
+    pub prefill_ms: f64,
+    pub decode_ms: f64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -65,6 +79,21 @@ pub enum AscendExecutionMode {
 
 impl OpLevelConfig {
     pub(crate) fn validate_for(&self, system: &str, backend: &str) -> Result<(), AicError> {
+        if let Some(options) = &self.ascend {
+            if let Some(overhead) = &options.eager_runtime_overhead {
+                if options.decode_execution_mode != AscendExecutionMode::Eager
+                    || overhead.calibration_id.trim().is_empty()
+                    || overhead.attention_tp == 0
+                    || overhead.attention_dp == 0
+                    || overhead.moe_ep_size == 0
+                    || [overhead.prefill_ms, overhead.decode_ms]
+                        .iter()
+                        .any(|value| !value.is_finite() || *value < 0.0)
+                {
+                    return Err(AicError::InvalidEngineConfig("Ascend eager runtime overhead needs finite nonnegative timings, calibration identity, positive topology and eager execution".into()));
+                }
+            }
+        }
         if self.ascend.is_some() && (system != "ascend910c" || backend != "sglang") {
             return Err(AicError::InvalidEngineConfig(
                 "estimator_config.op_level.ascend requires ascend910c and sglang".into(),

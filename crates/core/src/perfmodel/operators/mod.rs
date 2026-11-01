@@ -17,6 +17,7 @@ pub mod ascend_attention;
 pub mod ascend_bmm;
 pub mod ascend_dcp_attention;
 pub mod ascend_deepep;
+pub mod ascend_eager_overhead;
 pub mod ascend_linear;
 pub mod ascend_logits;
 pub mod ascend_moe_chain;

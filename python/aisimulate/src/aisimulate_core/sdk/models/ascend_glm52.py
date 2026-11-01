@@ -133,6 +133,13 @@ def configure_ascend_glm52(model, raw_config):
         config.op_level_config = OpLevelCompileConfig(None, system=config.system, backend=model._backend_name)
     settings = config.op_level_config.options["ascend"]
     decode_mode = settings["decode_execution_mode"]
+    overhead = settings.get("eager_runtime_overhead")
+    if overhead is not None and (overhead["attention_tp"], overhead["attention_dp"], overhead["moe_ep_size"]) != (
+        local_tp,
+        attention_dp,
+        experts_parallel,
+    ):
+        raise InvalidEngineConfigurationError("Ascend eager runtime overhead topology differs from its calibration")
     if dcp > 1 and decode_mode == "eager":
         raise InvalidEngineConfigurationError(
             "Ascend DCP eager decode requires eager DCP profiles, which are unavailable"
@@ -523,6 +530,17 @@ def configure_ascend_glm52(model, raw_config):
                 ),
             ]
         )
+        if overhead is not None:
+            entries.append(
+                {
+                    "AscendEagerOverhead": {
+                        "name": phase + "_eager_runtime_overhead",
+                        "scale_factor": 1.0,
+                        "latency_ms": overhead["prefill_ms" if context else "decode_ms"],
+                        "calibration_id": overhead["calibration_id"],
+                    }
+                }
+            )
         operations = [core.op_from_spec_json(json.dumps(entry)) for entry in entries if entry is not None]
         if context:
             model.context_ops = operations

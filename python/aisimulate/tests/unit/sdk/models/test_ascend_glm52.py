@@ -467,6 +467,64 @@ def test_synchronized_sum_len_executes_with_idle_ranks_and_rejects_mixed_phases(
         model.estimate_forward_pass_time_ms([active, prefill, idle, idle])
 
 
+def test_eager_runtime_overhead_is_once_per_forward_with_explicit_topology(model_path):
+    overhead = {
+        "calibration_id": "synthetic-7.5ms-forward-residual",
+        "attention_tp": 4,
+        "attention_dp": 4,
+        "moe_ep_size": 16,
+        "prefill_ms": 0.0,
+        "decode_ms": 7.5,
+    }
+    options = {"decode_execution_mode": "eager", "shape_policy": "anchored", "enable_dp_lm_head": False}
+    baseline = transfer_model(
+        model_path, "decode", tp=4, attention_dp=4, estimator_config={"op_level": {"ascend": options}}
+    )
+    calibrated = transfer_model(
+        model_path,
+        "decode",
+        tp=4,
+        attention_dp=4,
+        estimator_config={"op_level": {"ascend": {**options, "eager_runtime_overhead": overhead}}},
+    )
+    for counts in [(1, 0, 0, 0), (2, 2, 2, 2), (9, 1, 0, 0)]:
+        metrics = [
+            {"scheduled_requests": {"num_decode_requests": count, "sum_decode_kv_tokens": count * 8193}}
+            for count in counts
+        ]
+        assert calibrated.estimate_forward_pass_time_ms(metrics) - baseline.estimate_forward_pass_time_ms(
+            metrics
+        ) == pytest.approx(7.5)
+    assert calibrated.estimate_forward_pass_time_ms([{"scheduled_requests": {}}] * 4) == 0
+    diagnostics = calibrated.static_phase_diagnostics(batch_size=1, context_length=8192, prefill=False)
+    contribution = next(row for row in diagnostics if row["name"] == "generation_eager_runtime_overhead")
+    assert contribution["latency_ms"] == 7.5
+    assert contribution["source"] == "estimated"
+    for changed in ({"attention_tp": 8}, {"decode_ms": -1.0}, {"calibration_id": ""}):
+        with pytest.raises(ValueError, match="overhead"):
+            transfer_model(
+                model_path,
+                "decode",
+                tp=4,
+                attention_dp=4,
+                estimator_config={
+                    "op_level": {"ascend": {**options, "eager_runtime_overhead": {**overhead, **changed}}}
+                },
+            )
+    with pytest.raises(ValueError, match="overhead"):
+        transfer_model(
+            model_path,
+            "decode",
+            tp=4,
+            attention_dp=4,
+            estimator_config={
+                "op_level": {
+                    "ascend": {**options, "decode_execution_mode": "graph", "eager_runtime_overhead": overhead}
+                }
+            },
+        )
+
+
 def test_pd_group_timing_is_independent_of_diagnostic_capture(model_path):
     from aisimulate.compiler import prediction_to_replay_spec
     from aisimulate.config.cli import CorePredictionConfig

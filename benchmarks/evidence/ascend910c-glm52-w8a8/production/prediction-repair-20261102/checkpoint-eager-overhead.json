@@ -1,0 +1,35 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Complete iteration-paired forward telemetry, isolate prefill and PD bootstrap residuals, qualify TP32 separately, and rerun matched serving configurations. Whole-search accuracy remains unaccepted."
+  },
+  "research": {
+    "prediction_repair_20261102_eager": {
+      "calibration": "Node20 same pinned runtime TP16/ADP4/EP16, C1 formal decode positions40..120:162 bounded four-rank groups; median elapsed-minus-native estimate197.60911497216992ms. Explicit opt-in Rust per-forward residual; raw operator data unchanged.",
+      "source": "benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/forward-metrics-node20/forward-metrics.jsonl.gz",
+      "forward_validation": "Other C4/C8/C12 and4K/16K inputs: per-case mean absolute error4.66..10.28%, P95 up to17.66%.",
+      "serving_validation": "34 replays against17 original completed control points, stock and observed-KV: TPOT error -2.79..-7.93%, input/output throughput +5.90..+8.80%; low-concurrency TTFT remains -36..-65%.",
+      "accuracy_scope": "The17 original PD measurements were not used to fit the C1 residual. However this is an empirical runtime calibration for one geometry; do not infer validity for TP32, graph, new weights or arbitrary runtime versions.",
+      "timing_caveat": "Pinned FPM accumulates asynchronously completed device events before publishing the current batch. Steady decode remains validated at request level; prefill or transition durations cannot safely be assigned by arrival grouping alone. A paired scheduler-forward ID diagnostic is being collected.",
+      "validation": "55 Ascend Rust tests and421 model/GPU parity tests passed. Bincode pinned variant count updated to include appended logits and overhead operators; full wire tests run separately.",
+      "resource_state": "Prior two node20 diagnostic containers stopped. New task-owned node20 paired-timing diagnostic starting. Node19 still has16 occupied NPUs around63GB/device; preserved the unrelated service.",
+      "confidence": "Moderate for bounded TP16 decode residual and high for the17 matched request-level comparisons; low-concurrency TTFT and TP32 prediction remain unresolved."
+    }
+  },
+  "configurations": {
+    "united-tp16-dp2-ep16": {
+      "progress": {
+        "stage": 2,
+        "status": "in_progress",
+        "next_action": "Qualify paired prefill timing and PD bootstrap/completion latency before accepting serving accuracy.",
+        "blockers": [
+          "Low-concurrency TTFT remains inaccurate",
+          "TP32 independent eager forward telemetry unavailable while node19 is occupied",
+          "Do not extrapolate empirical overhead across parallel geometries",
+          "DCP eager profiles remain unavailable"
+        ]
+      }
+    }
+  }
+}

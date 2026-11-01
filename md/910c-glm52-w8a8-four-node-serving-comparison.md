@@ -43,6 +43,19 @@ shape/耗时，再区分校准请求与验证请求。该服务为单节点合�
 serving 精度尚未验收，仍需修复执行开销和核对 TTFT。完整证据位于
 `benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102`。
 
+随后完成 TP16/ADP4/EP16 的独立 eager 开销校准，并保留原始算子预测：在每轮
+decode 上单独加入约197.609ms的执行残差。校准只使用同镜像单节点C1的稳态
+forward记录，其他并发、4K/16K输入及原来的17个PD实测点用于核对，未用于求该参数。
+17个PD点的 TPOT 误差降至约 -2.8%～-7.9%，输入/输出吞吐误差约 +5.9%～+8.8%。
+低并发TTFT仍低估约36%～65%；高并发主要受Decode排队限制的点已降至约6%～10%。
+完整前后对照见
+[17点 eager 修复结果](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/eager-overhead-serving-comparison.md)。
+
+这是限于指定镜像及TP16/ADP4/EP16的经验残差，默认不启用，独立标记为estimated；
+不能直接套给TP32、graph或其他模型。逐轮计时的事件异步回收可能与相邻batch错配，
+因此这里只采用C1稳态区间校准Decode，Prefill将补充携带轮次标识的计时记录。
+本轮55项Ascend Rust测试、421项模型与GPU parity测试通过；准确性目标仍未完成。
+
 ## 推荐配置与默认部署
 
 脚本目录：`/home/youxingye/youxingye_data/910c_script/PD disaggregation`。
