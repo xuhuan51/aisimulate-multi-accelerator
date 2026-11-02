@@ -1,0 +1,54 @@
+benchmark_args=Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=18080, ready_check_timeout_sec=60, dataset_name='random-ids', dataset_path='', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/models/glm-q', served_model_name='glm-5', tokenizer=None, num_prompts=4, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=8192, random_output_len=64, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=4, output_file='/campaign/quality-retry-train-8192-c4/requests.jsonl', output_details=True, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=910, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=2, tokenize_prompt=True, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None, rust_client=False, rust_worker_threads=None)
+Waiting up to 60s for http://127.0.0.1:18080/v1/models to become ready...
+Server ready in 0.0s.
+Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=18080, ready_check_timeout_sec=60, dataset_name='random-ids', dataset_path='', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/models/glm-q', served_model_name='glm-5', tokenizer=None, num_prompts=4, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=8192, random_output_len=64, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=4, output_file='/campaign/quality-retry-train-8192-c4/requests.jsonl', output_details=True, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=910, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=2, tokenize_prompt=True, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None, rust_client=False, rust_worker_threads=None)
+
+#Input tokens: 32768
+#Output tokens: 256
+Starting warmup with 2 sequences...
+Warmup completed with 2 sequences. Starting main benchmark run...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:32<01:37, 32.63s/it] 50%|█████     | 2/4 [00:33<00:27, 13.70s/it]100%|██████████| 4/4 [00:33<00:00,  8.27s/it]
+
+============ Serving Benchmark Result ============
+Backend:                                 sglang    
+Traffic request rate:                    inf       
+Max request concurrency:                 4         
+Successful requests:                     4         
+Benchmark duration (s):                  33.11     
+Total input tokens:                      32768     
+Total input text tokens:                 32768     
+Total generated tokens:                  256       
+Total generated tokens (retokenized):    252       
+Request throughput (req/s):              0.12      
+Input token throughput (tok/s):          989.75    
+Output token throughput (tok/s):         7.73      
+Peak output token throughput (tok/s):    12.00     
+Peak concurrent requests:                4         
+Total token throughput (tok/s):          997.48    
+Concurrency:                             3.98      
+----------------End-to-End Latency----------------
+Mean E2E Latency (ms):                   32962.21  
+Median E2E Latency (ms):                 33071.08  
+P90 E2E Latency (ms):                    33072.20  
+P95 E2E Latency (ms):                    33072.43  
+P99 E2E Latency (ms):                    33072.61  
+---------------Time to First Token----------------
+Mean TTFT (ms):                          4923.43   
+Median TTFT (ms):                        5166.14   
+P90 TTFT (ms):                           5743.52   
+P95 TTFT (ms):                           5867.11   
+P99 TTFT (ms):                           5965.98   
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          445.06    
+Median TPOT (ms):                        442.94    
+P90 TPOT (ms):                           458.03    
+P95 TPOT (ms):                           461.26    
+P99 TPOT (ms):                           463.85    
+---------------Inter-Token Latency----------------
+Mean ITL (ms):                           448.62    
+Median ITL (ms):                         421.35    
+P90 ITL (ms):                            470.90    
+P95 ITL (ms):                            481.56    
+P99 ITL (ms):                            1210.68   
+Max ITL (ms):                            1797.24   
+==================================================

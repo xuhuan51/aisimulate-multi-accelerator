@@ -148,15 +148,28 @@ impl GroupShape {
         let mut operation = operation.clone();
         let query_tokens = match &mut operation {
             Op::AscendDecoderLayers(layers) => {
+                let active_requests = self
+                    .request_counts
+                    .iter()
+                    .copied()
+                    .filter(|count| *count > 0);
+                let active_attention_dp = active_requests.clone().count() as u32;
+                let common_requests = active_requests.clone().next().unwrap_or(0);
                 if !self.decode
                     || self.graph
                     || layers.attention_dp as usize != self.request_counts.len()
-                    || self.request_counts.iter().any(|count| *count != requests)
+                    || active_requests
+                        .clone()
+                        .any(|count| count != common_requests)
                 {
                     return Err(invalid(
-                        "Ascend runtime layers require balanced pure eager decode; asymmetric DP profiles are unavailable",
+                        "Ascend runtime layers require pure eager decode and uniform requests on active DP ranks; skewed active-rank profiles are unavailable",
                     ));
                 }
+                if active_attention_dp == 0 {
+                    return Ok(None);
+                }
+                layers.active_attention_dp = Some(active_attention_dp);
                 return Ok(Some(operation));
             }
             Op::AscendEagerOverhead(overhead) => {
@@ -315,6 +328,30 @@ mod tests {
                 metrics
             })
             .collect()
+    }
+
+    #[test]
+    fn measured_layers_bind_active_dp_without_charging_idle_rows_as_requests() {
+        let operation: Op = serde_json::from_value(serde_json::json!({"AscendDecoderLayers": {
+            "name": "layers", "scale_factor": 1.0, "attention_tp": 4,
+            "attention_dp": 4, "moe_ep": 16, "covered_ops": [],
+            "quantization_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        }})).unwrap();
+        for (counts, expected) in [([1, 0, 0, 0], 1), ([0, 2, 0, 2], 2), ([3, 3, 3, 3], 4)] {
+            let shape = GroupShape::new(&decode(&counts), 4, &[]).unwrap();
+            for (rank, requests) in counts.into_iter().enumerate() {
+                let Some(Op::AscendDecoderLayers(bound)) =
+                    shape.bind(&operation, rank, requests, false).unwrap()
+                else {
+                    panic!("expected measured layers");
+                };
+                assert_eq!(bound.active_attention_dp, Some(expected));
+            }
+        }
+        let skewed = GroupShape::new(&decode(&[1, 2, 0, 0]), 4, &[]).unwrap();
+        assert!(skewed.bind(&operation, 0, 1, false).is_err());
+        let empty = GroupShape::new(&decode(&[0; 4]), 4, &[]).unwrap();
+        assert!(empty.bind(&operation, 0, 0, false).unwrap().is_none());
     }
 
     #[test]

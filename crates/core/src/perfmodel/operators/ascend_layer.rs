@@ -13,6 +13,8 @@ pub struct AscendDecoderLayersOp {
     pub scale_factor: f64,
     pub attention_tp: u32,
     pub attention_dp: u32,
+    #[serde(default)]
+    pub active_attention_dp: Option<u32>,
     pub moe_ep: u32,
     pub quantization_sha256: String,
     pub covered_ops: Vec<Op>,
@@ -39,6 +41,7 @@ impl AscendDecoderLayersOp {
         AscendLayerKey {
             attention_tp: self.attention_tp,
             attention_dp: self.attention_dp,
+            active_attention_dp: self.active_attention_dp.unwrap_or(self.attention_dp),
             moe_ep: self.moe_ep,
             layer,
             quantization_sha256: self.quantization_sha256.clone(),
@@ -158,6 +161,7 @@ mod tests {
             scale_factor: 1.0,
             attention_tp: 4,
             attention_dp: 4,
+            active_attention_dp: None,
             moe_ep: 16,
             covered_ops: vec![covered],
             quantization_sha256: "1".repeat(64),
@@ -167,6 +171,14 @@ mod tests {
         assert!(
             layers
                 .query_layers(&table, 2, 8192)
+                .unwrap_err()
+                .is_missing_perf_data()
+        );
+        let mut partial = layers;
+        partial.active_attention_dp = Some(1);
+        assert!(
+            partial
+                .query_layers(&table, 1, 8192)
                 .unwrap_err()
                 .is_missing_perf_data()
         );

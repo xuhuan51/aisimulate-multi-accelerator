@@ -11,6 +11,7 @@ use crate::common::error::AicError;
 
 pub const BASENAME: &str = "ascend_layer_perf.parquet";
 pub const CONTRACT: &str = "glm52_eager_decoder_layer/v1";
+pub const VALID_ROWS_CONTRACT: &str = "glm52_eager_decoder_layer_valid_rows/v2";
 pub const SOURCE: &str = "sglang.srt.models.deepseek_v2.DeepseekV2DecoderLayer.forward";
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -18,6 +19,7 @@ pub const SOURCE: &str = "sglang.srt.models.deepseek_v2.DeepseekV2DecoderLayer.f
 pub struct AscendLayerKey {
     pub attention_tp: u32,
     pub attention_dp: u32,
+    pub active_attention_dp: u32,
     pub moe_ep: u32,
     pub layer: u32,
     pub quantization_sha256: String,
@@ -27,6 +29,7 @@ impl AscendLayerKey {
     pub fn validate(&self) -> Result<(), AicError> {
         if self.attention_tp != 4
             || self.attention_dp != 4
+            || !(1..=self.attention_dp).contains(&self.active_attention_dp)
             || self.moe_ep != 16
             || !matches!(self.layer, 0..=6 | 77)
             || self.quantization_sha256.len() != 64
@@ -145,6 +148,7 @@ fn load(path: &Path) -> Result<LayerPlanes, AicError> {
     let layer = reader.col("layer")?;
     let attention_tp = reader.col("attention_tp")?;
     let attention_dp = reader.col("attention_dp")?;
+    let active_attention_dp = reader.col_optional("active_attention_dp");
     let moe_ep = reader.col("moe_ep")?;
     let requests = reader.col("requests_per_dp")?;
     let kv_tokens = reader.col("kv_tokens")?;
@@ -163,6 +167,10 @@ fn load(path: &Path) -> Result<LayerPlanes, AicError> {
         let key = AscendLayerKey {
             attention_tp: row.u32(attention_tp)?,
             attention_dp: row.u32(attention_dp)?,
+            active_attention_dp: active_attention_dp
+                .map(|column| row.u32(column))
+                .transpose()?
+                .unwrap_or(4),
             moe_ep: row.u32(moe_ep)?,
             layer: row.u32(layer)?,
             quantization_sha256: row.str_owned(quantization)?,
@@ -181,7 +189,8 @@ fn load(path: &Path) -> Result<LayerPlanes, AicError> {
             || !(0.0..=0.1).contains(&variation)
             || row.u32(samples)? < 9
             || row.u32(checks)? < 16 * 9
-            || row.str(contract)? != CONTRACT
+            || !matches!(row.str(contract)?, CONTRACT | VALID_ROWS_CONTRACT)
+            || (key.active_attention_dp != 4 && row.str(contract)? != VALID_ROWS_CONTRACT)
             || row.str(source)? != SOURCE
             || signature.len() != 64
             || !signature.bytes().all(|byte| byte.is_ascii_hexdigit())

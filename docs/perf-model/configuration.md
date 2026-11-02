@@ -209,7 +209,7 @@ explicit Ascend controls.
 | `routing` | `balanced` | Uses the measured synthetic balanced expert-count profile. Other distributions are not yet supported by the complete model composition. |
 | `shared_expert_overlap` | `true` | Overlaps the shared expert with routed work where the pinned runtime permits it. Tensor-MoE prefill stays serial; its decode and the DeepEP path may overlap. `false` adds the streams serially. |
 | `decode_execution_mode` | `graph` | `graph` selects captured decode profiles and padding buckets; `eager` selects eager profiles with attention-TP token alignment. Missing eager identities fail explicitly. Prefill remains eager. This does not control scheduler overlap or CPU launch overhead. |
-| `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations. It includes their eager host dispatch, stream management and communication boundaries. Requires eager TP16/ADP4/EP16/DCP1, shared-expert multistream execution, balanced DP requests and measured request/KV brackets. Other topologies, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
+| `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations. It includes their eager host dispatch, stream management and communication boundaries. Requires eager TP16/ADP4/EP16/DCP1, shared-expert multistream execution, equal request counts on active DP ranks and measured request/KV brackets. Idle DP populations require their own measured curves; padding does not count as a real request. Other topologies, skewed active-rank counts, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
 | `enable_dp_lm_head` | `true` | Matches SGLang's output-layer grouping. `true` retains attention-local TP; `false` uses global TP, sums actual output-request counts across attention DP, and includes DP hidden-state reduction and TP logits exchange. Set separately for each worker role to match its launch flags. |
 | `enable_tp_lm_head_all_to_all` | `false` | With global LM head, uses measured all-to-all only for equal nonzero row counts with attention DP equal to global TP; other batches use all-gather. Local logits cast is measured; additional reordering/scatter and CPU synchronization remain unqualified. This path is reported as estimated composition. |
 | `eager_runtime_overhead` | omitted | Optional additive per-forward residual calibrated from unprofiled forward telemetry. Requires `calibration_id`, `operator_contract`, `attention_tp`, `attention_dp`, `moe_ep_size`, `prefill_ms`, and `decode_ms`. Timings must be finite and nonnegative. The topology must match the canonical identity; currently restricted to SGLang 0.5.22 and eager execution. |
@@ -267,7 +267,8 @@ Static per-rank diagnostics assume the configured ranks are uniformly active;
 request-vector estimates and replay use their actual rank occupancy. The default
 zero slope preserves previous constant-overhead profiles. This models steady
 execution residuals, not first-use compilation, gateway buffering, or KV setup.
-EngineSpec schema 32 records the new operator fields; rebuild binary engine
+EngineSpec schema 33 also records the active attention-DP population for measured
+runtime layers. This distinguishes real requests from padded idle rows. Rebuild binary engine
 caches from older schema versions rather than reusing them.
 
 The GLM adapter requires the local checkpoint's `config.json` and

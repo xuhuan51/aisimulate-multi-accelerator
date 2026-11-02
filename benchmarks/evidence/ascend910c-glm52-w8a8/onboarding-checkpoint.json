@@ -3037,7 +3037,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Expand real decoder-layer invocation profiles across running batch and inactive attention-DP paths on node20/node25, then validate full request latency and PD composition without fitted residuals.",
+    "next_action": "Finish independently routed population holdouts on node25, qualify measured population transfer before supporting skew, then diagnose remaining prefill and request-side latency. Do not use fitted residuals.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -4157,6 +4157,16 @@
       "test_status": "Full Rust core initial run2127pass1failure1ignored; only enum cardinality assertion failed, then corrected and22 schema tests pass. Packaged Python/collector/parity initial441pass1failure; expected new default field added and41 relevant tests pass. Both engine parity suites passed. Padding validity helper5tests pass. Legal file copies synchronized.",
       "validation": "Native paired steady-forward8K/C4:407.896942ms measured,200.870441ms independent kernels,420.005933ms runtime layers; per-stepMAPE51.2543%->4.3492%. Untrained4K/C4:411.091644ms measured,421.527706ms runtime layers;MAPE4.2076%. Both new images reproduce these values. Not full8K/1K TTFT/TPOT/throughput acceptance."
     },
+    "runtime_population_attribution_20261103": {
+      "active_work": "Node20 diagnostic service stopped after completed collection. Node25 attempt3 routed campaign training and quality retries complete;12 held-out uniform/skewed DP cases finishing. Only own diagnostic services changed.",
+      "artifacts": "production/prediction-repair-20261102/runtime-layer-population-publication-20261103.json; population-node20-comparison-20261103.json; population-node25-comparison-20261103.json; runtime-population-validation-20261103; layer-population-node25-20261103",
+      "image": "aisimulate-910c:runtime-population-repair-20261103",
+      "implementation": "Canonical Rust eager layer model now keys active attention-DP count and accepts uniform positive request counts with idle ranks. Logical row oracle validates local/global/sharded hidden output and all valid top-k columns; undefined padding is recorded separately without relaxing tolerances. Native schema33 prevents stale binary loads.",
+      "limits": "Runtime layers are opt-in, eagerTP16/ADP4/EP16/DCP1, with bounded request/KV interpolation and source identity. Skewed active request counts and missing shape brackets explicitly rejected. Multiactive prefill has up to17.5% steady-forward error; cold compiler state and first nonempty client text remain separate unmodeled effects.",
+      "published": "144 qualified layer coordinates: activeDP4 requests1/2/3 at input512/8192/10240; activeDP1/2/3 requests1 at input512/8192/16384.16 high-CV observations preserved and recollected.6 held-out4K cases excluded from publication.",
+      "status": "limited steady-decode improvement verified; broad accuracy goal remains in_progress",
+      "validation": "Matched unprofiled steady decode MAPE about3-13%; six independent4K holdouts about4-9%. Raw independent-kernel path still roughly50% low. FullRust2130pass1ignored; packagedSDK/collector/bothparity447pass; valid-row oracle8pass; population exporter5pass. Not a complete8K/1K or PD serving validation."
+    },
     "runtime_static_memory": {
       "nccl": "notused;compatibilitybucket0;HCCLallocationsarenotrelabeledasNCCL",
       "scope": "CurrentModelSlim/United16/SGLang0.5.22;beforeKV allocations;graphheadroomseparate",
@@ -4599,7 +4609,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 144,
+  "revision": 145,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

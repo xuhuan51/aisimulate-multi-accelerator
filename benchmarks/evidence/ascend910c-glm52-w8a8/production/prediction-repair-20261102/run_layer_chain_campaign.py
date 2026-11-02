@@ -14,7 +14,10 @@ def main():
     parser.add_argument("--plan", type=Path)
     parser.add_argument("--manifest", default="chain-campaign.json")
     parser.add_argument("--allow-asymmetric", action="store_true")
+    parser.add_argument("--output-length", type=int, default=192)
     args = parser.parse_args()
+    if not 64 <= args.output_length <= 192:
+        raise ValueError("This steady-decode probe requires 64 through 192 output tokens")
     root = args.campaign
     destination = root / args.manifest
     if destination.exists():
@@ -32,6 +35,7 @@ def main():
     manifest = {"scope": "Real-layer invocation profiles and independent workload holdouts; no forward residual fit",
                 "status": "waiting", "cases": [], "plan": plan,
                 "source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+    manifest["output_length"] = args.output_length
 
     def save():
         destination.write_text(json.dumps(manifest, indent=2) + "\n")
@@ -59,7 +63,11 @@ def main():
     manifest["status"] = "running"
     save()
     try:
-        for name, input_length, concurrency, training in plan:
+        for planned in plan:
+            name, input_length, concurrency, training = planned[:4]
+            routed_counts = planned[4] if len(planned) == 5 else None
+            if routed_counts is not None and (len(routed_counts) != 4 or sum(routed_counts) != concurrency):
+                raise ValueError("Routed request population differs from requested concurrency")
             case_root = root / name
             case_root.mkdir(exist_ok=False)
             control = {"id": name, "forward_call": 80, "training": training,
@@ -71,11 +79,15 @@ def main():
                        "--backend", "sglang", "--host", "127.0.0.1", "--port", "18080",
                        "--model", "/models/glm-q", "--served-model-name", "glm-5", "--dataset-name", "random-ids",
                        "--num-prompts", str(concurrency), "--max-concurrency", str(concurrency),
-                       "--random-input-len", str(input_length), "--random-output-len", "192",
+                       "--random-input-len", str(input_length), "--random-output-len", str(args.output_length),
                        "--random-range-ratio", "1.0", "--request-rate", "inf", "--warmup-requests", "2",
                        "--seed", "910", "--tokenize-prompt", "--output-details",
                        "--output-file", f"/campaign/{name}/requests.jsonl"]
+            if routed_counts is not None:
+                command = ["docker", "exec", "-e", "AISIM_ROUTED_COUNTS=" + ",".join(map(str, routed_counts)),
+                           args.container, "python3", "/campaign/run_routed_layer_benchmark.py", *command[6:]]
             case = {**control, "command": command, "start_unix": time.time(), "status": "running"}
+            case["routed_dp_counts"] = routed_counts
             manifest["cases"].append(case)
             save()
             with (case_root / "benchmark.log").open("w") as stream:
@@ -85,7 +97,7 @@ def main():
             benchmark = json.loads((case_root / "requests.jsonl").read_text().splitlines()[-1])
             if (benchmark["completed"] != concurrency or any(benchmark["errors"])
                     or benchmark["input_lens"] != [input_length] * concurrency
-                    or benchmark["output_lens"] != [192] * concurrency):
+                    or benchmark["output_lens"] != [args.output_length] * concurrency):
                 raise ValueError(f"Request completion/length mismatch: {name}")
             probes = sorted(case_root.glob("layer-replay-rank*.json"))
             if len(probes) != 16:
@@ -104,6 +116,8 @@ def main():
             counts = [sum(length > 0 for length in record["boundaries"][0]["sequence_lengths"]) for record in rank_records]
             if sum(counts[::4]) != concurrency or any(counts[rank] != counts[rank // 4 * 4] for rank in range(16)):
                 raise ValueError(f"Captured distributed request population differs from concurrency: {counts}")
+            if routed_counts is not None and counts[::4] != routed_counts:
+                raise ValueError(f"Explicit routing was not honored: requested {routed_counts}, captured {counts[::4]}")
             case["captured_dp_requests"] = counts[::4]
             case["status"] = "completed"
             save()

@@ -976,6 +976,7 @@ mod tests {
                 scale_factor: 1.0,
                 attention_tp: 4,
                 attention_dp: 4,
+                active_attention_dp: None,
                 moe_ep: 16,
                 covered_ops: vec![],
                 quantization_sha256: "1".repeat(64),
@@ -1450,6 +1451,18 @@ mod tests {
             }
             other => panic!("expected EngineSpec prefix error, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn runtime_layer_population_layout_rejects_schema32_before_payload_decode() {
+        assert!(matches!(
+            EngineSpec::from_bincode(&32_u32.to_le_bytes()),
+            Err(AicError::UnsupportedSchemaVersion {
+                kind: "EngineSpec",
+                got: 32,
+                expected: 33,
+            })
+        ));
     }
 
     /// The version gate fires even when the op payload is fully intact — the

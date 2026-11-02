@@ -26,9 +26,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--campaign", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--manifest", default="chain-campaign.json")
+    parser.add_argument("--allow-asymmetric", action="store_true")
     args = parser.parse_args()
+    if args.output.exists():
+        raise FileExistsError(args.output)
     campaign = args.campaign
-    manifest = json.loads((campaign / "chain-campaign.json").read_text())
+    manifest = json.loads((campaign / args.manifest).read_text())
     if manifest["status"] != "completed":
         raise ValueError("Only completed diagnostic campaigns can be compared")
     group_rows = collections.defaultdict(dict)
@@ -45,6 +49,9 @@ def main():
     raw_model = RustForwardPassPerfModel.best_available(raw_config)
     layer_model = RustForwardPassPerfModel.best_available(layer_config)
     results = []
+    output_length = manifest.get("output_length", 192)
+    minimum_output = min(40, output_length // 4)
+    maximum_output = output_length - 8
     for case in manifest["cases"]:
         probe = json.loads((campaign / case["id"] / "layer-replay-rank0.json").read_text())
         probe_iteration = probe["model_call"]
@@ -64,10 +71,11 @@ def main():
             if (len(requests) != case["global_requests"]
                     or any(row["scheduled_requests"]["sum_prefill_tokens"] for row in rows)
                     or any(request["prompt_tokens"] != case["input_length"]
-                           or not 40 <= request["output_tokens"] <= 184 for request in requests)):
+                           or not minimum_output <= request["output_tokens"] <= maximum_output for request in requests)):
                 excluded["prefill_warmup_or_unsteady_requests"] += 1
                 continue
-            if any(row["scheduled_requests"]["num_decode_requests"] != case["global_requests"] // 4 for row in rows):
+            if not args.allow_asymmetric and any(
+                    row["scheduled_requests"]["num_decode_requests"] != case["global_requests"] // 4 for row in rows):
                 excluded["unbalanced_dp"] += 1
                 continue
             metrics = [{"scheduled_requests": row["scheduled_requests"]} for row in rows]
@@ -77,12 +85,15 @@ def main():
             try:
                 result["runtime_layer_prediction_ms"] = layer_model.estimate_forward_pass_time_ms(metrics)
             except Exception as error:
-                if "measured request/KV brackets" not in str(error):
+                if not any(message in str(error) for message in (
+                    "measured request/KV brackets", "unmeasured Ascend runtime layer",
+                    "skewed active-rank profiles are unavailable",
+                )):
                     raise
                 result["runtime_layer_unavailable"] = str(error)
-                gaps["outside_measured_request_or_kv_brackets"] += 1
+                gaps["unqualified_population_or_request_or_kv_brackets"] += 1
             retained.append(result)
-        if len(retained) < 30:
+        if len(retained) < min(30, output_length // 3):
             raise ValueError(f"Insufficient paired unprofiled steps for {case['id']}: {len(retained)}")
         supported = [row for row in retained if "runtime_layer_prediction_ms" in row]
         summary = {

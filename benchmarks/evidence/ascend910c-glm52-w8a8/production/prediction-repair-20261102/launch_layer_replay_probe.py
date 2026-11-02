@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 import launch_paired_telemetry
-from layer_output_validation import check_topk_outputs
+from layer_output_validation import check_hidden_tensor, check_topk_outputs
 import msgspec
 import torch
 import torch.distributed as distributed
@@ -70,28 +70,38 @@ def copy_inputs(value, memo=None):
     return value
 
 
-def check_outputs(observed, expected):
+def check_outputs(observed, expected, hidden_contract=None, checks=None):
     if isinstance(expected, torch.Tensor):
+        if hidden_contract is not None:
+            checks.append(check_hidden_tensor(observed, expected, **hidden_contract))
+            return
         tolerance = 0.02 if expected.is_floating_point() else 0.0
         torch.testing.assert_close(observed, expected, rtol=tolerance, atol=tolerance)
     elif isinstance(expected, (tuple, list)):
         for output, reference in zip(observed, expected, strict=True):
-            check_outputs(output, reference)
+            check_outputs(output, reference, hidden_contract, checks)
     elif isinstance(expected, msgspec.Struct):
         for field in msgspec.structs.fields(type(expected)):
-            check_outputs(getattr(observed, field.name), getattr(expected, field.name))
+            check_outputs(getattr(observed, field.name), getattr(expected, field.name), hidden_contract, checks)
     elif expected is None and observed is not None:
         raise AssertionError("Optional output presence changed")
 
 
-def check_boundary_outputs(key, observed, expected, forward_batch):
+def check_boundary_outputs(key, observed, expected, forward_batch, global_lengths):
     if key[0] != "DeepseekV2DecoderLayer":
         check_outputs(observed, expected)
         return None
     if len(observed) != 2 or len(expected) != 2:
         raise AssertionError("Unexpected decoder-layer output contract")
-    check_outputs(observed[0], expected[0])
-    return check_topk_outputs(observed[1], expected[1], forward_batch.seq_lens_cpu.tolist())
+    sequence_lengths = forward_batch.seq_lens_cpu.tolist()
+    parallel = get_parallel()
+    hidden_checks = []
+    check_outputs(observed[0], expected[0], {
+        "sequence_lengths": sequence_lengths, "global_sequence_lengths": global_lengths,
+        "attention_rank": parallel.attn_tp_rank, "attention_size": parallel.attn_tp_size,
+    }, hidden_checks)
+    return {"hidden": hidden_checks,
+            "topk": check_topk_outputs(observed[1], expected[1], sequence_lengths)}
 
 
 def shapes(value):
@@ -144,6 +154,11 @@ def probe():
     for key in keys:
         module, saved, forward_batch, expected = CAPTURED[key]
         original_args, original_kwargs, _ = saved
+        rank_lengths = [None] * distributed.get_world_size(group=control)
+        distributed.all_gather_object(rank_lengths, forward_batch.seq_lens_cpu.tolist(), group=control)
+        if any(rank_lengths[index] != rank_lengths[index // 4 * 4] for index in range(16)):
+            raise AssertionError("Attention tensor-parallel ranks disagree on request validity")
+        global_lengths = rank_lengths[::4]
         final_residual_stream = forward_batch.residual_stream
         samples = []
         for repeat in range(REPEATS):
@@ -161,7 +176,7 @@ def probe():
             submitted = time.perf_counter_ns()
             cpu_ns = time.thread_time_ns() - cpu_start
             end.synchronize()
-            topk_validation = check_boundary_outputs(key, output, expected, forward_batch)
+            topk_validation = check_boundary_outputs(key, output, expected, forward_batch, global_lengths)
             samples.append({"warmup": repeat < 3, "repeat": repeat,
                             "device_ms": begin.elapsed_time(end),
                             "host_submit_ms": (submitted - started) / 1e6,
@@ -187,7 +202,7 @@ def probe():
                                      "self_seconds": values[2], "cumulative_seconds": values[3]}
                                     for identity, values in pstats.Stats(profiler).stats.items()]
             device.synchronize()
-            check_boundary_outputs(key, output, expected, forward_batch)
+            check_boundary_outputs(key, output, expected, forward_batch, global_lengths)
             del output, args, kwargs
         forward_batch.residual_stream = final_residual_stream
         records.append({"module": key[0], "layer": key[1], "inputs": shapes(original_args),
@@ -196,13 +211,14 @@ def probe():
                         "forward_mode": str(forward_batch.forward_mode),
                         "batch_size": forward_batch.batch_size,
                         "global_num_tokens_cpu": forward_batch.global_num_tokens_cpu,
+                        "global_sequence_lengths": global_lengths,
                         "function_profile": function_profile})
     result = {"scope": "Isolated replay of captured real layers; cloned input values and actual resident weights. Additional device events/barriers perturb timing; not serving latency ground truth or an additive residual.",
               "model_call": MODEL_CALLS, "rank": rank, "pid": os.getpid(),
               "cpu_affinity": sorted(os.sched_getaffinity(0)), "source_sha256": SOURCES,
               "boundaries": records, "status": "completed"}
     result["control"] = CONTROL
-    result["numerical_contract"] = "all_hidden_values_and_all_topk_columns_for_positive_kv_rows/v2"
+    result["numerical_contract"] = "all_logical_hidden_values_and_all_topk_columns_for_positive_kv_rows/v3"
     output_root = Path("/campaign") / CONTROL["id"] if CONTROL else Path("/campaign")
     output_root.mkdir(exist_ok=True)
     path = output_root / f"layer-replay-rank{rank}.json"

@@ -888,6 +888,25 @@ It invokes the installed implementation, replaces covered kernel timings, and
 preserves their memory inventory. No upstream implementation is copied; the
 runtime module measurements include host dispatch and are not a fitted residual.
 
+The diagnostic `layer_output_validation.py` and associated replay tests under
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/`
+independently implement logical-row validity for the same SGLang revision's
+`python/sglang/srt/model_executor/forward_batch_info.py`,
+`python/sglang/srt/layers/layer_boundary/{exit,layout}.py`, and
+`python/sglang/srt/hardware_backend/npu/attention/ascend_backend.py`.
+They preserve exact valid top-k comparisons and floating-point tolerances while
+recording undefined padding differences separately. No upstream implementation
+is copied; the Apache-2.0 attribution and immutable revision above apply.
+
+The population exporter `python/aisimulate/collector/sglang/ascend_layer_population_export.py`
+and frozen campaign copies validate these source-bound numerical contracts.
+The independently written `run_routed_layer_benchmark.py` and population
+controllers in that evidence directory invoke the installed
+`python/sglang/benchmark/serving.py` request API and the explicit
+`routed_dp_rank` contract of `python/sglang/srt/managers/data_parallel_controller.py`
+at the same immutable SGLang revision. No upstream implementation is copied;
+the same copyright and Apache-2.0 attribution apply.
+
 The four-node serving comparison report and metric analysis scripts under
 `benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/`, the guide
 `md/910c-glm52-w8a8-four-node-serving-comparison.md` and the deployment snapshot
