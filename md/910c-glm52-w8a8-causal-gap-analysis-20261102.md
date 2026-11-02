@@ -13,9 +13,9 @@
 | 8K 输入、全局并发 4，前对照 | 197.134 | 200.858 | 401.809 | 200.951 |
 | 8K 输入、全局并发 4，后对照 | 197.134 | 200.858 | 414.475 | 213.618 |
 
-因此，默认的独立算子相加模型仍低估约 50%。新增加的实际层调用链预测，在最初 24 点数据集的限定配置中达到约 4%～6%；扩展至 144 个采样点后，已覆盖的稳态 decode 工况约为 3%～13%，六组 4K 留出工况约为 4%～9%。后面的表格区分这两个数据版本，没有修改历史原始数据，也不使用旧残差。
+因此，默认的独立算子相加模型仍低估约 50%。实际层调用链库已扩展为 240 个合格采样点；新增 12 组未参与建表的 8K 并发分布，稳态 decode MAPE 为约 2%～16%。最新完整 8K/1K 的 C1/C4/C8 独立请求模拟，TPOT 误差为 +0.28%/+2.16%/+7.74%，吞吐误差绝对值均小于 7%；C4/C8 的 TTFT 仍低估约 30%，不能宣布精度目标已完成。后文分别保留 24、144、240 点版本及完整请求结果，不修改历史原始数据、不使用旧残差。
 
-配置固定为同一个 SGLang 镜像摘要、0.5.22 对应源码提交 `baa9befa381511cd4d56f83980951e5a45fffc6d`、CANN 9.1，模型位于 `/data_lib/data/models/glm-q`。prefill/decode graph 均关闭，overlap scheduler 关闭，投机解码关闭，radix cache 关闭；共享专家自己的 NPU 多流仍开启。诊断请求输出长度为 64/96/192 等短序列，用于观察稳定 decode，不是重新完成了全部 8K/1K 服务验收。
+配置固定为同一个 SGLang 镜像摘要、0.5.22 对应源码提交 `baa9befa381511cd4d56f83980951e5a45fffc6d`、CANN 9.1，模型位于 `/data_lib/data/models/glm-q`。prefill/decode graph 均关闭，overlap scheduler 关闭，投机解码关闭，radix cache 关闭；共享专家自己的 NPU 多流仍开启。前期诊断使用 64/96/128/192 的短输出，最新又独立验证了完整 1024 输出；两种验证不能混为一谈。
 
 ## 已经落实的修复
 
@@ -86,7 +86,67 @@ Rust 查询增加 `active_attention_dp`，把空闲 DP 与真实请求分开；�
 
 补测工具也修复了填充行的数值检查。源码 `AscendAttnBackend.get_cuda_graph_seq_len_fill_value()` 返回 0，`ForwardBatch` 的原始请求数、TP 分片及全局 DP 缓冲布局决定哪些输出行有意义。检查器现在对所有逻辑 hidden 行保持原浮点门槛，对所有有效 top-k 行的全部列保持整数精确比较，并单独记录无效填充行差异。空闲 rank 如果持有其他 DP 的有效全局行，仍须检查这些行；未知布局会失败，不能直接忽略整个空闲 rank。前两次失败日志完整保留，八个专门测试覆盖了这些边界。
 
-当前镜像为 `aisimulate-910c:runtime-population-repair-20261103`。完整 Rust 测试 2130 项通过、1 项既有忽略；打包后的 Python/collector/两组 parity 测试 447 项通过。新的发布清单为 `runtime-layer-population-publication-20261103.json`，逐轮明细为 `population-node20-comparison-20261103.json` 和 `population-node25-comparison-20261103.json`。仅部分 DP 各带 2～3 请求、以及活跃 DP 请求数不均的进一步采集仍在进行。
+144 点阶段的镜像为 `aisimulate-910c:runtime-population-repair-20261103`。完整 Rust 测试 2130 项通过、1 项既有忽略；打包后的 Python/collector/两组 parity 测试 447 项通过。该阶段的发布清单为 `runtime-layer-population-publication-20261103.json`，逐轮明细为 `population-node20-comparison-20261103.json` 和 `population-node25-comparison-20261103.json`，已提交为 `ddc106c2`。
+
+### 240 点扩展与不均匀 DP 留出验证
+
+25 节点进一步采集了 1/2/3 个活跃 DP、每个活跃 DP 含 2/3 个请求、输入长度 512/10240 的实际层调用。发布增至 240 个坐标；累计 24 个高 CV 原始观测保留，并通过独立补测获得合格值。新增的 12 组 8K 留出请求完全不参与建表，包括六组均匀活跃分布与六组不均匀分布。
+
+| 各 DP 的真实请求数 | 实测稳态中位数 ms | 预测稳态中位数 ms | 逐轮 MAPE | 查询方式 |
+| --- | ---: | ---: | ---: | --- |
+| 2,0,0,0 | 391.43 | 411.40 | 5.03% | 实测曲线内插 |
+| 3,0,0,0 | 400.57 | 406.29 | 2.11% | 实测曲线内插 |
+| 2,2,0,0 | 415.36 | 454.83 | 8.98% | 实测曲线内插 |
+| 3,3,0,0 | 403.92 | 473.66 | 16.26% | 实测曲线内插 |
+| 2,2,2,0 | 437.51 | 421.07 | 4.91% | 实测曲线内插 |
+| 3,3,3,0 | 414.83 | 443.49 | 6.69% | 实测曲线内插 |
+| 2,1,1,1 | 438.55 | 471.50 | 8.75% | 同 padding 桶的分布迁移 |
+| 2,2,1,1 | 408.06 | 471.50 | 11.98% | 同 padding 桶的分布迁移 |
+| 3,2,2,2 | 413.90 | 475.20 | 12.93% | 同 padding 桶的分布迁移 |
+| 3,3,2,2 | 410.24 | 475.20 | 12.95% | 同 padding 桶的分布迁移 |
+| 3,2,1,0 | 440.12 | 443.47 | 4.18% | 同 padding 桶的分布迁移 |
+| 2,1,0,0 | 408.82 | 454.83 | 9.74% | 同 padding 桶的分布迁移 |
+
+分布迁移只在显式 `shape_policy: anchored` 下启用：各活跃 DP 必须属于同一个 TP padding 桶，查询仍要有对应活跃 DP 数和各自请求数/KV 的实测括号；按实际 rank 查询后，由已有联合计时取关键路径。结果标为 `estimated`，不冒充该不均匀分布已经采集过。`measured` 模式拒绝这种迁移，跨 padding 桶和请求数/KV 无界外推也拒绝。EngineSpec 升为 schema 34。12 组对应的全部配对轮次保存在 `routed-holdout-comparison-20261103.json`，其中最差 16.26% 明确保留，未加入缩放系数使它变小。
+
+### 合并部署 Replay 漏传真实 DP 分布
+
+完整 8K/1K 验证还发现一处独立于算子数据库的接线错误：`AicTimingModel::build` 和 `SchedulerRank::new_with_g2` 同时把 aggregated worker 排除在联合 DP 计时之外。结果是 C1 虽然只有一个 DP 活跃，Replay 却走静态单 rank 查询，使用了四个 DP 均活跃的默认曲线。这解释了直接查询同轮 batch 与完整请求模拟之间的额外差异。
+
+修复让受支持的 Ascend SGLang 合并部署也提交完整 rank 向量，空闲 rank 明确传零，共享同一个 forward 完成边界。新增回归测试检查三个空闲 DP 的 decode 仍只查询一次，以及合并部署的 TTFT/TPOT 与同条件 canonical API 一致。当前纯 prefill / 纯 decode 的联合计时可用；跨 rank 同轮混合 prefill/decode 缺少对应边界数据时明确失败，不能悄悄退回均匀 DP 假设。
+
+### 完整 8K/1K：独立请求模拟与实测
+
+2026-11-03 在 25 节点完成三组新实测。20/25 是本次分别采集的两个节点；下表的服务是**单节点合并部署**，不是两节点 PD 实测。统一全局 TP16、attention TP4/DP4、MoE TP1/EP16，graph、overlap scheduler、投机解码及 radix cache 关闭，共享专家多流开启。每组正式请求数 N 等于并发 C，输入严格 8192、输出严格 1024，另有两条最多输出 32 token 的客户端预热。实际 KV 为 32384 token/rank，即 253 个 128-token 页；预测固定使用该容量。
+
+新预测使用 `aisimulate-910c:runtime-group-repair-20261103` 的独立调度模拟，既没有注入实测 forward 时长，也没有加入残差。其 synthetic burst 假定全部请求同刻到达，而实测 HTTP 请求存在毫秒级到达差异；这是下面明确保留的尚未对齐项。
+
+| C=N | TTFT 实测 / 预测 s | TTFT 误差 | TPOT 实测 / 预测 ms | TPOT 误差 | 输入吞吐 实测 / 预测 tok/s | 输出吞吐 实测 / 预测 tok/s | 吞吐误差 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 2.958 / 2.871 | -2.95% | 405.844 / 406.987 | +0.28% | 19.590 / 19.541 | 2.449 / 2.443 | -0.25% |
+| 4 | 4.372 / 3.069 | -29.81% | 431.565 / 440.877 | +2.16% | 73.449 / 72.163 | 9.181 / 9.020 | -1.75% |
+| 8 | 6.697 / 4.603 | -31.26% | 436.880 / 470.712 | +7.74% | 144.425 / 134.808 | 18.053 / 16.851 | -6.66% |
+
+误差为 `100 × (预测 / 实测 - 1)`。同一最新镜像改回独立内核时，三个并发的 TPOT 仅为 198.834/200.942/202.512 ms，输出吞吐为 4.964/19.633/38.683 tok/s；因此 TPOT/吞吐改善来自调用边界和真实 DP 分布修复，不是降低 workload 或少算请求。修复合并部署接线前，C1 的调用链预测 TPOT 为 440.877 ms；接入实际 `[1,0,0,0]` 分布后为 406.987 ms。完整结果保存在 `full-request-comparison-20261103/comparison.{json,csv}`。
+
+另外按真实 batch 对齐的稳态 forward，C1/C4/C8 分别保留 945/944/944 轮，调用链 MAPE 为 3.46%/7.35%/10.68%。这份诊断用了实测 batch，因此与独立请求模拟分开保存为 `full-request-causal-gap-20261103.json`，不能把它当成端到端搜索精度。
+
+TTFT 的时序缺口已经有直接证据：C4 的四条请求在 tokenizer 发出时只相差 0/1.007/1.853/2.654 ms，但首轮只纳入 DP3、DP0；DP1、DP2 要到约 1604 ms 才从各自 scheduler 队列中取出。前三轮实际形状依次为两个 DP prefill、四个 DP prefill、两个 DP prefill 加两个 DP decode，轮耗时约 1593/1907/1664 ms。客户端 TTFT 因此分成两条约 3.54 s、两条约 5.21 s。C8 同样在首轮只纳入一个 DP，后续又出现跨 DP 混合轮；这些等待无法靠更换一个 GEMM shape 消除，也不能统一加 1～2 秒冒充调度修复。
+
+本阶段完整 Rust 测试 **2132 通过、1 项既有忽略**；打包后的模型/API/collector/两组 parity 测试 **539 通过**，新增 aggregate C1 回归测试也在其中。完整测试结束后已停止本次自建的 25 节点诊断服务，保留容器元数据、原始请求、逐轮数据和失败采集日志。精度 goal 仍为进行中：需要继续对齐跨 DP 混合轮、真实接收/入批时序和多 DP prefill，再验证 PD 比例与其他并行策略，不能把这三组结果当成所有部署均已达标。
+
+下面复现 C8、N8 的**离线预测**，不会启动 NPU 服务。专用配置显式启用 `runtime_layers`；默认旧命令的 `isolated_kernels` 仍是原有独立内核口径。
+
+```bash
+cd /home/youxingye/youxingye_data/aisimulate-910c
+AISIMULATE_910C_IMAGE=aisimulate-910c:runtime-group-repair-20261103 \
+AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q \
+bash scripts/run-ascend910c.sh predict --stack engine \
+  --config benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/full-request-aggregate-8k1k-20261103.yaml \
+  --set traffic.load.concurrency=8 --set traffic.stop.requests=8 \
+  --capture-per-request --detail time,source \
+  --output-dir aisimulate-output/full-request-c8-recheck
+```
 
 ### TTFT 需要继续分开的因素
 
@@ -94,7 +154,7 @@ Rust 查询增加 `active_attention_dp`，把空闲 DP 与真实请求分开；�
 
 此外，已记录的真实 PD 请求中，首次分配 KV 时约 2.1 秒的额外等待主要发生在 Triton compile API 内；不同 free-pages 视图的 16 字节对齐会产生不同特化，同一编译 API 调用也可能只是在加载缓存。此处需要按真实缓存状态和特化身份建模，不能每个 rank 固定加 2.1 秒。客户端 TTFT 还可能从第一个非空文本块开始计算，而计算模型通常从第一个输出 token 开始计算。当前没有把这两类差异塞回整轮残差，所以完整请求 TTFT 的精度目标仍未完成。
 
-### 已验证的实际层调用链预测
+### 历史 24 点版本：实际层调用链预测
 
 对实际 decoder layer 使用驻留权重、真实输入、原有通信组和共享专家多流，重新采集完整调用边界，覆盖 8 类结构：第 0、1、2、3、4、5、6、77 层。按模型结构，它们分别代表 1、1、1、1、37、18、18、1 层，合计 78 层。此分类区分 dense、首个 MoE、indexer 更新/复用及下一层的共享规则，不是把任意一个层耗时乘以 78。
 
@@ -126,7 +186,7 @@ estimator_config:
 
 这次修复的因果依据是：独立内核没有普遍翻倍，而用真实调用边界重新测量后，层内主机提交、张量/流管理、同步和跨 rank 依赖共同出现，按源码层数组合便接近整轮耗时。实现没有读取整轮实测误差来求修正值。但它仍是较粗粒度的算子边界，代表层复用也有近似；目前仅限定 TP16/attention-DP4/EP16、eager、同一量化模型及已覆盖 shape，不能宣称任意并行配置已准确。
 
-20 节点正在扩展每个 DP 含 2～3 个请求的 shape；25 节点正在补部分 DP 空闲的低并发分支。首次 C2 补测在空闲 DP 的 indexer 整数填充行发生校验失败，原始日志已保存，未发布为成功数据。源码中这些行的 KV 长度为零；新的回放校验对所有有效请求的全部 top-k 列继续做整数精确比较，对全部 hidden 输出继续比较，并单独记录无效填充行的差异。数值校验合同的变更有单独测试与证据，后续数据需要重新验收。
+该阶段之后，20 节点扩展了每个 DP 含 2～3 个请求的 shape，25 节点补齐了部分 DP 空闲的低并发分支。首次 C2 补测在空闲 DP 的 indexer 整数填充行发生校验失败，原始日志已保存，未发布为成功数据；后来对逻辑有效行的修订和重新验收见前面的 144/240 点章节。
 
 新数据入口是 `systems/data/ascend910c/runtime_layer/sglang/0.5.22/ascend_layer_perf.parquet`；`runtime-layer-publication-v2.json` 记录发布 SHA，`runtime-layer-comparison-20261103.json` 保留全部配对轮次。元数据修订没有改变 parquet 中任何测量字节。新增原生算子导致枚举数量断言需要更新；修复后对应 22 项 schema 测试通过。442 项 Python/collector/parity 组合测试中，441 项先通过，剩余 1 项仅缺少新默认字段的期望值，修订后相关 41 项测试全部通过；两组 Rust/Python parity 均已通过。
 

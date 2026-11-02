@@ -687,6 +687,70 @@ def test_pd_group_timing_is_independent_of_diagnostic_capture(model_path):
     assert all(row["max_batch_size"] <= 2 for row in batches)
 
 
+def test_aggregated_replay_prices_the_actual_active_dp_population(model_path):
+    from aisimulate.compiler import prediction_to_replay_spec
+    from aisimulate.config.cli import CorePredictionConfig
+    from aisimulate.runner import EngineReplayRunnerFactory
+
+    estimator = {"op_level": {"ascend": {"decode_execution_mode": "eager", "shape_policy": "anchored"}}}
+    public = CorePredictionConfig.model_validate(
+        {
+            "traffic": {
+                "source": {"type": "synthetic", "input_tokens": 8192, "output_tokens": 4},
+                "load": {"type": "concurrency", "concurrency": 1},
+                "stop": {"requests": 1},
+            },
+            "engine": {
+                "model": model_path,
+                "hardware": "ascend910c",
+                "backend": "sglang",
+                "backend_version": "0.5.22",
+                "mode": "aggregated",
+                "context_length": 16384,
+                "gemm_quant_mode": "w8a8",
+                "moe_quant_mode": "w8a8_dynamic",
+                "fmha_quant_mode": "bfloat16",
+                "kvcache_quant_mode": "bfloat16",
+                "estimation_mode": "op_level",
+                "estimator_config": estimator,
+                "workers": {
+                    "aggregated": {
+                        "parallelism": {"tensor": 8, "attention_data": 2, "moe_tensor": 1, "moe_expert": 16},
+                        "scheduler": {"ignore_eos": True, "chunked_prefill_size": 16384, "max_prefill_tokens": 32768},
+                        "kv_cache": {
+                            "block_size": 128,
+                            "prefix_caching": False,
+                            "capacity": {"type": "fixed", "blocks": 512},
+                        },
+                    }
+                },
+            },
+        }
+    )
+    oracle = transfer_model(model_path, "aggregated", estimator_config=estimator)
+    prefill = [
+        {"scheduled_requests": {"num_prefill_requests": 1, "sum_prefill_tokens": 8192}},
+        {"scheduled_requests": {}},
+    ]
+    expected_ttft = oracle.estimate_forward_pass_time_ms(prefill)
+    expected_tpot = (
+        sum(
+            oracle.estimate_forward_pass_time_ms(
+                [
+                    {"scheduled_requests": {"num_decode_requests": 1, "sum_decode_kv_tokens": length}},
+                    {"scheduled_requests": {}},
+                ]
+            )
+            for length in (8193, 8194, 8195)
+        )
+        / 3
+    )
+    report = EngineReplayRunnerFactory().create(0).run(prediction_to_replay_spec(public))
+    assert report.metrics["completed_requests"] == 1
+    assert report.metrics["mean_ttft_ms"] == pytest.approx(expected_ttft, abs=1e-6)
+    assert report.metrics["mean_tpot_ms"] == pytest.approx(expected_tpot, abs=1e-6)
+
+
 def test_canonical_pd_model_selects_measured_mapping_and_rejects_unknown_geometry(model_path):
     source = transfer_model(model_path, "prefill")
     target = transfer_model(model_path, "decode")

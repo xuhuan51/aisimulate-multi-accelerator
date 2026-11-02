@@ -87,7 +87,7 @@ def main():
             except Exception as error:
                 if not any(message in str(error) for message in (
                     "measured request/KV brackets", "unmeasured Ascend runtime layer",
-                    "skewed active-rank profiles are unavailable",
+                    "skewed active-rank profiles",
                 )):
                     raise
                 result["runtime_layer_unavailable"] = str(error)

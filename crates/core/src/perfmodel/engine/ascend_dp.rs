@@ -155,21 +155,32 @@ impl GroupShape {
                     .filter(|count| *count > 0);
                 let active_attention_dp = active_requests.clone().count() as u32;
                 let common_requests = active_requests.clone().next().unwrap_or(0);
+                let skewed = active_requests
+                    .clone()
+                    .any(|count| count != common_requests);
                 if !self.decode
                     || self.graph
                     || layers.attention_dp as usize != self.request_counts.len()
-                    || active_requests
-                        .clone()
-                        .any(|count| count != common_requests)
+                    || layers.attention_tp == 0
                 {
                     return Err(invalid(
-                        "Ascend runtime layers require pure eager decode and uniform requests on active DP ranks; skewed active-rank profiles are unavailable",
+                        "Ascend runtime layers require pure eager decode with matching attention DP/TP geometry",
                     ));
                 }
                 if active_attention_dp == 0 {
                     return Ok(None);
                 }
+                if skewed
+                    && active_requests.clone().any(|count| {
+                        count.div_ceil(layers.attention_tp) != self.max_tokens / layers.attention_tp
+                    })
+                {
+                    return Err(invalid(
+                        "Ascend skewed active-rank profiles require the same measured TP padding bucket",
+                    ));
+                }
                 layers.active_attention_dp = Some(active_attention_dp);
+                layers.population_transfer = skewed;
                 return Ok(Some(operation));
             }
             Op::AscendEagerOverhead(overhead) => {
@@ -346,10 +357,26 @@ mod tests {
                     panic!("expected measured layers");
                 };
                 assert_eq!(bound.active_attention_dp, Some(expected));
+                assert!(!bound.population_transfer);
             }
         }
-        let skewed = GroupShape::new(&decode(&[1, 2, 0, 0]), 4, &[]).unwrap();
-        assert!(skewed.bind(&operation, 0, 1, false).is_err());
+        for counts in [[1, 2, 0, 0], [3, 2, 1, 0], [2, 2, 1, 1]] {
+            let shape = GroupShape::new(&decode(&counts), 4, &[]).unwrap();
+            for (rank, requests) in counts.into_iter().enumerate() {
+                let Some(Op::AscendDecoderLayers(bound)) =
+                    shape.bind(&operation, rank, requests, false).unwrap()
+                else {
+                    panic!("expected bounded population transfer");
+                };
+                assert!(bound.population_transfer);
+                assert_eq!(
+                    bound.active_attention_dp,
+                    Some(counts.iter().filter(|count| **count > 0).count() as u32)
+                );
+            }
+        }
+        let different_buckets = GroupShape::new(&decode(&[1, 5, 0, 0]), 4, &[]).unwrap();
+        assert!(different_buckets.bind(&operation, 0, 1, false).is_err());
         let empty = GroupShape::new(&decode(&[0; 4]), 4, &[]).unwrap();
         assert!(empty.bind(&operation, 0, 0, false).unwrap().is_none());
     }

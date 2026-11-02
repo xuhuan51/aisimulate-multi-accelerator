@@ -15,6 +15,8 @@ pub struct AscendDecoderLayersOp {
     pub attention_dp: u32,
     #[serde(default)]
     pub active_attention_dp: Option<u32>,
+    #[serde(default)]
+    pub population_transfer: bool,
     pub moe_ep: u32,
     pub quantization_sha256: String,
     pub covered_ops: Vec<Op>,
@@ -74,14 +76,31 @@ impl AscendDecoderLayersOp {
         kv_tokens: u32,
     ) -> Result<PerformanceResult, AicError> {
         self.ensure_ready(db)?;
+        let source = self.timing_source(db.ascend_shape_policy)?;
         if requests == 0 || self.scale_factor == 0.0 {
             return Ok(PerformanceResult::new(0.0, Source::Empirical));
         }
         Ok(PerformanceResult::new(
             self.query_layers(&db.ascend_layer, requests, kv_tokens)?,
-            Source::Silicon,
+            source,
         )
         .scaled(self.scale_factor))
+    }
+
+    fn timing_source(
+        &self,
+        policy: crate::perf_database::ascend_shape::AscendShapePolicy,
+    ) -> Result<Source, AicError> {
+        if self.population_transfer {
+            if policy.is_measured() {
+                return Err(AicError::InvalidForwardPassMetrics(
+                    "Ascend skewed active-rank profiles require shape_policy=anchored".into(),
+                ));
+            }
+            Ok(Source::Estimated)
+        } else {
+            Ok(Source::Silicon)
+        }
     }
 
     fn query_layers(
@@ -162,6 +181,7 @@ mod tests {
             attention_tp: 4,
             attention_dp: 4,
             active_attention_dp: None,
+            population_transfer: false,
             moe_ep: 16,
             covered_ops: vec![covered],
             quantization_sha256: "1".repeat(64),
@@ -175,6 +195,17 @@ mod tests {
                 .is_missing_perf_data()
         );
         let mut partial = layers;
+        use crate::perf_database::ascend_shape::AscendShapePolicy;
+        assert_eq!(
+            partial.timing_source(AscendShapePolicy::Measured).unwrap(),
+            Source::Silicon
+        );
+        partial.population_transfer = true;
+        assert!(partial.timing_source(AscendShapePolicy::Measured).is_err());
+        assert_eq!(
+            partial.timing_source(AscendShapePolicy::Anchored).unwrap(),
+            Source::Estimated
+        );
         partial.active_attention_dp = Some(1);
         assert!(
             partial

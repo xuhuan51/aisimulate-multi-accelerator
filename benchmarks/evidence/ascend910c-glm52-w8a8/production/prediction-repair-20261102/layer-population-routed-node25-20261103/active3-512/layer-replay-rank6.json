@@ -1,0 +1,4483 @@
+{
+  "scope": "Isolated replay of captured real layers; cloned input values and actual resident weights. Additional device events/barriers perturb timing; not serving latency ground truth or an additive residual.",
+  "model_call": 1019,
+  "rank": 6,
+  "pid": 42,
+  "cpu_affinity": [
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    440,
+    441,
+    442,
+    443,
+    444,
+    445,
+    446,
+    447,
+    448,
+    449,
+    450,
+    451,
+    452,
+    453,
+    454,
+    455,
+    456,
+    457,
+    458,
+    459
+  ],
+  "source_sha256": {
+    "/sgl-workspace/sglang/python/sglang/srt/model_executor/forward_batch_info.py": "167b747b28ee6030bc30e612c6da5c0a3dc0a5611a7324799427606655b6efcc",
+    "/campaign/layer_output_validation.py": "6b00ba35be9a90610b4392a48c60a5c7c00b693bf1b7552eb1072d4465da3215",
+    "/sgl-workspace/sglang/python/sglang/srt/models/deepseek_v2.py": "1edf877e54ca6acf37e2d7dccb1704054175e2b78b8737bb9b617ffc97a2134e"
+  },
+  "boundaries": [
+    {
+      "module": "DeepseekV2DecoderLayer",
+      "layer": 0,
+      "inputs": [
+        {
+          "shape": [
+            4
+          ],
+          "dtype": "torch.int64",
+          "device": "npu:6",
+          "stride": [
+            1
+          ]
+        },
+        {
+          "shape": [
+            4,
+            6144
+          ],
+          "dtype": "torch.bfloat16",
+          "device": "npu:6",
+          "stride": [
+            6144,
+            1
+          ]
+        },
+        "ForwardBatch",
+        "BumpAllocator",
+        "NoneType",
+        "NoneType"
+      ],
+      "kwargs": {
+        "prev_topk_indices": "NoneType",
+        "captured_last_layer_outputs": "NoneType",
+        "next_full_attention_layer_id": "int"
+      },
+      "samples": [
+        {
+          "warmup": true,
+          "repeat": 0,
+          "device_ms": 5.182459831237793,
+          "host_submit_ms": 4.041869,
+          "host_thread_cpu_ms": 4.00844,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24539
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24539
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 1,
+          "device_ms": 5.219059944152832,
+          "host_submit_ms": 4.003439,
+          "host_thread_cpu_ms": 3.97065,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 2,
+          "device_ms": 4.920199871063232,
+          "host_submit_ms": 4.011409,
+          "host_thread_cpu_ms": 3.96844,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24541
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24541
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 3,
+          "device_ms": 4.880239963531494,
+          "host_submit_ms": 4.20314,
+          "host_thread_cpu_ms": 4.17034,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 4,
+          "device_ms": 4.851240158081055,
+          "host_submit_ms": 4.176269,
+          "host_thread_cpu_ms": 4.14475,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24541
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24541
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 5,
+          "device_ms": 4.989640235900879,
+          "host_submit_ms": 4.094569,
+          "host_thread_cpu_ms": 4.05063,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 6,
+          "device_ms": 5.034220218658447,
+          "host_submit_ms": 4.088749,
+          "host_thread_cpu_ms": 4.05081,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24541
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24541
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 7,
+          "device_ms": 4.866600036621094,
+          "host_submit_ms": 3.999439,
+          "host_thread_cpu_ms": 3.96092,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 8,
+          "device_ms": 4.987500190734863,
+          "host_submit_ms": 4.051488,
+          "host_thread_cpu_ms": 4.02014,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24541
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24541
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 9,
+          "device_ms": 5.999800205230713,
+          "host_submit_ms": 4.055569,
+          "host_thread_cpu_ms": 4.02369,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 10,
+          "device_ms": 5.3073201179504395,
+          "host_submit_ms": 4.086389,
+          "host_thread_cpu_ms": 4.0546,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24541
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24541
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 11,
+          "device_ms": 4.637239933013916,
+          "host_submit_ms": 4.093909,
+          "host_thread_cpu_ms": 4.0566,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 18217
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        }
+      ],
+      "sequence_lengths": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "forward_mode": "4",
+      "batch_size": 4,
+      "global_num_tokens_cpu": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "global_sequence_lengths": [
+        [
+          558,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ]
+      ],
+      "function_profile": null
+    },
+    {
+      "module": "DeepseekV2DecoderLayer",
+      "layer": 1,
+      "inputs": [
+        {
+          "shape": [
+            4
+          ],
+          "dtype": "torch.int64",
+          "device": "npu:6",
+          "stride": [
+            1
+          ]
+        },
+        "OwedOutput",
+        "ForwardBatch",
+        "BumpAllocator",
+        "NoneType",
+        "NoneType"
+      ],
+      "kwargs": {
+        "prev_topk_indices": "NoneType",
+        "captured_last_layer_outputs": "NoneType",
+        "next_full_attention_layer_id": "int"
+      },
+      "samples": [
+        {
+          "warmup": true,
+          "repeat": 0,
+          "device_ms": 5.815539836883545,
+          "host_submit_ms": 4.533181,
+          "host_thread_cpu_ms": 4.50207,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24471
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 24471
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 1,
+          "device_ms": 5.841259956359863,
+          "host_submit_ms": 4.548681,
+          "host_thread_cpu_ms": 4.51357,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 12243
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 12243
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 2,
+          "device_ms": 5.575940132141113,
+          "host_submit_ms": 4.533211,
+          "host_thread_cpu_ms": 4.50205,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 12243
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 12243
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 3,
+          "device_ms": 5.7387800216674805,
+          "host_submit_ms": 4.553631,
+          "host_thread_cpu_ms": 4.51193,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 4,
+          "device_ms": 5.791600227355957,
+          "host_submit_ms": 4.554361,
+          "host_thread_cpu_ms": 4.51563,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 5,
+          "device_ms": 5.8012800216674805,
+          "host_submit_ms": 4.826092,
+          "host_thread_cpu_ms": 4.79159,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 6,
+          "device_ms": 5.686560153961182,
+          "host_submit_ms": 4.692712,
+          "host_thread_cpu_ms": 4.66019,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 7,
+          "device_ms": 5.869800090789795,
+          "host_submit_ms": 5.387105,
+          "host_thread_cpu_ms": 4.92984,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 8,
+          "device_ms": 5.514880180358887,
+          "host_submit_ms": 4.519371,
+          "host_thread_cpu_ms": 4.4845,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 9,
+          "device_ms": 5.4974799156188965,
+          "host_submit_ms": 4.688262,
+          "host_thread_cpu_ms": 4.64741,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 10,
+          "device_ms": 5.803299903869629,
+          "host_submit_ms": 4.679342,
+          "host_thread_cpu_ms": 4.64683,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 11,
+          "device_ms": 5.803060054779053,
+          "host_submit_ms": 4.506941,
+          "host_thread_cpu_ms": 4.47578,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11937
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            "OwedOutput",
+            "NoneType"
+          ]
+        }
+      ],
+      "sequence_lengths": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "forward_mode": "4",
+      "batch_size": 4,
+      "global_num_tokens_cpu": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "global_sequence_lengths": [
+        [
+          558,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ]
+      ],
+      "function_profile": null
+    },
+    {
+      "module": "DeepseekV2DecoderLayer",
+      "layer": 2,
+      "inputs": [
+        {
+          "shape": [
+            4
+          ],
+          "dtype": "torch.int64",
+          "device": "npu:6",
+          "stride": [
+            1
+          ]
+        },
+        "OwedOutput",
+        "ForwardBatch",
+        "BumpAllocator",
+        "NoneType",
+        "NoneType"
+      ],
+      "kwargs": {
+        "prev_topk_indices": "NoneType",
+        "captured_last_layer_outputs": "NoneType",
+        "next_full_attention_layer_id": "int"
+      },
+      "samples": [
+        {
+          "warmup": true,
+          "repeat": 0,
+          "device_ms": 5.629519939422607,
+          "host_submit_ms": 4.533841,
+          "host_thread_cpu_ms": 4.49595,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 1,
+          "device_ms": 5.617559909820557,
+          "host_submit_ms": 4.531751,
+          "host_thread_cpu_ms": 4.49211,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 2,
+          "device_ms": 5.8308000564575195,
+          "host_submit_ms": 4.601461,
+          "host_thread_cpu_ms": 4.56155,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 3,
+          "device_ms": 5.455599784851074,
+          "host_submit_ms": 4.591831,
+          "host_thread_cpu_ms": 4.55253,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 4,
+          "device_ms": 5.827760219573975,
+          "host_submit_ms": 4.643411,
+          "host_thread_cpu_ms": 4.61099,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 5,
+          "device_ms": 5.5838799476623535,
+          "host_submit_ms": 4.549591,
+          "host_thread_cpu_ms": 4.50791,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 6,
+          "device_ms": 5.76501989364624,
+          "host_submit_ms": 4.546751,
+          "host_thread_cpu_ms": 4.51019,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 7,
+          "device_ms": 5.75029993057251,
+          "host_submit_ms": 4.682222,
+          "host_thread_cpu_ms": 4.63305,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 8,
+          "device_ms": 4.956180095672607,
+          "host_submit_ms": 4.680502,
+          "host_thread_cpu_ms": 4.63145,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 9,
+          "device_ms": 5.005360126495361,
+          "host_submit_ms": 5.062404,
+          "host_thread_cpu_ms": 5.0235,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 10,
+          "device_ms": 4.612880229949951,
+          "host_submit_ms": 4.684322,
+          "host_thread_cpu_ms": 4.61321,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 11,
+          "device_ms": 4.6276397705078125,
+          "host_submit_ms": 4.685971,
+          "host_thread_cpu_ms": 4.60959,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              },
+              {
+                "valid_rows": 3,
+                "padding_rows": 13,
+                "padding_differences": 11772
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            "OwedOutput",
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "sequence_lengths": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "forward_mode": "4",
+      "batch_size": 4,
+      "global_num_tokens_cpu": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "global_sequence_lengths": [
+        [
+          558,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ]
+      ],
+      "function_profile": null
+    },
+    {
+      "module": "DeepseekV2DecoderLayer",
+      "layer": 3,
+      "inputs": [
+        {
+          "shape": [
+            4
+          ],
+          "dtype": "torch.int64",
+          "device": "npu:6",
+          "stride": [
+            1
+          ]
+        },
+        "OwedOutput",
+        "ForwardBatch",
+        "BumpAllocator",
+        "NoneType",
+        "NoneType"
+      ],
+      "kwargs": {
+        "prev_topk_indices": {
+          "shape": [
+            4,
+            2048
+          ],
+          "dtype": "torch.int32",
+          "device": "npu:6",
+          "stride": [
+            2048,
+            1
+          ]
+        },
+        "captured_last_layer_outputs": "NoneType",
+        "next_full_attention_layer_id": "int"
+      },
+      "samples": [
+        {
+          "warmup": true,
+          "repeat": 0,
+          "device_ms": 5.181059837341309,
+          "host_submit_ms": 4.50956,
+          "host_thread_cpu_ms": 4.49127,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 1,
+          "device_ms": 4.91834020614624,
+          "host_submit_ms": 4.455911,
+          "host_thread_cpu_ms": 4.43243,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 2,
+          "device_ms": 5.228099822998047,
+          "host_submit_ms": 4.45417,
+          "host_thread_cpu_ms": 4.40987,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 3,
+          "device_ms": 4.885260105133057,
+          "host_submit_ms": 4.45572,
+          "host_thread_cpu_ms": 4.42763,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 4,
+          "device_ms": 5.006959915161133,
+          "host_submit_ms": 4.482231,
+          "host_thread_cpu_ms": 4.44896,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 5,
+          "device_ms": 4.6885199546813965,
+          "host_submit_ms": 4.457121,
+          "host_thread_cpu_ms": 4.43257,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 6,
+          "device_ms": 4.680920124053955,
+          "host_submit_ms": 4.500151,
+          "host_thread_cpu_ms": 4.46925,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 7,
+          "device_ms": 5.351260185241699,
+          "host_submit_ms": 4.498991,
+          "host_thread_cpu_ms": 4.44706,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 8,
+          "device_ms": 4.922719955444336,
+          "host_submit_ms": 4.50593,
+          "host_thread_cpu_ms": 4.46675,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 9,
+          "device_ms": 5.640279769897461,
+          "host_submit_ms": 4.49643,
+          "host_thread_cpu_ms": 4.45921,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 10,
+          "device_ms": 4.940080165863037,
+          "host_submit_ms": 4.461441,
+          "host_thread_cpu_ms": 4.42794,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 11,
+          "device_ms": 4.933879852294922,
+          "host_submit_ms": 4.532841,
+          "host_thread_cpu_ms": 4.47381,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6112
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "sequence_lengths": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "forward_mode": "4",
+      "batch_size": 4,
+      "global_num_tokens_cpu": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "global_sequence_lengths": [
+        [
+          558,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ]
+      ],
+      "function_profile": null
+    },
+    {
+      "module": "DeepseekV2DecoderLayer",
+      "layer": 4,
+      "inputs": [
+        {
+          "shape": [
+            4
+          ],
+          "dtype": "torch.int64",
+          "device": "npu:6",
+          "stride": [
+            1
+          ]
+        },
+        {
+          "shape": [
+            1,
+            6144
+          ],
+          "dtype": "torch.bfloat16",
+          "device": "npu:6",
+          "stride": [
+            6144,
+            1
+          ]
+        },
+        "ForwardBatch",
+        "BumpAllocator",
+        "NoneType",
+        "NoneType"
+      ],
+      "kwargs": {
+        "prev_topk_indices": {
+          "shape": [
+            4,
+            2048
+          ],
+          "dtype": "torch.int32",
+          "device": "npu:6",
+          "stride": [
+            2048,
+            1
+          ]
+        },
+        "captured_last_layer_outputs": "NoneType",
+        "next_full_attention_layer_id": "int"
+      },
+      "samples": [
+        {
+          "warmup": true,
+          "repeat": 0,
+          "device_ms": 6.460740089416504,
+          "host_submit_ms": 4.17929,
+          "host_thread_cpu_ms": 4.13944,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 1,
+          "device_ms": 4.656859874725342,
+          "host_submit_ms": 4.167449,
+          "host_thread_cpu_ms": 4.12489,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 2,
+          "device_ms": 4.607540130615234,
+          "host_submit_ms": 4.25544,
+          "host_thread_cpu_ms": 4.23161,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 3,
+          "device_ms": 4.625219821929932,
+          "host_submit_ms": 4.19372,
+          "host_thread_cpu_ms": 4.15097,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 4,
+          "device_ms": 4.514560222625732,
+          "host_submit_ms": 4.165939,
+          "host_thread_cpu_ms": 4.13551,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 5,
+          "device_ms": 4.635419845581055,
+          "host_submit_ms": 4.18981,
+          "host_thread_cpu_ms": 4.14674,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 6,
+          "device_ms": 4.555779933929443,
+          "host_submit_ms": 4.16733,
+          "host_thread_cpu_ms": 4.1298,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 7,
+          "device_ms": 4.642519950866699,
+          "host_submit_ms": 4.188339,
+          "host_thread_cpu_ms": 4.14971,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 8,
+          "device_ms": 4.643519878387451,
+          "host_submit_ms": 4.16353,
+          "host_thread_cpu_ms": 4.12386,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 9,
+          "device_ms": 4.746540069580078,
+          "host_submit_ms": 4.173039,
+          "host_thread_cpu_ms": 4.14606,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 10,
+          "device_ms": 4.448919773101807,
+          "host_submit_ms": 4.211159,
+          "host_thread_cpu_ms": 4.16021,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 11,
+          "device_ms": 4.583980083465576,
+          "host_submit_ms": 4.169219,
+          "host_thread_cpu_ms": 4.14214,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6077
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "sequence_lengths": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "forward_mode": "4",
+      "batch_size": 4,
+      "global_num_tokens_cpu": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "global_sequence_lengths": [
+        [
+          558,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ]
+      ],
+      "function_profile": null
+    },
+    {
+      "module": "DeepseekV2DecoderLayer",
+      "layer": 5,
+      "inputs": [
+        {
+          "shape": [
+            4
+          ],
+          "dtype": "torch.int64",
+          "device": "npu:6",
+          "stride": [
+            1
+          ]
+        },
+        {
+          "shape": [
+            1,
+            6144
+          ],
+          "dtype": "torch.bfloat16",
+          "device": "npu:6",
+          "stride": [
+            6144,
+            1
+          ]
+        },
+        "ForwardBatch",
+        "BumpAllocator",
+        "NoneType",
+        "NoneType"
+      ],
+      "kwargs": {
+        "prev_topk_indices": {
+          "shape": [
+            4,
+            2048
+          ],
+          "dtype": "torch.int32",
+          "device": "npu:6",
+          "stride": [
+            2048,
+            1
+          ]
+        },
+        "captured_last_layer_outputs": "NoneType",
+        "next_full_attention_layer_id": "int"
+      },
+      "samples": [
+        {
+          "warmup": true,
+          "repeat": 0,
+          "device_ms": 4.753819942474365,
+          "host_submit_ms": 4.15939,
+          "host_thread_cpu_ms": 4.13677,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 1,
+          "device_ms": 4.558539867401123,
+          "host_submit_ms": 4.148299,
+          "host_thread_cpu_ms": 4.11381,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 2,
+          "device_ms": 4.597780227661133,
+          "host_submit_ms": 4.166479,
+          "host_thread_cpu_ms": 4.13713,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 3,
+          "device_ms": 4.751160144805908,
+          "host_submit_ms": 4.149549,
+          "host_thread_cpu_ms": 4.12735,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 4,
+          "device_ms": 4.570839881896973,
+          "host_submit_ms": 4.136919,
+          "host_thread_cpu_ms": 4.12197,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 5,
+          "device_ms": 4.80463981628418,
+          "host_submit_ms": 4.18888,
+          "host_thread_cpu_ms": 4.15487,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 6,
+          "device_ms": 4.455679893493652,
+          "host_submit_ms": 4.18725,
+          "host_thread_cpu_ms": 4.15846,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 7,
+          "device_ms": 4.78380012512207,
+          "host_submit_ms": 4.191639,
+          "host_thread_cpu_ms": 4.15119,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 8,
+          "device_ms": 4.638500213623047,
+          "host_submit_ms": 4.176409,
+          "host_thread_cpu_ms": 4.15086,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 9,
+          "device_ms": 4.783180236816406,
+          "host_submit_ms": 4.21345,
+          "host_thread_cpu_ms": 4.17502,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 10,
+          "device_ms": 4.764739990234375,
+          "host_submit_ms": 4.594121,
+          "host_thread_cpu_ms": 4.56818,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 11,
+          "device_ms": 4.518040180206299,
+          "host_submit_ms": 4.212219,
+          "host_thread_cpu_ms": 4.17523,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6121
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        }
+      ],
+      "sequence_lengths": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "forward_mode": "4",
+      "batch_size": 4,
+      "global_num_tokens_cpu": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "global_sequence_lengths": [
+        [
+          558,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ]
+      ],
+      "function_profile": null
+    },
+    {
+      "module": "DeepseekV2DecoderLayer",
+      "layer": 6,
+      "inputs": [
+        {
+          "shape": [
+            4
+          ],
+          "dtype": "torch.int64",
+          "device": "npu:6",
+          "stride": [
+            1
+          ]
+        },
+        {
+          "shape": [
+            1,
+            6144
+          ],
+          "dtype": "torch.bfloat16",
+          "device": "npu:6",
+          "stride": [
+            6144,
+            1
+          ]
+        },
+        "ForwardBatch",
+        "BumpAllocator",
+        "NoneType",
+        "NoneType"
+      ],
+      "kwargs": {
+        "prev_topk_indices": "NoneType",
+        "captured_last_layer_outputs": "NoneType",
+        "next_full_attention_layer_id": "int"
+      },
+      "samples": [
+        {
+          "warmup": true,
+          "repeat": 0,
+          "device_ms": 5.998419761657715,
+          "host_submit_ms": 5.795247,
+          "host_thread_cpu_ms": 5.56239,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6136
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 1,
+          "device_ms": 5.940499782562256,
+          "host_submit_ms": 5.491105,
+          "host_thread_cpu_ms": 5.44447,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 2,
+          "device_ms": 5.783760070800781,
+          "host_submit_ms": 5.462105,
+          "host_thread_cpu_ms": 5.42122,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 3,
+          "device_ms": 5.84250020980835,
+          "host_submit_ms": 5.484385,
+          "host_thread_cpu_ms": 5.44611,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 4,
+          "device_ms": 5.963860034942627,
+          "host_submit_ms": 5.720976,
+          "host_thread_cpu_ms": 5.68168,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 5,
+          "device_ms": 6.063039779663086,
+          "host_submit_ms": 5.761826,
+          "host_thread_cpu_ms": 5.68936,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 6,
+          "device_ms": 5.995359897613525,
+          "host_submit_ms": 5.789966,
+          "host_thread_cpu_ms": 5.71605,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 7,
+          "device_ms": 6.081900119781494,
+          "host_submit_ms": 5.670446,
+          "host_thread_cpu_ms": 5.63281,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 8,
+          "device_ms": 6.0172600746154785,
+          "host_submit_ms": 5.628576,
+          "host_thread_cpu_ms": 5.57163,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 9,
+          "device_ms": 5.9597601890563965,
+          "host_submit_ms": 5.644016,
+          "host_thread_cpu_ms": 5.59402,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 10,
+          "device_ms": 5.959239959716797,
+          "host_submit_ms": 5.503276,
+          "host_thread_cpu_ms": 5.45025,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 11,
+          "device_ms": 5.889400005340576,
+          "host_submit_ms": 5.542895,
+          "host_thread_cpu_ms": 5.48003,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 1,
+                "padding_differences": 6137
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 4,
+              "padding_differences": 4096
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                1,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            {
+              "shape": [
+                4,
+                2048
+              ],
+              "dtype": "torch.int32",
+              "device": "npu:6",
+              "stride": [
+                2048,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "sequence_lengths": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "forward_mode": "4",
+      "batch_size": 4,
+      "global_num_tokens_cpu": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "global_sequence_lengths": [
+        [
+          558,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ]
+      ],
+      "function_profile": null
+    },
+    {
+      "module": "DeepseekV2DecoderLayer",
+      "layer": 77,
+      "inputs": [
+        {
+          "shape": [
+            4
+          ],
+          "dtype": "torch.int64",
+          "device": "npu:6",
+          "stride": [
+            1
+          ]
+        },
+        {
+          "shape": [
+            1,
+            6144
+          ],
+          "dtype": "torch.bfloat16",
+          "device": "npu:6",
+          "stride": [
+            6144,
+            1
+          ]
+        },
+        "ForwardBatch",
+        "BumpAllocator",
+        "NoneType",
+        "NoneType"
+      ],
+      "kwargs": {
+        "prev_topk_indices": {
+          "shape": [
+            4,
+            2048
+          ],
+          "dtype": "torch.int32",
+          "device": "npu:6",
+          "stride": [
+            2048,
+            1
+          ]
+        },
+        "captured_last_layer_outputs": "NoneType",
+        "next_full_attention_layer_id": "NoneType"
+      },
+      "samples": [
+        {
+          "warmup": true,
+          "repeat": 0,
+          "device_ms": 4.85345983505249,
+          "host_submit_ms": 4.588752,
+          "host_thread_cpu_ms": 4.54415,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24531
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 1,
+          "device_ms": 4.893119812011719,
+          "host_submit_ms": 4.531501,
+          "host_thread_cpu_ms": 4.48131,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24412
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": true,
+          "repeat": 2,
+          "device_ms": 4.681779861450195,
+          "host_submit_ms": 4.551921,
+          "host_thread_cpu_ms": 4.48914,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24420
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 3,
+          "device_ms": 4.71560001373291,
+          "host_submit_ms": 4.527511,
+          "host_thread_cpu_ms": 4.48769,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24407
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 4,
+          "device_ms": 4.671800136566162,
+          "host_submit_ms": 4.49226,
+          "host_thread_cpu_ms": 4.45375,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24416
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 5,
+          "device_ms": 4.674339771270752,
+          "host_submit_ms": 4.519901,
+          "host_thread_cpu_ms": 4.46547,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24428
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 6,
+          "device_ms": 4.655580043792725,
+          "host_submit_ms": 4.507331,
+          "host_thread_cpu_ms": 4.47239,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24421
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 7,
+          "device_ms": 5.231259822845459,
+          "host_submit_ms": 4.523551,
+          "host_thread_cpu_ms": 4.45962,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24424
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 8,
+          "device_ms": 4.864659786224365,
+          "host_submit_ms": 4.522651,
+          "host_thread_cpu_ms": 4.47906,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24411
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 9,
+          "device_ms": 4.693180084228516,
+          "host_submit_ms": 4.493851,
+          "host_thread_cpu_ms": 4.45191,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24396
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 10,
+          "device_ms": 4.764100074768066,
+          "host_submit_ms": 4.506551,
+          "host_thread_cpu_ms": 4.46734,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24427
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        },
+        {
+          "warmup": false,
+          "repeat": 11,
+          "device_ms": 4.725820064544678,
+          "host_submit_ms": 4.510721,
+          "host_thread_cpu_ms": 4.47207,
+          "topk_validation": {
+            "hidden": [
+              {
+                "valid_rows": 0,
+                "padding_rows": 4,
+                "padding_differences": 24427
+              }
+            ],
+            "topk": {
+              "valid_rows": 0,
+              "padding_rows": 0,
+              "padding_differences": 0
+            }
+          },
+          "output": [
+            {
+              "shape": [
+                4,
+                6144
+              ],
+              "dtype": "torch.bfloat16",
+              "device": "npu:6",
+              "stride": [
+                6144,
+                1
+              ]
+            },
+            "NoneType"
+          ]
+        }
+      ],
+      "sequence_lengths": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "forward_mode": "4",
+      "batch_size": 4,
+      "global_num_tokens_cpu": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "global_sequence_lengths": [
+        [
+          558,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ],
+        [
+          559,
+          0,
+          0,
+          0
+        ]
+      ],
+      "function_profile": null
+    }
+  ],
+  "status": "completed",
+  "control": {
+    "id": "active3-512",
+    "forward_call": 80,
+    "training": true,
+    "input_length": 512,
+    "global_requests": 3
+  },
+  "numerical_contract": "all_logical_hidden_values_and_all_topk_columns_for_positive_kv_rows/v3"
+}

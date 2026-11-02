@@ -1,0 +1,15 @@
+{
+  "rust": [
+    "cargo test --locked --offline -p aisimulate-core --lib"
+  ],
+  "packaged": [
+    "PYTHONPATH=$PWD/python/aisimulate python3 -m pytest -q python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py python/aisimulate/tests/unit/sdk/test_opspec_coverage.py python/aisimulate/tests/unit/sdk/test_rust_engine_step.py python/aisimulate/tests/unit/collector/test_ascend_layer_export.py python/aisimulate/tests/unit/collector/test_ascend_layer_population_export.py python/aisimulate/tests/cross_package/test_single_oracle_contract.py crates/core/parity_tests/perfmodel/test_engine_step_parity.py crates/core/parity_tests/perfmodel/test_compile_engine_parity.py"
+  ],
+  "results": {
+    "rust_passed": 2132,
+    "rust_ignored": 1,
+    "packaged_passed": 539,
+    "query_contract_passed": 6
+  },
+  "limitation": "Full request TTFT still underpredicted about30percent atC4/C8; no full PD or other-topology accuracy acceptance"
+}

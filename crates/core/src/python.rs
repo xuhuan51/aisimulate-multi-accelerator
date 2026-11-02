@@ -576,8 +576,7 @@ impl AicTimingModel {
         let native = model.native_engine().context(
             "AIC regression estimator is not ready: offline replay requires trained observations or a native estimator"
         )?;
-        let group_timing =
-            worker_type != ForwardPassWorkerType::Aggregated && native.supports_ascend_dp_timing();
+        let group_timing = native.supports_ascend_dp_timing();
         let phase_provider = AicPhaseProvider::Native(Arc::clone(&native));
         let engine = Python::with_gil(|py| -> PyResult<_> {
             Ok(Py::new(py, crate::AicEngine::from_shared_engine(native))?.into_any())

@@ -125,7 +125,6 @@ impl SchedulerRank {
             "g3_offload is Replay-owned; construct it through ReplaySpec"
         );
         let group_timing = (config.backend == Backend::Sglang
-            && config.worker_type != WorkerType::Aggregated
             && identity.dp_size.get() > 1
             && timing.supports_group_timing())
         .then(|| Arc::clone(&timing));
@@ -831,13 +830,16 @@ mod tests {
         use crate::engine::generalized::{
             EngineIdentity, GeneralizedMockerEngine, SchedulerCommand,
         };
-        for duration in [25.0, f64::NAN, -1.0] {
+        for (worker_type, duration) in [WorkerType::Prefill, WorkerType::Aggregated]
+            .into_iter()
+            .flat_map(|worker_type| [25.0, f64::NAN, -1.0].map(|duration| (worker_type, duration)))
+        {
             let probe = Arc::new(GroupProbe {
                 seen: Mutex::default(),
                 duration,
             });
             let config = EngineConfig {
-                worker_type: WorkerType::Prefill,
+                worker_type,
                 num_gpu_blocks: 1024,
                 block_size: 4,
                 speedup_ratio: 2.0,
@@ -891,6 +893,60 @@ mod tests {
                 assert_eq!(probe.seen.lock().unwrap().len(), 1);
             }
         }
+    }
+
+    #[test]
+    fn aggregated_decode_timing_keeps_three_idle_dp_ranks() {
+        use crate::engine::generalized::{
+            EngineIdentity, GeneralizedMockerEngine, SchedulerCommand,
+        };
+        let probe = Arc::new(GroupProbe {
+            seen: Mutex::default(),
+            duration: 25.0,
+        });
+        let config = EngineConfig {
+            worker_type: WorkerType::Aggregated,
+            num_gpu_blocks: 1024,
+            block_size: 4,
+            ..EngineConfig::for_backend(Backend::Sglang)
+        };
+        let mut engine = GeneralizedMockerEngine::new_with_rank_factory(
+            EngineIdentity::new(42),
+            NonZeroU32::new(4).unwrap(),
+            |identity| SchedulerRank::new_with_timing_model(identity, &config, probe.clone(), 0),
+        )
+        .unwrap();
+        engine
+            .apply_command_effects(
+                SchedulerCommand::new(
+                    2,
+                    Command::Submit(Request {
+                        request_id: Uuid::from_u128(42),
+                        tokens: vec![1; 5],
+                        max_output_tokens: 3,
+                        output_token_ids: None,
+                        session_id: None,
+                    }),
+                ),
+                0.0,
+            )
+            .unwrap();
+        let prefill = engine.execute_pass(0.0).unwrap().unwrap();
+        engine
+            .complete_pass(prefill.pass_id, prefill.end_ms)
+            .unwrap();
+        let decode = engine.execute_pass(prefill.end_ms).unwrap().unwrap();
+        assert_eq!(decode.end_ms - prefill.end_ms, 25.0);
+        let seen = probe.seen.lock().unwrap();
+        assert_eq!(seen.len(), 2);
+        assert_eq!(
+            seen[1]
+                .iter()
+                .map(|rank| rank.scheduled_requests.num_decode_requests)
+                .collect::<Vec<_>>(),
+            [0, 0, 1, 0]
+        );
+        assert_eq!(seen[1][2].scheduled_requests.sum_decode_kv_tokens, 6);
     }
 
     #[test]

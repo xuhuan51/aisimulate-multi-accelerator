@@ -1,0 +1,33 @@
+{
+  "scope": "Independent native scheduler replay; fixed observed KV capacity; no serving residual or measured forward injection",
+  "image_id": "sha256:4b8fdffdb4956d305eae1923928c270e91c236b1e5cfcc6a5cf67ea1e4181a92",
+  "config_sha256": "0b9e0486d012d1804776746a392a3b19d7b578cf3db53a84bcdad498c6e22f7a",
+  "timing_scope": "isolated_kernels",
+  "status": "failed",
+  "cases": [
+    {
+      "concurrency": 1,
+      "requests": 1,
+      "command": [
+        "bash",
+        "/tgm_rent_data/data/youxingye/aisimulate-910c/scripts/run-ascend910c.sh",
+        "predict",
+        "--stack",
+        "engine",
+        "--config",
+        "/tgm_rent_data/data/youxingye/aisimulate-910c/benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/full-request-aggregate-8k1k-20261103.yaml",
+        "--capture-per-request",
+        "--output-dir",
+        "aisimulate-output/runtime-group-full-raw-8k1k-20261103/c1",
+        "--set",
+        "traffic.load.concurrency=1",
+        "--set",
+        "traffic.stop.requests=1",
+        "--set",
+        "engine.estimator_config.op_level.ascend.decode_timing_scope=isolated_kernels"
+      ],
+      "status": "running"
+    }
+  ],
+  "error": "CalledProcessError(2, ['bash', '/tgm_rent_data/data/youxingye/aisimulate-910c/scripts/run-ascend910c.sh', 'predict', '--stack', 'engine', '--config', '/tgm_rent_data/data/youxingye/aisimulate-910c/benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/full-request-aggregate-8k1k-20261103.yaml', '--capture-per-request', '--output-dir', 'aisimulate-output/runtime-group-full-raw-8k1k-20261103/c1', '--set', 'traffic.load.concurrency=1', '--set', 'traffic.stop.requests=1', '--set', 'engine.estimator_config.op_level.ascend.decode_timing_scope=isolated_kernels'])"
+}

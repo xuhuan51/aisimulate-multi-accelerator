@@ -977,6 +977,7 @@ mod tests {
                 attention_tp: 4,
                 attention_dp: 4,
                 active_attention_dp: None,
+                population_transfer: false,
                 moe_ep: 16,
                 covered_ops: vec![],
                 quantization_sha256: "1".repeat(64),
@@ -1460,7 +1461,19 @@ mod tests {
             Err(AicError::UnsupportedSchemaVersion {
                 kind: "EngineSpec",
                 got: 32,
-                expected: 33,
+                expected: 34,
+            })
+        ));
+    }
+
+    #[test]
+    fn runtime_layer_transfer_layout_rejects_schema33_before_payload_decode() {
+        assert!(matches!(
+            EngineSpec::from_bincode(&33_u32.to_le_bytes()),
+            Err(AicError::UnsupportedSchemaVersion {
+                kind: "EngineSpec",
+                got: 33,
+                expected: 34,
             })
         ));
     }

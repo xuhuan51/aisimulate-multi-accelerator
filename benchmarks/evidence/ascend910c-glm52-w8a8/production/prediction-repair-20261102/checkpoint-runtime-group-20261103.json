@@ -1,0 +1,21 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Resolve source-defined mixed-rank prefill/decode timing and ingress-to-scheduler round admission; isolate multi-DP prefill underprediction; then validate matched PD layouts and other parallel strategies. Preserve current independent full-request results and do not fit serving residuals."
+  },
+  "research": {
+    "runtime_group_repair_20261103": {
+      "implementation": "240 qualified source-bound layer coordinates, activeDP1..4 and requests1..3. Anchored skew transfer requires identical physical TP padding bucket plus measured local request/KV brackets, and reports estimated provenance. Measured policy and cross-bucket/out-of-bracket requests fail explicitly. EngineSpec schema34.",
+      "causal_bug": "AicTimingModel and SchedulerRank both excluded aggregated workers from synchronized DP timing. Fixed both gates. Previously C1 priced a uniformly active4DP population; now idle ranks pass zero in the canonical group query. Independent replay C1 TPOT changes440.877ms to406.987ms, measured405.844ms.",
+      "qualified_data": "240 rows,24 high-CV observations retained and recollected.18 held-out cases excluded from publication.12 newly routed8K short-output holdouts show steady-decode MAPE2.11..16.26percent; no global scaling or residual added.",
+      "full_request_validation": "New independent8192/1024 single-node aggregate on node25, TP16/ADP4/EP16, graph/overlap/speculation/radix off, shared-expert multistream on, actual253KV pages/rank. N=C1/4/8, each with2 client warmups. Native scheduler predictions use same configuration and frozen capacity, without measured forward injection. TPOT signed errors+0.281/+2.158/+7.744percent; input/output throughput-0.247/-1.752/-6.658percent. TTFT-2.947/-29.808/-31.257percent. This is not two-node/four-node PD acceptance.",
+      "remaining_ttft_cause": "C4 tokenizer dispatches main requests over2.654ms but first forward admits only2DP; other2DP scheduler_receives occur1604ms later. Observed forward groups are2P,4P,then2P+2D, with1593/1907/1664ms. C8 first admits1DP and later has a mixed round. Synthetic simultaneous arrivals omit this phase alignment. Multi-DP prefill kernel timing also remains low. No fixed per-request delay was fitted.",
+      "tests": "FullRust2132passed1existingignored; packagedSDK/model/collector/canonicalAPI/bothparity539passed;6 public strict/anchored/coverage query contracts passed;ruff and packaged legal checks passed.",
+      "artifacts": "production/prediction-repair-20261102/full-request-comparison-20261103; full-request-causal-gap-20261103.json; routed-holdout-comparison-20261103.json; runtime-group-validation-20261103; full-request-node25-20261103; runtime-layer-routed-publication-20261103.json",
+      "image": "aisimulate-910c:runtime-group-repair-20261103",
+      "active_resources": "All diagnostic campaigns finished; own node20 and node25 model services stopped. No other user's service stopped.",
+      "limitations": "runtime_layers is opt-in; default isolated_kernels still about50percent low for eager decode. Only qualifiedTP16/ADP4/EP16/DCP1 shapes validated. Mixed-rank prefill/decode remains explicit unsupported instead of silent uniform-DP pricing. Full PD strategy accuracy goal remains incomplete."
+    }
+  }
+}

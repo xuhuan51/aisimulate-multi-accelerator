@@ -1,0 +1,100 @@
+   Compiling aisimulate-core v0.13.0 (/tgm_rent_data/data/youxingye/aisimulate-910c/crates/core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 41s
+     Running unittests src/lib.rs (target/debug/deps/aisimulate_core-af87b37bbcf144e9)
+
+running 61 tests
+test perfmodel::fpm::estimator::ascend_tests::ascend_shape_policy_is_explicit_typed_and_round_trips ... ok
+test perfmodel::engine::ascend_dp::tests::graph_uses_shared_bucket_and_falls_back_to_eager ... ok
+test perfmodel::perf_database::ascend_deepep::tests::attention_tokens_are_padded_before_local_sharding ... ok
+test perfmodel::perf_database::ascend_shape::tests::doubles_variable_work_and_retains_the_measured_fixed_component ... ok
+test perfmodel::fpm::estimator::ascend_tests::ascend_defaults_and_explicit_overlap_survive_serialization ... ok
+test perfmodel::engine::ascend_dp::tests::eager_selects_sum_only_below_half_full_after_tp_alignment ... ok
+test perfmodel::engine::ascend_dp::tests::prefill_keeps_each_aligned_local_length ... ok
+test perfmodel::engine::ascend_dp::tests::eager_overhead_counts_real_active_ranks_before_padding ... ok
+test perfmodel::perf_database::ascend_moe_chain::tests::input_padding_precedes_routing_ratio_and_scales_are_resident ... ok
+test perfmodel::operators::ascend_logits::tests::global_head_uses_unpadded_rows_and_equal_count_exchange_only ... ok
+test perfmodel::perf_database::ascend_moe_tensor::tests::tensor_moe_pads_input_tokens_without_dividing_or_topk_expansion ... ok
+test perfmodel::perf_database::ascend_vector::tests::token_axis_padding_and_parameter_storage_are_explicit ... ok
+test perfmodel::perf_database::ascend_attention::tests::graph_padding_is_explicit_and_validated ... ok
+test perfmodel::perf_database::ascend_linear::tests::token_axis_sharding_and_padding_are_explicit ... ok
+test perfmodel::perf_database::ascend_vector::tests::sequence_length_transfer_is_eager_int32_and_has_no_resident_weights ... ok
+test perfmodel::operators::ascend_eager_overhead::tests::calibrated_elapsed_time_is_per_forward_and_empty_batches_cost_nothing ... ok
+test perfmodel::operators::ascend_eager_overhead::tests::two_and_a_half_base_plus_three_quarters_per_extra_active_rank ... ok
+test perfmodel::fpm::estimator::ascend_tests::ascend_execution_mode_survives_serialization_and_rejects_unknown_modes ... ok
+test perfmodel::engine::ascend_dp::tests::sum_len_binds_global_collective_and_expert_work_to_actual_tokens ... ok
+test perfmodel::perf_database::ascend_bmm::tests::padding_and_weight_size_use_physical_bf16_views ... ok
+test perfmodel::engine::ascend_dp::tests::measured_layers_bind_active_dp_without_charging_idle_rows_as_requests ... ok
+test perfmodel::fpm::estimator::ascend_tests::eager_residual_requires_the_current_operator_composition ... ok
+test perfmodel::fpm::config::tests::ascend_dcp_requires_logical_page_groups_and_aggregated_role ... ok
+test perfmodel::perf_database::ascend_pd::pd_extrapolation_keeps_page_rounding_and_isolates_policy_views ... ok
+test perfmodel::perf_database::ascend_layer::tests::sparse_grid_interpolates_only_inside_measured_brackets ... ok
+test perfmodel::perf_database::ascend_attention::anchored_ragged_grid_scales_only_the_missing_boundary ... ok
+test perfmodel::perf_database::ascend_vector::tests::bounds_and_role_identity_survive_prepared_lookup ... ok
+test perfmodel::engine::ascend_dp::tests::synchronized_geometry_matches_pinned_sglang_source ... ok
+test perfmodel::operators::ascend_layer::tests::seventy_eight_measured_layers_replace_instead_of_adding_covered_timings ... ok
+test perfmodel::perf_database::ascend_linear::tests::measured_brackets_keep_bias_layout_and_execution_exact ... ok
+test perfmodel::perf_database::ascend_linear::tests::primary_cannot_relabel_another_system_backend_or_version ... ok
+test perfmodel::perf_database::ascend_moe_tensor::tests::midpoint_of_one_and_three_ms_is_two_and_does_not_extrapolate ... ok
+test perfmodel::perf_database::ascend_vector::tests::separate_execution_curves_keep_separate_collection_identities ... ok
+test perfmodel::perf_database::ascend_deepep::tests::transport_lookup_keeps_phase_topology_distribution_and_bounds ... ok
+test perfmodel::perf_database::ascend_pd::tests::ascend_pd_rounds_actual_pages_and_keeps_measured_bounds ... ok
+test perfmodel::perf_database::ascend_moe_chain::tests::received_counts_interpolate_without_treating_capacity_as_work ... ok
+test perfmodel::perf_database::ascend_linear::tests::collection_identity_is_separate_per_bias_curve_but_never_mixed_inside_one ... ok
+test perfmodel::perf_database::ascend_bmm::tests::measured_tokens_interpolate_without_borrowing_heads_kernel_or_mode ... ok
+test perfmodel::perf_database::ascend_attention::tests::eager_prefill_batch_three_is_the_midpoint_of_batch_two_and_four ... ok
+test perfmodel::perf_database::ascend_linear::tests::exact_primary_accepts_both_layouts_and_respects_veto ... ok
+test perfmodel::perf_database::ascend_attention::tests::interpolate_only_measured_active_and_kv_brackets_within_capture_bucket ... ok
+test perfmodel::perf_database::ascend_linear::tests::actual_group_max_does_not_assume_bias_is_always_slower ... ok
+test perfmodel::perf_database::ascend_dcp_attention::tests::eager_prefill_interpolates_between_two_and_four_requests_without_extrapolation ... ok
+test perfmodel::perf_database::ascend_bmm::tests::primary_sources_preserve_hardware_and_runtime_identity ... ok
+test perfmodel::perf_database::ascend_vector::tests::primary_paths_never_relabel_other_systems_or_runtimes ... ok
+test perfmodel::perf_database::ascend_pd::tests::independent_curves_keep_separate_collection_identities ... ok
+test perfmodel::perf_database::ascend_dcp_attention::tests::interpolates_sequence_midpoint_then_one_third_of_active_batch_interval ... ok
+test perfmodel::perf_database::ascend_linear::tests::mixed_indexer_precision_cannot_use_bfloat16_input_rows ... ok
+test perfmodel::perf_database::ascend_attention::tests::eager_padding_uses_its_own_measured_plane ... ok
+test perfmodel::perf_database::ascend_moe_chain::tests::primary_source_is_exact_and_does_not_override_veto ... ok
+test perfmodel::perf_database::ascend_attention::tests::primary_identity_cannot_borrow_another_runtime ... ok
+test perfmodel::perf_database::ascend_attention::tests::prefill_uses_tokens_and_prefix_without_decode_padding ... ok
+test perfmodel::perf_database::ascend_linear::tests::malformed_data_never_becomes_a_coverage_miss ... ok
+test perfmodel::perf_database::ascend_deepep::tests::transport_rows_require_correct_precision_and_actual_execution ... ok
+test perfmodel::perf_database::ascend_pd::tests::ascend_pd_rejects_wrong_payload_and_unverified_replica_copies ... ok
+test perfmodel::perf_database::ascend_moe_tensor::tests::rejects_wrong_dispatcher_and_mixed_measurement_identity ... ok
+test perfmodel::perf_database::ascend_bmm::tests::wrong_strides_unverified_replays_and_duplicates_are_invalid_data ... ok
+test perfmodel::perf_database::ascend_dcp_attention::tests::rejects_token_interleaving_wrong_cache_dtype_and_incomplete_boundary ... ok
+test perfmodel::perf_database::ascend_vector::tests::invalid_geometry_verification_and_duplicate_rows_fail_closed ... ok
+test perfmodel::perf_database::ascend_attention::tests::malformed_geometry_checks_and_duplicate_rows_fail_closed ... ok
+test perfmodel::perf_database::ascend_moe_chain::tests::count_vectors_precision_and_execution_must_match_the_contract ... ok
+
+test result: ok. 61 passed; 0 failed; 0 ignored; 0 measured; 2071 filtered out; finished in 0.06s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.37s
+     Running unittests src/lib.rs (target/debug/deps/aisimulate_core-af87b37bbcf144e9)
+
+running 24 tests
+test perfmodel::engine::spec::tests::from_bincode_rejects_empty_buffer ... ok
+test perfmodel::engine::spec::tests::from_bincode_invalid_engine_json_names_json_stage ... ok
+test perfmodel::engine::spec::tests::engine_spec_round_trips_through_bincode ... ok
+test perfmodel::engine::spec::tests::from_bincode_rejects_v11_dsa_producer_at_the_version_gate ... ok
+test perfmodel::engine::spec::tests::fpm_selector_json_default_and_schema19_rejection ... ok
+test perfmodel::engine::spec::tests::dsv41_layout_round_trip_and_stale_v18_payload_rejection ... ok
+test perfmodel::engine::spec::tests::from_bincode_matching_version_corrupt_ops_names_op_payload_stage ... ok
+test perfmodel::engine::spec::tests::from_bincode_rejects_v13_gdn_producer_at_the_version_gate ... ok
+test perfmodel::engine::spec::tests::from_bincode_version_gate_fires_with_intact_payload ... ok
+test perfmodel::engine::spec::tests::from_bincode_round_trips_and_preserves_version ... ok
+test perfmodel::engine::spec::tests::fpm_interpolation_and_dcp_round_trip_and_stale_layout_rejection ... ok
+test perfmodel::engine::spec::tests::glm53_measured_round_trip_and_stale_v27_rejection ... ok
+test perfmodel::engine::spec::tests::mla_module_none_native_round_trips_followed_by_another_op ... ok
+test perfmodel::engine::spec::tests::merged_schema_preserves_fpm_selectors ... ok
+test perfmodel::engine::spec::tests::moe_and_fpm_fields_round_trip_and_reject_concurrent_schema20 ... ok
+test perfmodel::engine::spec::tests::recursive_fallback_round_trips_with_nested_children ... ok
+test perfmodel::engine::spec::tests::every_op_variant_round_trips_through_bincode ... ok
+test perfmodel::engine::spec::tests::runtime_layer_transfer_layout_rejects_schema33_before_payload_decode ... ok
+test perfmodel::engine::spec::tests::recorded_dcp_and_legacy_absence_round_trip ... ok
+test perfmodel::engine::spec::tests::runtime_layer_population_layout_rejects_schema32_before_payload_decode ... ok
+test perfmodel::engine::spec::tests::recursive_overlap_round_trips_with_nested_children ... ok
+test perfmodel::engine::spec::tests::op_variant_indices_are_pinned ... ok
+test perfmodel::engine::spec::tests::version_skew_reports_unsupported_before_payload_decode ... ok
+test perfmodel::engine::spec::tests::speculative_width_json_defaults_and_bincode_version_gate ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 2108 filtered out; finished in 0.00s
+
