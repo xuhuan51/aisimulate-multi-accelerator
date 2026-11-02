@@ -1,0 +1,96 @@
+{
+  "command": [
+    "docker",
+    "exec",
+    "-e",
+    "PYTHONUNBUFFERED=1",
+    "aisim-native-attribution-20261103",
+    "python3",
+    "-m",
+    "sglang.benchmark.serving",
+    "--backend",
+    "sglang",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "18080",
+    "--model",
+    "/models/glm-q",
+    "--served-model-name",
+    "glm-5",
+    "--dataset-name",
+    "random-ids",
+    "--num-prompts",
+    "4",
+    "--max-concurrency",
+    "4",
+    "--random-input-len",
+    "8192",
+    "--random-output-len",
+    "160",
+    "--random-range-ratio",
+    "1.0",
+    "--request-rate",
+    "inf",
+    "--warmup-requests",
+    "2",
+    "--seed",
+    "910",
+    "--tokenize-prompt",
+    "--output-details",
+    "--output-file",
+    "/campaign/operator-trace-8k-c4.jsonl"
+  ],
+  "start_unix": 1793638770.1238482,
+  "status": "completed",
+  "scope": "Two profiled steady decode iterations; trace durations are diagnostic and instrumented, not serving accuracy ground truth",
+  "profile_request": {
+    "output_dir": "/campaign/operator-trace",
+    "num_steps": 2,
+    "activities": [
+      "CPU",
+      "GPU"
+    ],
+    "with_stack": false,
+    "record_shapes": true,
+    "profile_id": "decode-8k-c4",
+    "merge_profiles": false,
+    "detailed_annotations": true
+  },
+  "profile_start_unix": 1793638833.2362309,
+  "trigger": {
+    "pid": 36,
+    "dp_rank": 0,
+    "forward_iteration": 466,
+    "launch_unix": 1793638832.7490406,
+    "scheduled_requests": {
+      "num_prefill_requests": 0,
+      "sum_prefill_tokens": 0,
+      "var_prefill_length": 0.0,
+      "sum_prefill_kv_tokens": 0,
+      "num_decode_requests": 1,
+      "sum_decode_kv_tokens": 8253,
+      "var_decode_kv_tokens": 0.0
+    },
+    "forward_mode": "DECODE",
+    "requests": [
+      {
+        "rid": "543197c1dc7b460c88ef49f0eaa4687e",
+        "bootstrap_room": null,
+        "prompt_tokens": 8192,
+        "output_tokens": 61
+      }
+    ],
+    "timed_forward_iteration": 466,
+    "reported_unix": 1793638833.1497822,
+    "elapsed_ms": 397.5250244140625,
+    "category": "decode"
+  },
+  "profile_response": {
+    "status": 200,
+    "body": "Start profiling.\n"
+  },
+  "profile_return_unix": 1793638833.6946714,
+  "returncode": 0,
+  "end_unix": 1793638897.7649813
+}
