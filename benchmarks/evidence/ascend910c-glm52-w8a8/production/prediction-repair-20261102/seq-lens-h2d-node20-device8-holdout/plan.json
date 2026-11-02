@@ -1,0 +1,88 @@
+{
+  "schema": "aisimulate-ascend-vector-plan/v1",
+  "status": "experimental_collection_plan",
+  "model_path": "/data_lib/data/models/glm-q",
+  "cases": [
+    {
+      "role": "seq_lens_h2d",
+      "dimensions": [
+        4
+      ],
+      "tokens": 1,
+      "execution_mode": "eager"
+    },
+    {
+      "role": "seq_lens_h2d",
+      "dimensions": [
+        4
+      ],
+      "tokens": 2,
+      "execution_mode": "eager"
+    },
+    {
+      "role": "seq_lens_h2d",
+      "dimensions": [
+        4
+      ],
+      "tokens": 3,
+      "execution_mode": "eager"
+    },
+    {
+      "role": "seq_lens_h2d",
+      "dimensions": [
+        4
+      ],
+      "tokens": 4,
+      "execution_mode": "eager"
+    },
+    {
+      "role": "seq_lens_h2d",
+      "dimensions": [
+        4
+      ],
+      "tokens": 8,
+      "execution_mode": "eager"
+    },
+    {
+      "role": "seq_lens_h2d",
+      "dimensions": [
+        4
+      ],
+      "tokens": 16,
+      "execution_mode": "eager"
+    },
+    {
+      "role": "seq_lens_h2d",
+      "dimensions": [
+        4
+      ],
+      "tokens": 24,
+      "execution_mode": "eager"
+    },
+    {
+      "role": "seq_lens_h2d",
+      "dimensions": [
+        4
+      ],
+      "tokens": 32,
+      "execution_mode": "eager"
+    }
+  ],
+  "protocol": {
+    "iterations": 128,
+    "warmup": 16,
+    "repeats": 11
+  },
+  "source_sha256": {
+    "config.json": "817f5fb39ca5d4c4b5648de89ca00deaea7537d8c2f130172a459252a05c1073",
+    "quant_model_description.json": "3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba",
+    "GlmMoeDsaForCausalLM_cases.yaml": "5c13d8802671c58eaac0cecfd97af1d986a8e806ceca2cff49d3b234dbb2799d",
+    "ascend_vector.yaml": "79e1e7a49c6b1de1385af1bf27e4ee6a729cd8fa1f54aeb3ab1f81ba35c70cef"
+  },
+  "source_contract": "SGLang baa9befa381511cd4d56f83980951e5a45fffc6d; vector-state-report.json and current startup memory confirm BF16 norm bias, FP32 indexer LayerNorm, BF16 RoPE cache and eager INT64/graph INT32 scatter indices. ModelSlim RMSNorm and MoE scale/add boundaries are source-audited.",
+  "runtime_selection": {
+    "role": "seq_lens_h2d",
+    "full_plan_count": 1418,
+    "full_plan_sha256": "f39398b8b3abe7eeca3893bd333eab4d63a126b9d378d9914559ba9396be4a13"
+  }
+}

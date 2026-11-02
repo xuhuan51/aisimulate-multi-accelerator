@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from collector.sglang.ascend_vector_cases import get_ascend_vector_cases
 
 pytestmark = pytest.mark.unit
@@ -29,6 +28,10 @@ def test_declared_vector_geometry_preserves_parallelism_and_precision_boundaries
     assert shapes("router_topk") == {(256, 8)}
     assert shapes("logits_finalize") == {(parallel, 154880) for parallel in (1, 2, 4, 8, 16)}
     assert max(case["tokens"] for case in cases if case["role"] == "logits_finalize") == 32
+    transfers = [case for case in cases if case["role"] == "seq_lens_h2d"]
+    assert {case["execution_mode"] for case in transfers} == {"eager"}
+    assert {tuple(case["dimensions"]) for case in transfers} == {(4,)}
+    assert {case["tokens"] for case in transfers} == {1, 2, 3, 4, 8, 16, 24, 32}
     altered = json.loads(config.read_text())
     altered["rms_norm_eps"] = 1e-6
     (tmp_path / "config.json").write_text(json.dumps(altered))

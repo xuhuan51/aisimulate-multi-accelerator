@@ -391,6 +391,10 @@ impl SglangKvManager {
         &self.cache
     }
 
+    pub(crate) fn enable_deferred_page_reuse(&mut self) {
+        self.cache.page_pool.enable_deferred_reuse();
+    }
+
     pub(crate) fn set_belady_oracle(&mut self, oracle: BeladyOracle) {
         self.cache.set_belady_oracle(oracle);
     }

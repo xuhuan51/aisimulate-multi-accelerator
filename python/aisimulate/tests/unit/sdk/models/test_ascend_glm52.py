@@ -269,6 +269,23 @@ def test_eager_decode_uses_eager_profiles_and_preserves_partitioning(model_path)
     assert model.get_resident_weights_bytes() == baseline.get_resident_weights_bytes()
 
 
+def test_sequence_lengths_follow_prefill_requests_and_padded_decode_rows(model_path):
+    config = configuration()
+    config.op_level_config = OpLevelCompileConfig(
+        {"ascend": {"decode_execution_mode": "eager"}}, system="ascend910c", backend="sglang"
+    )
+    model = get_model(model_path, config, "sglang")
+    context, generation = flattened(model.context_ops), flattened(model.generation_ops)
+    for site, layers in (("attention", 78), ("indexer", 21)):
+        prefill = context[f"context_{site}_seq_lens_h2d"][1]
+        decode = generation[f"generation_{site}_seq_lens_h2d"][1]
+        assert prefill["token_axis"] == "requests" and prefill["token_multiple"] == 1
+        assert decode["token_axis"] == "tokens" and decode["token_multiple"] == 8
+        assert prefill["scale_factor"] == decode["scale_factor"] == layers
+    graph = get_model(model_path, configuration(), "sglang")
+    assert not any("seq_lens_h2d" in name for name in flattened(graph.generation_ops))
+
+
 @pytest.mark.parametrize("global_tp,attention_dp", [(16, 4), (32, 32)])
 def test_global_logits_retains_runtime_partition_and_canonical_options(model_path, global_tp, attention_dp):
     config = configuration()
@@ -470,6 +487,7 @@ def test_synchronized_sum_len_executes_with_idle_ranks_and_rejects_mixed_phases(
 def test_eager_runtime_overhead_is_once_per_forward_with_explicit_topology(model_path):
     overhead = {
         "calibration_id": "synthetic-7.5ms-forward-residual",
+        "operator_contract": "glm52_eager_metadata/v2",
         "attention_tp": 4,
         "attention_dp": 4,
         "moe_ep_size": 16,
@@ -505,6 +523,8 @@ def test_eager_runtime_overhead_is_once_per_forward_with_explicit_topology(model
         {"decode_ms": -1.0},
         {"decode_per_extra_active_rank_ms": -1.0},
         {"calibration_id": ""},
+        {"operator_contract": ""},
+        {"operator_contract": "glm52_eager_metadata/v1"},
     ):
         with pytest.raises(ValueError, match="overhead"):
             transfer_model(
@@ -534,6 +554,7 @@ def test_eager_extra_active_rank_overhead_ignores_padding_and_request_count(mode
     options = {"decode_execution_mode": "eager", "shape_policy": "anchored", "enable_dp_lm_head": False}
     profile = {
         "calibration_id": "hand-derived-base-2.5-extra-rank-0.75",
+        "operator_contract": "glm52_eager_metadata/v2",
         "attention_tp": 4,
         "attention_dp": 4,
         "moe_ep_size": 16,

@@ -3037,7 +3037,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "User paused accuracy implementation and requested consolidation first. Completed39fresh matched offline replays and the combined2node/4node Markdown. Pending broader work: qualify allocator state change in a packaged build, model stateful cold request preparation, and resolve first-visible-text assumptions. Do not resume hardware tests or mark accuracy accepted merely from this report.",
+    "next_action": "Use matched real-module execution to isolate missing CPU submission and synchronization boundaries; keep raw operator accuracy separate from previously fitted serving results.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3209,6 +3209,16 @@
       "scope": "Uniform attention-DP work and balanced synthetic expert routing. Exactresidentinventorymatch;notservingaccuracyqualification.",
       "status": "functional_operator_level_version_delivered",
       "validation": "29Ascend,6HCCL,22wire,82Python/API and390GPUparitypass116.34s. EngineSpec29; nativeSHA239d22cd3a8b4e5f89e7faa2ae2cae88b1de38538fe2bfe938216e2d1103f36d."
+    },
+    "causal_gap_investigation_20261103": {
+      "actual_gap": "Unprofiled TP16/ADP4/EP16 steady decode takes roughly 402-414ms; raw operator model rises from197.13ms to200.86ms after metadata-copy repair. About200ms remains unexplained; serving accuracy goal is not achieved.",
+      "artifacts": "production/prediction-repair-20261102/forward-attribution-cpu-analysis-after.json; seq-lens-h2d-publication.json; static-eager-breakdown-with-metadata.json; native-attribution-node20-20261103/launch.json",
+      "checkpoint_integrity": "Prior resume reports217 historical integrity issues (one missing historical script and216 stale contexts). These have not been relabeled or silently accepted.",
+      "completed": "Measured and integrated eager DCP1 CPU int32 sequence-length copies (78 attention + 21 indexer refresh boundaries), with independent device holdouts and strict database append validation. Fixed PD deferred page-reuse order against source oracle. Old residual contracts are rejected by the changed operator model.",
+      "diagnostic": "Main thread CPU time is roughly392-398ms/forward, including driver polling. Deep CPU-span instrumentation perturbs device time by5.71%; use it for location, not latency fitting. Existing eager operator timers include host launch gaps, so host spans cannot simply be added.",
+      "status": "Causal profiling in progress; no new whole-forward residual calibration created.",
+      "tests": "2125 Rust core tests passed before final allocator wrapper adjustment;759 engine tests passed after it.449 packaged Python/collector/model/parity tests passed with current causal-repair wheel. Release wheel and Docker image built successfully.",
+      "user_direction": "User rejects fixed whole-forward residual fitting and authorizes causal profiling and fixes on node20/node25, including stopping memory-consuming services if necessary."
     },
     "checkpoint_context_transition": "Reviewed revision18 resume issues: adding the new production-goal input plan invalidated five earlier experimental-stage validation references. Their file contents are unchanged; archive these historical references rather than claim they qualify the new production goal. New native-interface controls remain explicitly distinct from serving-profile validation.",
     "cli_limitation": {
@@ -3798,6 +3808,15 @@
         "https://api.github.com/repos/sgl-project/sglang/releases/latest",
         "https://quay.io/api/v1/repository/ascend/sglang/tag/?limit=100&onlyActiveTags=true"
       ]
+    },
+    "layer_attribution_20261103": {
+      "artifacts": "production/prediction-repair-20261102/layer-replay-node20-20261103-attempt2; layer-replay-cprofile-node20-20261103; linear-parallel-node25-20261103/comparison.json; operator-trace-analysis-20261103.json; operator-trace-archive-manifest.json",
+      "completed": "Resident attention, MoE and whole decoder-layer replay for layers3/4 passed numerical output checks on all16 ranks with3 warmups and9 timed samples per boundary. Separate cProfile samples are excluded from measured samples. Same-image node25 single-worker versus16-worker linear controls completed.",
+      "profiling_limit": "Native stack and CPU/NPU profilers substantially perturb forward timing. DeepEP duration contains rank waiting; blocking metadata copies contain predecessor waits. These spans cannot be added as independent residuals. Time-line timestamps are rebased with decimal precision before interval arithmetic.",
+      "remaining_gap": "Raw operator model remains about201ms versus unprofiled402-414ms. No new whole-forward residual or fitted runtime-region prediction was introduced. The user accuracy goal remains incomplete.",
+      "resources": "Only own diagnostic containers were launched/stopped on20/25; no other service needed stopping. The pinned0.5.22 image was pulled on25. All diagnostic workloads completed and services were stopped.",
+      "result": "Layer4 rank0 isolated event medians: attention1.87084ms, MoE1.84092ms, complete layer4.83932ms. Layer3 complete layer5.09122ms. Both sampled layers reuse the indexer; these are diagnostic measurements, not full-model or full-workload accuracy acceptance.",
+      "status": "causal investigation in progress; independent metadata/page-reuse fixes verified; no serving accuracy acceptance"
     },
     "legacy_replay_regression": {
       "baseline": "a93487f9938eed211449c6d0a35661dbd711c9a5",
@@ -4568,7 +4587,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 141,
+  "revision": 143,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

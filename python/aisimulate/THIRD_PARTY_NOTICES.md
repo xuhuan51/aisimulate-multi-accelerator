@@ -839,6 +839,45 @@ under `production/scheduler-audit-node20-20261031/` records reservation,
 restoration and queue behavior. These are modified behavioral adaptations;
 no upstream source files are bundled and host KV copy timing is not measured.
 
+The deferred free-page reuse behavior in
+`crates/core/src/engine/cache/radix_cache.rs` and its activation for P/D workers in
+`crates/core/src/engine/scheduler/sglang/core.rs` independently reimplement the
+`need_sort` contracts in `python/sglang/srt/mem_cache/allocator/paged.py`,
+`hardware_backend/npu/allocator_npu.py`, and `mem_cache/kv_cache_configurator.py`
+at SGLang revision `baa9befa381511cd4d56f83980951e5a45fffc6d`
+(https://github.com/sgl-project/sglang/tree/baa9befa381511cd4d56f83980951e5a45fffc6d/python/sglang/srt;
+Copyright 2023-2026 SGLang Team and contributors; Apache-2.0).
+These are modified behavioral adaptations; no upstream implementation is copied.
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/check_pd_allocator_state.py`
+executes the pinned runtime allocator on CPU and records source hashes, page
+order, deferred releases and failed-allocation consolidation in the adjacent
+`pd-allocator-state-oracle.json`. This oracle does not measure hardware timing.
+
+The sequence-length transfer role in
+`python/aisimulate/collector/sglang/ascend_vector{,_cases,_kernels,_export}.py`,
+`crates/core/src/perfmodel/perf_database/ascend_vector.rs`, and
+`python/aisimulate/src/aisimulate_core/sdk/models/ascend_glm52.py` independently
+implements the eager CPU INT32 metadata-copy boundaries in
+`python/sglang/srt/hardware_backend/npu/attention/ascend_backend.py`,
+`layers/attention/dsa/dsa_npu_indexer.py`, and
+`model_executor/forward_batch_info.py` at the same SGLang revision
+`baa9befa381511cd4d56f83980951e5a45fffc6d` (Apache-2.0;
+Copyright 2023-2026 SGLang Team and contributors). The collector's single CPU
+thread matches `model_executor/model_runner.py::load_model`. No upstream
+implementation is copied. The independently written attribution instrumentation
+and campaigns under `prediction-repair-20261102/` invoke installed framework
+methods, record their source hashes and actual shapes, and distinguish wall time
+from main-thread CPU time. These measurements are not per-forward residual fits.
+The native stack and CPU/NPU trace campaigns, `probe_linear_submission.py`, and
+`launch_layer_replay_probe.py` in the same evidence directory are independently
+written probes of these installed APIs. The layer replay probe preserves the
+contracts of `models/deepseek_v2.py`, `layers/layer_boundary/residual/stream.py`,
+`layers/layer_boundary/output.py`, and `layers/layer_boundary/adapters/attention.py` at that
+same immutable revision. It clones diagnostic inputs and residual state and
+uses the existing CPU process group for control synchronization; no upstream
+implementation is copied. Generated source-hash records and frozen copies of
+these probes retain this attribution.
+
 The four-node serving comparison report and metric analysis scripts under
 `benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/`, the guide
 `md/910c-glm52-w8a8-four-node-serving-comparison.md` and the deployment snapshot

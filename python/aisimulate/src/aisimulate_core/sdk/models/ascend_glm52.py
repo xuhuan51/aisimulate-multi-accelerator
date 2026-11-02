@@ -350,6 +350,13 @@ def configure_ascend_glm52(model, raw_config):
                 ),
             ]
         )
+        if mode == "eager" and dcp == 1:
+            entries.extend(
+                [
+                    vector("attention_seq_lens_h2d", "seq_lens_h2d", [4], 78, requests=context),
+                    vector("indexer_seq_lens_h2d", "seq_lens_h2d", [4], 21, requests=context),
+                ]
+            )
         for role in ("query_nope", "output_prefill" if context else "output_decode"):
             entries.append(
                 {

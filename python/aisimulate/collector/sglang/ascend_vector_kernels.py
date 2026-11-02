@@ -24,7 +24,23 @@ def prepare(case, torch, torch_npu):
     def reset():
         return None
 
-    if role in {"rms_bias", "add_rms_bias"}:
+    if role == "seq_lens_h2d":
+        if dimensions != [4] or case["execution_mode"] != "eager":
+            raise ValueError("Sequence-length transfers require eager CPU INT32 metadata")
+        values = torch.arange(tokens, dtype=torch.int32, device="cpu") + 16384
+        inputs = {"lengths": values}
+        kernel = "torch.Tensor.to"
+
+        def invoke():
+            return values.to(device="npu", dtype=torch.int32)
+
+        def reference():
+            return cpu(values)
+
+        def perturb():
+            values.add_(1)
+
+    elif role in {"rms_bias", "add_rms_bias"}:
         from sglang.srt.layers.quantization.modelslim.modelslim import npu_wrapper_rmsnorm_forward
 
         width = dimensions[0]
@@ -357,8 +373,8 @@ def prepare(case, torch, torch_npu):
         for tensor, target in zip(actual, wanted, strict=True):
             value = sample_output(tensor)
             error = (value - target).abs()
-            if role == "logits_finalize" and not torch.equal(value, target):
-                raise ValueError("Vector execution numerical check failed: logits reordering/cast")
+            if role in {"logits_finalize", "seq_lens_h2d"} and not torch.equal(value, target):
+                raise ValueError(f"Vector execution exact numerical check failed: {role}")
             if not torch.all(error <= 0.02 + 0.02 * target.abs()):
                 raise ValueError(f"Vector execution numerical check failed: {role}, max={error.max().item()}")
             count += value.numel()

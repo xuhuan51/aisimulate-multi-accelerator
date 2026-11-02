@@ -12,7 +12,7 @@ use crate::engine::common::hashing::{LocalBlockHash, SequenceHash, compute_next_
 use rustc_hash::FxHashMap;
 use slotmap::{SlotMap, new_key_type};
 use std::cmp::Reverse;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, VecDeque};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -50,6 +50,12 @@ pub struct PagePool {
     free: Vec<KvPageId>,
     total_pages: usize,
     page_size: usize,
+    deferred_reuse: Option<DeferredPageReuse>,
+}
+
+#[derive(Clone, Default)]
+struct DeferredPageReuse {
+    ready: VecDeque<KvPageId>,
 }
 
 impl PagePool {
@@ -60,10 +66,39 @@ impl PagePool {
             free: Vec::new(),
             total_pages: total_tokens / page_size,
             page_size,
+            deferred_reuse: None,
         }
     }
 
+    pub(crate) fn enable_deferred_reuse(&mut self) {
+        assert_eq!(self.next_fresh, 0);
+        assert!(self.free.is_empty());
+        self.deferred_reuse = Some(DeferredPageReuse::default());
+    }
+
     pub fn allocate_pages(&mut self, count: usize) -> Option<Vec<KvPageId>> {
+        if let Some(state) = &mut self.deferred_reuse {
+            if count > state.ready.len() + self.total_pages - self.next_fresh
+                && !self.free.is_empty()
+            {
+                let mut merged: Vec<_> = state.ready.drain(..).collect();
+                merged.extend((self.next_fresh..self.total_pages).map(KvPageId));
+                merged.append(&mut self.free);
+                merged.sort_unstable();
+                state.ready = merged.into();
+                self.next_fresh = self.total_pages;
+            }
+            if count > state.ready.len() + self.total_pages - self.next_fresh {
+                return None;
+            }
+            let ready_count = count.min(state.ready.len());
+            let mut pages: Vec<_> = state.ready.drain(..ready_count).collect();
+            let fresh_count = count - ready_count;
+            pages.extend((self.next_fresh..self.next_fresh + fresh_count).map(KvPageId));
+            self.next_fresh += fresh_count;
+            return Some(pages);
+        }
+
         if self.available_pages() < count {
             return None;
         }
@@ -147,6 +182,10 @@ impl PagePool {
 
     pub fn available_pages(&self) -> usize {
         self.free.len() + self.total_pages - self.next_fresh
+            + self
+                .deferred_reuse
+                .as_ref()
+                .map_or(0, |state| state.ready.len())
     }
 
     pub fn available(&self) -> usize {
@@ -1250,6 +1289,39 @@ mod tests {
         assert!(!pool.allocate_indices_into(1, &mut destination));
         assert_eq!(destination, destination_before);
         assert_eq!(pool.available(), available_before);
+    }
+
+    #[test]
+    fn deferred_pages_recycle_only_after_ready_suffix_is_insufficient() {
+        let mut pool = PagePool::new(6 * 128, 128);
+        pool.enable_deferred_reuse();
+        let first = pool.allocate_pages(2).unwrap();
+        assert_eq!(first, vec![KvPageId(0), KvPageId(1)]);
+        pool.free_pages(&first);
+        assert_eq!(pool.available_pages(), 6);
+        let second = pool.allocate_pages(3).unwrap();
+        assert_eq!(second, vec![KvPageId(2), KvPageId(3), KvPageId(4)]);
+        pool.free_pages(&second[1..2]);
+        let after_merge = pool.allocate_pages(2).unwrap();
+        assert_eq!(after_merge, vec![KvPageId(0), KvPageId(1)]);
+        assert_eq!(pool.available_pages(), 2);
+        assert_eq!(
+            pool.allocate_pages(2).unwrap(),
+            vec![KvPageId(3), KvPageId(5)]
+        );
+    }
+
+    #[test]
+    fn deferred_failed_allocation_merges_free_storage_without_taking_pages() {
+        let mut pool = PagePool::new(4 * 128, 128);
+        pool.enable_deferred_reuse();
+        let pages = pool.allocate_pages(3).unwrap();
+        pool.free_pages(&pages[0..1]);
+        let before = pool.clone();
+        assert!(pool.allocate_pages(3).is_none());
+        assert_eq!(pool.available_pages(), before.available_pages());
+        assert_eq!(pool.allocate_pages(1).unwrap(), vec![KvPageId(0)]);
+        assert_eq!(pool.allocate_pages(1).unwrap(), vec![KvPageId(3)]);
     }
 
     #[test]

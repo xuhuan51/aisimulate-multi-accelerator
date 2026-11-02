@@ -1,0 +1,19 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Localize the remaining raw operator prediction gap with actual forward native stacks and matched operator boundaries on node20 and node25; repair source-backed omissions without fitting whole-forward residuals."
+  },
+  "research": {
+    "causal_gap_investigation_20261103": {
+      "user_direction": "User rejects fixed whole-forward residual fitting and authorizes causal profiling and fixes on node20/node25, including stopping memory-consuming services if necessary.",
+      "completed": "Measured and integrated eager DCP1 CPU int32 sequence-length copies (78 attention + 21 indexer refresh boundaries), with independent device holdouts and strict database append validation. Fixed PD deferred page-reuse order against source oracle. Old residual contracts are rejected by the changed operator model.",
+      "actual_gap": "Unprofiled TP16/ADP4/EP16 steady decode takes roughly 402-414ms; raw operator model rises from197.13ms to200.86ms after metadata-copy repair. About200ms remains unexplained; serving accuracy goal is not achieved.",
+      "diagnostic": "Main thread CPU time is roughly392-398ms/forward, including driver polling. Deep CPU-span instrumentation perturbs device time by5.71%; use it for location, not latency fitting. Existing eager operator timers include host launch gaps, so host spans cannot simply be added.",
+      "tests": "2125 Rust core tests passed before final allocator wrapper adjustment;759 engine tests passed after it.449 packaged Python/collector/model/parity tests passed with current causal-repair wheel. Release wheel and Docker image built successfully.",
+      "artifacts": "production/prediction-repair-20261102/forward-attribution-cpu-analysis-after.json; seq-lens-h2d-publication.json; static-eager-breakdown-with-metadata.json; native-attribution-node20-20261103/launch.json",
+      "checkpoint_integrity": "Prior resume reports217 historical integrity issues (one missing historical script and216 stale contexts). These have not been relabeled or silently accepted.",
+      "status": "Causal profiling in progress; no new whole-forward residual calibration created."
+    }
+  }
+}

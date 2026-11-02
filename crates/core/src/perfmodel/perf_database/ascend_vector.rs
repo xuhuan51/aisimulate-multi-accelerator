@@ -35,6 +35,7 @@ impl AscendVectorKey {
             | ("router_topk", [256, 8])
             | ("cast_weights_bf16", [32])
             | ("rope_cache_gather", [1048576, 64]) => true,
+            ("seq_lens_h2d", [4]) => self.execution_mode == "eager",
             ("rope_attention", [heads, 64, 256, 64]) => matches!(heads, 4 | 8 | 16 | 32 | 64),
             ("swiglu", [width]) => {
                 matches!(width, 64 | 128 | 256 | 384 | 512 | 768 | 1536 | 2048 | 3072)
@@ -71,7 +72,7 @@ impl AscendVectorKey {
             "logits_finalize" => {
                 "sglang.srt.layers.logits_processor.LogitsProcessor._copy_logits_to_buffer"
             }
-            "cast_hidden_fp32" | "cast_weights_bf16" => "torch.Tensor.to",
+            "cast_hidden_fp32" | "cast_weights_bf16" | "seq_lens_h2d" => "torch.Tensor.to",
             "embedding" => "torch.nn.functional.embedding",
             "rope_cache_gather" => "torch.Tensor.index_select",
             "routed_scale" => "torch.Tensor.mul_",
@@ -372,6 +373,23 @@ mod tests {
             table.query(&other, 5),
             Err(AicError::InvalidEngineConfig(_))
         ));
+    }
+
+    #[test]
+    fn sequence_length_transfer_is_eager_int32_and_has_no_resident_weights() {
+        let mut transfer = AscendVectorKey {
+            role: "seq_lens_h2d".into(),
+            dimensions: vec![4],
+            execution_mode: "eager".into(),
+        };
+        transfer.validate().unwrap();
+        assert_eq!(transfer.kernel_source(), "torch.Tensor.to");
+        assert_eq!(transfer.parameter_bytes(), 0.0);
+        transfer.execution_mode = "graph".into();
+        assert!(transfer.validate().is_err());
+        transfer.execution_mode = "eager".into();
+        transfer.dimensions = vec![8];
+        assert!(transfer.validate().is_err());
     }
 
     #[test]

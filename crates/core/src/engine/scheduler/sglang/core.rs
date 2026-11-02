@@ -200,6 +200,18 @@ impl SglangCore {
             SpeculativeDecodeSampler::new(rates, args.aic_mtp_seed.wrapping_add(seed_offset))
         });
 
+        let mut kv_manager = SglangKvManager::new_with_prefix_caching(
+            total_tokens,
+            args.block_size,
+            kv_event_publishers,
+            dp_rank,
+            args.enable_prefix_caching,
+            args.emit_kv_token_ids,
+        );
+        if matches!(args.worker_type, WorkerType::Prefill | WorkerType::Decode) {
+            kv_manager.enable_deferred_page_reuse();
+        }
+
         Self {
             config,
             dp_rank,
@@ -208,14 +220,7 @@ impl SglangCore {
             prebuilt_ready: VecDeque::new(),
             running: Vec::new(),
             new_token_ratio: SglangConfig::from_args(&args).init_new_token_ratio,
-            kv_manager: SglangKvManager::new_with_prefix_caching(
-                total_tokens,
-                args.block_size,
-                kv_event_publishers,
-                dp_rank,
-                args.enable_prefix_caching,
-                args.emit_kv_token_ids,
-            ),
+            kv_manager,
             belady: None,
             speculative_sampler,
             kv_event_buffer,

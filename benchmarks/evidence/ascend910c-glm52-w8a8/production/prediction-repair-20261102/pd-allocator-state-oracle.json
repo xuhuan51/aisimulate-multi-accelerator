@@ -1,0 +1,386 @@
+{
+  "scope": "CPU execution of the pinned Ascend paged allocator alloc/free state, not hardware timing. Source page IDs begin at1; output subtracts1 to match simulator abstract IDs.",
+  "page_size": 128,
+  "need_sort": true,
+  "source_sha256": {
+    "/sgl-workspace/sglang/python/sglang/srt/hardware_backend/npu/allocator_npu.py": "de63fdd354c691ef07f59b946746da948179182f4c1668fec44996330211036d",
+    "/sgl-workspace/sglang/python/sglang/srt/mem_cache/allocator/base.py": "e5eacbff7efa88d3dabd5117dd21950bb75a2176845fecf9ec838454fd281dfc",
+    "/sgl-workspace/sglang/python/sglang/srt/mem_cache/allocator/paged.py": "c72f28d9c5b953a05fcc0a0451307ecdbfbfb756eca3f0073f7be3eb737d38f6",
+    "/usr/local/python3.12.13/lib/python3.12/abc.py": "e558702a95cdce3febd289da021715d2b92bc43995b8a1bc58dfa1c3d8010287"
+  },
+  "recycle": [
+    {
+      "operation": {
+        "operation": "allocate",
+        "name": "first",
+        "pages": 2
+      },
+      "before": {
+        "ready_page_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "ready_cursor_elements": 0,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 6
+      },
+      "returned_pages": [
+        0,
+        1
+      ],
+      "after": {
+        "ready_page_ids": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "ready_cursor_elements": 2,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 4
+      }
+    },
+    {
+      "operation": {
+        "operation": "free",
+        "name": "first"
+      },
+      "before": {
+        "ready_page_ids": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "ready_cursor_elements": 2,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 4
+      },
+      "returned_pages": null,
+      "after": {
+        "ready_page_ids": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "ready_cursor_elements": 2,
+        "staged_pages": 2,
+        "staged_page_ids": [
+          [
+            0,
+            1
+          ]
+        ],
+        "available_pages": 6
+      }
+    },
+    {
+      "operation": {
+        "operation": "allocate",
+        "name": "second",
+        "pages": 3
+      },
+      "before": {
+        "ready_page_ids": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "ready_cursor_elements": 2,
+        "staged_pages": 2,
+        "staged_page_ids": [
+          [
+            0,
+            1
+          ]
+        ],
+        "available_pages": 6
+      },
+      "returned_pages": [
+        2,
+        3,
+        4
+      ],
+      "after": {
+        "ready_page_ids": [
+          5
+        ],
+        "ready_cursor_elements": 5,
+        "staged_pages": 2,
+        "staged_page_ids": [
+          [
+            0,
+            1
+          ]
+        ],
+        "available_pages": 3
+      }
+    },
+    {
+      "operation": {
+        "operation": "free",
+        "name": "second",
+        "start": 1,
+        "end": 2
+      },
+      "before": {
+        "ready_page_ids": [
+          5
+        ],
+        "ready_cursor_elements": 5,
+        "staged_pages": 2,
+        "staged_page_ids": [
+          [
+            0,
+            1
+          ]
+        ],
+        "available_pages": 3
+      },
+      "returned_pages": null,
+      "after": {
+        "ready_page_ids": [
+          5
+        ],
+        "ready_cursor_elements": 5,
+        "staged_pages": 3,
+        "staged_page_ids": [
+          [
+            0,
+            1
+          ],
+          [
+            3
+          ]
+        ],
+        "available_pages": 4
+      }
+    },
+    {
+      "operation": {
+        "operation": "allocate",
+        "name": "after_merge",
+        "pages": 2
+      },
+      "before": {
+        "ready_page_ids": [
+          5
+        ],
+        "ready_cursor_elements": 5,
+        "staged_pages": 3,
+        "staged_page_ids": [
+          [
+            0,
+            1
+          ],
+          [
+            3
+          ]
+        ],
+        "available_pages": 4
+      },
+      "returned_pages": [
+        0,
+        1
+      ],
+      "after": {
+        "ready_page_ids": [
+          3,
+          5
+        ],
+        "ready_cursor_elements": 2,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 2
+      }
+    },
+    {
+      "operation": {
+        "operation": "allocate",
+        "name": "tail",
+        "pages": 2
+      },
+      "before": {
+        "ready_page_ids": [
+          3,
+          5
+        ],
+        "ready_cursor_elements": 2,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 2
+      },
+      "returned_pages": [
+        3,
+        5
+      ],
+      "after": {
+        "ready_page_ids": [],
+        "ready_cursor_elements": 4,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 0
+      }
+    }
+  ],
+  "failed_allocation": [
+    {
+      "operation": {
+        "operation": "allocate",
+        "name": "first",
+        "pages": 3
+      },
+      "before": {
+        "ready_page_ids": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "ready_cursor_elements": 0,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 4
+      },
+      "returned_pages": [
+        0,
+        1,
+        2
+      ],
+      "after": {
+        "ready_page_ids": [
+          3
+        ],
+        "ready_cursor_elements": 3,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 1
+      }
+    },
+    {
+      "operation": {
+        "operation": "free",
+        "name": "first",
+        "end": 1
+      },
+      "before": {
+        "ready_page_ids": [
+          3
+        ],
+        "ready_cursor_elements": 3,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 1
+      },
+      "returned_pages": null,
+      "after": {
+        "ready_page_ids": [
+          3
+        ],
+        "ready_cursor_elements": 3,
+        "staged_pages": 1,
+        "staged_page_ids": [
+          [
+            0
+          ]
+        ],
+        "available_pages": 2
+      }
+    },
+    {
+      "operation": {
+        "operation": "allocate",
+        "name": "failed",
+        "pages": 3
+      },
+      "before": {
+        "ready_page_ids": [
+          3
+        ],
+        "ready_cursor_elements": 3,
+        "staged_pages": 1,
+        "staged_page_ids": [
+          [
+            0
+          ]
+        ],
+        "available_pages": 2
+      },
+      "returned_pages": null,
+      "after": {
+        "ready_page_ids": [
+          0,
+          3
+        ],
+        "ready_cursor_elements": 0,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 2
+      }
+    },
+    {
+      "operation": {
+        "operation": "allocate",
+        "name": "after_failed_merge",
+        "pages": 1
+      },
+      "before": {
+        "ready_page_ids": [
+          0,
+          3
+        ],
+        "ready_cursor_elements": 0,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 2
+      },
+      "returned_pages": [
+        0
+      ],
+      "after": {
+        "ready_page_ids": [
+          3
+        ],
+        "ready_cursor_elements": 1,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 1
+      }
+    },
+    {
+      "operation": {
+        "operation": "allocate",
+        "name": "tail",
+        "pages": 1
+      },
+      "before": {
+        "ready_page_ids": [
+          3
+        ],
+        "ready_cursor_elements": 1,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 1
+      },
+      "returned_pages": [
+        3
+      ],
+      "after": {
+        "ready_page_ids": [],
+        "ready_cursor_elements": 2,
+        "staged_pages": 0,
+        "staged_page_ids": [],
+        "available_pages": 0
+      }
+    }
+  ]
+}

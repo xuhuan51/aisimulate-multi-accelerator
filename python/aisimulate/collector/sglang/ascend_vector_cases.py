@@ -81,6 +81,10 @@ def get_ascend_vector_cases(model_path, case_root=None):
         for mode in base["execution_modes"]
         for tokens in (base["request_counts"] if role == "logits_finalize" else base["token_counts"])
     ]
+    cases.extend(
+        {"role": "seq_lens_h2d", "dimensions": [4], "tokens": requests, "execution_mode": "eager"}
+        for requests in base["request_counts"]
+    )
     return {
         "schema": "aisimulate-ascend-vector-plan/v1",
         "status": "experimental_collection_plan",

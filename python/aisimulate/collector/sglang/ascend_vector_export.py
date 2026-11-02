@@ -27,6 +27,12 @@ def expected_invocation(case):
             "format": storage_format,
         }
 
+    if role == "seq_lens_h2d" and dimensions == [4] and case["execution_mode"] == "eager":
+        return (
+            {"lengths": {**tensor([tokens], "int32", storage_format=None), "device": "cpu", "pinned": False}},
+            tensor([tokens], "int32"),
+            "torch.Tensor.to",
+        )
     if role in {"rms_bias", "add_rms_bias"} and dimensions == [6144]:
         values, parameter = tensor([tokens, 6144]), tensor([6144])
         return (
@@ -145,13 +151,14 @@ def matches_signature(actual, expected):
         if not isinstance(actual, dict) or actual.keys() != expected.keys():
             return False
         if "shape" in expected:
-            if any(
-                type(value) is not int
-                for value in actual["shape"] + actual["stride"] + [actual["storage_offset"], actual["format"]]
-            ):
+            if any(type(value) is not int for value in actual["shape"] + actual["stride"] + [actual["storage_offset"]]):
+                return False
+            if expected["format"] is not None and type(actual["format"]) is not int:
+                return False
+            if "pinned" in expected and type(actual["pinned"]) is not bool:
                 return False
             return (
-                all(actual[field] == expected[field] for field in ("shape", "dtype", "storage_offset", "format"))
+                all(actual[field] == expected[field] for field in expected if field != "stride")
                 and len(actual["stride"]) == len(expected["stride"])
                 and all(
                     size == 1 or value == wanted

@@ -211,7 +211,8 @@ explicit Ascend controls.
 | `decode_execution_mode` | `graph` | `graph` selects captured decode profiles and padding buckets; `eager` selects eager profiles with attention-TP token alignment. Missing eager identities fail explicitly. Prefill remains eager. This does not control scheduler overlap or CPU launch overhead. |
 | `enable_dp_lm_head` | `true` | Matches SGLang's output-layer grouping. `true` retains attention-local TP; `false` uses global TP, sums actual output-request counts across attention DP, and includes DP hidden-state reduction and TP logits exchange. Set separately for each worker role to match its launch flags. |
 | `enable_tp_lm_head_all_to_all` | `false` | With global LM head, uses measured all-to-all only for equal nonzero row counts with attention DP equal to global TP; other batches use all-gather. Local logits cast is measured; additional reordering/scatter and CPU synchronization remain unqualified. This path is reported as estimated composition. |
-| `eager_runtime_overhead` | omitted | Optional additive per-forward residual calibrated from unprofiled forward telemetry. Requires `calibration_id`, `attention_tp`, `attention_dp`, `moe_ep_size`, `prefill_ms`, and `decode_ms`. Timings must be finite and nonnegative. The topology must match the canonical identity; currently restricted to SGLang 0.5.22 and eager execution. |
+| `eager_runtime_overhead` | omitted | Optional additive per-forward residual calibrated from unprofiled forward telemetry. Requires `calibration_id`, `operator_contract`, `attention_tp`, `attention_dp`, `moe_ep_size`, `prefill_ms`, and `decode_ms`. Timings must be finite and nonnegative. The topology must match the canonical identity; currently restricted to SGLang 0.5.22 and eager execution. |
+| `eager_runtime_overhead.operator_contract` | no compatible default | Must be `glm52_eager_metadata/v2`, binding an explicitly supplied calibration to the composition that includes measured CPU-to-NPU sequence-length transfers. Missing or older identities fail; remove the whole residual setting for operator-only prediction. |
 | `eager_runtime_overhead.decode_per_extra_active_rank_ms` | `0` | Optional finite nonnegative decode residual per additional attention-DP rank with real requests. Uses the actual synchronized rank vector before padding, not batch size or total configured DP. Fit separately from the base `decode_ms` and retain independent validation. |
 | `kv_transfer_page_layout` | `contiguous` | Selects the measured PD page pattern: `contiguous` or `fragmented`. Both role models must agree; applies when `engine.kv_transfer.type: measured`. |
 | `shape_policy` | `measured` | `measured` requires measured interpolation brackets. `anchored` preserves covered queries and estimates missing numeric coordinates using same-identity boundary measurements and analytical work ratios. It never substitutes hardware, precision, kernel, topology or graph capture buckets. Both PD roles must agree. |
@@ -225,6 +226,22 @@ the referenced raw observations, calibration rule, software/environment identity
 and held-out validation with the calibration ID. No default overhead is inferred
 from hardware/model names or copied to unmeasured parallel strategies. Static
 diagnostics, replay, and search use the same serialized control.
+
+The eager DCP=1 composition queries CPU INT32 sequence-length transfer profiles
+for each of the 78 attention calls and 21 indexer refreshes. Prefill uses request
+counts; decode uses padded rows, including the synchronized attention-DP layout.
+Graph decode does not incur these copies. These measurements do not include the
+attention/indexer kernels and do not add resident model weights. The source
+contract is SGLang `baa9befa381511cd4d56f83980951e5a45fffc6d`,
+`hardware_backend/npu/attention/ascend_backend.py::forward_sparse` and
+`layers/attention/dsa/dsa_npu_indexer.py::forward_npu`.
+
+Residuals fitted before these transfers were modeled absorb at least some of
+their cost. They are incompatible with the updated composition. Do not merely
+add the new contract string to old coefficients. Historical calibrated reports
+remain reproducible with their original frozen simulator image; root-cause
+validation of the updated model must omit `eager_runtime_overhead` entirely.
+No new empirical residual profile is supplied with this correction.
 
 For a nonempty decode group with `active` real attention-DP ranks, the optional
 rank term gives `decode_ms + (active - 1) * decode_per_extra_active_rank_ms`.

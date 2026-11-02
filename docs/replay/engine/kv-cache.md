@@ -26,6 +26,14 @@ request with one output token completes after prefill without allocating a
 decode page. Requests with longer outputs compete for decode memory at the
 following decode admission, rather than delaying already sampled first tokens.
 
+SGLang P/D workers defer reuse of freed pages. They consume the remaining
+ready list first; when an allocation cannot fit that list, they merge and
+sort deferred releases before checking capacity. An unsuccessful allocation
+can therefore consolidate the free list without consuming pages. This follows
+the runtime's `need_sort` policy, including destination reservations and decode
+page growth. It does not add a cold kernel compilation latency: that depends on
+runtime compiler cache contents and allocation signatures, beyond page capacity.
+
 Under decode memory pressure, SGLang's default length policy retracts the
 request with the fewest generated tokens, then the longest original prompt.
 Exact ties retract the last request in batch order. If the last surviving

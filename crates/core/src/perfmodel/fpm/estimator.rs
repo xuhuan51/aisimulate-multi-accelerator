@@ -63,6 +63,8 @@ impl Default for AscendOpLevelConfig {
 #[serde(deny_unknown_fields)]
 pub struct AscendEagerRuntimeOverhead {
     pub calibration_id: String,
+    #[serde(default)]
+    pub operator_contract: String,
     pub attention_tp: u32,
     pub attention_dp: u32,
     pub moe_ep_size: u32,
@@ -83,6 +85,11 @@ impl OpLevelConfig {
     pub(crate) fn validate_for(&self, system: &str, backend: &str) -> Result<(), AicError> {
         if let Some(options) = &self.ascend {
             if let Some(overhead) = &options.eager_runtime_overhead {
+                if overhead.operator_contract != "glm52_eager_metadata/v2" {
+                    return Err(AicError::InvalidEngineConfig(
+                        "Ascend eager runtime overhead predates the measured sequence-length transfers or has an incompatible operator_contract; remove eager_runtime_overhead to use operator-only prediction. Old residual timings must not be relabeled as glm52_eager_metadata/v2".into(),
+                    ));
+                }
                 if options.decode_execution_mode != AscendExecutionMode::Eager
                     || overhead.calibration_id.trim().is_empty()
                     || overhead.attention_tp == 0
@@ -140,6 +147,34 @@ impl OpLevelConfig {
 #[cfg(test)]
 mod ascend_tests {
     use super::*;
+
+    #[test]
+    fn eager_residual_requires_the_current_operator_composition() {
+        let legacy = serde_json::json!({"ascend": {
+            "decode_execution_mode": "eager",
+            "eager_runtime_overhead": {
+                "calibration_id": "synthetic-contract-check",
+                "attention_tp": 4, "attention_dp": 4, "moe_ep_size": 16,
+                "prefill_ms": 0.0, "decode_ms": 0.0
+            }
+        }});
+        let mut stale: OpLevelConfig = serde_json::from_value(legacy.clone()).unwrap();
+        assert!(
+            stale
+                .resolve_for("ascend910c", "sglang")
+                .unwrap_err()
+                .to_string()
+                .contains("operator_contract")
+        );
+        let mut compatible = legacy;
+        compatible["ascend"]["eager_runtime_overhead"]["operator_contract"] =
+            serde_json::json!("glm52_eager_metadata/v2");
+        let mut current: OpLevelConfig = serde_json::from_value(compatible).unwrap();
+        current.resolve_for("ascend910c", "sglang").unwrap();
+        let restored: OpLevelConfig =
+            serde_json::from_str(&serde_json::to_string(&current).unwrap()).unwrap();
+        assert_eq!(restored, current);
+    }
 
     #[test]
     fn ascend_defaults_and_explicit_overlap_survive_serialization() {

@@ -1,0 +1,18 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Use matched real-module execution to isolate missing CPU submission and synchronization boundaries; keep raw operator accuracy separate from previously fitted serving results."
+  },
+  "research": {
+    "layer_attribution_20261103": {
+      "completed": "Resident attention, MoE and whole decoder-layer replay for layers3/4 passed numerical output checks on all16 ranks with3 warmups and9 timed samples per boundary. Separate cProfile samples are excluded from measured samples. Same-image node25 single-worker versus16-worker linear controls completed.",
+      "result": "Layer4 rank0 isolated event medians: attention1.87084ms, MoE1.84092ms, complete layer4.83932ms. Layer3 complete layer5.09122ms. Both sampled layers reuse the indexer; these are diagnostic measurements, not full-model or full-workload accuracy acceptance.",
+      "profiling_limit": "Native stack and CPU/NPU profilers substantially perturb forward timing. DeepEP duration contains rank waiting; blocking metadata copies contain predecessor waits. These spans cannot be added as independent residuals. Time-line timestamps are rebased with decimal precision before interval arithmetic.",
+      "remaining_gap": "Raw operator model remains about201ms versus unprofiled402-414ms. No new whole-forward residual or fitted runtime-region prediction was introduced. The user accuracy goal remains incomplete.",
+      "resources": "Only own diagnostic containers were launched/stopped on20/25; no other service needed stopping. The pinned0.5.22 image was pulled on25. All diagnostic workloads completed and services were stopped.",
+      "artifacts": "production/prediction-repair-20261102/layer-replay-node20-20261103-attempt2; layer-replay-cprofile-node20-20261103; linear-parallel-node25-20261103/comparison.json; operator-trace-analysis-20261103.json; operator-trace-archive-manifest.json",
+      "status": "causal investigation in progress; independent metadata/page-reuse fixes verified; no serving accuracy acceptance"
+    }
+  }
+}

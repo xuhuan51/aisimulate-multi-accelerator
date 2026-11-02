@@ -2,7 +2,6 @@ import hashlib
 import json
 
 import pytest
-
 from collector.sglang.ascend_vector_export import expected_invocation, matches_signature, validated_rows
 
 pytestmark = pytest.mark.unit
@@ -84,6 +83,19 @@ def test_singleton_stride_is_irrelevant_but_query_head_stride_and_offset_are_not
     actual = json.loads(json.dumps(expected))
     actual["query"]["storage_offset"] = 0
     assert not matches_signature(actual, expected)
+
+
+def test_sequence_length_copy_requires_cpu_int32_unpinned_input():
+    case = {"role": "seq_lens_h2d", "dimensions": [4], "tokens": 3, "execution_mode": "eager"}
+    inputs, outputs, kernel = expected_invocation(case)
+    assert outputs["shape"] == [3] and outputs["dtype"] == "torch.int32"
+    assert kernel == "torch.Tensor.to" and matches_signature(inputs, inputs)
+    for field, wrong in (("device", "npu"), ("pinned", True), ("dtype", "torch.int64"), ("format", 2)):
+        altered = json.loads(json.dumps(inputs))
+        altered["lengths"][field] = wrong
+        assert not matches_signature(altered, inputs)
+    with pytest.raises(ValueError, match="Unsupported vector"):
+        expected_invocation({**case, "execution_mode": "graph"})
 
 
 def test_unstable_rows_are_reported_and_partial_grid_cannot_publish(campaign):

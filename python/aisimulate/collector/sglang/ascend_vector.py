@@ -52,7 +52,7 @@ def main():
         raise ValueError("Reaudit vector dispatch for this runtime")
     init_npu_backend()
     torch.npu.set_device(args.device)
-    torch.set_num_threads(8)
+    torch.set_num_threads(1)
     torch.set_grad_enabled(False)
     filtered = [
         (index, case)
@@ -67,8 +67,7 @@ def main():
         "schema": "aisimulate-ascend-vector-observations/v1",
         "status": "running",
         "scope": (
-            "Source-matched standalone vector boundaries; synthetic values and warm buffers; "
-            "not whole-forward accuracy"
+            "Source-matched standalone vector boundaries; synthetic values and warm buffers; not whole-forward accuracy"
         ),
         "plan_sha256": hashlib.sha256(args.plan.read_bytes()).hexdigest(),
         "collector_source_sha256": {
@@ -87,6 +86,7 @@ def main():
             "driver_version_info": Path("/usr/local/Ascend/driver/version.info").read_text(),
             "serving_setup": setup,
             "cpu_affinity": sorted(os.sched_getaffinity(0)),
+            "torch_num_threads": torch.get_num_threads(),
         },
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -101,7 +101,8 @@ def main():
                 "stride": list(value.stride()),
                 "storage_offset": value.storage_offset(),
                 "dtype": str(value.dtype),
-                "format": torch_npu.get_npu_format(value),
+                "format": torch_npu.get_npu_format(value) if value.device.type != "cpu" else None,
+                **({"device": "cpu", "pinned": value.is_pinned()} if value.device.type == "cpu" else {}),
             }
         if isinstance(value, (list, tuple)):
             return [describe(item) for item in value]
