@@ -1,0 +1,68 @@
+Processing ./build/runtime-layer-repair-20261103/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl
+Processing ./build/validation-tools/pytest_timeout-2.3.1-py3-none-any.whl
+Processing ./build/validation-tools/pytest_asyncio-0.26.0-py3-none-any.whl
+Processing ./build/validation-tools/ruff-0.14.1-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+Installing collected packages: ruff, pytest-timeout, pytest-asyncio, aisimulate
+  Attempting uninstall: aisimulate
+    Found existing installation: aisimulate 0.13.0
+    Uninstalling aisimulate-0.13.0:
+      Successfully uninstalled aisimulate-0.13.0
+
+Successfully installed aisimulate-0.13.0 pytest-asyncio-0.26.0 pytest-timeout-2.3.1 ruff-0.14.1
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+All checks passed!
+5 files already formatted
+/usr/local/python3.12.13/lib/python3.12/site-packages/pytest_asyncio/plugin.py:217: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+...................F.................................................... [ 16%]
+........................................................................ [ 32%]
+........................................................................ [ 48%]
+........................................................................ [ 65%]
+........................................................................ [ 81%]
+........................................................................ [ 97%]
+..........                                                               [100%]
+=================================== FAILURES ===================================
+______ test_explicit_serial_shared_experts_survive_saved_engine_identity _______
+
+model_path = '/tmp/pytest-of-root/pytest-0/ascend-forward-model0'
+
+    def test_explicit_serial_shared_experts_survive_saved_engine_identity(model_path):
+        config = configuration()
+        config.op_level_config = OpLevelCompileConfig(
+            {"ascend": {"shared_expert_overlap": False}}, system="ascend910c", backend="sglang"
+        )
+        model = get_model(model_path, config, "sglang")
+        assert all("Overlap" not in json.loads(operation._spec_json()) for operation in model.generation_ops)
+        assert model.get_resident_weights_bytes() == 52_471_997_948
+        engine = _engine_config_dict(
+            model=model,
+            model_path=model_path,
+            system="ascend910c",
+            backend="sglang",
+            backend_version="0.5.22",
+            kv_block_size=128,
+            systems_path=None,
+            nextn=0,
+        )
+        saved = json.loads(engine["extra"]["estimator_config"])
+>       assert saved["op_level"]["ascend"] == {
+            "shared_expert_overlap": False,
+            "decode_execution_mode": "graph",
+            "enable_dp_lm_head": True,
+            "enable_tp_lm_head_all_to_all": False,
+            "routing": "balanced",
+            "kv_transfer_page_layout": "contiguous",
+        }
+E       AssertionError: assert {'decode_exec...': False, ...} == {'decode_exec...tiguous', ...}
+E         
+E         Omitting 6 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'decode_timing_scope': 'isolated_kernels'}
+E         Use -v to get more diff
+
+python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py:275: AssertionError
+=========================== short test summary info ============================
+FAILED python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py::test_explicit_serial_shared_experts_survive_saved_engine_identity
+1 failed, 441 passed in 318.11s (0:05:18)

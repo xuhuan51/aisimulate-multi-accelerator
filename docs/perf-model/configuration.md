@@ -209,6 +209,7 @@ explicit Ascend controls.
 | `routing` | `balanced` | Uses the measured synthetic balanced expert-count profile. Other distributions are not yet supported by the complete model composition. |
 | `shared_expert_overlap` | `true` | Overlaps the shared expert with routed work where the pinned runtime permits it. Tensor-MoE prefill stays serial; its decode and the DeepEP path may overlap. `false` adds the streams serially. |
 | `decode_execution_mode` | `graph` | `graph` selects captured decode profiles and padding buckets; `eager` selects eager profiles with attention-TP token alignment. Missing eager identities fail explicitly. Prefill remains eager. This does not control scheduler overlap or CPU launch overhead. |
+| `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations. It includes their eager host dispatch, stream management and communication boundaries. Requires eager TP16/ADP4/EP16/DCP1, shared-expert multistream execution, balanced DP requests and measured request/KV brackets. Other topologies, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
 | `enable_dp_lm_head` | `true` | Matches SGLang's output-layer grouping. `true` retains attention-local TP; `false` uses global TP, sums actual output-request counts across attention DP, and includes DP hidden-state reduction and TP logits exchange. Set separately for each worker role to match its launch flags. |
 | `enable_tp_lm_head_all_to_all` | `false` | With global LM head, uses measured all-to-all only for equal nonzero row counts with attention DP equal to global TP; other batches use all-gather. Local logits cast is measured; additional reordering/scatter and CPU synchronization remain unqualified. This path is reported as estimated composition. |
 | `eager_runtime_overhead` | omitted | Optional additive per-forward residual calibrated from unprofiled forward telemetry. Requires `calibration_id`, `operator_contract`, `attention_tp`, `attention_dp`, `moe_ep_size`, `prefill_ms`, and `decode_ms`. Timings must be finite and nonnegative. The topology must match the canonical identity; currently restricted to SGLang 0.5.22 and eager execution. |
@@ -216,6 +217,22 @@ explicit Ascend controls.
 | `eager_runtime_overhead.decode_per_extra_active_rank_ms` | `0` | Optional finite nonnegative decode residual per additional attention-DP rank with real requests. Uses the actual synchronized rank vector before padding, not batch size or total configured DP. Fit separately from the base `decode_ms` and retain independent validation. |
 | `kv_transfer_page_layout` | `contiguous` | Selects the measured PD page pattern: `contiguous` or `fragmented`. Both role models must agree; applies when `engine.kv_transfer.type: measured`. |
 | `shape_policy` | `measured` | `measured` requires measured interpolation brackets. `anchored` preserves covered queries and estimates missing numeric coordinates using same-identity boundary measurements and analytical work ratios. It never substitutes hardware, precision, kernel, topology or graph capture buckets. Both PD roles must agree. |
+
+`runtime_layers` is a coarser operator boundary, not an additive correction to
+whole-forward measurements. Its table contains the isolated invocation of each
+of eight structural layer types. The engine combines them using the audited
+GLM layer counts, replaces all covered timings, and retains the covered
+operations only for resident-weight accounting. The scope includes real Python
+and runtime work around kernels; it must not be described as pure device-kernel
+time. The table never extrapolates beyond measured request/KV brackets, even if
+`shape_policy` permits extrapolation for the independent kernel tables. A missing
+profile fails explicitly. This opt-in scope is not a claim of complete PD search
+coverage or measured end-to-end serving accuracy.
+Layer profiles use the model-selected experts from the captured inputs, bind the
+ModelSlim descriptor SHA256, and expose `decode_routing:
+captured_model_selected_top8` in execution assumptions. The `routing` option
+continues to describe the independent kernel tables used by prefill; these
+layer observations are not labeled as synthetic balanced expert routing.
 
 `eager_runtime_overhead` preserves the raw operator estimates and adds a separately
 named, `estimated` runtime contribution once per nonempty forward, including

@@ -68,6 +68,42 @@ def test_resident_inventory_matches_loaded_united_parameters(model_path):
     assert context["context_logits_finalize"][1]["token_axis"] == "requests"
 
 
+def test_runtime_layers_replace_timing_and_preserve_resident_weights(model_path):
+    config = configuration()
+    config.tp_size, config.attention_dp_size = 4, 4
+    settings = {"decode_execution_mode": "eager"}
+    config.op_level_config = OpLevelCompileConfig({"ascend": settings}, system="ascend910c", backend="sglang")
+    isolated = get_model(model_path, config, "sglang")
+    settings = {**settings, "decode_timing_scope": "runtime_layers"}
+    config.op_level_config = OpLevelCompileConfig({"ascend": settings}, system="ascend910c", backend="sglang")
+    replacement = get_model(model_path, config, "sglang")
+    assert [op._spec_json() for op in replacement.context_ops] == [op._spec_json() for op in isolated.context_ops]
+    assert sum(op.get_weights() for op in replacement.generation_ops) == sum(
+        op.get_weights() for op in isolated.generation_ops
+    )
+    specs = flattened(replacement.generation_ops)
+    assert "generation_qkv_a" not in specs
+    assert "generation_attention_seq_lens_h2d" not in specs
+    assert "generation_global_logits" not in specs
+    assert "generation_logits_gemm" in specs
+    kind, layers = specs["generation_decoder_layers"]
+    assert kind == "AscendDecoderLayers"
+    assert (layers["attention_tp"], layers["attention_dp"], layers["moe_ep"]) == (4, 4, 16)
+    assert layers["covered_ops"]
+    assert "generation_eager_runtime_overhead" not in specs
+
+
+def test_runtime_layer_profile_cannot_migrate_to_unmeasured_topology(model_path):
+    config = configuration()
+    config.op_level_config = OpLevelCompileConfig(
+        {"ascend": {"decode_execution_mode": "eager", "decode_timing_scope": "runtime_layers"}},
+        system="ascend910c",
+        backend="sglang",
+    )
+    with pytest.raises(InvalidEngineConfigurationError, match="TP16/ADP4/EP16/DCP1"):
+        get_model(model_path, config, "sglang")
+
+
 def test_decode_padding_preserves_global_dense_and_rank_local_expert_shapes(model_path):
     model = get_model(model_path, configuration(), "sglang")
     decoded = [json.loads(operation._spec_json()) for operation in model.generation_ops]
@@ -239,6 +275,7 @@ def test_explicit_serial_shared_experts_survive_saved_engine_identity(model_path
     assert saved["op_level"]["ascend"] == {
         "shared_expert_overlap": False,
         "decode_execution_mode": "graph",
+        "decode_timing_scope": "isolated_kernels",
         "enable_dp_lm_head": True,
         "enable_tp_lm_head_all_to_all": False,
         "routing": "balanced",

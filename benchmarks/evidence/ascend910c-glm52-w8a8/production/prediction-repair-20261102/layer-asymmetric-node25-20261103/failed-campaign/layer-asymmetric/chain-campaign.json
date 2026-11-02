@@ -1,0 +1,172 @@
+{
+  "scope": "Real-layer invocation profiles and independent workload holdouts; no forward residual fit",
+  "status": "failed",
+  "cases": [
+    {
+      "id": "active1-8192",
+      "forward_call": 80,
+      "training": true,
+      "input_length": 8192,
+      "global_requests": 1,
+      "command": [
+        "docker",
+        "exec",
+        "aisim-layer-asymmetric-20261103",
+        "python3",
+        "-m",
+        "sglang.benchmark.serving",
+        "--backend",
+        "sglang",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18080",
+        "--model",
+        "/models/glm-q",
+        "--served-model-name",
+        "glm-5",
+        "--dataset-name",
+        "random-ids",
+        "--num-prompts",
+        "1",
+        "--max-concurrency",
+        "1",
+        "--random-input-len",
+        "8192",
+        "--random-output-len",
+        "192",
+        "--random-range-ratio",
+        "1.0",
+        "--request-rate",
+        "inf",
+        "--warmup-requests",
+        "2",
+        "--seed",
+        "910",
+        "--tokenize-prompt",
+        "--output-details",
+        "--output-file",
+        "/campaign/active1-8192/requests.jsonl"
+      ],
+      "start_unix": 1793650644.611645,
+      "status": "completed",
+      "end_unix": 1793650813.9568627,
+      "returncode": 0,
+      "captured_dp_requests": [
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "active2-8192",
+      "forward_call": 80,
+      "training": true,
+      "input_length": 8192,
+      "global_requests": 2,
+      "command": [
+        "docker",
+        "exec",
+        "aisim-layer-asymmetric-20261103",
+        "python3",
+        "-m",
+        "sglang.benchmark.serving",
+        "--backend",
+        "sglang",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18080",
+        "--model",
+        "/models/glm-q",
+        "--served-model-name",
+        "glm-5",
+        "--dataset-name",
+        "random-ids",
+        "--num-prompts",
+        "2",
+        "--max-concurrency",
+        "2",
+        "--random-input-len",
+        "8192",
+        "--random-output-len",
+        "192",
+        "--random-range-ratio",
+        "1.0",
+        "--request-rate",
+        "inf",
+        "--warmup-requests",
+        "2",
+        "--seed",
+        "910",
+        "--tokenize-prompt",
+        "--output-details",
+        "--output-file",
+        "/campaign/active2-8192/requests.jsonl"
+      ],
+      "start_unix": 1793650813.9782658,
+      "status": "running",
+      "end_unix": 1793651538.8732092,
+      "returncode": 137
+    }
+  ],
+  "plan": [
+    [
+      "active1-8192",
+      8192,
+      1,
+      true
+    ],
+    [
+      "active2-8192",
+      8192,
+      2,
+      true
+    ],
+    [
+      "active3-8192",
+      8192,
+      3,
+      true
+    ],
+    [
+      "active1-512",
+      512,
+      1,
+      true
+    ],
+    [
+      "active2-512",
+      512,
+      2,
+      true
+    ],
+    [
+      "active3-512",
+      512,
+      3,
+      true
+    ],
+    [
+      "active1-16384",
+      16384,
+      1,
+      true
+    ],
+    [
+      "active2-16384",
+      16384,
+      2,
+      true
+    ],
+    [
+      "active3-16384",
+      16384,
+      3,
+      true
+    ]
+  ],
+  "source_sha256": "c471f8be086d5f6a765fe64f46f2116b2b6da1412a2abe90327ec16ca29ebf44",
+  "error": "CalledProcessError(137, ['docker', 'exec', 'aisim-layer-asymmetric-20261103', 'python3', '-m', 'sglang.benchmark.serving', '--backend', 'sglang', '--host', '127.0.0.1', '--port', '18080', '--model', '/models/glm-q', '--served-model-name', 'glm-5', '--dataset-name', 'random-ids', '--num-prompts', '2', '--max-concurrency', '2', '--random-input-len', '8192', '--random-output-len', '192', '--random-range-ratio', '1.0', '--request-rate', 'inf', '--warmup-requests', '2', '--seed', '910', '--tokenize-prompt', '--output-details', '--output-file', '/campaign/active2-8192/requests.jsonl'], None, None)"
+}

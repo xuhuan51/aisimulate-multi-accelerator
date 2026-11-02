@@ -605,6 +605,7 @@ impl Availability<'_> {
             AscendLinear(linear) => linear.ensure_ready(self.db),
             AscendLogits(logits) => logits.ensure_ready(self.db),
             AscendEagerOverhead(overhead) => overhead.validate(),
+            AscendDecoderLayers(layers) => layers.ensure_ready(self.db),
             AscendAttention(attention) => attention.ensure_ready(self.db),
             AscendDcpAttention(attention) => attention.ensure_ready(self.db),
             AscendBmm(bmm) => bmm.ensure_ready(self.db),

@@ -971,6 +971,15 @@ mod tests {
                     active_ranks: Some(2),
                 },
             ),
+            OpSpec::AscendDecoderLayers(crate::operators::ascend_layer::AscendDecoderLayersOp {
+                name: "ascend_decoder_layers".into(),
+                scale_factor: 1.0,
+                attention_tp: 4,
+                attention_dp: 4,
+                moe_ep: 16,
+                covered_ops: vec![],
+                quantization_sha256: "1".repeat(64),
+            }),
         ];
 
         // Exhaustiveness guard: if a variant is added to `Op`, this match
@@ -1038,6 +1047,7 @@ mod tests {
                 OpSpec::AscendEagerOverhead(overhead) => {
                     overhead.validate().unwrap();
                 }
+                OpSpec::AscendDecoderLayers(layers) => layers.validate().unwrap(),
             }
         }
         ops
@@ -1212,7 +1222,12 @@ mod tests {
             "Ascend eager overhead appended index moved"
         );
         assert_eq!(
+            index_of(&all_op_variants()[57]),
             57,
+            "Ascend decoder layers appended index moved"
+        );
+        assert_eq!(
+            58,
             all_op_variants().len(),
             "all_op_variants() must cover exactly the pinned variant count"
         );

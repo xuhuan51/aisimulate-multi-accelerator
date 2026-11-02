@@ -1,0 +1,21 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Expand real decoder-layer invocation profiles across running batch and inactive attention-DP paths on node20/node25, then validate full request latency and PD composition without fitted residuals."
+  },
+  "research": {
+    "runtime_layer_attribution_20261103": {
+      "cause": "Independent kernel calls omit the real eager layer invocation chain, including host/runtime submission, tensor and stream boundaries and distributed arrival dependencies. Same-model linear controls are approximately0.074ms, while architecture-weighted real layer replay approaches unprofiled full-forward time. No single profiler span is treated as an additive residual.",
+      "implementation": "Opt-in ascend.decode_timing_scope=runtime_layers replaces covered decode kernel timing with measured actual decoder-layer classes0,1,2,3,4,5,6,77 repeated1,1,1,1,37,18,18,1. Covered operations retain memory inventory only. Canonical Rust estimator, versioned numerical contract, bounded request/KV interpolation, quantization/source identities; no new residual fit.",
+      "published": "24 qualified measurements;3 high-CV observations retained and recollected; all3 holdouts excluded from table construction. Canonical runtime_layer/sglang/0.5.22 dataset. Collection metadata v2/layout correction preserves identical measurement parquet SHA58f2ee3cc6823f541eb48dc7cb96e34df5a7325a5461a876853178a54f6e39ac.",
+      "validation": "Native paired steady-forward8K/C4:407.896942ms measured,200.870441ms independent kernels,420.005933ms runtime layers; per-stepMAPE51.2543%->4.3492%. Untrained4K/C4:411.091644ms measured,421.527706ms runtime layers;MAPE4.2076%. Both new images reproduce these values. Not full8K/1K TTFT/TPOT/throughput acceptance.",
+      "test_status": "Full Rust core initial run2127pass1failure1ignored; only enum cardinality assertion failed, then corrected and22 schema tests pass. Packaged Python/collector/parity initial441pass1failure; expected new default field added and41 relevant tests pass. Both engine parity suites passed. Padding validity helper5tests pass. Legal file copies synchronized.",
+      "limits": "Default independent-kernel scope still underestimates about50%. Runtime-layer mode currently requires eagerTP16/ADP4/EP16/DCP1 with shared-expert multistream, balanced DP and measured brackets; C8/C12, asymmetric DP and high-KV queries explicitly unsupported. No claim of full PD search accuracy.",
+      "active_work": "Own diagnostic models running on20 and25. Node20 expands requests-per-DP1/2/3 at512/8192/10240 plus held-out4096. Node25 collects1/2/3 active DP paths. First node25C2 replay failed comparing invalid indexer padding rows; preserved full failure. Source-bound valid-row numerical contract now checks all real top-k values exactly and all hidden outputs, with separate padding-difference counts. Retry not yet qualified or published.",
+      "artifacts": "production/prediction-repair-20261102/runtime-layer-publication-v2.json; runtime-layer-comparison-20261103-r2.json; layer-chain-grid-node20-20261103; linear-matched-node25-20261103; runtime-layer-validation-20261103",
+      "image": "aisimulate-910c:runtime-layer-repair-20261103-r2",
+      "status": "limited steady-decode validation complete; broader accuracy goal remains in_progress"
+    }
+  }
+}

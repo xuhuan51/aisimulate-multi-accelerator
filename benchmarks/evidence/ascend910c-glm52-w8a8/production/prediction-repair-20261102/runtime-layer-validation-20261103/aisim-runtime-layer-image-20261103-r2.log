@@ -1,0 +1,20 @@
+Sending build context to Docker daemon  113.4MB
+Step 1/3 : FROM aisimulate-910c:causal-repair-20261102
+ ---> 9344d4d6baa2
+Step 2/3 : COPY aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl /tmp/aisimulate.whl
+ ---> 5f875e0f2438
+Step 3/3 : RUN mv /tmp/aisimulate.whl /tmp/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl && python3 -m pip install --no-deps --force-reinstall /tmp/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl && rm /tmp/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl
+ ---> Running in 1a5c02ffd03e
+Looking in indexes: https://pypi.org/simple/
+Processing /tmp/aisimulate-0.13.0-cp311-abi3-linux_aarch64.whl
+Installing collected packages: aisimulate
+  Attempting uninstall: aisimulate
+    Found existing installation: aisimulate 0.13.0
+    Uninstalling aisimulate-0.13.0:
+      Successfully uninstalled aisimulate-0.13.0
+Successfully installed aisimulate-0.13.0
+[91mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+[0mRemoving intermediate container 1a5c02ffd03e
+ ---> df0938601d6b
+Successfully built df0938601d6b
+Successfully tagged aisimulate-910c:runtime-layer-repair-20261103-r2

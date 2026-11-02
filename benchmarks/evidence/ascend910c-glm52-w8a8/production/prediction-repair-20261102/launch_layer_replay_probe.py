@@ -10,6 +10,7 @@ import time
 from pathlib import Path
 
 import launch_paired_telemetry
+from layer_output_validation import check_topk_outputs
 import msgspec
 import torch
 import torch.distributed as distributed
@@ -30,10 +31,16 @@ MODEL_CALLS = 0
 CAPTURE = False
 CAPTURED = {}
 SOURCES = {}
+for source_owner in (ForwardBatch, check_topk_outputs):
+    source_path = inspect.getfile(source_owner)
+    SOURCES[source_path] = hashlib.sha256(Path(source_path).read_bytes()).hexdigest()
 PROBE_CALL = int(os.environ.get("AISIM_PROBE_CALL", "128"))
 TARGET_LAYERS = {int(value) for value in os.environ.get("AISIM_PROBE_LAYERS", "3,4").split(",")}
 LAYER_ONLY = os.environ.get("AISIM_PROBE_BOUNDARY") == "layer"
 REPEATS = 12
+CONTROL = None
+CONTROL_CALLS = 0
+CONTROL_COMPLETE = False
 
 
 def copy_inputs(value, memo=None):
@@ -73,6 +80,18 @@ def check_outputs(observed, expected):
     elif isinstance(expected, msgspec.Struct):
         for field in msgspec.structs.fields(type(expected)):
             check_outputs(getattr(observed, field.name), getattr(expected, field.name))
+    elif expected is None and observed is not None:
+        raise AssertionError("Optional output presence changed")
+
+
+def check_boundary_outputs(key, observed, expected, forward_batch):
+    if key[0] != "DeepseekV2DecoderLayer":
+        check_outputs(observed, expected)
+        return None
+    if len(observed) != 2 or len(expected) != 2:
+        raise AssertionError("Unexpected decoder-layer output contract")
+    check_outputs(observed[0], expected[0])
+    return check_topk_outputs(observed[1], expected[1], forward_batch.seq_lens_cpu.tolist())
 
 
 def shapes(value):
@@ -142,11 +161,12 @@ def probe():
             submitted = time.perf_counter_ns()
             cpu_ns = time.thread_time_ns() - cpu_start
             end.synchronize()
-            check_outputs(output, expected)
+            topk_validation = check_boundary_outputs(key, output, expected, forward_batch)
             samples.append({"warmup": repeat < 3, "repeat": repeat,
                             "device_ms": begin.elapsed_time(end),
                             "host_submit_ms": (submitted - started) / 1e6,
                             "host_thread_cpu_ms": cpu_ns / 1e6,
+                            "topk_validation": topk_validation,
                             "output": shapes(output)})
             del output, args, kwargs
         function_profile = None
@@ -167,7 +187,7 @@ def probe():
                                      "self_seconds": values[2], "cumulative_seconds": values[3]}
                                     for identity, values in pstats.Stats(profiler).stats.items()]
             device.synchronize()
-            check_outputs(output, expected)
+            check_boundary_outputs(key, output, expected, forward_batch)
             del output, args, kwargs
         forward_batch.residual_stream = final_residual_stream
         records.append({"module": key[0], "layer": key[1], "inputs": shapes(original_args),
@@ -181,7 +201,11 @@ def probe():
               "model_call": MODEL_CALLS, "rank": rank, "pid": os.getpid(),
               "cpu_affinity": sorted(os.sched_getaffinity(0)), "source_sha256": SOURCES,
               "boundaries": records, "status": "completed"}
-    path = Path("/campaign") / f"layer-replay-rank{rank}.json"
+    result["control"] = CONTROL
+    result["numerical_contract"] = "all_hidden_values_and_all_topk_columns_for_positive_kv_rows/v2"
+    output_root = Path("/campaign") / CONTROL["id"] if CONTROL else Path("/campaign")
+    output_root.mkdir(exist_ok=True)
+    path = output_root / f"layer-replay-rank{rank}.json"
     if path.exists():
         raise FileExistsError(path)
     path.write_text(json.dumps(result, indent=2) + "\n")
@@ -190,13 +214,23 @@ def probe():
 
 @functools.wraps(ORIGINAL_FORWARD)
 def model_forward(self, *args, **kwargs):
-    global MODEL_CALLS, CAPTURE
+    global MODEL_CALLS, CAPTURE, CONTROL, CONTROL_CALLS, CONTROL_COMPLETE
     MODEL_CALLS += 1
-    CAPTURE = MODEL_CALLS == PROBE_CALL
+    control_path = Path("/campaign/layer-probe-control.json")
+    if os.environ.get("AISIM_PROBE_CONTROL") == "1":
+        requested = json.loads(control_path.read_text()) if control_path.exists() else None
+        if requested != CONTROL:
+            CONTROL, CONTROL_CALLS, CONTROL_COMPLETE = requested, 0, False
+        if CONTROL is not None:
+            CONTROL_CALLS += 1
+        CAPTURE = CONTROL is not None and not CONTROL_COMPLETE and CONTROL_CALLS == CONTROL["forward_call"]
+    else:
+        CAPTURE = MODEL_CALLS == PROBE_CALL
     result = ORIGINAL_FORWARD(self, *args, **kwargs)
     if CAPTURE:
         CAPTURE = False
         probe()
+        CONTROL_COMPLETE = True
     return result
 
 

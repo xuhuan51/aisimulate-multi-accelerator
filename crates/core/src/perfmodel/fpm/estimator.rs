@@ -32,6 +32,7 @@ pub struct OpLevelConfig {
 pub struct AscendOpLevelConfig {
     pub shared_expert_overlap: bool,
     pub decode_execution_mode: AscendExecutionMode,
+    pub decode_timing_scope: AscendDecodeTimingScope,
     pub enable_dp_lm_head: bool,
     pub enable_tp_lm_head_all_to_all: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -49,6 +50,7 @@ impl Default for AscendOpLevelConfig {
         Self {
             shared_expert_overlap: true,
             decode_execution_mode: AscendExecutionMode::Graph,
+            decode_timing_scope: AscendDecodeTimingScope::IsolatedKernels,
             enable_dp_lm_head: true,
             enable_tp_lm_head_all_to_all: false,
             eager_runtime_overhead: None,
@@ -81,9 +83,23 @@ pub enum AscendExecutionMode {
     Graph,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AscendDecodeTimingScope {
+    IsolatedKernels,
+    RuntimeLayers,
+}
+
 impl OpLevelConfig {
     pub(crate) fn validate_for(&self, system: &str, backend: &str) -> Result<(), AicError> {
         if let Some(options) = &self.ascend {
+            if options.decode_timing_scope == AscendDecodeTimingScope::RuntimeLayers
+                && (options.decode_execution_mode != AscendExecutionMode::Eager
+                    || !options.shared_expert_overlap
+                    || options.eager_runtime_overhead.is_some())
+            {
+                return Err(AicError::InvalidEngineConfig("Ascend runtime_layers requires eager decode, shared-expert overlap and no residual timing".into()));
+            }
             if let Some(overhead) = &options.eager_runtime_overhead {
                 if overhead.operator_contract != "glm52_eager_metadata/v2" {
                     return Err(AicError::InvalidEngineConfig(
@@ -1827,4 +1843,23 @@ mod tests {
             RegressionFitConfig::default().rebuild_interval
         );
     }
+}
+#[test]
+fn runtime_layer_scope_cannot_reuse_graph_or_additive_residual_contracts() {
+    let raw = serde_json::json!({"ascend": {"decode_timing_scope": "runtime_layers"}});
+    let mut graph: OpLevelConfig = serde_json::from_value(raw.clone()).unwrap();
+    assert!(graph.resolve_for("ascend910c", "sglang").is_err());
+    let mut eager = raw;
+    eager["ascend"]["decode_execution_mode"] = serde_json::json!("eager");
+    let mut valid: OpLevelConfig = serde_json::from_value(eager.clone()).unwrap();
+    valid.resolve_for("ascend910c", "sglang").unwrap();
+    let restored: OpLevelConfig =
+        serde_json::from_str(&serde_json::to_string(&valid).unwrap()).unwrap();
+    assert_eq!(valid, restored);
+    eager["ascend"]["eager_runtime_overhead"] = serde_json::json!({
+        "calibration_id": "synthetic_incompatible_scope", "operator_contract": "glm52_eager_metadata/v2",
+        "attention_tp": 4, "attention_dp": 4, "moe_ep_size": 16, "prefill_ms": 1.0, "decode_ms": 1.0
+    });
+    let mut additive: OpLevelConfig = serde_json::from_value(eager).unwrap();
+    assert!(additive.resolve_for("ascend910c", "sglang").is_err());
 }

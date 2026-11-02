@@ -147,6 +147,18 @@ impl GroupShape {
         let execution_mode = if self.graph { "graph" } else { "eager" };
         let mut operation = operation.clone();
         let query_tokens = match &mut operation {
+            Op::AscendDecoderLayers(layers) => {
+                if !self.decode
+                    || self.graph
+                    || layers.attention_dp as usize != self.request_counts.len()
+                    || self.request_counts.iter().any(|count| *count != requests)
+                {
+                    return Err(invalid(
+                        "Ascend runtime layers require balanced pure eager decode; asymmetric DP profiles are unavailable",
+                    ));
+                }
+                return Ok(Some(operation));
+            }
             Op::AscendEagerOverhead(overhead) => {
                 if self.graph {
                     return Err(invalid(

@@ -1,0 +1,30 @@
+schema_version: 2
+provenance: collected
+runtime: &id001
+  framework: sglang
+  version: 0.5.22
+  image_digest: quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443
+  source_commit: baa9befa381511cd4d56f83980951e5a45fffc6d
+tables:
+  ascend_layer_perf:
+    rows: 24
+    status: complete
+    collections:
+    - collector_ref: 07aefd2b+worktree-source-sha256-in-provenance
+      collector_hash: sha256:1b70ab57721c5d9c2d09eca0d87a1c36eb53a9aabc86f3c044e330f323cc01a2
+      case_plan_hash: sha256:ec89913d36bfd4e23f94884c933222a5e54ba0fe26a132b50603f9208e262e5f
+      collected_at: '2026-11-02T19:54:25.415773+00:00'
+      rows: 24
+      classified_failures: 3
+      status: complete
+      runtime: *id001
+device: ascend910c
+scope: Actual isolated eager decoder-layer invocations, including host/runtime boundaries;
+  no fitted residual
+runtime_identity_sha256: 2b9febc3640c0855f6a7cbce6e0bd092e079e03ef7f21c346cae71ddbcd3ce64
+boundary_contract: glm52_eager_decoder_layer/v1
+selection: first qualifying observation per structural type and planned request/KV
+  cell
+rows: 24
+extrapolation: forbidden
+serving_accuracy_acceptance: false

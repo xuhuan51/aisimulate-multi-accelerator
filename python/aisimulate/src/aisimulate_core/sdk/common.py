@@ -1351,6 +1351,7 @@ class PerfDataFilename(Enum):
     ascend_moe_tensor = "ascend_moe_tensor_perf.parquet"
     ascend_deepep = "ascend_deepep_perf.parquet"
     ascend_pd = "ascend_pd_perf.parquet"
+    ascend_layer = "ascend_layer_perf.parquet"
     nccl = "nccl_perf.parquet"
     oneccl = "oneccl_perf.parquet"
     hccl = "hccl_perf.parquet"

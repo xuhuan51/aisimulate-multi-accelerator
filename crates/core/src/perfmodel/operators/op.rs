@@ -201,6 +201,7 @@ pub enum Op {
     AscendDcpAttention(crate::operators::AscendDcpAttentionOp),
     AscendLogits(crate::operators::ascend_logits::AscendLogitsOp),
     AscendEagerOverhead(crate::operators::ascend_eager_overhead::AscendEagerOverheadOp),
+    AscendDecoderLayers(crate::operators::ascend_layer::AscendDecoderLayersOp),
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -305,6 +306,7 @@ impl Op {
             Op::AscendLinear(o) => o.weight_bytes(),
             Op::AscendLogits(o) => o.weight_bytes(),
             Op::AscendEagerOverhead(_) => 0.0,
+            Op::AscendDecoderLayers(o) => o.weight_bytes(),
             Op::AscendBmm(o) => o.weight_bytes(),
             Op::AscendVector(o) => o.weight_bytes(),
             Op::AscendMoeChain(o) => o.weight_bytes(),
@@ -396,6 +398,7 @@ impl Op {
             Op::AscendLinear(o) => &o.name,
             Op::AscendLogits(o) => &o.name,
             Op::AscendEagerOverhead(o) => &o.name,
+            Op::AscendDecoderLayers(o) => &o.name,
             Op::AscendAttention(o) => &o.name,
             Op::AscendDcpAttention(operation) => &operation.name,
             Op::AscendBmm(o) => &o.name,
@@ -461,6 +464,7 @@ impl Op {
             Op::AscendLinear(o) => o.name = name,
             Op::AscendLogits(o) => o.name = name,
             Op::AscendEagerOverhead(o) => o.name = name,
+            Op::AscendDecoderLayers(o) => o.name = name,
             Op::AscendAttention(o) => o.name = name,
             Op::AscendDcpAttention(operation) => operation.name = name,
             Op::AscendBmm(o) => o.name = name,
@@ -514,6 +518,7 @@ impl Op {
             Op::AscendLinear(o) => o.scale_factor = scale_factor,
             Op::AscendLogits(o) => o.scale_factor = scale_factor,
             Op::AscendEagerOverhead(o) => o.scale_factor = scale_factor,
+            Op::AscendDecoderLayers(o) => o.scale_factor = scale_factor,
             Op::AscendAttention(o) => o.scale_factor = scale_factor,
             Op::AscendDcpAttention(operation) => operation.scale_factor = scale_factor,
             Op::AscendBmm(o) => o.scale_factor = scale_factor,
@@ -690,6 +695,7 @@ impl Op {
             Op::AscendLinear(op) => op.query(db, ctx.num_tokens, ctx.batch_size),
             Op::AscendLogits(op) => op.query(db, ctx.batch_size),
             Op::AscendEagerOverhead(op) => op.query(ctx.batch_size),
+            Op::AscendDecoderLayers(op) => op.query(db, ctx.batch_size, ctx.s),
             Op::AscendAttention(op) => op.query(db, ctx.batch_size, ctx.s, ctx.prefix),
             Op::AscendDcpAttention(operation) => {
                 operation.query(db, ctx.batch_size, ctx.s, ctx.prefix)

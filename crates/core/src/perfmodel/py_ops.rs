@@ -172,6 +172,7 @@ pub(crate) fn wrap_op(py: Python<'_>, op: Op) -> PyResult<Py<PyAny>> {
         | Op::AscendDcpAttention(_)
         | Op::AscendLogits(_)
         | Op::AscendEagerOverhead(_)
+        | Op::AscendDecoderLayers(_)
         | Op::AscendBmm(_)
         | Op::AscendVector(_)
         | Op::AscendMoeChain(_)

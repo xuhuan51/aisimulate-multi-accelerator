@@ -878,6 +878,16 @@ uses the existing CPU process group for control synchronization; no upstream
 implementation is copied. Generated source-hash records and frozen copies of
 these probes retain this attribution.
 
+The optional measured runtime-layer composition in
+`crates/core/src/perfmodel/{operators,perf_database}/ascend_layer.rs`,
+`python/aisimulate/collector/sglang/ascend_layer_export.py`, and
+`python/aisimulate/src/aisimulate_core/sdk/models/ascend_glm52.py` independently
+models the invocation boundaries and eight structural layer classes of
+`python/sglang/srt/models/deepseek_v2.py` at that same immutable SGLang revision.
+It invokes the installed implementation, replaces covered kernel timings, and
+preserves their memory inventory. No upstream implementation is copied; the
+runtime module measurements include host dispatch and are not a fitted residual.
+
 The four-node serving comparison report and metric analysis scripts under
 `benchmarks/evidence/ascend910c-glm52-w8a8/production/four-node-serving-20261101/`, the guide
 `md/910c-glm52-w8a8-four-node-serving-comparison.md` and the deployment snapshot

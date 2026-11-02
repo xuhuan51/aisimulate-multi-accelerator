@@ -17,6 +17,14 @@ def main():
     from sglang.srt.layers.linear import RowParallelLinear
     from sglang.srt.layers.quantization.modelslim.schemes.modelslim_w8a8_int8 import ModelSlimW8A8Int8
 
+    config_path = Path('/campaign/model-config.json')
+    config = json.loads(config_path.read_text())
+    local_heads = config['num_attention_heads'] // 4
+    shapes = [
+        (4, config['q_lora_rank'] + config['kv_lora_rank'] + config['qk_rope_head_dim'], config['hidden_size']),
+        (4, local_heads * (config['qk_nope_head_dim'] + config['qk_rope_head_dim']), config['q_lora_rank']),
+        (4, config['hidden_size'], local_heads * config['v_head_dim']),
+    ]
     world = int(os.environ.get("WORLD_SIZE", "1"))
     device_index = int(os.environ.get("LOCAL_RANK", "15"))
     destination = Path("/campaign") / (f"linear-submission-rank{device_index}.json" if world > 1 else "linear-submission-probe.json")
@@ -32,11 +40,13 @@ def main():
     if world > 1:
         torch.distributed.init_process_group("gloo")
     result = {"scope": "Diagnostic of benchmark retention, module dispatch, and pipelining; not published performance data",
+              "model_config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest(),
+              "attention_tp": 4, "shapes": shapes,
               "source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               "torch": torch.__version__, "torch_npu": torch_npu.__version__,
               "cpu_affinity": sorted(os.sched_getaffinity(0)), "device": device_index,
               "concurrent_workers": world, "cases": []}
-    for tokens, width, inner in [(4, 2112, 6144), (4, 18432, 1536), (4, 6144, 4096)]:
+    for tokens, width, inner in shapes:
         layers = []
         scheme = ModelSlimW8A8Int8({"linear.weight": "W8A8"}, "linear")
         for _ in range(4):

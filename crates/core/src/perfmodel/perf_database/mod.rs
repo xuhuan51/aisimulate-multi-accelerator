@@ -189,6 +189,7 @@ pub mod ascend_attention;
 pub mod ascend_bmm;
 pub mod ascend_dcp_attention;
 pub mod ascend_deepep;
+pub mod ascend_layer;
 pub mod ascend_linear;
 pub mod ascend_moe_chain;
 pub mod ascend_moe_tensor;
@@ -264,6 +265,7 @@ pub struct PerfTables {
     pub communication: CommunicationTable,
     pub hccl: HcclTable,
     pub ascend_linear: ascend_linear::AscendLinearTable,
+    pub ascend_layer: ascend_layer::AscendLayerTable,
     pub ascend_attention: ascend_attention::AscendAttentionTable,
     pub ascend_bmm: ascend_bmm::AscendBmmTable,
     pub ascend_vector: ascend_vector::AscendVectorTable,
@@ -569,6 +571,11 @@ impl PerfDatabase {
                 ascend_linear::AscendLinearTable::with_sources(&data_root, &resolver)?
             } else {
                 ascend_linear::AscendLinearTable::new(None)
+            },
+            ascend_layer: if system == "ascend910c" && backend == "sglang" {
+                ascend_layer::AscendLayerTable::with_sources(&data_root, &resolver)?
+            } else {
+                ascend_layer::AscendLayerTable::new(None)
             },
             ascend_attention: if system == "ascend910c" && backend == "sglang" {
                 ascend_attention::AscendAttentionTable::with_sources(&data_root, &resolver)?

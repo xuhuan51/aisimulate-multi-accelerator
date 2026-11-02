@@ -1,0 +1,767 @@
+{
+  "scope": "Diagnostic of benchmark retention, module dispatch, and pipelining; not published performance data",
+  "model_config_sha256": "817f5fb39ca5d4c4b5648de89ca00deaea7537d8c2f130172a459252a05c1073",
+  "attention_tp": 4,
+  "shapes": [
+    [
+      4,
+      2624,
+      6144
+    ],
+    [
+      4,
+      4096,
+      2048
+    ],
+    [
+      4,
+      6144,
+      4096
+    ]
+  ],
+  "source_sha256": "7b833e0a5cf11adf051290c517129e346604ca2e75469e2c73dd36a93a05cff8",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post6",
+  "cpu_affinity": [
+    240,
+    241,
+    242,
+    243,
+    244,
+    245,
+    246,
+    247,
+    248,
+    249,
+    250,
+    251,
+    252,
+    253,
+    254,
+    255,
+    256,
+    257,
+    258,
+    259,
+    560,
+    561,
+    562,
+    563,
+    564,
+    565,
+    566,
+    567,
+    568,
+    569,
+    570,
+    571,
+    572,
+    573,
+    574,
+    575,
+    576,
+    577,
+    578,
+    579
+  ],
+  "device": 12,
+  "concurrent_workers": 16,
+  "cases": [
+    {
+      "mode": "retained",
+      "m": 4,
+      "n": 2624,
+      "k": 6144,
+      "samples": [
+        {
+          "device_ms": 0.07964625209569931,
+          "host_submit_ms": 0.081376359375,
+          "host_cpu_ms": 0.0809584375
+        },
+        {
+          "device_ms": 0.0784899964928627,
+          "host_submit_ms": 0.079912921875,
+          "host_cpu_ms": 0.0791971875
+        },
+        {
+          "device_ms": 0.07895687222480774,
+          "host_submit_ms": 0.080475734375,
+          "host_cpu_ms": 0.080233125
+        },
+        {
+          "device_ms": 0.07948625087738037,
+          "host_submit_ms": 0.080216515625,
+          "host_cpu_ms": 0.07983578125
+        },
+        {
+          "device_ms": 0.07989468425512314,
+          "host_submit_ms": 0.080922453125,
+          "host_cpu_ms": 0.080521875
+        },
+        {
+          "device_ms": 0.0784996896982193,
+          "host_submit_ms": 0.07958071875,
+          "host_cpu_ms": 0.07928046875
+        },
+        {
+          "device_ms": 0.0790218785405159,
+          "host_submit_ms": 0.079642453125,
+          "host_cpu_ms": 0.07937359375
+        },
+        {
+          "device_ms": 0.07824905961751938,
+          "host_submit_ms": 0.07861665625,
+          "host_cpu_ms": 0.0781046875
+        },
+        {
+          "device_ms": 0.08092562854290009,
+          "host_submit_ms": 0.081565109375,
+          "host_cpu_ms": 0.08127296875
+        }
+      ],
+      "medians": {
+        "device_ms": 0.0790218785405159,
+        "host_submit_ms": 0.080216515625,
+        "host_cpu_ms": 0.07983578125
+      }
+    },
+    {
+      "mode": "released",
+      "m": 4,
+      "n": 2624,
+      "k": 6144,
+      "samples": [
+        {
+          "device_ms": 0.0753762498497963,
+          "host_submit_ms": 0.075758203125,
+          "host_cpu_ms": 0.0755925
+        },
+        {
+          "device_ms": 0.07374062389135361,
+          "host_submit_ms": 0.075143515625,
+          "host_cpu_ms": 0.07491734375
+        },
+        {
+          "device_ms": 0.0738731250166893,
+          "host_submit_ms": 0.074696953125,
+          "host_cpu_ms": 0.0743290625
+        },
+        {
+          "device_ms": 0.07416406273841858,
+          "host_submit_ms": 0.074922578125,
+          "host_cpu_ms": 0.07471859375
+        },
+        {
+          "device_ms": 0.0756065621972084,
+          "host_submit_ms": 0.076530703125,
+          "host_cpu_ms": 0.0762990625
+        },
+        {
+          "device_ms": 0.07471656054258347,
+          "host_submit_ms": 0.075688359375,
+          "host_cpu_ms": 0.07525734375
+        },
+        {
+          "device_ms": 0.07457343488931656,
+          "host_submit_ms": 0.075911953125,
+          "host_cpu_ms": 0.07559703125
+        },
+        {
+          "device_ms": 0.07346312701702118,
+          "host_submit_ms": 0.0748900625,
+          "host_cpu_ms": 0.07466109375
+        },
+        {
+          "device_ms": 0.0739862471818924,
+          "host_submit_ms": 0.0755225625,
+          "host_cpu_ms": 0.07510609375
+        }
+      ],
+      "medians": {
+        "device_ms": 0.07416406273841858,
+        "host_submit_ms": 0.0755225625,
+        "host_cpu_ms": 0.07510609375
+      }
+    },
+    {
+      "mode": "module_released",
+      "m": 4,
+      "n": 2624,
+      "k": 6144,
+      "samples": [
+        {
+          "device_ms": 0.07760124653577805,
+          "host_submit_ms": 0.078798375,
+          "host_cpu_ms": 0.0782096875
+        },
+        {
+          "device_ms": 0.07791375368833542,
+          "host_submit_ms": 0.0784661875,
+          "host_cpu_ms": 0.07818640625
+        },
+        {
+          "device_ms": 0.07740187644958496,
+          "host_submit_ms": 0.0787961875,
+          "host_cpu_ms": 0.078110625
+        },
+        {
+          "device_ms": 0.07783155888319016,
+          "host_submit_ms": 0.0790530625,
+          "host_cpu_ms": 0.07871421875
+        },
+        {
+          "device_ms": 0.07812625169754028,
+          "host_submit_ms": 0.07825134375,
+          "host_cpu_ms": 0.077803125
+        },
+        {
+          "device_ms": 0.07769937813282013,
+          "host_submit_ms": 0.07856634375,
+          "host_cpu_ms": 0.0783171875
+        },
+        {
+          "device_ms": 0.07782187312841415,
+          "host_submit_ms": 0.07856634375,
+          "host_cpu_ms": 0.07840453125
+        },
+        {
+          "device_ms": 0.07830312848091125,
+          "host_submit_ms": 0.079040734375,
+          "host_cpu_ms": 0.07842203125
+        },
+        {
+          "device_ms": 0.07689187675714493,
+          "host_submit_ms": 0.077885875,
+          "host_cpu_ms": 0.0776165625
+        }
+      ],
+      "medians": {
+        "device_ms": 0.07782187312841415,
+        "host_submit_ms": 0.07856634375,
+        "host_cpu_ms": 0.0782096875
+      }
+    },
+    {
+      "mode": "per_call_sync",
+      "m": 4,
+      "n": 2624,
+      "k": 6144,
+      "samples": [
+        {
+          "device_ms": 0.12838874757289886,
+          "host_submit_ms": 0.130053328125,
+          "host_cpu_ms": 0.1294540625
+        },
+        {
+          "device_ms": 0.13020874559879303,
+          "host_submit_ms": 0.13133521875,
+          "host_cpu_ms": 0.13077828125
+        },
+        {
+          "device_ms": 0.12859687209129333,
+          "host_submit_ms": 0.129574109375,
+          "host_cpu_ms": 0.1291715625
+        },
+        {
+          "device_ms": 0.12920811772346497,
+          "host_submit_ms": 0.13044490625,
+          "host_cpu_ms": 0.12992390625
+        },
+        {
+          "device_ms": 0.12769250571727753,
+          "host_submit_ms": 0.128587546875,
+          "host_cpu_ms": 0.12798390625
+        },
+        {
+          "device_ms": 0.12844938039779663,
+          "host_submit_ms": 0.129347859375,
+          "host_cpu_ms": 0.12892
+        },
+        {
+          "device_ms": 0.13023531436920166,
+          "host_submit_ms": 0.1319235,
+          "host_cpu_ms": 0.1313428125
+        },
+        {
+          "device_ms": 0.12703312933444977,
+          "host_submit_ms": 0.128258,
+          "host_cpu_ms": 0.12771953125
+        },
+        {
+          "device_ms": 0.12846343219280243,
+          "host_submit_ms": 0.129138484375,
+          "host_cpu_ms": 0.12851875
+        }
+      ],
+      "medians": {
+        "device_ms": 0.12846343219280243,
+        "host_submit_ms": 0.129574109375,
+        "host_cpu_ms": 0.1291715625
+      }
+    },
+    {
+      "mode": "retained",
+      "m": 4,
+      "n": 4096,
+      "k": 2048,
+      "samples": [
+        {
+          "device_ms": 0.07276437431573868,
+          "host_submit_ms": 0.073835546875,
+          "host_cpu_ms": 0.07354046875
+        },
+        {
+          "device_ms": 0.07326218485832214,
+          "host_submit_ms": 0.0734988125,
+          "host_cpu_ms": 0.0732
+        },
+        {
+          "device_ms": 0.07330375164747238,
+          "host_submit_ms": 0.074121640625,
+          "host_cpu_ms": 0.0738875
+        },
+        {
+          "device_ms": 0.0737062469124794,
+          "host_submit_ms": 0.074648515625,
+          "host_cpu_ms": 0.07432828125
+        },
+        {
+          "device_ms": 0.07492062449455261,
+          "host_submit_ms": 0.0753638125,
+          "host_cpu_ms": 0.07489484375
+        },
+        {
+          "device_ms": 0.07455937564373016,
+          "host_submit_ms": 0.075379296875,
+          "host_cpu_ms": 0.07521609375
+        },
+        {
+          "device_ms": 0.07435093820095062,
+          "host_submit_ms": 0.075543359375,
+          "host_cpu_ms": 0.07511765625
+        },
+        {
+          "device_ms": 0.07478812336921692,
+          "host_submit_ms": 0.075331328125,
+          "host_cpu_ms": 0.07499234375
+        },
+        {
+          "device_ms": 0.07450906187295914,
+          "host_submit_ms": 0.075811015625,
+          "host_cpu_ms": 0.07521125
+        }
+      ],
+      "medians": {
+        "device_ms": 0.07435093820095062,
+        "host_submit_ms": 0.075331328125,
+        "host_cpu_ms": 0.07489484375
+      }
+    },
+    {
+      "mode": "released",
+      "m": 4,
+      "n": 4096,
+      "k": 2048,
+      "samples": [
+        {
+          "device_ms": 0.07409718632698059,
+          "host_submit_ms": 0.075484453125,
+          "host_cpu_ms": 0.0751384375
+        },
+        {
+          "device_ms": 0.07498468458652496,
+          "host_submit_ms": 0.075972890625,
+          "host_cpu_ms": 0.07561984375
+        },
+        {
+          "device_ms": 0.07419375330209732,
+          "host_submit_ms": 0.075541171875,
+          "host_cpu_ms": 0.07494
+        },
+        {
+          "device_ms": 0.07357281446456909,
+          "host_submit_ms": 0.075096171875,
+          "host_cpu_ms": 0.07475625
+        },
+        {
+          "device_ms": 0.0738903135061264,
+          "host_submit_ms": 0.074916171875,
+          "host_cpu_ms": 0.07470609375
+        },
+        {
+          "device_ms": 0.07489687204360962,
+          "host_submit_ms": 0.075815078125,
+          "host_cpu_ms": 0.07546921875
+        },
+        {
+          "device_ms": 0.07399531453847885,
+          "host_submit_ms": 0.075138671875,
+          "host_cpu_ms": 0.07487109375
+        },
+        {
+          "device_ms": 0.07320218533277512,
+          "host_submit_ms": 0.074122421875,
+          "host_cpu_ms": 0.07376109375
+        },
+        {
+          "device_ms": 0.07487750053405762,
+          "host_submit_ms": 0.076356171875,
+          "host_cpu_ms": 0.07606171875
+        }
+      ],
+      "medians": {
+        "device_ms": 0.07409718632698059,
+        "host_submit_ms": 0.075484453125,
+        "host_cpu_ms": 0.07494
+      }
+    },
+    {
+      "mode": "module_released",
+      "m": 4,
+      "n": 4096,
+      "k": 2048,
+      "samples": [
+        {
+          "device_ms": 0.07664468884468079,
+          "host_submit_ms": 0.077695703125,
+          "host_cpu_ms": 0.07736515625
+        },
+        {
+          "device_ms": 0.07807125151157379,
+          "host_submit_ms": 0.07884259375,
+          "host_cpu_ms": 0.0780384375
+        },
+        {
+          "device_ms": 0.07724593579769135,
+          "host_submit_ms": 0.07793321875,
+          "host_cpu_ms": 0.0776721875
+        },
+        {
+          "device_ms": 0.07728281617164612,
+          "host_submit_ms": 0.07831478125,
+          "host_cpu_ms": 0.0779253125
+        },
+        {
+          "device_ms": 0.07694625109434128,
+          "host_submit_ms": 0.078144453125,
+          "host_cpu_ms": 0.077943125
+        },
+        {
+          "device_ms": 0.07663437724113464,
+          "host_submit_ms": 0.077323359375,
+          "host_cpu_ms": 0.07691625
+        },
+        {
+          "device_ms": 0.07722874730825424,
+          "host_submit_ms": 0.07805509375,
+          "host_cpu_ms": 0.07750640625
+        },
+        {
+          "device_ms": 0.07803499698638916,
+          "host_submit_ms": 0.07908603125,
+          "host_cpu_ms": 0.07885953125
+        },
+        {
+          "device_ms": 0.07724437862634659,
+          "host_submit_ms": 0.07807025,
+          "host_cpu_ms": 0.07753859375
+        }
+      ],
+      "medians": {
+        "device_ms": 0.07724437862634659,
+        "host_submit_ms": 0.07807025,
+        "host_cpu_ms": 0.0776721875
+      }
+    },
+    {
+      "mode": "per_call_sync",
+      "m": 4,
+      "n": 4096,
+      "k": 2048,
+      "samples": [
+        {
+          "device_ms": 0.12401312589645386,
+          "host_submit_ms": 0.125216421875,
+          "host_cpu_ms": 0.1246028125
+        },
+        {
+          "device_ms": 0.12295718491077423,
+          "host_submit_ms": 0.123764234375,
+          "host_cpu_ms": 0.122760625
+        },
+        {
+          "device_ms": 0.12381593883037567,
+          "host_submit_ms": 0.124361421875,
+          "host_cpu_ms": 0.12386546875
+        },
+        {
+          "device_ms": 0.12338999658823013,
+          "host_submit_ms": 0.124354859375,
+          "host_cpu_ms": 0.123499375
+        },
+        {
+          "device_ms": 0.12235937267541885,
+          "host_submit_ms": 0.123529390625,
+          "host_cpu_ms": 0.1228875
+        },
+        {
+          "device_ms": 0.12738312780857086,
+          "host_submit_ms": 0.128667703125,
+          "host_cpu_ms": 0.1278859375
+        },
+        {
+          "device_ms": 0.12270968407392502,
+          "host_submit_ms": 0.123812203125,
+          "host_cpu_ms": 0.1233321875
+        },
+        {
+          "device_ms": 0.12213781476020813,
+          "host_submit_ms": 0.123281421875,
+          "host_cpu_ms": 0.12263546875
+        },
+        {
+          "device_ms": 0.12422937154769897,
+          "host_submit_ms": 0.125692984375,
+          "host_cpu_ms": 0.12521953125
+        }
+      ],
+      "medians": {
+        "device_ms": 0.12338999658823013,
+        "host_submit_ms": 0.124354859375,
+        "host_cpu_ms": 0.123499375
+      }
+    },
+    {
+      "mode": "retained",
+      "m": 4,
+      "n": 6144,
+      "k": 4096,
+      "samples": [
+        {
+          "device_ms": 0.07296156138181686,
+          "host_submit_ms": 0.074395703125,
+          "host_cpu_ms": 0.074095625
+        },
+        {
+          "device_ms": 0.07373405992984772,
+          "host_submit_ms": 0.075034140625,
+          "host_cpu_ms": 0.074053125
+        },
+        {
+          "device_ms": 0.07247281074523926,
+          "host_submit_ms": 0.073830234375,
+          "host_cpu_ms": 0.07369078125
+        },
+        {
+          "device_ms": 0.07217875123023987,
+          "host_submit_ms": 0.072946796875,
+          "host_cpu_ms": 0.0725553125
+        },
+        {
+          "device_ms": 0.07401874661445618,
+          "host_submit_ms": 0.07505178125,
+          "host_cpu_ms": 0.07472703125
+        },
+        {
+          "device_ms": 0.07466500252485275,
+          "host_submit_ms": 0.07546584375,
+          "host_cpu_ms": 0.07503453125
+        },
+        {
+          "device_ms": 0.07256718724966049,
+          "host_submit_ms": 0.07388740625,
+          "host_cpu_ms": 0.0734590625
+        },
+        {
+          "device_ms": 0.0736190602183342,
+          "host_submit_ms": 0.07369053125,
+          "host_cpu_ms": 0.07339
+        },
+        {
+          "device_ms": 0.07340531051158905,
+          "host_submit_ms": 0.0746963125,
+          "host_cpu_ms": 0.07437578125
+        }
+      ],
+      "medians": {
+        "device_ms": 0.07340531051158905,
+        "host_submit_ms": 0.074395703125,
+        "host_cpu_ms": 0.074053125
+      }
+    },
+    {
+      "mode": "released",
+      "m": 4,
+      "n": 6144,
+      "k": 4096,
+      "samples": [
+        {
+          "device_ms": 0.07348031550645828,
+          "host_submit_ms": 0.074835234375,
+          "host_cpu_ms": 0.074716875
+        },
+        {
+          "device_ms": 0.07276656478643417,
+          "host_submit_ms": 0.0737644375,
+          "host_cpu_ms": 0.0734778125
+        },
+        {
+          "device_ms": 0.073541559278965,
+          "host_submit_ms": 0.07469084375,
+          "host_cpu_ms": 0.0743615625
+        },
+        {
+          "device_ms": 0.07307906448841095,
+          "host_submit_ms": 0.074092734375,
+          "host_cpu_ms": 0.073745
+        },
+        {
+          "device_ms": 0.07382343709468842,
+          "host_submit_ms": 0.074984125,
+          "host_cpu_ms": 0.0747565625
+        },
+        {
+          "device_ms": 0.0727006271481514,
+          "host_submit_ms": 0.07392209375,
+          "host_cpu_ms": 0.07375328125
+        },
+        {
+          "device_ms": 0.0729934349656105,
+          "host_submit_ms": 0.07423678125,
+          "host_cpu_ms": 0.07404796875
+        },
+        {
+          "device_ms": 0.07335031032562256,
+          "host_submit_ms": 0.07436803125,
+          "host_cpu_ms": 0.0738684375
+        },
+        {
+          "device_ms": 0.07381781190633774,
+          "host_submit_ms": 0.074829921875,
+          "host_cpu_ms": 0.07462359375
+        }
+      ],
+      "medians": {
+        "device_ms": 0.07335031032562256,
+        "host_submit_ms": 0.07436803125,
+        "host_cpu_ms": 0.07404796875
+      }
+    },
+    {
+      "mode": "module_released",
+      "m": 4,
+      "n": 6144,
+      "k": 4096,
+      "samples": [
+        {
+          "device_ms": 0.07746437191963196,
+          "host_submit_ms": 0.07864446875,
+          "host_cpu_ms": 0.078064375
+        },
+        {
+          "device_ms": 0.08049343526363373,
+          "host_submit_ms": 0.081513546875,
+          "host_cpu_ms": 0.0809746875
+        },
+        {
+          "device_ms": 0.07784750312566757,
+          "host_submit_ms": 0.078709625,
+          "host_cpu_ms": 0.078443125
+        },
+        {
+          "device_ms": 0.07686655968427658,
+          "host_submit_ms": 0.0774786875,
+          "host_cpu_ms": 0.07711078125
+        },
+        {
+          "device_ms": 0.07667718827724457,
+          "host_submit_ms": 0.07793571875,
+          "host_cpu_ms": 0.07778625
+        },
+        {
+          "device_ms": 0.07704094052314758,
+          "host_submit_ms": 0.0774068125,
+          "host_cpu_ms": 0.07715625
+        },
+        {
+          "device_ms": 0.07686718553304672,
+          "host_submit_ms": 0.077950546875,
+          "host_cpu_ms": 0.077763125
+        },
+        {
+          "device_ms": 0.07650281488895416,
+          "host_submit_ms": 0.0775199375,
+          "host_cpu_ms": 0.07736703125
+        },
+        {
+          "device_ms": 0.07713843882083893,
+          "host_submit_ms": 0.078092125,
+          "host_cpu_ms": 0.07766078125
+        }
+      ],
+      "medians": {
+        "device_ms": 0.07704094052314758,
+        "host_submit_ms": 0.077950546875,
+        "host_cpu_ms": 0.077763125
+      }
+    },
+    {
+      "mode": "per_call_sync",
+      "m": 4,
+      "n": 6144,
+      "k": 4096,
+      "samples": [
+        {
+          "device_ms": 0.1274118721485138,
+          "host_submit_ms": 0.12857128125,
+          "host_cpu_ms": 0.1281659375
+        },
+        {
+          "device_ms": 0.13262750208377838,
+          "host_submit_ms": 0.13379615625,
+          "host_cpu_ms": 0.1333853125
+        },
+        {
+          "device_ms": 0.13146281242370605,
+          "host_submit_ms": 0.132612875,
+          "host_cpu_ms": 0.13225390625
+        },
+        {
+          "device_ms": 0.1250162571668625,
+          "host_submit_ms": 0.1263339375,
+          "host_cpu_ms": 0.12575640625
+        },
+        {
+          "device_ms": 0.1271824985742569,
+          "host_submit_ms": 0.12711065625,
+          "host_cpu_ms": 0.12652578125
+        },
+        {
+          "device_ms": 0.12478844076395035,
+          "host_submit_ms": 0.12623471875,
+          "host_cpu_ms": 0.1254809375
+        },
+        {
+          "device_ms": 0.12631218135356903,
+          "host_submit_ms": 0.12730503125,
+          "host_cpu_ms": 0.1266596875
+        },
+        {
+          "device_ms": 0.1284818798303604,
+          "host_submit_ms": 0.129596921875,
+          "host_cpu_ms": 0.12921296875
+        },
+        {
+          "device_ms": 0.13011156022548676,
+          "host_submit_ms": 0.130988328125,
+          "host_cpu_ms": 0.13061125
+        }
+      ],
+      "medians": {
+        "device_ms": 0.1274118721485138,
+        "host_submit_ms": 0.12857128125,
+        "host_cpu_ms": 0.1281659375
+      }
+    }
+  ]
+}

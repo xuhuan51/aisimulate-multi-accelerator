@@ -133,6 +133,9 @@ def configure_ascend_glm52(model, raw_config):
         config.op_level_config = OpLevelCompileConfig(None, system=config.system, backend=model._backend_name)
     settings = config.op_level_config.options["ascend"]
     decode_mode = settings["decode_execution_mode"]
+    runtime_layers = settings["decode_timing_scope"] == "runtime_layers"
+    if runtime_layers and (local_tp, attention_dp, experts_parallel, dcp) != (4, 4, 16, 1):
+        raise InvalidEngineConfigurationError("Ascend runtime-layer measurements currently require TP16/ADP4/EP16/DCP1")
     overhead = settings.get("eager_runtime_overhead")
     if overhead is not None and (overhead["attention_tp"], overhead["attention_dp"], overhead["moe_ep_size"]) != (
         local_tp,
@@ -154,11 +157,13 @@ def configure_ascend_glm52(model, raw_config):
     eager_alignment = local_tp if attention_dp > 1 or not tensor_moe else 1
     model.execution_assumptions = {
         "routing": settings["routing"],
+        "decode_routing": "captured_model_selected_top8" if runtime_layers else settings["routing"],
         "shared_expert_overlap": settings["shared_expert_overlap"],
         "batch_scope": "per_attention_dp_replica",
         "attention_dp_load": "uniform",
         "decode_graph_buckets": graph_buckets,
         "decode_execution_mode": decode_mode,
+        "decode_timing_scope": settings["decode_timing_scope"],
         "enable_dp_lm_head": settings["enable_dp_lm_head"],
         "enable_tp_lm_head_all_to_all": settings["enable_tp_lm_head_all_to_all"],
         "global_lm_head_limit": "Reorder/scatter and host synchronization require separate timing qualification",
@@ -549,6 +554,39 @@ def configure_ascend_glm52(model, raw_config):
                         "active_ranks": attention_dp,
                     }
                 }
+            )
+        if not context and runtime_layers:
+
+            def operation_name(entry):
+                kind, value = next(iter(entry.items()))
+                return operation_name(value["op"]) if kind == "TokenScale" else value["name"]
+
+            outside = {
+                "generation_embedding",
+                "generation_embedding_all_reduce",
+                "generation_final_residual_add",
+                "generation_final_norm",
+                "generation_logits_gemm",
+                "generation_logits_gather",
+                "generation_logits_finalize",
+                "generation_global_logits",
+            }
+            entries = [entry for entry in entries if entry is not None]
+            covered = [entry for entry in entries if operation_name(entry) not in outside]
+            entries = [entry for entry in entries if operation_name(entry) in outside]
+            entries.insert(
+                2,
+                {
+                    "AscendDecoderLayers": {
+                        "name": "generation_decoder_layers",
+                        "scale_factor": 1.0,
+                        "attention_tp": local_tp,
+                        "attention_dp": attention_dp,
+                        "moe_ep": experts_parallel,
+                        "quantization_sha256": raw_config["modelslim_metadata"]["source_sha256"],
+                        "covered_ops": covered,
+                    }
+                },
             )
         operations = [core.op_from_spec_json(json.dumps(entry)) for entry in entries if entry is not None]
         if context:
