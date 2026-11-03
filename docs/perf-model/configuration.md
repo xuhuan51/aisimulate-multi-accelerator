@@ -390,10 +390,16 @@ inside measured bounds. `shape_policy: anchored` extends numeric axes while
 retaining the original rows. Attention/indexer estimates use causal query/key
 work, the sparse top2048 limit, HBM traffic and the calibrated BF16 rate;
 DCP also accounts for storage and query/output communication. The measured
-boundary latency is split into a fixed component (the minimum of the measured
-curve) and a remaining component scaled by the analytical work ratio. This
-retains launch overhead instead of multiplying it by context length, and
-prevents launch-dominated small shapes from tending to zero.
+boundary latency is split into a fixed component and a remaining component
+scaled by the analytical work ratio. Attention/indexer and DCP derive the fixed
+component from the boundary and its nearest measured neighbor in analytical
+work space, bounded between zero and the smaller latency. The full latency of
+the smallest collected shape is not a launch cost: using it as a floor would
+charge a small query for all the compute of a much larger collected query.
+With only one distinct work anchor, the fixed component is unidentifiable;
+these attention estimates scale the whole boundary latency and remain explicitly
+estimated. Exact measured shapes and the strict measured-range policy are
+unchanged. Other operator families retain their existing measured-curve floors.
 Eager prefill batch interpolation may evaluate a ragged grid's missing inner
 coordinates this way. Graph buckets remain categorical and must be measured.
 

@@ -1,0 +1,80 @@
+Processing ./build/attention-work-intercept-20261104/aisimulate-0.13.0-cp311-abi3-manylinux_2_34_aarch64.whl
+Processing ./build/validation-tools/pytest_asyncio-0.26.0-py3-none-any.whl
+Processing ./build/validation-tools/pytest_timeout-2.3.1-py3-none-any.whl
+Installing collected packages: pytest-timeout, pytest-asyncio, aisimulate
+  Attempting uninstall: aisimulate
+    Found existing installation: aisimulate 0.13.0
+    Uninstalling aisimulate-0.13.0:
+      Successfully uninstalled aisimulate-0.13.0
+
+Successfully installed aisimulate-0.13.0 pytest-asyncio-0.26.0 pytest-timeout-2.3.1
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.49s
+     Running unittests src/lib.rs (target/debug/deps/aisimulate_core-af87b37bbcf144e9)
+
+running 50 tests
+test perfmodel::perf_database::ascend_attention::anchored_ragged_grid_scales_only_the_missing_boundary ... ok
+test perfmodel::perf_database::ascend_attention::missing_prefix_and_batch_axes_use_their_own_work_intercepts ... ok
+test perfmodel::perf_database::ascend_attention::singleton_attention_boundary_has_no_identifiable_fixed_component ... ok
+test perfmodel::perf_database::ascend_attention::smaller_query_scales_compute_without_treating_full_boundary_latency_as_launch_cost ... ok
+test perfmodel::perf_database::ascend_attention::tests::eager_prefill_batch_three_is_the_midpoint_of_batch_two_and_four ... ok
+test perfmodel::perf_database::ascend_attention::tests::graph_padding_is_explicit_and_validated ... ok
+test perfmodel::perf_database::ascend_attention::tests::eager_padding_uses_its_own_measured_plane ... ok
+test perfmodel::perf_database::ascend_attention::tests::interpolate_only_measured_active_and_kv_brackets_within_capture_bucket ... ok
+test perfmodel::perf_database::ascend_attention::tests::prefill_uses_tokens_and_prefix_without_decode_padding ... ok
+test perfmodel::perf_database::ascend_attention::tests::malformed_geometry_checks_and_duplicate_rows_fail_closed ... ok
+test perfmodel::perf_database::ascend_bmm::tests::measured_tokens_interpolate_without_borrowing_heads_kernel_or_mode ... ok
+test perfmodel::perf_database::ascend_bmm::tests::padding_and_weight_size_use_physical_bf16_views ... ok
+test perfmodel::perf_database::ascend_attention::tests::primary_identity_cannot_borrow_another_runtime ... ok
+test perfmodel::perf_database::ascend_bmm::tests::primary_sources_preserve_hardware_and_runtime_identity ... ok
+test perfmodel::perf_database::ascend_dcp_attention::tests::eager_prefill_interpolates_between_two_and_four_requests_without_extrapolation ... ok
+test perfmodel::perf_database::ascend_dcp_attention::tests::interpolates_sequence_midpoint_then_one_third_of_active_batch_interval ... ok
+test perfmodel::perf_database::ascend_bmm::tests::wrong_strides_unverified_replays_and_duplicates_are_invalid_data ... ok
+test perfmodel::perf_database::ascend_deepep::tests::attention_tokens_are_padded_before_local_sharding ... ok
+test perfmodel::perf_database::ascend_deepep::tests::transport_lookup_keeps_phase_topology_distribution_and_bounds ... ok
+test perfmodel::perf_database::ascend_dcp_attention::tests::rejects_token_interleaving_wrong_cache_dtype_and_incomplete_boundary ... ok
+test perfmodel::perf_database::ascend_layer::tests::context_anchor_uses_intersection_of_batch_brackets ... ok
+test perfmodel::perf_database::ascend_layer::tests::runtime_identity_and_numeric_coverage_are_scoped_to_measured_topology ... ok
+test perfmodel::perf_database::ascend_layer::tests::sparse_grid_interpolates_only_inside_measured_brackets ... ok
+test perfmodel::perf_database::ascend_linear::tests::actual_group_max_does_not_assume_bias_is_always_slower ... ok
+test perfmodel::perf_database::ascend_deepep::tests::transport_rows_require_correct_precision_and_actual_execution ... ok
+test perfmodel::perf_database::ascend_linear::tests::collection_identity_is_separate_per_bias_curve_but_never_mixed_inside_one ... ok
+test perfmodel::perf_database::ascend_linear::tests::exact_primary_accepts_both_layouts_and_respects_veto ... ok
+test perfmodel::perf_database::ascend_linear::tests::malformed_data_never_becomes_a_coverage_miss ... ok
+test perfmodel::perf_database::ascend_linear::tests::measured_brackets_keep_bias_layout_and_execution_exact ... ok
+test perfmodel::perf_database::ascend_linear::tests::primary_cannot_relabel_another_system_backend_or_version ... ok
+test perfmodel::perf_database::ascend_linear::tests::token_axis_sharding_and_padding_are_explicit ... ok
+test perfmodel::perf_database::ascend_linear::tests::mixed_indexer_precision_cannot_use_bfloat16_input_rows ... ok
+test perfmodel::perf_database::ascend_moe_chain::tests::input_padding_precedes_routing_ratio_and_scales_are_resident ... ok
+test perfmodel::perf_database::ascend_moe_chain::tests::primary_source_is_exact_and_does_not_override_veto ... ok
+test perfmodel::perf_database::ascend_moe_chain::tests::received_counts_interpolate_without_treating_capacity_as_work ... ok
+test perfmodel::perf_database::ascend_moe_tensor::tests::midpoint_of_one_and_three_ms_is_two_and_does_not_extrapolate ... ok
+test perfmodel::perf_database::ascend_moe_tensor::tests::rejects_wrong_dispatcher_and_mixed_measurement_identity ... ok
+test perfmodel::perf_database::ascend_moe_tensor::tests::tensor_moe_pads_input_tokens_without_dividing_or_topk_expansion ... ok
+test perfmodel::perf_database::ascend_pd::pd_extrapolation_keeps_page_rounding_and_isolates_policy_views ... ok
+test perfmodel::perf_database::ascend_moe_chain::tests::count_vectors_precision_and_execution_must_match_the_contract ... ok
+test perfmodel::perf_database::ascend_pd::tests::ascend_pd_rounds_actual_pages_and_keeps_measured_bounds ... ok
+test perfmodel::perf_database::ascend_pd::tests::ascend_pd_rejects_wrong_payload_and_unverified_replica_copies ... ok
+test perfmodel::perf_database::ascend_shape::tests::doubles_variable_work_and_retains_the_measured_fixed_component ... ok
+test perfmodel::perf_database::ascend_vector::tests::bounds_and_role_identity_survive_prepared_lookup ... ok
+test perfmodel::perf_database::ascend_pd::tests::independent_curves_keep_separate_collection_identities ... ok
+test perfmodel::perf_database::ascend_vector::tests::primary_paths_never_relabel_other_systems_or_runtimes ... ok
+test perfmodel::perf_database::ascend_vector::tests::invalid_geometry_verification_and_duplicate_rows_fail_closed ... ok
+test perfmodel::perf_database::ascend_vector::tests::sequence_length_transfer_is_eager_int32_and_has_no_resident_weights ... ok
+test perfmodel::perf_database::ascend_vector::tests::token_axis_padding_and_parameter_storage_are_explicit ... ok
+test perfmodel::perf_database::ascend_vector::tests::separate_execution_curves_keep_separate_collection_identities ... ok
+
+test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 2094 filtered out; finished in 0.14s
+
+/usr/local/python3.12.13/lib/python3.12/site-packages/pytest_asyncio/plugin.py:217: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+........................................................................ [ 16%]
+........................................................................ [ 32%]
+........................................................................ [ 48%]
+........................................................................ [ 64%]
+........................................................................ [ 80%]
+........................................................................ [ 96%]
+..............                                                           [100%]
+446 passed in 322.50s (0:05:22)

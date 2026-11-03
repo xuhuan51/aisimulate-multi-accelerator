@@ -3038,7 +3038,7 @@
       "Arbitrary DP batch populations and topologies do not yet have qualified runtime-layer coverage.",
       "Independent TTFT accuracy and broad-workload per-metric MAPE below20% remain unaccepted."
     ],
-    "next_action": "Validate the causal attention extrapolation fix, finish the independent12K/4K serving case, compare all historical rows without hiding failures, then collect and model remaining DP populations and prefill execution costs.",
+    "next_action": "Model the measured expert routing imbalance and synchronized MoE critical path without a latency residual; qualify new routed populations, finish coverage support, and retain the39-row historical plus six-workload serving comparison including failures.",
     "stage": 6,
     "status": "in_progress"
   },
@@ -3192,12 +3192,14 @@
     },
     "attention_work_intercept_20261104": {
       "finding": "At prefix4096 the minimum collected query is4096 tokens and12.02294ms; the old extrapolator treated that entire latency as launch cost, returning essentially the same cost for1024 tokens. This produced an artificial context-attention peak and about40% aggregate-prefill forward error. Derive bounded fixed cost from neighboring measured analytical-work points instead. Exact observations and strict measured bounds remain unchanged.",
+      "serving_results": "All six independent serving cases completed. Five predictions complete and one fails an unsupported DP population. 12K/4K/C4 TTFT error -11.65%, TPOT +2.55%, input/output throughput -2.36%. 16K/C32 TTFT remains -48.21%; accuracy is not globally accepted.",
+      "source": "production/prediction-repair-20261102/attention-work-intercept-validation-20261104/validation.json",
       "sources": [
         "production/prediction-repair-20261102/tp32-runtime-validation-20261104/serving-prefill-attribution.json",
         "production/prediction-repair-20261102/attention-work-intercept-validation-20261104/native-tests.log"
       ],
-      "status": "root_cause_verified_fix_under_validation",
-      "validation": "11 native attention oracle tests passed; native wheel build and both parity suites pending."
+      "status": "native_and_parity_validated",
+      "validation": "50 Ascend native table tests and446 Python/model/parity/contract/collector tests passed; both parity suites passed without golden updates. Image aisimulate-910c:attention-work-intercept-20261104 contains the tested wheel."
     },
     "basis": {
       "confidence": "high",
@@ -4686,6 +4688,15 @@
       "limits": "Only paired steady eager decode calibrated. Colocated diagnostic prefill uses1024tokens/rank to retain650MBHCCL buffer; this is not PD endpoint timing. TTFT remains unaccepted.",
       "new_work": "Request-linked 1P1D campaign on20+25 running with explicit clientRID and Tokenizer stage timestamps. HTTP PD gateway source confirms prefill response body is awaited before decode stream is forwarded. Native gate passes473Rust replay tests; Python and end-to-end validation in progress."
     },
+    "tp32_prefill_combine_gap_20261104": {
+      "finding": "Pinned-image profiling of two real16K/C32 prefill rounds shows CamMoeCombineNormal kernel median12.53ms on rank0 versus2.0935ms in the balanced1024-token communication table. Across32ranks, each layer averages8192 expert assignments but some ranks receive up to about38094. Combine start spread is typically6-15ms while finish spread is under1ms: late rank work and routing imbalance are candidate causes, not a fixed extra latency to add. Cross-host clock offset and detailed critical paths still require verification.",
+      "restriction": "Profiled serving durations are diagnostic only. Do not fit or add whole-forward or Combine residuals; model actual per-expert/rank work and synchronization before claiming accuracy.",
+      "sources": [
+        "production/prediction-repair-20261102/tp32-prefill-operator-trace-20261104/campaign.json",
+        "production/prediction-repair-20261102/tp32-prefill-operator-trace-20261104/combine-diagnostic-matrix.json"
+      ],
+      "status": "causal_attribution_in_progress"
+    },
     "tp32_runtime_layers_20261104": {
       "campaign": "production/prediction-repair-20261102/layer-tp32-node20-25-20261104-attempt4",
       "collection_progress": "All 43 original cases and recorded quality repeats finished. 327 of 328 training layer cells satisfy unchanged numerical/CV gates. Publish only the 320 cells belonging to complete eight-layer populations; preserve the full-plan failure. The remaining active32/request4/2K population has an independent qualified 8K anchor and is estimated, not measured, at 2K.",
@@ -4706,6 +4717,7 @@
       "publication": "560 rows: 240 unchanged TP16 rows plus 320 qualified TP32 rows. No averaging or fitted whole-forward residual. serving_accuracy_acceptance remains false.",
       "qualification_recovery": "Initial CPU qualification invocation used a host path absent inside its /workspace mount. Failure and logs retained; helper now resolves the source relative to the mounted repository. Qualification selects first numerically valid CV<=0.1 cell, independently of serving errors. No production TP32 data has been published yet.",
       "remaining_coverage": "Historical TP32 high-concurrency PD replay rejects skewed DP populations across padding buckets or missing request-count anchors. Independent aggregate C64 likewise fails on active31/requests2. Failures retained; no isolated-kernel fallback.",
+      "routed_population_followup": "Six new explicit-DP-routing populations completed, including active4/request2 and active31/request2 gaps, a full-active control, and three heterogeneous MAX_LEN/SUM_LEN heldouts. All captured request counts match the declared vectors. They remain raw diagnostics pending quality gates and native coverage support; no data-contract extension or silent fallback was made.",
       "serving_validation": "Five independent aggregate serving cases finished with probes disarmed and separate seed; 12K/4K case still running. New TTFT errors exposed a separate prefill attention extrapolation defect. Accuracy remains unaccepted.",
       "source_identity": "Pinned SGLang0.5.22/CANN9.1 image; model config and quantization SHA256 identical on both hosts",
       "sources": [
@@ -4736,7 +4748,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 160,
+  "revision": 161,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

@@ -1,0 +1,27 @@
+{
+  "research": {
+    "attention_work_intercept_20261104": {
+      "status": "native_and_parity_validated",
+      "validation": "50 Ascend native table tests and446 Python/model/parity/contract/collector tests passed; both parity suites passed without golden updates. Image aisimulate-910c:attention-work-intercept-20261104 contains the tested wheel.",
+      "serving_results": "All six independent serving cases completed. Five predictions complete and one fails an unsupported DP population. 12K/4K/C4 TTFT error -11.65%, TPOT +2.55%, input/output throughput -2.36%. 16K/C32 TTFT remains -48.21%; accuracy is not globally accepted.",
+      "source": "production/prediction-repair-20261102/attention-work-intercept-validation-20261104/validation.json"
+    },
+    "tp32_prefill_combine_gap_20261104": {
+      "status": "causal_attribution_in_progress",
+      "finding": "Pinned-image profiling of two real16K/C32 prefill rounds shows CamMoeCombineNormal kernel median12.53ms on rank0 versus2.0935ms in the balanced1024-token communication table. Across32ranks, each layer averages8192 expert assignments but some ranks receive up to about38094. Combine start spread is typically6-15ms while finish spread is under1ms: late rank work and routing imbalance are candidate causes, not a fixed extra latency to add. Cross-host clock offset and detailed critical paths still require verification.",
+      "sources": [
+        "production/prediction-repair-20261102/tp32-prefill-operator-trace-20261104/campaign.json",
+        "production/prediction-repair-20261102/tp32-prefill-operator-trace-20261104/combine-diagnostic-matrix.json"
+      ],
+      "restriction": "Profiled serving durations are diagnostic only. Do not fit or add whole-forward or Combine residuals; model actual per-expert/rank work and synchronization before claiming accuracy."
+    },
+    "tp32_runtime_layers_20261104": {
+      "routed_population_followup": "Six new explicit-DP-routing populations completed, including active4/request2 and active31/request2 gaps, a full-active control, and three heterogeneous MAX_LEN/SUM_LEN heldouts. All captured request counts match the declared vectors. They remain raw diagnostics pending quality gates and native coverage support; no data-contract extension or silent fallback was made."
+    }
+  },
+  "progress": {
+    "stage": 6,
+    "status": "in_progress",
+    "next_action": "Model the measured expert routing imbalance and synchronized MoE critical path without a latency residual; qualify new routed populations, finish coverage support, and retain the39-row historical plus six-workload serving comparison including failures."
+  }
+}

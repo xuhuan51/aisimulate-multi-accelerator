@@ -64,6 +64,19 @@ struct BoundedCurve {
     maximum: u32,
 }
 
+fn fixed_work_cost(anchor: (f64, f64), neighbor: Option<(f64, f64)>) -> f64 {
+    let Some((neighbor_work, neighbor_latency)) = neighbor else {
+        return 0.0;
+    };
+    let (anchor_work, anchor_latency) = anchor;
+    let work_delta = neighbor_work - anchor_work;
+    if work_delta.abs() <= f64::EPSILON * anchor_work.abs().max(neighbor_work.abs()) {
+        return 0.0;
+    }
+    let intercept = anchor_latency - anchor_work * (neighbor_latency - anchor_latency) / work_delta;
+    intercept.clamp(0.0, anchor_latency.min(neighbor_latency))
+}
+
 impl BoundedCurve {
     fn new(points: BTreeMap<u32, f64>) -> Self {
         Self {
@@ -93,12 +106,16 @@ impl BoundedCurve {
         if anchor == coordinate {
             return Ok(value);
         }
-        let floor = self
+        let anchor_work = work(anchor)?;
+        let neighbor = self
             .points
             .iter()
-            .map(|(_, value)| value)
-            .fold(f64::INFINITY, f64::min);
-        value.scale_work(work(coordinate)?, work(anchor)?, floor)
+            .filter(|(axis, _)| *axis != anchor)
+            .min_by_key(|(axis, _)| axis.abs_diff(anchor))
+            .map(|(axis, latency)| Ok((work(axis)?, latency)))
+            .transpose()?;
+        let floor = fixed_work_cost((anchor_work, value.latency_ms), neighbor);
+        value.scale_work(work(coordinate)?, anchor_work, floor)
     }
 }
 
@@ -181,12 +198,23 @@ impl Plane {
             .or(upper)
             .ok_or_else(|| AicError::PerfDatabase("empty Ascend shape plane".into()))?;
         let value = curve.estimate(inner, &|value| work(*anchor, value))?;
-        let floor = curve
-            .points
+        let anchor_work = work(*anchor, inner)?;
+        let neighbor = self
+            .0
             .iter()
-            .map(|(_, value)| value)
-            .fold(f64::INFINITY, f64::min);
-        value.scale_work(work(outer, inner)?, work(*anchor, inner)?, floor)
+            .filter(|(axis, _)| *axis != anchor)
+            .min_by_key(|(axis, _)| axis.abs_diff(*anchor))
+            .map(|(axis, curve)| {
+                Ok((
+                    work(*axis, inner)?,
+                    curve
+                        .estimate(inner, &|value| work(*axis, value))?
+                        .latency_ms,
+                ))
+            })
+            .transpose()?;
+        let floor = fixed_work_cost((anchor_work, value.latency_ms), neighbor);
+        value.scale_work(work(outer, inner)?, anchor_work, floor)
     }
 }
 
@@ -231,15 +259,22 @@ pub(crate) fn estimate_attention_grid(
     let value = plane.estimate(prefix, sequence, &|past, tokens| {
         work(*anchor, tokens, past)
     })?;
-    value.scale_work(
-        work(active, sequence, prefix)?,
-        work(*anchor, sequence, prefix)?,
-        plane
-            .0
-            .values()
-            .flat_map(|curve| curve.points.iter().map(|(_, value)| value))
-            .fold(f64::INFINITY, f64::min),
-    )
+    let anchor_work = work(*anchor, sequence, prefix)?;
+    let neighbor = partitions
+        .iter()
+        .filter(|(batch, _)| *batch != anchor)
+        .min_by_key(|(batch, _)| batch.abs_diff(*anchor))
+        .map(|(batch, plane)| {
+            Ok((
+                work(*batch, sequence, prefix)?,
+                plane
+                    .estimate(prefix, sequence, &|past, tokens| work(*batch, tokens, past))?
+                    .latency_ms,
+            ))
+        })
+        .transpose()?;
+    let floor = fixed_work_cost((anchor_work, value.latency_ms), neighbor);
+    value.scale_work(work(active, sequence, prefix)?, anchor_work, floor)
 }
 
 pub(crate) fn query_prefill_batch(
@@ -922,11 +957,69 @@ fn anchored_ragged_grid_scales_only_the_missing_boundary() {
     ]);
     let work = |batch, tokens, _| Ok(f64::from(batch) * f64::from(tokens));
     let estimate = estimate_attention_grid(&partitions, true, 3, 3, 4096, 0, &work).unwrap();
-    assert_eq!(estimate.latency_ms, 11.0);
+    let expected = (8.0 + 2.0 + (4096.0 - 1.0) * 6.0 / (2048.0 - 1.0)) / 2.0;
+    assert!((estimate.latency_ms - expected).abs() < 1e-12);
     assert!(estimate.extrapolated);
     assert!(query_prefill_batch(&partitions, 3, 0, 4096).is_err());
     assert!(estimate_attention_grid(&partitions, false, 1, 8, 4096, 0, &work).is_err());
     let measured = estimate_attention_grid(&partitions, true, 2, 2, 4096, 0, &work).unwrap();
     assert_eq!(measured.latency_ms, 8.0);
     assert!(!measured.extrapolated);
+}
+
+#[test]
+fn smaller_query_scales_compute_without_treating_full_boundary_latency_as_launch_cost() {
+    let curve = BoundedCurve::new(BTreeMap::from([(4096, 42.96), (8192, 83.92)]));
+    let work = |tokens| Ok(f64::from(tokens));
+    let smaller = curve.estimate(1024, &work).unwrap();
+    assert!((smaller.latency_ms - 12.24).abs() < 1e-12);
+    assert!(smaller.extrapolated);
+    let larger = curve.estimate(16384, &work).unwrap();
+    assert!((larger.latency_ms - 165.84).abs() < 1e-12);
+    let measured = curve.estimate(4096, &work).unwrap();
+    assert_eq!(measured.latency_ms, 42.96);
+    assert!(!measured.extrapolated);
+    assert!(curve.query(1024).unwrap_err().is_missing_perf_data());
+}
+
+#[test]
+fn singleton_attention_boundary_has_no_identifiable_fixed_component() {
+    let curve = BoundedCurve::new(BTreeMap::from([(4096, 12.0)]));
+    let estimate = curve
+        .estimate(1024, &|tokens| Ok(f64::from(tokens)))
+        .unwrap();
+    assert_eq!(estimate.latency_ms, 3.0);
+    assert!(estimate.extrapolated);
+    assert_eq!(fixed_work_cost((8.0, 10.0), Some((8.0, 9.0))), 0.0);
+    assert_eq!(fixed_work_cost((8.0, 10.0), Some((16.0, 9.0))), 9.0);
+}
+
+#[test]
+fn missing_prefix_and_batch_axes_use_their_own_work_intercepts() {
+    let plane = Plane::from_raw(BTreeMap::from([
+        (0, BTreeMap::from([(1024, 3.0)])),
+        (4096, BTreeMap::from([(1024, 7.0)])),
+    ]));
+    let estimate = plane
+        .estimate(8192, 1024, &|prefix, tokens| Ok(f64::from(prefix + tokens)))
+        .unwrap();
+    assert!((estimate.latency_ms - 11.0).abs() < 1e-12);
+    assert!(estimate.extrapolated);
+    let partitions = BTreeMap::from([
+        (
+            1,
+            Plane::from_raw(BTreeMap::from([(0, BTreeMap::from([(1024, 3.0)]))])),
+        ),
+        (
+            4,
+            Plane::from_raw(BTreeMap::from([(0, BTreeMap::from([(1024, 9.0)]))])),
+        ),
+    ]);
+    let estimate =
+        estimate_attention_grid(&partitions, true, 8, 8, 1024, 0, &|batch, tokens, _| {
+            Ok(f64::from(batch) * f64::from(tokens))
+        })
+        .unwrap();
+    assert!((estimate.latency_ms - 17.0).abs() < 1e-12);
+    assert!(estimate.extrapolated);
 }
