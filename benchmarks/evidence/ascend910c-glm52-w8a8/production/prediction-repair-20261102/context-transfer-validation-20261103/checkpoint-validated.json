@@ -1,0 +1,15 @@
+{
+  "research": {
+    "context_transfer_20261103": {
+      "status": "validated_local_context_transfer; broader_accuracy_goal_in_progress",
+      "implementation": "Rust anchored runtime_layers extends only longer KV using canonical78attention+21indexer deltas from a common measured layer anchor. Requests, active-DP population, TP padding, quantization and topology stay qualified. No table changes or new residuals. Measured mode and covered values retain their old behavior.",
+      "tests": "2135 Rust tests passed,1ignored;528 Python public-model/contract and both parity tests passed. Ruff and packaged legal checks pass.45canonicalqueries:38success,7expected measured-mode rejections;all30anchoredqueries succeeded.",
+      "independent_measurements": "20formalrequests on local npu1-20:8192/128C4N8,12288/4096C4N4,16384/128C4N8. Two warmups each; exact token counts, no client errors. Pinned0.5.22 image,TP16/ADP4/EP16,graph/overlap/speculationoff,254KVpages/rank. Diagnostic container stopped.",
+      "serving_mape_percent": {"ttft":29.44889702711467,"tpot":4.340908857749892,"input_output_throughput":1.6855182816261194},
+      "findings": "K steady decode remains about51% low;L per-forward MAPE8.31-8.85%. Instrumentation adds23-25% and was not imported. Actual12K external arrivals0/12.63/14.32/15.71ms cause later requests to miss the first nonoverlap prefill poll; scheduler receives them about1469ms later. Arrival-only trace replay reduces12KTTFTerror from-30.42%toabout-14.67%, without injecting route assignments, receive times or measured forward timings. Actual-batch P/mixed MAPE11.60-14.10% remains.",
+      "artifacts": "production/prediction-repair-20261102/component-boundaries-node20-20261103;production/prediction-repair-20261102/context-transfer-validation-20261103;md/910c-glm52-context-transfer-validation-20261104.md",
+      "acceptance": "Only this local same-topology context extension and its reported heldouts. Not arbitrary-PD/topology accuracy acceptance; unconditional TTFT still fails20%. No old39row measurements were rewritten or calibrated.",
+      "next_action": "Independently characterize client/API/IPC admission, including non-simultaneous burst arrivals; complete normal-MoE expert-count/runtime boundaries and portable host dispatch composition, then validate untrained PD ratios/topologies and workloads. Do not substitute conditional trace replay for an unconditional search accuracy claim."
+    }
+  }
+}

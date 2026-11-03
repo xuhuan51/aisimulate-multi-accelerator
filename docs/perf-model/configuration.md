@@ -209,7 +209,7 @@ explicit Ascend controls.
 | `routing` | `balanced` | Uses the measured synthetic balanced expert-count profile. Other distributions are not yet supported by the complete model composition. |
 | `shared_expert_overlap` | `true` | Overlaps the shared expert with routed work where the pinned runtime permits it. Tensor-MoE prefill stays serial; its decode and the DeepEP path may overlap. `false` adds the streams serially. |
 | `decode_execution_mode` | `graph` | `graph` selects captured decode profiles and padding buckets; `eager` selects eager profiles with attention-TP token alignment. Missing eager identities fail explicitly. Prefill remains eager. This does not control scheduler overlap or CPU launch overhead. |
-| `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations. It includes their eager host dispatch, stream management and communication boundaries. Requires eager TP16/ADP4/EP16/DCP1, shared-expert multistream execution and measured request/KV brackets. Idle DP populations require their own measured curves; padding does not count as a real request. Equal active-rank request counts use their measured population. With `shape_policy: anchored`, unequal counts within the same TP padding bucket reuse each rank's measured homogeneous-population curve and are marked `estimated`; cross-bucket populations and request/KV extrapolation are rejected. Other topologies, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
+| `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations, including eager host dispatch, stream management and communication boundaries. Requires eager TP16/ADP4/EP16/DCP1, shared-expert multistream execution and measured request-count brackets. Idle DP populations need their own curves; padding does not count as a real request. With `shape_policy: anchored`, unequal counts within one TP padding bucket reuse each rank's homogeneous-population curve, and longer KV contexts use the attention-only delta described below. Both transfers are `estimated`. Cross-bucket populations, request-count extrapolation, other topologies, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
 | `enable_dp_lm_head` | `true` | Matches SGLang's output-layer grouping. `true` retains attention-local TP; `false` uses global TP, sums actual output-request counts across attention DP, and includes DP hidden-state reduction and TP logits exchange. Set separately for each worker role to match its launch flags. |
 | `enable_tp_lm_head_all_to_all` | `false` | With global LM head, uses measured all-to-all only for equal nonzero row counts with attention DP equal to global TP; other batches use all-gather. Local logits cast is measured; additional reordering/scatter and CPU synchronization remain unqualified. This path is reported as estimated composition. |
 | `eager_runtime_overhead` | omitted | Optional additive per-forward residual calibrated from unprofiled forward telemetry. Requires `calibration_id`, `operator_contract`, `attention_tp`, `attention_dp`, `moe_ep_size`, `prefill_ms`, and `decode_ms`. Timings must be finite and nonnegative. The topology must match the canonical identity; currently restricted to SGLang 0.5.22 and eager execution. |
@@ -224,10 +224,30 @@ of eight structural layer types. The engine combines them using the audited
 GLM layer counts, replaces all covered timings, and retains the covered
 operations for resident-weight accounting and explicit mixed-round kernel composition. The scope includes real Python
 and runtime work around kernels; it must not be described as pure device-kernel
-time. The table never extrapolates beyond measured request/KV brackets, even if
-`shape_policy` permits extrapolation for the independent kernel tables. A missing
-profile fails explicitly. This opt-in scope is not a claim of complete PD search
-coverage or measured end-to-end serving accuracy.
+time. With `shape_policy: measured`, both request and KV coordinates must have
+measured interpolation brackets. With `shape_policy: anchored`, the engine can
+extend the KV coordinate upward while retaining the measured request population,
+padding, topology and quantization identity. It chooses the largest KV coordinate
+in the intersection of all eight layer types' applicable request brackets, then
+computes:
+
+```text
+layers(new_KV) = measured_layers(anchor_KV)
+               + attention_kernels(new_KV) - attention_kernels(anchor_KV)
+```
+
+The delta contains exactly 78 sparse-attention and 21 indexer calls, evaluated by
+the canonical Rust operator model with the same active and padded batch. The
+anchor must be at least the model's DSA top-k of 2048, so the extension cannot
+cross that execution boundary. Dense projections, expert work, host dispatch and
+collectives retain the measured invocation boundary at that request population;
+they are not scaled with context length. This is a modeled context transfer,
+always reported as `estimated`, not a new measurement or a fitted whole-forward
+residual. Missing attention data, request brackets or layer identities still fail
+explicitly. Shorter contexts below coverage are not extrapolated. No request-count
+or topology extrapolation is implied, and this opt-in scope does not establish
+complete PD search coverage or end-to-end serving accuracy. Changed token content
+can change expert routing; independent workload validation remains necessary.
 Layer profiles use the model-selected experts from the captured inputs, bind the
 ModelSlim descriptor SHA256, and expose `decode_routing:
 captured_model_selected_top8` in execution assumptions. The `routing` option

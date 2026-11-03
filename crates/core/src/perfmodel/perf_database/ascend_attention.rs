@@ -133,6 +133,31 @@ impl Plane {
         }
     }
 
+    pub(crate) fn inner_bounds(&self, outer: u32) -> Result<(u32, u32), AicError> {
+        if let Some(curve) = self.0.get(&outer) {
+            return Ok((curve.minimum, curve.maximum));
+        }
+        match (
+            self.0.range(..outer).next_back(),
+            self.0.range(outer..).next(),
+        ) {
+            (Some((_, lower)), Some((_, upper))) => {
+                let minimum = lower.minimum.max(upper.minimum);
+                let maximum = lower.maximum.min(upper.maximum);
+                if minimum <= maximum {
+                    Ok((minimum, maximum))
+                } else {
+                    Err(AicError::PerfDatabase(
+                        "Ascend plane has no common inner-axis interpolation bracket".into(),
+                    ))
+                }
+            }
+            _ => Err(AicError::PerfDatabase(format!(
+                "Ascend plane outer-axis={outer} lacks measured brackets"
+            ))),
+        }
+    }
+
     fn estimate(
         &self,
         outer: u32,

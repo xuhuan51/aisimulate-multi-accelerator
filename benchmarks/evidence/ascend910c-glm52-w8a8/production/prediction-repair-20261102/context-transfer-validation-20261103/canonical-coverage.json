@@ -1,0 +1,6759 @@
+{
+  "scope": "Canonical-model coverage and attribution check, not serving accuracy",
+  "rows": [
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 8192,
+      "status": "predicted",
+      "latency_ms": 198.7418159023625,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0154024697840214,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.131150126457214,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2329312562942505,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.22540875524282455,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.09282749891281128,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22307811677455902,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_global_sums",
+          1.4358625652942252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          80.31029841658892,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 10240,
+      "status": "predicted",
+      "latency_ms": 198.90105821252462,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0151624903082848,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.290632416095052,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2329312562942505,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.22540875524282455,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.09282749891281128,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22307811677455902,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_global_sums",
+          1.4358625652942252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          80.31029841658892,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 12288,
+      "status": "predicted",
+      "latency_ms": 198.85016749220827,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0126874819397926,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.242216704147203,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2329312562942505,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.22540875524282455,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.09282749891281128,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22307811677455902,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_global_sums",
+          1.4358625652942252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          80.31029841658892,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 16384,
+      "status": "predicted",
+      "latency_ms": 198.74838605157558,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0077374652028084,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.145385280251503,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2329312562942505,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.22540875524282455,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.09282749891281128,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22307811677455902,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_global_sums",
+          1.4358625652942252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          80.31029841658892,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 32768,
+      "status": "predicted",
+      "latency_ms": 198.88588336117093,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0182899795472622,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.272330075502396,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2329312562942505,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.22540875524282455,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.09282749891281128,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22307811677455902,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_global_sums",
+          1.4358625652942252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          80.31029841658892,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 8192,
+      "status": "predicted",
+      "latency_ms": 200.849339388924,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0154024697840214,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.131150126457214,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2113799974322319,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.2225920334458351,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.08544375188648701,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22425656765699387,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_attention_reduce_scatter",
+          0.6213224977254868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_gather",
+          0.6072299927473068,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_reduce_scatter",
+          0.9807637631893158,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_gather",
+          0.6096374988555908,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          81.06179973838152,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 10240,
+      "status": "predicted",
+      "latency_ms": 201.00858169908608,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0151624903082848,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.290632416095052,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2113799974322319,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.2225920334458351,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.08544375188648701,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22425656765699387,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_attention_reduce_scatter",
+          0.6213224977254868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_gather",
+          0.6072299927473068,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_reduce_scatter",
+          0.9807637631893158,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_gather",
+          0.6096374988555908,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          81.06179973838152,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 12288,
+      "status": "predicted",
+      "latency_ms": 200.95769097876976,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0126874819397926,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.242216704147203,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2113799974322319,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.2225920334458351,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.08544375188648701,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22425656765699387,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_attention_reduce_scatter",
+          0.6213224977254868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_gather",
+          0.6072299927473068,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_reduce_scatter",
+          0.9807637631893158,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_gather",
+          0.6096374988555908,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          81.06179973838152,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 16384,
+      "status": "predicted",
+      "latency_ms": 200.85590953813707,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0077374652028084,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.145385280251503,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2113799974322319,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.2225920334458351,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.08544375188648701,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22425656765699387,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_attention_reduce_scatter",
+          0.6213224977254868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_gather",
+          0.6072299927473068,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_reduce_scatter",
+          0.9807637631893158,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_gather",
+          0.6096374988555908,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          81.06179973838152,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 32768,
+      "status": "predicted",
+      "latency_ms": 200.99340684773242,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0182899795472622,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.272330075502396,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2113799974322319,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.2225920334458351,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.08544375188648701,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22425656765699387,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_attention_reduce_scatter",
+          0.6213224977254868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_gather",
+          0.6072299927473068,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_reduce_scatter",
+          0.9807637631893158,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_gather",
+          0.6096374988555908,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          81.06179973838152,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 8192,
+      "status": "predicted",
+      "latency_ms": 200.99894028228758,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0143525302410126,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.278959780931473,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2113799974322319,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.2225920334458351,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.08544375188648701,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22425656765699387,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_attention_reduce_scatter",
+          0.6213224977254868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_gather",
+          0.6072299927473068,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_reduce_scatter",
+          0.9807637631893158,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_gather",
+          0.6096374988555908,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          81.06179973838152,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 10240,
+      "status": "predicted",
+      "latency_ms": 201.0420246903111,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0533974803984165,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.282999238797596,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2113799974322319,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.2225920334458351,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.08544375188648701,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22425656765699387,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_attention_reduce_scatter",
+          0.6213224977254868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_gather",
+          0.6072299927473068,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_reduce_scatter",
+          0.9807637631893158,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_gather",
+          0.6096374988555908,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          81.06179973838152,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 12288,
+      "status": "predicted",
+      "latency_ms": 201.0763983068447,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0465424917638302,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.324227843965803,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2113799974322319,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.2225920334458351,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.08544375188648701,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22425656765699387,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_attention_reduce_scatter",
+          0.6213224977254868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_gather",
+          0.6072299927473068,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_reduce_scatter",
+          0.9807637631893158,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_gather",
+          0.6096374988555908,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          81.06179973838152,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 16384,
+      "status": "predicted",
+      "latency_ms": 201.14514553991197,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.0328325144946575,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.406685054302216,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2113799974322319,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.2225920334458351,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.08544375188648701,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22425656765699387,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_attention_reduce_scatter",
+          0.6213224977254868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_gather",
+          0.6072299927473068,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_reduce_scatter",
+          0.9807637631893158,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_gather",
+          0.6096374988555908,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          81.06179973838152,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "isolated_kernels"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 32768,
+      "status": "predicted",
+      "latency_ms": 201.30531541702388,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_first_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_norms",
+          0.2332725003361702,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_input_norms",
+          5.355935215950012,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_cache",
+          0.04427250102162361,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qkv_a",
+          6.030399352312088,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_qk_norm",
+          10.99751204252243,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_q_b",
+          6.006463140249252,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_attention",
+          8.735415056347847,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_latent",
+          1.8891599290072918,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_rope",
+          1.9217249862849712,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_query",
+          1.617124691605568,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_key",
+          0.47587310895323753,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_norm",
+          1.930582456290722,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_rope_indexer",
+          2.37289497256279,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_query",
+          0.6251962445676327,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_concat_key",
+          0.5944049935787916,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_input_cast",
+          0.6108375135809183,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights",
+          0.604117501527071,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_weights_cast",
+          0.5976337473839521,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_cache_indexer",
+          0.5002462416887283,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer",
+          1.106227520853281,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention",
+          7.493459925055504,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_seq_lens_h2d",
+          2.934055231511593,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_indexer_seq_lens_h2d",
+          0.7899379469454288,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_query_nope",
+          2.9571020007133484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_mla_output_decode",
+          4.380163215100765,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_attention_output",
+          5.914678797125816,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_residual_add",
+          0.04862624779343605,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_post_norm",
+          0.2113799974322319,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_gate_up",
+          0.2225920334458351,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_activation",
+          0.08544375188648701,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_down",
+          0.22425656765699387,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_reduce_scatter",
+          15.533062443137169,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_post_norm",
+          5.428312718868256,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_router",
+          1.6693007200956345,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_attention_reduce_scatter",
+          0.6213224977254868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_input_gather",
+          0.6072299927473068,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_reduce_scatter",
+          0.9807637631893158,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_dense_output_gather",
+          0.6096374988555908,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_moe_overlap",
+          81.06179973838152,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_shared_add",
+          1.0676250094547868,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_sparse_output_gather",
+          15.24093747138977,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 8192,
+      "status": "predicted",
+      "latency_ms": 407.2556529891569,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          406.3653080421484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 10240,
+      "status": "predicted",
+      "latency_ms": 406.1450469212589,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          405.2547019742504,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 12288,
+      "status": "predicted",
+      "latency_ms": 405.0228134109212,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          404.1324684639127,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 16384,
+      "status": "predicted",
+      "latency_ms": 402.77834639024553,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          401.88800144323704,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 32768,
+      "status": "rejected",
+      "error": "perf database error: Ascend runtime layer AscendLayerKey { attention_tp: 4, attention_dp: 4, active_attention_dp: 1, moe_ep: 16, layer: 0, quantization_sha256: \"3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba\" } requires measured request/KV brackets: perf database error: Ascend attention axis=32768 outside measured [527, 16390]"
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 8192,
+      "status": "predicted",
+      "latency_ms": 440.74178759685964,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          439.84793839550287,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 10240,
+      "status": "predicted",
+      "latency_ms": 441.0108123867323,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          440.11696318537554,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 12288,
+      "status": "rejected",
+      "error": "perf database error: Ascend runtime layer AscendLayerKey { attention_tp: 4, attention_dp: 4, active_attention_dp: 4, moe_ep: 16, layer: 0, quantization_sha256: \"3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba\" } requires measured request/KV brackets: perf database error: Ascend attention axis=12288 outside measured [558, 10282]"
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 16384,
+      "status": "rejected",
+      "error": "perf database error: Ascend runtime layer AscendLayerKey { attention_tp: 4, attention_dp: 4, active_attention_dp: 4, moe_ep: 16, layer: 0, quantization_sha256: \"3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba\" } requires measured request/KV brackets: perf database error: Ascend attention axis=16384 outside measured [558, 10282]"
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 32768,
+      "status": "rejected",
+      "error": "perf database error: Ascend runtime layer AscendLayerKey { attention_tp: 4, attention_dp: 4, active_attention_dp: 4, moe_ep: 16, layer: 0, quantization_sha256: \"3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba\" } requires measured request/KV brackets: perf database error: Ascend attention axis=32768 outside measured [558, 10282]"
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 8192,
+      "status": "predicted",
+      "latency_ms": 471.65758425572955,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          470.76089387594044,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 10240,
+      "status": "predicted",
+      "latency_ms": 461.10934071956154,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          460.21265033977244,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 12288,
+      "status": "rejected",
+      "error": "perf database error: Ascend runtime layer AscendLayerKey { attention_tp: 4, attention_dp: 4, active_attention_dp: 4, moe_ep: 16, layer: 0, quantization_sha256: \"3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba\" } requires measured request/KV brackets: perf database error: Ascend attention axis=12288 outside measured [557, 10281]"
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 16384,
+      "status": "rejected",
+      "error": "perf database error: Ascend runtime layer AscendLayerKey { attention_tp: 4, attention_dp: 4, active_attention_dp: 4, moe_ep: 16, layer: 0, quantization_sha256: \"3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba\" } requires measured request/KV brackets: perf database error: Ascend attention axis=16384 outside measured [557, 10281]"
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "measured",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 32768,
+      "status": "rejected",
+      "error": "perf database error: Ascend runtime layer AscendLayerKey { attention_tp: 4, attention_dp: 4, active_attention_dp: 4, moe_ep: 16, layer: 0, quantization_sha256: \"3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba\" } requires measured request/KV brackets: perf database error: Ascend attention axis=32768 outside measured [557, 10281]"
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 8192,
+      "status": "predicted",
+      "latency_ms": 407.2556529891569,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          406.3653080421484,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 10240,
+      "status": "predicted",
+      "latency_ms": 406.1450469212589,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          405.2547019742504,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 12288,
+      "status": "predicted",
+      "latency_ms": 405.0228134109212,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          404.1324684639127,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 16384,
+      "status": "predicted",
+      "latency_ms": 402.77834639024553,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          401.88800144323704,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "context": 32768,
+      "status": "predicted",
+      "latency_ms": 402.9124568043539,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          402.0221118573454,
+          0.0,
+          "estimated"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5741374384519373,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 8192,
+      "status": "predicted",
+      "latency_ms": 440.74178759685964,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          439.84793839550287,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 10240,
+      "status": "predicted",
+      "latency_ms": 441.0108123867323,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          440.11696318537554,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 12288,
+      "status": "predicted",
+      "latency_ms": 440.9645706481844,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          440.07072144682763,
+          0.0,
+          "estimated"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 16384,
+      "status": "predicted",
+      "latency_ms": 440.8627892075517,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          439.96894000619494,
+          0.0,
+          "estimated"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "context": 32768,
+      "status": "predicted",
+      "latency_ms": 441.00028651714706,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          440.1064373157903,
+          0.0,
+          "estimated"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5776416928002489,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 8192,
+      "status": "predicted",
+      "latency_ms": 471.65758425572955,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          470.76089387594044,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 10240,
+      "status": "predicted",
+      "latency_ms": 461.10934071956154,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          460.21265033977244,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 12288,
+      "status": "predicted",
+      "latency_ms": 460.93189709699357,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          460.03520671720446,
+          0.0,
+          "estimated"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 16384,
+      "status": "predicted",
+      "latency_ms": 461.0006443300608,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          460.1039539502717,
+          0.0,
+          "estimated"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    },
+    {
+      "config": {
+        "model": "/data_lib/data/models/glm-q",
+        "system": "ascend910c",
+        "backend": "sglang",
+        "backend_version": "0.5.22",
+        "worker_type": "decode",
+        "tp": 4,
+        "attention_dp": 4,
+        "moe_tp_size": 1,
+        "moe_ep_size": 16,
+        "kv_block_size": 128,
+        "gemm_quant_mode": "w8a8",
+        "moe_quant_mode": "w8a8_dynamic",
+        "kvcache_quant_mode": "bfloat16",
+        "fmha_quant_mode": "bfloat16",
+        "estimation_mode": "op_level",
+        "estimator_config": {
+          "op_level": {
+            "ascend": {
+              "decode_execution_mode": "eager",
+              "shape_policy": "anchored",
+              "enable_dp_lm_head": false,
+              "decode_timing_scope": "runtime_layers"
+            }
+          }
+        }
+      },
+      "counts": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "context": 32768,
+      "status": "predicted",
+      "latency_ms": 461.16081420717273,
+      "operations": [
+        [
+          "generation_embedding",
+          0.019882500171661377,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_embedding_all_reduce",
+          0.20444625616073608,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_decoder_layers",
+          460.2641238273836,
+          0.0,
+          "estimated"
+        ],
+        [
+          "generation_final_residual_add",
+          0.014235000126063824,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_final_norm",
+          0.0776437520980835,
+          0.0,
+          "silicon"
+        ],
+        [
+          "generation_global_logits",
+          0.5804828712325896,
+          0.0,
+          "mixed"
+        ]
+      ]
+    }
+  ]
+}

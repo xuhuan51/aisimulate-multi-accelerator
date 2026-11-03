@@ -1,0 +1,76 @@
+{
+  "status": "failed",
+  "cases": [
+    {
+      "id": "diagnose-8192-c4",
+      "forward_call": 80,
+      "training": true,
+      "input_length": 8192,
+      "global_requests": 4,
+      "command": [
+        "docker",
+        "exec",
+        "aisim-component-boundaries-20261103",
+        "python3",
+        "-m",
+        "sglang.benchmark.serving",
+        "--backend",
+        "sglang",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18080",
+        "--model",
+        "/models/glm-q",
+        "--served-model-name",
+        "glm-5",
+        "--dataset-name",
+        "random-ids",
+        "--num-prompts",
+        "4",
+        "--max-concurrency",
+        "4",
+        "--random-input-len",
+        "8192",
+        "--random-output-len",
+        "128",
+        "--random-range-ratio",
+        "1.0",
+        "--request-rate",
+        "inf",
+        "--warmup-requests",
+        "2",
+        "--seed",
+        "940",
+        "--tokenize-prompt",
+        "--output-details",
+        "--output-file",
+        "/campaign/diagnose-8192-c4/requests.jsonl"
+      ],
+      "start_unix": 1793712955.1893692,
+      "status": "running",
+      "end_unix": 1793713054.783935,
+      "returncode": 0
+    }
+  ],
+  "plan": [
+    [
+      "diagnose-8192-c4",
+      8192,
+      4
+    ],
+    [
+      "holdout-12288-c4",
+      12288,
+      4
+    ],
+    [
+      "holdout-8192-c8",
+      8192,
+      8
+    ]
+  ],
+  "scope": "Component boundary diagnosis; instrumented request latency is not serving ground truth",
+  "source_sha256": "a3219c28687ccfdc306b3959a112582a8b47e8ecb6fd677e928965b55f900fcf",
+  "error": "ValueError('Captured batch differs from steady decode: benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/component-boundaries-node20-20261103/diagnose-8192-c4/components-rank0.json')"
+}

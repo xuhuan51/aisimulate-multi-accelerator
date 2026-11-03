@@ -888,6 +888,19 @@ It invokes the installed implementation, replaces covered kernel timings, and
 preserves their memory inventory. No upstream implementation is copied; the
 runtime module measurements include host dispatch and are not a fitted residual.
 
+The longer-context transfer in that Rust layer operator and its database bounds
+independently models the same revision's
+`python/sglang/srt/hardware_backend/npu/modules/deepseek_v2_attention_mla_npu.py`,
+`hardware_backend/npu/attention/ascend_backend.py`, and
+`layers/attention/dsa/dsa_npu_indexer.py`: at fixed decode batch and topology,
+the modeled KV-dependent delta contains the sparse attention and indexer calls.
+It does not copy upstream implementation. The independent
+`launch_component_replay_probe.py`, `run_component_campaign.py` and
+`run_context_holdouts.py` under `prediction-repair-20261102/` invoke the installed
+layer-boundary, quantization and serving APIs at that pinned revision. Their
+frozen campaign copies and generated evidence retain the Apache-2.0 attribution
+above. Nested diagnostic spans are not additive performance-table entries.
+
 The cross-rank mixed-phase composition in
 `crates/core/src/perfmodel/engine/{ascend_dp,runtime}.rs` and its tests independently
 implement the same pinned runtime's `model_executor/forward_batch_info.py`,

@@ -1,0 +1,70 @@
+engine:
+  backend: sglang
+  backend_version: 0.5.22
+  model: /data_lib/data/models/glm-q
+  hardware: ascend910c
+  mode: aggregated
+  context_length: 180000
+  decoder_replay: false
+  enable_eplb: false
+  nextn: 0
+  database_mode: SILICON
+  estimation_mode: op_level
+  fallback_policy: deny
+  gemm_quant_mode: w8a8
+  moe_quant_mode: w8a8_dynamic
+  kvcache_quant_mode: bfloat16
+  fmha_quant_mode: bfloat16
+  comm_quant_mode: half
+  estimator_config:
+    correction:
+      enabled: false
+    op_level:
+      ascend:
+        decode_execution_mode: eager
+        decode_timing_scope: isolated_kernels
+        enable_dp_lm_head: false
+        shape_policy: anchored
+        shared_expert_overlap: true
+        routing: balanced
+        kv_transfer_page_layout: contiguous
+  workers:
+    aggregated:
+      parallelism:
+        tensor: 4
+        attention_data: 4
+        moe_tensor: 1
+        moe_expert: 16
+        pipeline: 1
+        replicas: 1
+      kv_cache:
+        block_size: 128
+        bytes_per_token: auto
+        prefix_caching: false
+        capacity:
+          type: fixed
+          blocks: 254
+          cuda_graph_reserved_bytes: 0
+      scheduler:
+        chunked_prefill_size: 16384
+        max_prefill_tokens: 32768
+        max_batched_tokens: 8192
+        max_sequences: 32
+        decode_reserved_tokens: 0
+        ignore_eos: true
+        prefill_decode_interval: 0
+        prefill_schedule_interval: 1
+      startup_seconds: 0.0
+traffic:
+  source:
+    type: synthetic
+    input_tokens: 16384
+    output_tokens: 128
+    cached_prefix_tokens: 0
+  load:
+    type: concurrency
+    concurrency: 4
+    agentic_warmup: false
+  stop:
+    requests: 8
+evaluation: {}

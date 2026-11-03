@@ -141,6 +141,14 @@ impl AscendLayerTable {
                 ))
             })
     }
+
+    pub fn kv_bounds(&self, key: &AscendLayerKey, requests: u32) -> Result<(u32, u32), AicError> {
+        self.plane(key)?.inner_bounds(requests).map_err(|error| {
+            AicError::PerfDatabase(format!(
+                "Ascend runtime layer {key:?} requires measured request brackets: {error}"
+            ))
+        })
+    }
 }
 
 fn load(path: &Path) -> Result<LayerPlanes, AicError> {
@@ -241,5 +249,21 @@ mod tests {
         assert_eq!(plane.query(2, 1024).unwrap(), 6.0);
         assert!(plane.query(4, 1024).is_err());
         assert!(plane.query(2, 2048).is_err());
+    }
+
+    #[test]
+    fn context_anchor_uses_intersection_of_batch_brackets() {
+        let plane = Plane::from_raw(BTreeMap::from([
+            (1, BTreeMap::from([(512, 4.0), (1536, 6.0)])),
+            (3, BTreeMap::from([(1024, 6.0), (4096, 8.0)])),
+        ]));
+        assert_eq!(plane.inner_bounds(1).unwrap(), (512, 1536));
+        assert_eq!(plane.inner_bounds(2).unwrap(), (1024, 1536));
+        assert!(plane.inner_bounds(4).is_err());
+        let disjoint = Plane::from_raw(BTreeMap::from([
+            (1, BTreeMap::from([(512, 4.0)])),
+            (3, BTreeMap::from([(1024, 6.0)])),
+        ]));
+        assert!(disjoint.inner_bounds(2).is_err());
     }
 }
