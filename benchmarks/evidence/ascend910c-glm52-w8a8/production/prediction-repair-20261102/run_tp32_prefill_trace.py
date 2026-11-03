@@ -24,12 +24,17 @@ def main():
     parser.add_argument("--wait-collection", type=Path, required=True)
     parser.add_argument("--ssh-socket", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--phase", choices=("prefill", "decode"), default="prefill")
+    parser.add_argument("--seed", type=int, default=2810)
+    parser.add_argument("--output-tokens", type=int, default=64)
     args = parser.parse_args()
+    if args.phase == "decode" and args.output_tokens < 64:
+        parser.error("Decode tracing requires at least 64 output tokens")
     args.output.mkdir(exist_ok=False)
     root = args.campaign.resolve()
     remote = json.loads((root / "node1/launch.json").read_text())["remote_root"]
     ssh = ["ssh", "-S", args.ssh_socket, "-o", "BatchMode=yes", "youxingye@npu1-25"]
-    state = {"status": "waiting", "scope": "Two steady prefill iterations with real TP32/ADP32/EP32 operator tracing; diagnostic timing only, excluded from serving accuracy and layer training", "controller_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+    state = {"status": "waiting", "phase": args.phase, "scope": "Two steady " + args.phase + " iterations with real TP32/ADP32/EP32 operator tracing; diagnostic timing only, excluded from serving accuracy and layer training", "controller_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
     destination = args.output / "campaign.json"
 
     def save():
@@ -58,9 +63,9 @@ def main():
                    "aisim-layer-tp32-node0-20261104", "python3", "-u", "/campaign/run_routed_layer_benchmark.py",
                    "--backend", "sglang", "--host", "127.0.0.1", "--port", "19180", "--model", "/models/glm-q",
                    "--served-model-name", "glm-5", "--dataset-name", "random-ids", "--num-prompts", "32",
-                   "--max-concurrency", "32", "--random-input-len", "16384", "--random-output-len", "64",
+                   "--max-concurrency", "32", "--random-input-len", "16384", "--random-output-len", str(args.output_tokens),
                    "--random-range-ratio", "1.0", "--request-rate", "inf", "--warmup-requests", "0",
-                   "--seed", "2810", "--tokenize-prompt", "--output-details", "--output-file", f"/campaign/{name}/requests.jsonl"]
+                   "--seed", str(args.seed), "--tokenize-prompt", "--output-details", "--output-file", f"/campaign/{name}/requests.jsonl"]
         warmup = command[:]
         for flag, value in (("--num-prompts", "2"), ("--random-output-len", "32"),
                             ("--output-file", f"/campaign/{name}/warmup.jsonl")):
@@ -82,8 +87,12 @@ def main():
                 if "profile_request" not in state:
                     row = latest_row(root / "node0/paired-forward-rank0.jsonl")
                     scheduled = row["scheduled_requests"] if row else {}
-                    formal = row and any(request["output_tokens"] == 0 and request["prompt_tokens"] == 16384 for request in row["requests"])
-                    if formal and row["launch_unix"] > state["start_unix"] and scheduled["sum_prefill_tokens"] > 0 and scheduled["sum_prefill_kv_tokens"] >= 3072:
+                    formal = row and any(request["prompt_tokens"] == 16384 for request in row["requests"])
+                    if args.phase == "prefill":
+                        ready = formal and scheduled["sum_prefill_tokens"] > 0 and scheduled["sum_prefill_kv_tokens"] >= 3072
+                    else:
+                        ready = formal and scheduled["sum_prefill_tokens"] == 0 and all(32 <= request["output_tokens"] < args.output_tokens - 16 for request in row["requests"])
+                    if ready and row["launch_unix"] > state["start_unix"]:
                         payload = {"output_dir": f"/campaign/{name}/operator-trace", "num_steps": 2,
                                    "activities": ["CPU", "GPU"], "with_stack": False, "record_shapes": True,
                                    "profile_id": name, "merge_profiles": False, "detailed_annotations": True}

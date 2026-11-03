@@ -1,0 +1,23 @@
+{
+  "research": {
+    "tp32_decode_slowdown_20261104": {
+      "status": "complete_rank_operator_diagnostic_preserved_fresh_restart_control_pending",
+      "finding": "Two16K/128/C32 repeats have uniform one-request-per-rank populations but mean max forward536.42/527.57ms versus372.26ms in the earlier run; inter-forward gaps remain about8-9ms. The32-rank two-step trace confirms MoeLowLatencyDispatchV2, not the prefill normal path. Same-host median dispatch start spread is5.174/2.522ms, while dispatch end spread is0.032/0.032ms. Dispatch contains rank-readiness wait; the profile does not justify a fitted transport penalty or identify the unprofiled slowdown's cause yet.",
+      "sources": [
+        "production/prediction-repair-20261102/tp32-steady-serving-before-restart-20261104.json",
+        "production/prediction-repair-20261102/tp32-steady-decode-trace-20261104/diagnostic.json",
+        "production/prediction-repair-20261102/tp32-population-followup-evidence-archive-20261104/manifest.json"
+      ],
+      "restart_control": "Owned node20+25 services restarted with the same launch arguments, image and environment. No layer replay or profiling will precede the four predeclared fresh serving cases. Controller waits for own CPU build/tests to finish before timed serving."
+    },
+    "tp32_runtime_layers_20261104": {
+      "max_len_population_transfer": "Native GroupShape patch uses the homogeneous maximum active request population for cross-padding-bucket MAX_LEN Decode only, retaining actual active rank count and KV context. Transfer is explicitly estimated and requires anchored policy and measured table brackets. SUM_LEN cross-bucket populations still reject.10 native geometry tests pass; full parity and independent serving checks are pending.",
+      "extension_verification": "576-row candidate staged in canonical files for validation; verifier confirms all560 prior rows are byte-value-preserved and the16 new active4/31,request2,KV8224 cells satisfy9samples/384numericchecks/CV<=0.1. Maximum new-cellCV is0.08805. No global serving-accuracy acceptance."
+    }
+  },
+  "progress": {
+    "stage": 6,
+    "status": "in_progress",
+    "next_action": "Finish MAX_LEN native/parity validation, run the fresh unprofiled restart controls, validate asymmetric heldout batches, rerun same-condition predictions and publish all outcomes including remaining coverage and accuracy failures."
+  }
+}
