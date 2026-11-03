@@ -1,13 +1,13 @@
 schema_version: 2
 provenance: collected
-runtime: &id001
+runtime:
   framework: sglang
   version: 0.5.22
   image_digest: quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443
   source_commit: baa9befa381511cd4d56f83980951e5a45fffc6d
 tables:
   ascend_layer_perf:
-    rows: 240
+    rows: 560
     status: complete
     collections:
     - collector_ref: ddc106c2+worktree-source-sha256-in-provenance
@@ -17,9 +17,37 @@ tables:
       rows: 240
       classified_failures: 24
       status: complete
-      runtime: *id001
+      runtime:
+        framework: sglang
+        version: 0.5.22
+        image_digest: quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443
+        source_commit: baa9befa381511cd4d56f83980951e5a45fffc6d
+    - collector_ref: 7f3de9ac+worktree-source-sha256-in-provenance
+      collector_hash: sha256:63e95a999193935e885d2750a6183e92227fd3692854091497dc6fb702a3dfba
+      case_plan_hash: sha256:5cc168e329c6d115ab29740467f12d6361b2577908db52632f967e8959dc4f9a
+      collected_at: '2026-11-03T21:02:14.359404+00:00'
+      rows: 320
+      classified_failures: 33
+      status: complete
+      runtime:
+        framework: sglang
+        version: 0.5.22
+        image_digest: quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443
+        source_commit: baa9befa381511cd4d56f83980951e5a45fffc6d
 boundary_contract: glm52_eager_decoder_layer_valid_rows/v2
 extrapolation: forbidden
 serving_accuracy_acceptance: false
-scope: Measured real layer invocations across request populations; no fitted serving
-  residual
+scope: Independent exact-topology layer invocations; disjoint union, no timing averaging
+  or residual fit
+planned_measurements_complete: false
+excluded_unstable_populations:
+- topology:
+  - 1
+  - 32
+  - 32
+  coordinate:
+  - 32
+  - 4
+  - 2048
+  qualified_contexts:
+  - 8192

@@ -3035,10 +3035,11 @@
   ],
   "progress": {
     "blockers": [
-      "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
+      "Arbitrary DP batch populations and topologies do not yet have qualified runtime-layer coverage.",
+      "Independent TTFT accuracy and broad-workload per-metric MAPE below20% remain unaccepted."
     ],
-    "next_action": "Collect numerically verified TP32/ADP32/EP32 runtime-layer boundaries, repair prefill normal-MoE routing and rank dependencies, and model IPC/poll phase plus cold-state effects without whole-forward residuals. Validate new workloads independently before accepting PD search accuracy.",
-    "stage": 2,
+    "next_action": "Validate the causal attention extrapolation fix, finish the independent12K/4K serving case, compare all historical rows without hiding failures, then collect and model remaining DP populations and prefill execution costs.",
+    "stage": 6,
     "status": "in_progress"
   },
   "research": {
@@ -3188,6 +3189,15 @@
       "source_commit": "5621929e",
       "status": "full_grid_attempted_1517_qualified_rows_published",
       "validation": "1517nativeexactqueriespass;11collectortests;native5attentionbehaviorchecks and390GPUparitypasswithcurrentbinary. No servingaccuracyclaim."
+    },
+    "attention_work_intercept_20261104": {
+      "finding": "At prefix4096 the minimum collected query is4096 tokens and12.02294ms; the old extrapolator treated that entire latency as launch cost, returning essentially the same cost for1024 tokens. This produced an artificial context-attention peak and about40% aggregate-prefill forward error. Derive bounded fixed cost from neighboring measured analytical-work points instead. Exact observations and strict measured bounds remain unchanged.",
+      "sources": [
+        "production/prediction-repair-20261102/tp32-runtime-validation-20261104/serving-prefill-attribution.json",
+        "production/prediction-repair-20261102/attention-work-intercept-validation-20261104/native-tests.log"
+      ],
+      "status": "root_cause_verified_fix_under_validation",
+      "validation": "11 native attention oracle tests passed; native wheel build and both parity suites pending."
     },
     "basis": {
       "confidence": "high",
@@ -4678,13 +4688,14 @@
     },
     "tp32_runtime_layers_20261104": {
       "campaign": "production/prediction-repair-20261102/layer-tp32-node20-25-20261104-attempt4",
-      "collection_progress": "Attempt3 completed prefix33 plus attempt4 continuation10, including independent12K/16K holdout populations. All original observations retained. The first per-cell quality pass accepts301of328 training layer cells; variance failures are being repeated without changing numerical or CV thresholds.",
+      "collection_progress": "All 43 original cases and recorded quality repeats finished. 327 of 328 training layer cells satisfy unchanged numerical/CV gates. Publish only the 320 cells belonging to complete eight-layer populations; preserve the full-plan failure. The remaining active32/request4/2K population has an independent qualified 8K anchor and is estimated, not measured, at 2K.",
       "failures": "Attempt2 tmpfs inherited noexec and Triton could not map compiled libkernel.so; both containers stopped and logs preserved. Attempt3 initial control counted client warmups; excluded initial manifest and restarted controller after explicit warmup separation, without restarting healthy serving instances.",
       "finding": "First two formal populations completed all32rank numerical checks; layer median3.7-5.2ms, CV below0.1. Independent invocation profiles, no additive forward residual. Profiler-export contract extended without adding columns.",
       "hosts": [
         "npu1-20",
         "npu1-25"
       ],
+      "independent_forward_validation": "All 43 decode forward populations compared after excluding sampling rounds and neighboring rounds. Predeclared 12K/C4 and 16K/C32 holdouts have runtime-layer MAPE 4.327% and 7.179%; these are observed-batch forward checks, not independent scheduling or PD TTFT acceptance.",
       "manifest": "layer-campaign-formal.json",
       "native_changes": "Each structural layer uses its own measured KV anchor. Only sparse attention and the actual full-indexer layer types0/1/2/6 receive context deltas. Measured data remain unchanged; different captures need not share one artificial KV coordinate. Request/topology and DSA>=2048 guards remain strict.",
       "native_validation": "Five focused Rust tests and446 Python/parity/contract/collector tests passed. Disjoint per-layer KV anchors use independently calculated attention/indexer totals. Both parity suites passed without golden changes. Validation receipt: production/prediction-repair-20261102/tp32-per-layer-anchor-validation-20261104/validation.json. Preliminary wheel still contains only existingTP16 data; TP32 publication and serving accuracy remain pending.",
@@ -4692,9 +4703,18 @@
       "parallelism": "global TP32/attention DP32/EP32, local attention TP1; graph/overlap/speculation disabled",
       "previous_completed_prefix": "production/prediction-repair-20261102/layer-tp32-node20-25-20261104-attempt3/layer-campaign-completed-prefix.json",
       "protocol": "43 planned populations/context cases; active DP1..32 plus per-DP batch2/4. Two completed uninstrumented warmup requests before arming each collection. 12K and16K excluded from publication as holdouts. Client metrics include layer replay pauses and are not serving latency truth.",
+      "publication": "560 rows: 240 unchanged TP16 rows plus 320 qualified TP32 rows. No averaging or fitted whole-forward residual. serving_accuracy_acceptance remains false.",
       "qualification_recovery": "Initial CPU qualification invocation used a host path absent inside its /workspace mount. Failure and logs retained; helper now resolves the source relative to the mounted repository. Qualification selects first numerically valid CV<=0.1 cell, independently of serving errors. No production TP32 data has been published yet.",
-      "remaining_coverage": "Uniform active populations1..32; per-DP batch2/4 only at fullDP. Heterogeneous populations spanning different padding buckets remain explicitly unsupported; broader search coverage is not complete.",
+      "remaining_coverage": "Historical TP32 high-concurrency PD replay rejects skewed DP populations across padding buckets or missing request-count anchors. Independent aggregate C64 likewise fails on active31/requests2. Failures retained; no isolated-kernel fallback.",
+      "serving_validation": "Five independent aggregate serving cases finished with probes disarmed and separate seed; 12K/4K case still running. New TTFT errors exposed a separate prefill attention extrapolation defect. Accuracy remains unaccepted.",
       "source_identity": "Pinned SGLang0.5.22/CANN9.1 image; model config and quantization SHA256 identical on both hosts",
+      "sources": [
+        "production/prediction-repair-20261102/tp32-layer-data-publication-20261104.json",
+        "production/prediction-repair-20261102/layer-tp32-raw-archive-attempt3-20261104/manifest.json",
+        "production/prediction-repair-20261102/layer-tp32-raw-archive-attempt4-20261104/manifest.json",
+        "production/prediction-repair-20261102/tp32-runtime-validation-20261104/forward-prefix-comparison.json",
+        "production/prediction-repair-20261102/tp32-runtime-validation-20261104/forward-continuation-comparison.json"
+      ],
       "status": "per-layer native context transfer verified; final TP32 quality repeats running",
       "validation": "4 targeted Rust tests;438 Python/parity/contract tests passed. Existing engine-step goldens unchanged. No serving residual or TP32 data publication yet."
     },
@@ -4716,7 +4736,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 159,
+  "revision": 160,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

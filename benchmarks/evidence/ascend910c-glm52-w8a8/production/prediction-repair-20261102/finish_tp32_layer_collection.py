@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import shlex
 import subprocess
@@ -11,10 +12,15 @@ def main():
     parser.add_argument("--campaign", type=Path, required=True)
     parser.add_argument("--ssh-socket", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--campaign-set", type=Path)
     args = parser.parse_args()
     repo = Path.cwd()
-    source = Path(__file__).parent
+    source = Path(__file__).resolve().parent.relative_to(repo.resolve())
     manifests = ["layer-campaign-formal.json"]
+    campaigns = json.loads(args.campaign_set.read_text()) if args.campaign_set else []
+    if any(Path(item["campaign"]).resolve() == args.campaign.resolve() for item in campaigns):
+        raise ValueError("Earlier campaigns must not duplicate the active campaign")
+    campaigns.append({"campaign": str(args.campaign), "manifests": manifests})
     progress = args.campaign / "qualification-progress.json"
     if progress.exists() or args.output.exists():
         raise FileExistsError("Use a fresh qualification output and progress record")
@@ -44,9 +50,9 @@ def main():
             time.sleep(10)
         for attempt in range(3):
             snapshot = args.campaign / f"quality-{attempt}.json"
-            arguments = [str(source / "inspect_tp32_layer_quality.py"), "--campaign", str(args.campaign), "--output", str(snapshot)]
-            for manifest in manifests:
-                arguments += ["--manifest", manifest]
+            inputs = args.campaign / f"quality-inputs-{attempt}.json"
+            inputs.write_text(json.dumps(campaigns, indent=2) + "\n")
+            arguments = [str(source / "inspect_tp32_layer_quality.py"), "--campaign-set", str(inputs), "--output", str(snapshot)]
             status.update(status="qualifying", attempt=attempt)
             save()
             run_cpu(arguments, args.campaign / f"quality-{attempt}.log")
@@ -67,14 +73,41 @@ def main():
                                 "--ssh-socket", args.ssh_socket, "--plan", str(plan_path), "--manifest", manifest_name],
                                check=True, stdout=stream, stderr=subprocess.STDOUT, timeout=7200)
             manifests.append(manifest_name)
+        selected = {(item["campaign"], item["case"]) for item in quality["selected_cases"]}
+        qualified_campaigns = []
+        for item in campaigns:
+            campaign = Path(item["campaign"])
+            qualified_manifests = []
+            for name in item["manifests"]:
+                original = campaign / name
+                manifest = json.loads(original.read_text())
+                cases = [case for case in manifest["cases"]
+                         if not case["training"] or (str(campaign), case["id"]) in selected]
+                if not cases:
+                    continue
+                destination = original.with_name(original.stem + "-qualified-populations.json")
+                manifest.update(cases=cases, selection={"policy": quality["scope"], "parent": str(original),
+                                "parent_sha256": hashlib.sha256(original.read_bytes()).hexdigest(),
+                                "quality_report": str(snapshot),
+                                "quality_report_sha256": hashlib.sha256(snapshot.read_bytes()).hexdigest()})
+                destination.write_text(json.dumps(manifest, indent=2) + "\n")
+                qualified_manifests.append(destination.name)
+            if qualified_manifests:
+                qualified_campaigns.append({"campaign": str(campaign), "manifests": qualified_manifests})
         campaign_set = args.campaign / "qualified-campaign-set.json"
-        campaign_set.write_text(json.dumps([{"campaign": str(args.campaign), "manifests": manifests}], indent=2) + "\n")
+        campaign_set.write_text(json.dumps(qualified_campaigns, indent=2) + "\n")
         status["status"] = "exporting"
         save()
         revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
         run_cpu(["-m", "collector.sglang.ascend_layer_population_export", "--campaign-set", str(campaign_set),
                  "--model-config", "/data_lib/data/models/glm-q/config.json", "--output", str(args.output),
                  "--collector-ref", revision], args.campaign / "qualified-export.log")
+        provenance_path = args.output / "metadata/provenance.json"
+        provenance = json.loads(provenance_path.read_text())
+        provenance["population_quality_selection"] = {"policy": quality["scope"], "report": str(snapshot),
+            "report_sha256": hashlib.sha256(snapshot.read_bytes()).hexdigest(), "rejected": quality["rejected"],
+            "all_campaigns": campaigns, "selected_cases": quality["selected_cases"]}
+        provenance_path.write_text(json.dumps(provenance, indent=2) + "\n")
         (args.campaign / "node0/layer-probe-control.json").unlink(missing_ok=True)
         remote = json.loads((args.campaign / "node1/launch.json").read_text())["remote_root"]
         subprocess.run(["ssh", "-S", args.ssh_socket, "-o", "BatchMode=yes", "youxingye@npu1-25",

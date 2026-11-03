@@ -14,6 +14,7 @@ def main():
     parser.add_argument("--remote", default="youxingye@npu1-25")
     parser.add_argument("--ssh-socket", required=True)
     parser.add_argument("--remote-root", required=True)
+    parser.add_argument("--max-running-requests", type=int, default=128)
     args = parser.parse_args()
     source = Path(__file__).resolve().parent
     args.campaign.mkdir(exist_ok=False)
@@ -35,6 +36,9 @@ def main():
         command = template["command"][:]
         command[1] = "/campaign/launch_layer_replay_probe.py"
         command[command.index("--forward-pass-metrics-worker-id") + 1] = container
+        if args.max_running_requests <= 0 or args.max_running_requests % 32:
+            raise ValueError("Global running-request limit must be a positive multiple of32")
+        command[command.index("--max-running-requests") + 1] = str(args.max_running_requests)
         command += ["--max-total-tokens", "123904"]
         docker = ["docker"] if node == 0 else ["docker", "-H", "unix:///run/aisim-docker-20261102.sock"]
         launch = docker + ["run", "-d", "--name", container, "--init", "--network", "host",

@@ -1,0 +1,36 @@
+{
+  "research": {
+    "tp32_runtime_layers_20261104": {
+      "collection_progress": "All 43 original cases and recorded quality repeats finished. 327 of 328 training layer cells satisfy unchanged numerical/CV gates. Publish only the 320 cells belonging to complete eight-layer populations; preserve the full-plan failure. The remaining active32/request4/2K population has an independent qualified 8K anchor and is estimated, not measured, at 2K.",
+      "publication": "560 rows: 240 unchanged TP16 rows plus 320 qualified TP32 rows. No averaging or fitted whole-forward residual. serving_accuracy_acceptance remains false.",
+      "sources": [
+        "production/prediction-repair-20261102/tp32-layer-data-publication-20261104.json",
+        "production/prediction-repair-20261102/layer-tp32-raw-archive-attempt3-20261104/manifest.json",
+        "production/prediction-repair-20261102/layer-tp32-raw-archive-attempt4-20261104/manifest.json",
+        "production/prediction-repair-20261102/tp32-runtime-validation-20261104/forward-prefix-comparison.json",
+        "production/prediction-repair-20261102/tp32-runtime-validation-20261104/forward-continuation-comparison.json"
+      ],
+      "independent_forward_validation": "All 43 decode forward populations compared after excluding sampling rounds and neighboring rounds. Predeclared 12K/C4 and 16K/C32 holdouts have runtime-layer MAPE 4.327% and 7.179%; these are observed-batch forward checks, not independent scheduling or PD TTFT acceptance.",
+      "remaining_coverage": "Historical TP32 high-concurrency PD replay rejects skewed DP populations across padding buckets or missing request-count anchors. Independent aggregate C64 likewise fails on active31/requests2. Failures retained; no isolated-kernel fallback.",
+      "serving_validation": "Five independent aggregate serving cases finished with probes disarmed and separate seed; 12K/4K case still running. New TTFT errors exposed a separate prefill attention extrapolation defect. Accuracy remains unaccepted."
+    },
+    "attention_work_intercept_20261104": {
+      "status": "root_cause_verified_fix_under_validation",
+      "finding": "At prefix4096 the minimum collected query is4096 tokens and12.02294ms; the old extrapolator treated that entire latency as launch cost, returning essentially the same cost for1024 tokens. This produced an artificial context-attention peak and about40% aggregate-prefill forward error. Derive bounded fixed cost from neighboring measured analytical-work points instead. Exact observations and strict measured bounds remain unchanged.",
+      "validation": "11 native attention oracle tests passed; native wheel build and both parity suites pending.",
+      "sources": [
+        "production/prediction-repair-20261102/tp32-runtime-validation-20261104/serving-prefill-attribution.json",
+        "production/prediction-repair-20261102/attention-work-intercept-validation-20261104/native-tests.log"
+      ]
+    }
+  },
+  "progress": {
+    "stage": 6,
+    "status": "in_progress",
+    "blockers": [
+      "Arbitrary DP batch populations and topologies do not yet have qualified runtime-layer coverage.",
+      "Independent TTFT accuracy and broad-workload per-metric MAPE below20% remain unaccepted."
+    ],
+    "next_action": "Validate the causal attention extrapolation fix, finish the independent12K/4K serving case, compare all historical rows without hiding failures, then collect and model remaining DP populations and prefill execution costs."
+  }
+}

@@ -926,7 +926,8 @@ is copied; the Apache-2.0 attribution and immutable revision above apply.
 
 The population exporter `python/aisimulate/collector/sglang/ascend_layer_population_export.py`
 and frozen campaign copies validate these source-bound numerical contracts.
-The independent `start_tp32_layer_probe.py` and `run_tp32_layer_campaign.py`
+The independent `start_tp32_layer_probe.py`, `run_tp32_layer_campaign.py`, and
+`run_tp32_serving_validation.py`
 controllers in the same evidence directory extend collection to the pinned
 runtime's two-node TP32/attention-DP32/EP32 layout. The exporter and rank probe
 validate the actual topology and the SUM_LEN/MAX_LEN selection in
