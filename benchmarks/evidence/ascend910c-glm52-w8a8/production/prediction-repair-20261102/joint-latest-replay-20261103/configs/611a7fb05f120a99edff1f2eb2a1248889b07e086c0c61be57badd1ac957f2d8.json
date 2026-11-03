@@ -1,0 +1,285 @@
+{
+  "traffic": {
+    "source": {
+      "type": "synthetic",
+      "input_tokens": 8192,
+      "output_tokens": 1024,
+      "cached_prefix_tokens": 0
+    },
+    "stop": {
+      "requests": 8
+    },
+    "load": {
+      "type": "concurrency",
+      "concurrency": 4,
+      "agentic_warmup": false
+    }
+  },
+  "engine": {
+    "nextn": 0,
+    "enable_eplb": false,
+    "gemm_quant_mode": "w8a8",
+    "moe_quant_mode": "w8a8_dynamic",
+    "kvcache_quant_mode": "bfloat16",
+    "fmha_quant_mode": "bfloat16",
+    "comm_quant_mode": "half",
+    "database_mode": "SILICON",
+    "estimation_mode": "op_level",
+    "fallback_policy": "deny",
+    "estimator_config": {
+      "op_level": {
+        "ascend": {
+          "routing": "balanced",
+          "shared_expert_overlap": true,
+          "kv_transfer_page_layout": "contiguous",
+          "shape_policy": "anchored",
+          "decode_execution_mode": "eager"
+        }
+      },
+      "correction": {
+        "enabled": false
+      }
+    },
+    "mode": "disaggregated",
+    "model": "/data_lib/data/models/glm-q",
+    "hardware": "ascend910c",
+    "backend": "sglang",
+    "backend_version": "0.5.22",
+    "decoder_replay": false,
+    "context_length": 180000,
+    "workers": {
+      "prefill": {
+        "parallelism": {
+          "replicas": 1,
+          "tensor": 4,
+          "pipeline": 1,
+          "attention_data": 4,
+          "moe_tensor": 1,
+          "moe_expert": 16
+        },
+        "scheduler": {
+          "max_batched_tokens": 8192,
+          "max_sequences": 32,
+          "chunked_prefill_size": 16384,
+          "max_prefill_tokens": 32768,
+          "ignore_eos": true,
+          "decode_reserved_tokens": 0,
+          "prefill_schedule_interval": 1,
+          "prefill_decode_interval": 0
+        },
+        "kv_cache": {
+          "block_size": 128,
+          "prefix_caching": false,
+          "bytes_per_token": "auto",
+          "capacity": {
+            "type": "fixed",
+            "memory_fraction": null,
+            "cuda_graph_reserved_bytes": 0,
+            "blocks": 136
+          }
+        },
+        "timing": {
+          "gemm_quant_mode": "w8a8",
+          "moe_quant_mode": "w8a8_dynamic",
+          "fmha_quant_mode": "bfloat16",
+          "kvcache_quant_mode": "bfloat16",
+          "comm_quant_mode": "half",
+          "type": "default",
+          "estimation_mode": "op_level",
+          "fallback_policy": "deny",
+          "estimator_config": {
+            "features": {
+              "attention_kv_weight": 1.0,
+              "prefill_attention_pair_weight": 1.0,
+              "ffn_token_weight": 1.0
+            },
+            "op_level": {
+              "ascend": {
+                "shared_expert_overlap": true,
+                "decode_execution_mode": "eager",
+                "routing": "balanced",
+                "kv_transfer_page_layout": "contiguous",
+                "shape_policy": "anchored",
+                "enable_dp_lm_head": true,
+                "enable_tp_lm_head_all_to_all": false,
+                "decode_timing_scope": "isolated_kernels"
+              }
+            },
+            "fpm_interpolation": {
+              "method": "sol"
+            },
+            "fpm_regression": {
+              "sampling": {
+                "bins_per_axis": [
+                  4,
+                  4
+                ],
+                "max_observations": 64
+              },
+              "min_observations": 5,
+              "fit": {
+                "kind": "standardized_nnls",
+                "singular_ridge_scale": 1e-09,
+                "rebuild_interval": null
+              }
+            },
+            "correction": {
+              "enabled": false,
+              "feature_space": "legacy_workload",
+              "sampling": {
+                "bins_per_axis": [
+                  4,
+                  4
+                ],
+                "max_observations": 64
+              },
+              "min_observations": 5,
+              "factor_bounds": {
+                "min": 0.5,
+                "max": 2.0
+              },
+              "max_num_tokens": 8192,
+              "max_batch_size": 512,
+              "max_kv_tokens": 2000000
+            }
+          },
+          "database_mode": "SILICON",
+          "transfer_policy": [
+            "xshape",
+            "xquant",
+            "xprofile",
+            "xop"
+          ]
+        },
+        "startup_seconds": 0.0
+      },
+      "decode": {
+        "parallelism": {
+          "replicas": 3,
+          "tensor": 4,
+          "pipeline": 1,
+          "attention_data": 4,
+          "moe_tensor": 1,
+          "moe_expert": 16
+        },
+        "scheduler": {
+          "max_batched_tokens": 8192,
+          "max_sequences": 32,
+          "ignore_eos": true,
+          "decode_reserved_tokens": 512,
+          "prefill_schedule_interval": 1,
+          "prefill_decode_interval": 0
+        },
+        "kv_cache": {
+          "block_size": 128,
+          "prefix_caching": false,
+          "bytes_per_token": "auto",
+          "capacity": {
+            "type": "fixed",
+            "memory_fraction": null,
+            "cuda_graph_reserved_bytes": 0,
+            "blocks": 253
+          }
+        },
+        "timing": {
+          "gemm_quant_mode": "w8a8",
+          "moe_quant_mode": "w8a8_dynamic",
+          "fmha_quant_mode": "bfloat16",
+          "kvcache_quant_mode": "bfloat16",
+          "comm_quant_mode": "half",
+          "type": "default",
+          "estimation_mode": "op_level",
+          "fallback_policy": "deny",
+          "estimator_config": {
+            "features": {
+              "attention_kv_weight": 1.0,
+              "prefill_attention_pair_weight": 1.0,
+              "ffn_token_weight": 1.0
+            },
+            "op_level": {
+              "ascend": {
+                "shared_expert_overlap": true,
+                "decode_execution_mode": "eager",
+                "routing": "balanced",
+                "kv_transfer_page_layout": "contiguous",
+                "shape_policy": "anchored",
+                "enable_dp_lm_head": false,
+                "enable_tp_lm_head_all_to_all": false,
+                "decode_timing_scope": "isolated_kernels"
+              }
+            },
+            "fpm_interpolation": {
+              "method": "sol"
+            },
+            "fpm_regression": {
+              "sampling": {
+                "bins_per_axis": [
+                  4,
+                  4
+                ],
+                "max_observations": 64
+              },
+              "min_observations": 5,
+              "fit": {
+                "kind": "standardized_nnls",
+                "singular_ridge_scale": 1e-09,
+                "rebuild_interval": null
+              }
+            },
+            "correction": {
+              "enabled": false,
+              "feature_space": "legacy_workload",
+              "sampling": {
+                "bins_per_axis": [
+                  4,
+                  4
+                ],
+                "max_observations": 64
+              },
+              "min_observations": 5,
+              "factor_bounds": {
+                "min": 0.5,
+                "max": 2.0
+              },
+              "max_num_tokens": 8192,
+              "max_batch_size": 512,
+              "max_kv_tokens": 2000000
+            }
+          },
+          "database_mode": "SILICON",
+          "transfer_policy": [
+            "xshape",
+            "xquant",
+            "xprofile",
+            "xop"
+          ]
+        },
+        "startup_seconds": 0.0
+      }
+    },
+    "kv_transfer": {
+      "type": "measured",
+      "bytes_per_token": "auto",
+      "timing_mode": "full_prompt"
+    },
+    "pd_routing": "replica_round_robin",
+    "pd_response": "sglang_gateway",
+    "tokenization": {
+      "workers": 1,
+      "base_ms": 0.8435074705630541,
+      "per_input_token_us": 0.0
+    }
+  },
+  "evaluation": {},
+  "execution": {
+    "resources": {
+      "initialization_timeout_seconds": 60.0,
+      "shutdown_timeout_seconds": 5.0,
+      "memory_limit_gb": "auto",
+      "cpu_limit": "auto",
+      "reserve_memory_gb": 1.0,
+      "reserve_memory_fraction": 0.0,
+      "available_memory_fraction": 0.9
+    }
+  }
+}

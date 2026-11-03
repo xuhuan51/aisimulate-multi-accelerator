@@ -3037,7 +3037,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Repair normal-MoE routing/load and inter-rank dependency modeling using measured expert counts and numerically verified component boundaries; validate independent prompts/lengths. Model input IPC/poll timing without a fitted batching window, then rerun matched 2-node and 4-node PD layouts.",
+    "next_action": "Collect numerically verified TP32/ADP32/EP32 runtime-layer boundaries, repair prefill normal-MoE routing and rank dependencies, and model IPC/poll phase plus cold-state effects without whole-forward residuals. Validate new workloads independently before accepting PD search accuracy.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3783,6 +3783,22 @@
       "goal_status": "Accuracy goal remains unachieved and user-paused; current authorized work is the completed document consolidation. Historical checkpoint integrity issues remain separately disclosed.",
       "qualification": "EarlypairedC4 participates inPforward calibration;ingressC1 participates inrequestprocessing calibration. Others are historical same-environment replay checks, not allblind holdouts. First-use compiler delay is evidenced butnotmodeled. Currentuncommitted deferredpage sourcefix passed2123Rusttests plus1existingignored,notpackagedandnotcreditedforreportedaccuracy.",
       "scope": "23four-node plus16two-node PD serving points,1900formal requests. All39 rerun using forward-batch-repair image1e15ac0e1a2d4875e64f9bf7357a7256e52c278d4585cb1958cec38fb0f8d982,explicit runtime profiles, observed per-role minimum KV capacity. Inputs, request/token conservation and metric formulas verified. Original measurements preserved, no new serving or coefficients fitted."
+    },
+    "joint_latest_pd_replay_20261103": {
+      "artifacts": "production/prediction-repair-20261102/joint-latest-replay-20261103/attempt2: manifest.json,comparison.json,comparison.csv,validation.json,configs and per-job command/raw-output archives. Initial JSON-via-YAML float-serialization pilot failures preserved in the parent directory.",
+      "documentation": "md/910c-glm52-w8a8-2node-4node-latest-comparison-20261103.md",
+      "historical_comparison": "The old same33-row table with whole-forward residuals had TTFT15.84%,TPOT1.94%,throughput3.30% MAPE. Latest no-residual results are not uniformly closer; do not describe old residual accuracy as causal-model validation.",
+      "image": "aisimulate-910c:mixed-round-repair-20261103-r2",
+      "image_id": "sha256:9f8b7b90c438b10daa203fadb3beebc537e61c722019915265aa002d7738c6c9",
+      "measurement_scope": "39 unchanged completed PD cases, 1900 successful formal requests, original server-info, graph/overlap/speculation disabled, observed per-role minimum KV pages retained; original archives and SHA256 rechecked.",
+      "prediction_scope": "31 distinct configurations independently run in both isolated_kernels and runtime_layers: 62 jobs, 56 successful, 6 explicit TP32 runtime-layer topology rejections. Removed all historical eager_runtime_overhead residuals and disabled correction; no measured arrival, batch or forward-duration injection. Historical CPU tokenization component retained and disclosed.",
+      "remaining_limitations": "TP32 runtime-layer data missing; TTFT still under-modeled due to prefill normal-MoE load/dependencies, IPC/poll phase, warmup/cold allocator/compiler state and visible-text semantics. Layer profiles are not universal-workload accuracy or an accepted optimal-PD ranking. No NPU service started.",
+      "request": "Rerun all 39 historical two-node/four-node measured PD configurations with the current repaired simulator and publish one Markdown comparison table.",
+      "runtime_layer_coverage": "33 TP16/ADP4/EP16 cases; TTFT MAPE24.34329047399298%, TPOT MAPE6.681795929549752%, input/output throughput MAPE4.828875387383258%. TTFT10/33,TPOT33/33,throughput33/33 within15% absolute error. Two-node16 cases: TTFT28.55%,TPOT4.39%,throughput2.02%; four-node17 TP16 cases: TTFT20.39%,TPOT8.83%,throughput7.47%.",
+      "simulator_source_commit": "720f6d2c",
+      "status": "Report complete; overall accuracy goal remains incomplete.",
+      "tp32_coverage_gap": "Six TP32/ADP32/EP32 decode cases reject runtime_layers; explicit independent-kernel results have TTFT MAPE22.4184%,TPOT44.9435%,throughput78.7211%. These are not accepted accurate PD predictions.",
+      "validation": "All original and result archives verified; explicit mode/topology/max-running/chunk/KV/LM-head matching; native request/token conservation; independent CSV/JSON/Markdown metric and row checks. No core performance-model changes in this reporting stage; existing217 unrelated checkpoint integrity issues preserved."
     },
     "kv_runtime": {
       "capacity_tokens_per_attention_dp": 52992,
@@ -4641,7 +4657,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 148,
+  "revision": 149,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

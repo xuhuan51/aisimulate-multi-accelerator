@@ -1,0 +1,47 @@
+NVIDIA AIPerf | LLM Metrics
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┓
+┃ Metric                                             ┃                                        avg ┃        min ┃        max ┃        p99 ┃        p90 ┃        p75 ┃      std ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━┩
+┃ Time to First Token (ms)                           ┃                                   8,252.52 ┃   4,455.08 ┃  14,030.27 ┃  14,030.27 ┃  13,786.39 ┃   9,169.50 ┃ 2,916.45 ┃
+┃ Time to Second Token (ms)                          ┃                                      88.44 ┃       0.00 ┃     471.68 ┃     471.68 ┃     471.67 ┃       0.00 ┃   184.10 ┃
+┃ Request Latency (ms)                               ┃                                 486,495.20 ┃ 482,156.32 ┃ 493,486.38 ┃ 493,486.38 ┃ 492,100.38 ┃ 487,560.83 ┃ 3,226.41 ┃
+┃ Inter Token Latency (ms)                           ┃                                     467.49 ┃       0.00 ┃     471.70 ┃     472.01 ┃     471.07 ┃     470.13 ┃    23.24 ┃
+┃ Output Token Throughput Per User (tokens/sec/user) ┃                                       2.19 ┃       2.12 ┃   1,614.92 ┃       2.26 ┃       2.14 ┃       2.14 ┃     8.93 ┃
+┃ Output Token Throughput (tokens/sec)               ┃                                      33.49 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃      N/A ┃
+┃ Request Throughput (requests/sec)                  ┃                                       0.03 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃      N/A ┃
+┃ Request Count (requests)                           ┃                                      32.00 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃      N/A ┃
+┃ Active Power per GPU (W) [power_w]                 ┃ unavailable (insufficient energy coverage) ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃      N/A ┃
+┃ Power Data Coverage (%) [power_coverage]           ┃                                       0.00 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃      N/A ┃
+└━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┴━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━┘
+Wall Time (ms): 507.56
+Prefix Cache Reused Ratio: 0.00
+First Admission Prefix Cache Reused Ratio: 0.00
+Timing (decode): estimator=op_level; source=aic; data_version=0.5.22
+Timing (kv_transfer): estimator=measured; source=ascend_memfabric; data_version=0.5.22
+Timing (prefill): estimator=op_level; source=aic; data_version=0.5.22
+
+Detail: source
+  scope: accumulated_active_forward_pass_per_gpu
+  status: available
+  prefill:
+    context_attention: silicon; fallbacks: unavailable
+    context_moe_overlap: silicon; fallbacks: unavailable
+    context_indexer: silicon; fallbacks: unavailable
+    context_attention_output: silicon; fallbacks: unavailable
+    context_qkv_a: silicon; fallbacks: unavailable
+    context_sparse_reduce_scatter: silicon; fallbacks: unavailable
+    context_sparse_output_gather: silicon; fallbacks: unavailable
+    context_qk_norm: silicon; fallbacks: unavailable
+    context_cache_latent: silicon; fallbacks: unavailable
+    context_cache_rope: silicon; fallbacks: unavailable
+    context_q_b: silicon; fallbacks: unavailable
+    context_rope_attention: silicon; fallbacks: unavailable
+    ... 34 more operations in JSON
+  decode:
+    generation_decoder_layers: mixed; fallbacks: unavailable
+    generation_global_logits: mixed; fallbacks: unavailable
+    generation_embedding_all_reduce: silicon; fallbacks: unavailable
+    generation_final_norm: silicon; fallbacks: unavailable
+    generation_embedding: silicon; fallbacks: unavailable
+    generation_final_residual_add: silicon; fallbacks: unavailable
+Saved full report to: /tgm_rent_data/data/youxingye/aisimulate-910c/aisimulate-output/joint-latest-replay-20261103/attempt2/runtime_layers/e3ceae2b3b01de4b2e69bba41bafce2c5f00c616a2343335856518fe673058b9/result/prediction.json
