@@ -1,0 +1,23 @@
+{
+  "research": {
+    "tp32_prefill_combine_gap_20261104": {
+      "status": "count_observations_validated_compute_model_in_progress",
+      "finding": "All six count-only campaigns completed across32 ranks and75 MoE layers.590848 pure-prefill training tokens from8K seed910/920 predict heldout12K and16K peak-rank expert counts with7.36% and5.80% MAPE. Seven mixed-phase groups are explicitly retained but excluded from prefill-only statistics. These are shape errors, not serving errors. Detailed trace confirms both receive-volume imbalance and synchronization; no Combine residual is added.",
+      "sources": [
+        "production/prediction-repair-20261102/routing-profile-tp32-node20-25-20261104-attempt2/routing-analysis-pure-prefill.json",
+        "production/prediction-repair-20261102/tp32-prefill-operator-trace-20261104/moe-chain-diagnostic.json",
+        "production/prediction-repair-20261102/tp32-completed-evidence-archive-20261104/manifest.json"
+      ],
+      "implementation": "Optional canonical prefill_expert_workload binds observed top8 counts to the quantization descriptor. Composition partitions contiguous experts under candidateEP and sends each layer's maximum-rank compute volume to existing native kernel models. Transport remains explicitly balanced; no new perf-row dimension or additive latency. Native conservation/serialization test passes; wheel/parity and independent serving reruns pending."
+    },
+    "tp32_runtime_layers_20261104": {
+      "routed_population_followup": "Initial active4/request2 and active31/request2 collections fail the unchanged0.1 CV gate for some layers. No rows published. Two predeclared populations are being repeated in a fresh frozen campaign; original failed and heterogeneous heldout observations preserved.",
+      "serving_validation": "All six independent aggregate cases finished.39-row same-condition historical report and six-case serving report saved in md/910c-glm52-tp32-runtime-validation-20261104.md. High-population prefill and three historical coverage failures remain."
+    }
+  },
+  "progress": {
+    "stage": 6,
+    "status": "in_progress",
+    "next_action": "Validate observed expert compute shapes through canonical FPM, run same-condition serving/PD predictions, and separately qualify repeated runtime-layer populations and investigate transport imbalance. Serving MAPE<20% is not yet accepted."
+  }
+}

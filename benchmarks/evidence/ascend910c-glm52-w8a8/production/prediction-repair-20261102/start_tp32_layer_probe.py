@@ -15,6 +15,7 @@ def main():
     parser.add_argument("--ssh-socket", required=True)
     parser.add_argument("--remote-root", required=True)
     parser.add_argument("--max-running-requests", type=int, default=128)
+    parser.add_argument("--probe", choices=("layers", "routing"), default="layers")
     args = parser.parse_args()
     source = Path(__file__).resolve().parent
     args.campaign.mkdir(exist_ok=False)
@@ -24,7 +25,8 @@ def main():
     for node in range(2):
         local = campaign / f"node{node}"
         local.mkdir()
-        for name in ("launch_layer_replay_probe.py", "launch_paired_telemetry.py", "layer_output_validation.py"):
+        entrypoint = "launch_layer_replay_probe.py" if args.probe == "layers" else "launch_routing_profile_probe.py"
+        for name in (entrypoint, "launch_paired_telemetry.py", "layer_output_validation.py"):
             shutil.copy2(source / name, local / name)
         root = str(local) if node == 0 else args.remote_root
         if node:
@@ -34,7 +36,7 @@ def main():
         template = json.loads((source / f"tp32-paired-node20-25/node{node}/launch.json").read_text())
         container = f"aisim-layer-tp32-node{node}-20261104"
         command = template["command"][:]
-        command[1] = "/campaign/launch_layer_replay_probe.py"
+        command[1] = "/campaign/" + entrypoint
         command[command.index("--forward-pass-metrics-worker-id") + 1] = container
         if args.max_running_requests <= 0 or args.max_running_requests % 32:
             raise ValueError("Global running-request limit must be a positive multiple of32")
@@ -61,7 +63,7 @@ def main():
         manifest = {"node_rank": node, "container": container, "image": template["image"],
                     "command": command, "docker_command": launch, "environment": environment,
                     "started_unix": time.time(), "remote_root": root,
-                    "scope": "TP32/ADP32/EP32 decode layer invocation; aggregated prefill is diagnostic only, no PD TTFT acceptance",
+                    "scope": "TP32/ADP32/EP32 " + args.probe + " observation; aggregated prefill is diagnostic only, no PD TTFT acceptance",
                     "source_sha256": {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in local.iterdir()}}
         (local / "launch.json").write_text(json.dumps(manifest, indent=2) + "\n")
         execution = launch if node == 0 else ssh + [shlex.join(launch)]

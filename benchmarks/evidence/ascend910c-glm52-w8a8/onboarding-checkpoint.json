@@ -3038,7 +3038,7 @@
       "Arbitrary DP batch populations and topologies do not yet have qualified runtime-layer coverage.",
       "Independent TTFT accuracy and broad-workload per-metric MAPE below20% remain unaccepted."
     ],
-    "next_action": "Model the measured expert routing imbalance and synchronized MoE critical path without a latency residual; qualify new routed populations, finish coverage support, and retain the39-row historical plus six-workload serving comparison including failures.",
+    "next_action": "Validate observed expert compute shapes through canonical FPM, run same-condition serving/PD predictions, and separately qualify repeated runtime-layer populations and investigate transport imbalance. Serving MAPE<20% is not yet accepted.",
     "stage": 6,
     "status": "in_progress"
   },
@@ -4689,13 +4689,15 @@
       "new_work": "Request-linked 1P1D campaign on20+25 running with explicit clientRID and Tokenizer stage timestamps. HTTP PD gateway source confirms prefill response body is awaited before decode stream is forwarded. Native gate passes473Rust replay tests; Python and end-to-end validation in progress."
     },
     "tp32_prefill_combine_gap_20261104": {
-      "finding": "Pinned-image profiling of two real16K/C32 prefill rounds shows CamMoeCombineNormal kernel median12.53ms on rank0 versus2.0935ms in the balanced1024-token communication table. Across32ranks, each layer averages8192 expert assignments but some ranks receive up to about38094. Combine start spread is typically6-15ms while finish spread is under1ms: late rank work and routing imbalance are candidate causes, not a fixed extra latency to add. Cross-host clock offset and detailed critical paths still require verification.",
+      "finding": "All six count-only campaigns completed across32 ranks and75 MoE layers.590848 pure-prefill training tokens from8K seed910/920 predict heldout12K and16K peak-rank expert counts with7.36% and5.80% MAPE. Seven mixed-phase groups are explicitly retained but excluded from prefill-only statistics. These are shape errors, not serving errors. Detailed trace confirms both receive-volume imbalance and synchronization; no Combine residual is added.",
+      "implementation": "Optional canonical prefill_expert_workload binds observed top8 counts to the quantization descriptor. Composition partitions contiguous experts under candidateEP and sends each layer's maximum-rank compute volume to existing native kernel models. Transport remains explicitly balanced; no new perf-row dimension or additive latency. Native conservation/serialization test passes; wheel/parity and independent serving reruns pending.",
       "restriction": "Profiled serving durations are diagnostic only. Do not fit or add whole-forward or Combine residuals; model actual per-expert/rank work and synchronization before claiming accuracy.",
       "sources": [
-        "production/prediction-repair-20261102/tp32-prefill-operator-trace-20261104/campaign.json",
-        "production/prediction-repair-20261102/tp32-prefill-operator-trace-20261104/combine-diagnostic-matrix.json"
+        "production/prediction-repair-20261102/routing-profile-tp32-node20-25-20261104-attempt2/routing-analysis-pure-prefill.json",
+        "production/prediction-repair-20261102/tp32-prefill-operator-trace-20261104/moe-chain-diagnostic.json",
+        "production/prediction-repair-20261102/tp32-completed-evidence-archive-20261104/manifest.json"
       ],
-      "status": "causal_attribution_in_progress"
+      "status": "count_observations_validated_compute_model_in_progress"
     },
     "tp32_runtime_layers_20261104": {
       "campaign": "production/prediction-repair-20261102/layer-tp32-node20-25-20261104-attempt4",
@@ -4717,8 +4719,8 @@
       "publication": "560 rows: 240 unchanged TP16 rows plus 320 qualified TP32 rows. No averaging or fitted whole-forward residual. serving_accuracy_acceptance remains false.",
       "qualification_recovery": "Initial CPU qualification invocation used a host path absent inside its /workspace mount. Failure and logs retained; helper now resolves the source relative to the mounted repository. Qualification selects first numerically valid CV<=0.1 cell, independently of serving errors. No production TP32 data has been published yet.",
       "remaining_coverage": "Historical TP32 high-concurrency PD replay rejects skewed DP populations across padding buckets or missing request-count anchors. Independent aggregate C64 likewise fails on active31/requests2. Failures retained; no isolated-kernel fallback.",
-      "routed_population_followup": "Six new explicit-DP-routing populations completed, including active4/request2 and active31/request2 gaps, a full-active control, and three heterogeneous MAX_LEN/SUM_LEN heldouts. All captured request counts match the declared vectors. They remain raw diagnostics pending quality gates and native coverage support; no data-contract extension or silent fallback was made.",
-      "serving_validation": "Five independent aggregate serving cases finished with probes disarmed and separate seed; 12K/4K case still running. New TTFT errors exposed a separate prefill attention extrapolation defect. Accuracy remains unaccepted.",
+      "routed_population_followup": "Initial active4/request2 and active31/request2 collections fail the unchanged0.1 CV gate for some layers. No rows published. Two predeclared populations are being repeated in a fresh frozen campaign; original failed and heterogeneous heldout observations preserved.",
+      "serving_validation": "All six independent aggregate cases finished.39-row same-condition historical report and six-case serving report saved in md/910c-glm52-tp32-runtime-validation-20261104.md. High-population prefill and three historical coverage failures remain.",
       "source_identity": "Pinned SGLang0.5.22/CANN9.1 image; model config and quantization SHA256 identical on both hosts",
       "sources": [
         "production/prediction-repair-20261102/tp32-layer-data-publication-20261104.json",
@@ -4748,7 +4750,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 161,
+  "revision": 162,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

@@ -15,6 +15,7 @@ def main():
     parser.add_argument("--ssh-socket", required=True)
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--manifest", default="layer-campaign.json")
+    parser.add_argument("--wait-serving", type=Path)
     args = parser.parse_args()
     root = args.campaign.resolve()
     destination = root / args.manifest
@@ -25,6 +26,7 @@ def main():
     plan = json.loads(args.plan.read_text())
     manifest = {"status": "waiting", "cases": [], "plan": plan,
                 "source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                "plan_sha256": hashlib.sha256(args.plan.read_bytes()).hexdigest(),
                 "scope": "Real TP32 layer invocation and numeric validation; client latency includes replay pauses and is not serving ground truth"}
 
     def save():
@@ -32,6 +34,18 @@ def main():
 
     save()
     try:
+        if args.wait_serving:
+            deadline = time.monotonic() + 7200
+            while time.monotonic() < deadline:
+                state = json.loads(args.wait_serving.read_text())
+                if state["status"] == "completed":
+                    manifest["preceding_serving_sha256"] = hashlib.sha256(args.wait_serving.read_bytes()).hexdigest()
+                    break
+                if state["status"] == "failed":
+                    raise RuntimeError("Preceding independent serving validation failed")
+                time.sleep(5)
+            else:
+                raise TimeoutError("Preceding independent serving validation did not complete")
         for attempt in range(1200):
             state = subprocess.check_output(["docker", "inspect", "-f", "{{.State.Status}}", "aisim-layer-tp32-node0-20261104"], text=True).strip()
             if state != "running":
@@ -54,7 +68,15 @@ def main():
         manifest["status"] = "running"
         save()
         for planned in plan:
-            name, input_length, concurrency, training = planned
+            name, input_length, concurrency, training = planned[:4]
+            routed_counts = planned[4] if len(planned) == 5 else None
+            if len(planned) not in (4, 5):
+                raise ValueError("Unexpected collection plan tuple")
+            if routed_counts is not None and (
+                len(routed_counts) != 32 or any(type(count) is not int or count < 0 for count in routed_counts)
+                or sum(routed_counts) != concurrency
+            ):
+                raise ValueError("Routed plan must conserve requests across all32 DP ranks")
             case_root = root / name
             case_root.mkdir(exist_ok=False)
             control = {"id": name, "forward_call": 48, "training": training,
@@ -73,8 +95,18 @@ def main():
             for flag, value in (("--num-prompts", "2"), ("--random-output-len", "32"),
                                 ("--output-file", f"/campaign/{name}/warmup.jsonl")):
                 warmup[warmup.index(flag) + 1] = value
+            if routed_counts is not None:
+                helper = Path(__file__).parent / "run_routed_layer_benchmark.py"
+                shutil.copy2(helper, root / "node0/run_routed_layer_benchmark.py")
+                command = ["docker", "exec", "-e", "AISIM_ATTENTION_DP=32", "-e",
+                           "AISIM_ROUTED_COUNTS=" + ",".join(map(str, routed_counts)),
+                           "aisim-layer-tp32-node0-20261104", "python3", "-u",
+                           "/campaign/run_routed_layer_benchmark.py", *command[command.index("--backend"):]]
             case = {**control, "command": command, "warmup_command": warmup,
                     "start_unix": time.time(), "status": "warming"}
+            if routed_counts is not None:
+                case.update(requested_dp_counts=routed_counts,
+                            routing_client_sha256=hashlib.sha256(helper.read_bytes()).hexdigest())
             manifest["cases"].append(case)
             save()
             with (case_root / "warmup.log").open("w") as stream:
@@ -121,7 +153,9 @@ def main():
                     raise ValueError("Request population changed between layers")
                 counts.append(layer_counts.pop())
             positive = {count for count in counts if count > 0}
-            if sum(counts) != concurrency or len(positive) != 1:
+            if routed_counts is not None and counts != routed_counts:
+                raise ValueError("Requested DP routing differs from the actual captured population")
+            if sum(counts) != concurrency or (routed_counts is None and len(positive) != 1):
                 raise ValueError("Requested uniform active DP population differs from captured population")
             case.update(status="completed", captured_dp_requests=counts)
             save()
@@ -131,6 +165,13 @@ def main():
         manifest.update(status="failed", error=repr(error))
         raise
     finally:
+        if manifest["cases"]:
+            (root / "node0/layer-probe-control.json").unlink(missing_ok=True)
+            try:
+                subprocess.run(ssh + [shlex.join(["rm", "-f", remote_root + "/layer-probe-control.json"])], check=True, timeout=15)
+                manifest["probes_disarmed"] = True
+            except (OSError, subprocess.SubprocessError) as error:
+                manifest.update(status="failed", probes_disarmed=False, disarm_error=repr(error))
         save()
 
 
