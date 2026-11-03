@@ -1,0 +1,13 @@
+{
+  "research": {
+    "runtime_layer_workload_coverage_20261103": {
+      "question": "Does the latest L/K comparison generalize beyond 8K/1K, specifically to 12K/4K?",
+      "table_audit": "240 layer points are keyed by layer, topology, active attention-DP population, per-DP actual requests and KV length. ActiveDP1-3 with one request/DP have roughly16K brackets; activeDP4 or2-3requests/DP currently only roughly10K brackets. Per-layer bounds differ slightly. Runtime layers explicitly prohibit KV/request extrapolation.",
+      "offline_probe": "Same two-node1P1D P/DTP16-ADP4-EP16 eager configuration as historical row24; P135,D253pages/rank,128tokens/page; only workload set12288/4096 and C1/4/8,N2C. Both L and K run explicitly, no fallback or residual. L C1 completes; C4 rejects activeDP4 kv12293 outside[558,10282]; C8 rejects activeDP2 kv12291 outside[558,10281]. All three K cases complete. All successful cases conserve requests/input/output tokens.",
+      "accuracy_qualification": "Coverage probe only, no actual12K/4K measured service. No extrapolation of historical error claims. A successful run is not serving accuracy acceptance. The failure cases depend on the tested PD layout and actual batch trajectory.",
+      "image_id": "sha256:9f8b7b90c438b10daa203fadb3beebc537e61c722019915265aa002d7738c6c9",
+      "artifacts": "production/prediction-repair-20261102/joint-workload-coverage-12k4k-20261103/README.md;summary.json;per-case command/result JSON and logs",
+      "next_action": "Expand qualified layer profiles for activeDP4 and multi-request populations through12K-16K KV and beyond, subject to real KV capacity; retain topology/quantization/source guards. Continue prefill MoE and scheduling fixes. No core model or profile data changed in this probe."
+    }
+  }
+}

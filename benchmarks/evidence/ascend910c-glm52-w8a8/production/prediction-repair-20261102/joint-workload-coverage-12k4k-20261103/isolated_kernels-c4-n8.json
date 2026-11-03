@@ -1,0 +1,49 @@
+{
+  "case": "isolated_kernels-c4-n8",
+  "image_id": "sha256:9f8b7b90c438b10daa203fadb3beebc537e61c722019915265aa002d7738c6c9",
+  "scope": "isolated_kernels",
+  "concurrency": 4,
+  "requests": 8,
+  "input_length": 12288,
+  "output_length": 4096,
+  "command": [
+    "bash",
+    "/tgm_rent_data/data/youxingye/aisimulate-910c/scripts/run-ascend910c.sh",
+    "predict",
+    "--stack",
+    "engine",
+    "--config",
+    "/tgm_rent_data/data/youxingye/aisimulate-910c/benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/joint-latest-replay-20261103/attempt2/configs/b6c023d91e3b192b97a79d3eee2779b8579b31f3183f27ff48de60057888c62b.yaml",
+    "--capture-per-request",
+    "--detail",
+    "source",
+    "--output-dir",
+    "/tgm_rent_data/data/youxingye/aisimulate-910c/aisimulate-output/joint-workload-coverage-12k4k-20261103/isolated_kernels-c4-n8",
+    "--set",
+    "traffic.source.input_tokens=12288",
+    "--set",
+    "traffic.source.output_tokens=4096",
+    "--set",
+    "traffic.load.concurrency=4",
+    "--set",
+    "traffic.stop.requests=8"
+  ],
+  "returncode": 0,
+  "wall_seconds": 4.171730139059946,
+  "output": "/tgm_rent_data/data/youxingye/aisimulate-910c/aisimulate-output/joint-workload-coverage-12k4k-20261103/isolated_kernels-c4-n8",
+  "log": "/tgm_rent_data/data/youxingye/aisimulate-910c/benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/joint-workload-coverage-12k4k-20261103/isolated_kernels-c4-n8.log",
+  "validation": {
+    "completed_requests": 8,
+    "total_input_tokens": 98304,
+    "total_output_tokens": 32768,
+    "failed_requests": 0,
+    "rejected_requests": 0,
+    "canceled_requests": 0
+  },
+  "metrics": {
+    "mean_ttft_ms": 5633.548621891051,
+    "mean_tpot_ms": 200.81150501412546,
+    "input_throughput_tok_s": 59.35102802805256,
+    "output_throughput_tok_s": 19.783676009350852
+  }
+}

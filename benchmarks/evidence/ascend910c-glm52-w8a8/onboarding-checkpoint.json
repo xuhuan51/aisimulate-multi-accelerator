@@ -4205,6 +4205,15 @@
       "test_status": "Full Rust core initial run2127pass1failure1ignored; only enum cardinality assertion failed, then corrected and22 schema tests pass. Packaged Python/collector/parity initial441pass1failure; expected new default field added and41 relevant tests pass. Both engine parity suites passed. Padding validity helper5tests pass. Legal file copies synchronized.",
       "validation": "Native paired steady-forward8K/C4:407.896942ms measured,200.870441ms independent kernels,420.005933ms runtime layers; per-stepMAPE51.2543%->4.3492%. Untrained4K/C4:411.091644ms measured,421.527706ms runtime layers;MAPE4.2076%. Both new images reproduce these values. Not full8K/1K TTFT/TPOT/throughput acceptance."
     },
+    "runtime_layer_workload_coverage_20261103": {
+      "accuracy_qualification": "Coverage probe only, no actual12K/4K measured service. No extrapolation of historical error claims. A successful run is not serving accuracy acceptance. The failure cases depend on the tested PD layout and actual batch trajectory.",
+      "artifacts": "production/prediction-repair-20261102/joint-workload-coverage-12k4k-20261103/README.md;summary.json;per-case command/result JSON and logs",
+      "image_id": "sha256:9f8b7b90c438b10daa203fadb3beebc537e61c722019915265aa002d7738c6c9",
+      "next_action": "Expand qualified layer profiles for activeDP4 and multi-request populations through12K-16K KV and beyond, subject to real KV capacity; retain topology/quantization/source guards. Continue prefill MoE and scheduling fixes. No core model or profile data changed in this probe.",
+      "offline_probe": "Same two-node1P1D P/DTP16-ADP4-EP16 eager configuration as historical row24; P135,D253pages/rank,128tokens/page; only workload set12288/4096 and C1/4/8,N2C. Both L and K run explicitly, no fallback or residual. L C1 completes; C4 rejects activeDP4 kv12293 outside[558,10282]; C8 rejects activeDP2 kv12291 outside[558,10281]. All three K cases complete. All successful cases conserve requests/input/output tokens.",
+      "question": "Does the latest L/K comparison generalize beyond 8K/1K, specifically to 12K/4K?",
+      "table_audit": "240 layer points are keyed by layer, topology, active attention-DP population, per-DP actual requests and KV length. ActiveDP1-3 with one request/DP have roughly16K brackets; activeDP4 or2-3requests/DP currently only roughly10K brackets. Per-layer bounds differ slightly. Runtime layers explicitly prohibit KV/request extrapolation."
+    },
     "runtime_population_attribution_20261103": {
       "active_work": "Node20 diagnostic service stopped after completed collection. Node25 attempt3 routed campaign training and quality retries complete;12 held-out uniform/skewed DP cases finishing. Only own diagnostic services changed.",
       "artifacts": "production/prediction-repair-20261102/runtime-layer-population-publication-20261103.json; population-node20-comparison-20261103.json; population-node25-comparison-20261103.json; runtime-population-validation-20261103; layer-population-node25-20261103",
@@ -4657,7 +4666,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 149,
+  "revision": 150,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }
