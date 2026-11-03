@@ -176,17 +176,24 @@ impl GroupShape {
                 if active_attention_dp == 0 {
                     return Ok(None);
                 }
-                if skewed
+                let different_padding = skewed
                     && active_requests.clone().any(|count| {
                         count.div_ceil(layers.attention_tp) != self.max_tokens / layers.attention_tp
-                    })
-                {
+                    });
+                if different_padding && self.mode != DpPaddingMode::MaxLen {
                     return Err(invalid(
-                        "Ascend skewed active-rank profiles require the same measured TP padding bucket",
+                        "Ascend SUM_LEN skewed active-rank profiles require the same measured TP padding bucket",
                     ));
                 }
                 layers.active_attention_dp = Some(active_attention_dp);
                 layers.population_transfer = skewed;
+                if different_padding && requests > 0 {
+                    return Ok(Some(Op::TokenScale(TokenScaleOp {
+                        op: Box::new(operation),
+                        numerator: active_requests.max().unwrap(),
+                        denominator: requests,
+                    })));
+                }
                 return Ok(Some(operation));
             }
             Op::AscendEagerOverhead(overhead) => {
@@ -409,6 +416,53 @@ mod tests {
                 .mode,
             DpPaddingMode::MaxLen
         );
+    }
+
+    #[test]
+    fn runtime_layers_use_max_len_physical_population_without_changing_context() {
+        let operation: Op = serde_json::from_value(serde_json::json!({"AscendDecoderLayers": {
+            "name": "layers", "scale_factor": 1.0, "attention_tp": 1,
+            "attention_dp": 32, "moe_ep": 32, "covered_ops": [],
+            "quantization_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        }})).unwrap();
+        for counts in [
+            [vec![2; 16], vec![1; 16]].concat(),
+            [vec![2], vec![1; 30], vec![0]].concat(),
+        ] {
+            let metrics = decode(&counts);
+            let shape = GroupShape::new(&metrics, 1, &[]).unwrap();
+            assert_eq!(shape.mode, DpPaddingMode::MaxLen);
+            assert_eq!(shape.global_tokens, 64);
+            for (rank, requests) in counts.iter().copied().enumerate() {
+                let context = shape.context(&metrics[rank]);
+                let bound = shape
+                    .bind(&operation, rank, requests, false)
+                    .unwrap()
+                    .unwrap();
+                if requests == 0 {
+                    assert!(matches!(bound, Op::AscendDecoderLayers(_)));
+                    assert_eq!(context.batch_size, 0);
+                    continue;
+                }
+                let Op::TokenScale(scale) = bound else {
+                    panic!("expected an explicit physical-population transfer");
+                };
+                assert_eq!(scale.scale_tokens(context.batch_size).unwrap(), 2);
+                assert_eq!(context.s, 8193);
+                let Op::AscendDecoderLayers(layers) = *scale.op else {
+                    panic!("expected runtime layers");
+                };
+                assert!(layers.population_transfer);
+                assert_eq!(
+                    layers.active_attention_dp,
+                    Some(counts.iter().filter(|count| **count > 0).count() as u32)
+                );
+            }
+        }
+        let counts = [vec![2, 1, 1, 1], vec![0; 28]].concat();
+        let shape = GroupShape::new(&decode(&counts), 1, &[]).unwrap();
+        assert_eq!(shape.mode, DpPaddingMode::SumLen);
+        assert!(shape.bind(&operation, 0, 2, false).is_err());
     }
 
     #[test]

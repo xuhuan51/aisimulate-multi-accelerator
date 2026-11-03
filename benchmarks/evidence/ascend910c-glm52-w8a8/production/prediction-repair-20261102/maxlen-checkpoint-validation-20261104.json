@@ -1,0 +1,24 @@
+{
+  "research": {
+    "tp32_runtime_layers_20261104": {
+      "max_len_population_transfer": "Implemented in native GroupShape. MAX_LEN cross-bucket Decode uses maximum active request count for the physical layer query, preserves real active DP count and per-rank KV context, leaves logical scheduler/KV/logits metrics unchanged, and labels the transfer estimated. Requires anchored policy and existing measured brackets; SUM_LEN cross-bucket geometry still rejects explicitly.",
+      "extension_verification": "576 measured layer rows now validated in the canonical data family. All560 prior rows unchanged;16 additional active4/31,request2,KV8224 observations pass unchanged9sample/384numericcheck/CV<=0.1 gates. No new table fields or per-forward residual.",
+      "validation": "10 native geometry tests and449 Python parity/model/contract/collector tests passed with unchanged goldens.4 canonical FPM queries plus3 expected rejections passed. The query-validator first attempt missed the typed PerfDataNotAvailableError in a negative test; raw failure retained and validator corrected without changing production behavior.",
+      "heldout_forward_accuracy": "Previously unsupported MAX_LEN populations now predict:48requests distributed2x16+1x16 has2.36% per-forward MAPE;32requests distributed2+1x30+0 has23.42%. Uniform active4/request2 andactive31/request2 remain27.84%/24.05% underpredicted; existing active32/request2 control2.14%. SUM_LEN2+1+1+1 remains unsupported. Do not claim all shapes meet20%.",
+      "sources": [
+        "production/prediction-repair-20261102/maxlen-population-validation-20261104/validation.json",
+        "production/prediction-repair-20261102/maxlen-population-validation-20261104/table-verification.json",
+        "production/prediction-repair-20261102/maxlen-population-validation-20261104/public-queries.json",
+        "production/prediction-repair-20261102/maxlen-population-validation-20261104/heterogeneous-forward-validation.json"
+      ]
+    },
+    "tp32_decode_slowdown_20261104": {
+      "restart_progress": "Fresh unprofiled16K/128/C32 runs produce TPOT400.51ms then370.32ms, versus earlier post-collection535.73/567.54ms. Fresh8K/128/C64 gives550.39ms. Same launch and environment. An additional same-process C32 repeat after normal shape history, followed by one diagnostic layer replay and another C32 repeat, was declared before its results to isolate possible collection state effects. These controls do not train timing data."
+    }
+  },
+  "progress": {
+    "stage": 6,
+    "status": "in_progress",
+    "next_action": "Finish the declared shape-history/replay-effect controls, then rerun all39 historical rows and all same-condition serving cases with the validated native MAX_LEN implementation. Retain unsupported SUM_LEN shapes and failures in the comparison."
+  }
+}

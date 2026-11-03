@@ -210,7 +210,7 @@ explicit Ascend controls.
 | `prefill_expert_workload` | omitted | Optional observed expert assignment counts for DeepEP prefill compute. Requires `shape_policy: anchored`, an `observation_id`, matching `quantization_sha256`, positive `input_tokens`, and 75 `layer_expert_counts` vectors of 256 nonnegative counts. Each vector sums to eight times `input_tokens`, with no expert count exceeding `input_tokens`. Changes the critical-rank compute shape; does not replace transport measurements or add a latency residual. |
 | `shared_expert_overlap` | `true` | Overlaps the shared expert with routed work where the pinned runtime permits it. Tensor-MoE prefill stays serial; its decode and the DeepEP path may overlap. `false` adds the streams serially. |
 | `decode_execution_mode` | `graph` | `graph` selects captured decode profiles and padding buckets; `eager` selects eager profiles with attention-TP token alignment. Missing eager identities fail explicitly. Prefill remains eager. This does not control scheduler overlap or CPU launch overhead. |
-| `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations, including eager host dispatch, stream management and communication boundaries. Requires exact-topology profiles for eager TP16/ADP4/EP16/DCP1 or TP32/ADP32/EP32/DCP1, shared-expert multistream execution and measured request-count brackets. Idle DP populations need their own curves; padding does not count as a real request. With `shape_policy: anchored`, unequal counts within one TP padding bucket reuse each rank's homogeneous-population curve, and longer KV contexts use the attention-only delta described below. Both transfers are `estimated`. Cross-bucket populations, request-count extrapolation, other topologies, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
+| `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations, including eager host dispatch, stream management and communication boundaries. Requires exact-topology profiles for eager TP16/ADP4/EP16/DCP1 or TP32/ADP32/EP32/DCP1, shared-expert multistream execution and measured request-count brackets. Idle DP populations need their own curves; padding does not count as a real request. With `shape_policy: anchored`, unequal counts within one TP padding bucket reuse each rank's homogeneous-population curve; MAX_LEN populations crossing buckets use the maximum active request count as their physical-population anchor. KV context transfers use the attention-only delta described below. All transfers are `estimated`. SUM_LEN cross-bucket populations, request-count extrapolation, other topologies, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
 | `enable_dp_lm_head` | `true` | Matches SGLang's output-layer grouping. `true` retains attention-local TP; `false` uses global TP, sums actual output-request counts across attention DP, and includes DP hidden-state reduction and TP logits exchange. Set separately for each worker role to match its launch flags. |
 | `enable_tp_lm_head_all_to_all` | `false` | With global LM head, uses measured all-to-all only for equal nonzero row counts with attention DP equal to global TP; other batches use all-gather. Local logits cast is measured; additional reordering/scatter and CPU synchronization remain unqualified. This path is reported as estimated composition. |
 | `eager_runtime_overhead` | omitted | Optional additive per-forward residual calibrated from unprofiled forward telemetry. Requires `calibration_id`, `operator_contract`, `attention_tp`, `attention_dp`, `moe_ep_size`, `prefill_ms`, and `decode_ms`. Timings must be finite and nonnegative. The topology must match the canonical identity; currently restricted to SGLang 0.5.22 and eager execution. |
@@ -238,6 +238,17 @@ layer(new_KV) = measured_layer(layer_anchor_KV)
               + indexer_delta_if_this_layer_computes_an_index
 layers(new_KV) = sum(layer_count * layer(new_KV))
 ```
+
+For unequal eager Decode populations crossing attention-TP padding buckets,
+MAX_LEN materializes the largest token buffer on every rank. The layer query
+therefore uses the largest active request count, while retaining the number of
+real active ranks and each rank's KV context. Logical request counts in the
+scheduler, logits, KV allocation, and reported batch statistics are unchanged.
+This is an anchored estimate: a padded request has no real KV sequence, so a
+homogeneous measured population is not an exact timing identity or a guaranteed
+latency bound. The corresponding measured request and active-rank brackets must
+exist; missing data still fails. SUM_LEN does not materialize that shared buffer
+and cannot use this transfer across padding buckets.
 
 Collection identities are checked separately for each exact TP/ADP/EP topology.
 Adding a TP32 table does not reuse TP16 observations or permit mixed runtime

@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/workspace/benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/validate_maxlen_runtime_queries.py", line 76, in <module>
+    main()
+  File "/workspace/benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/validate_maxlen_runtime_queries.py", line 64, in main
+    candidate.estimate_forward_pass_time_ms(metrics(counts))
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/aisimulate_core/sdk/rust_engine_step.py", line 459, in estimate_forward_pass_time_ms
+    return self._inner.estimate_forward_pass_time_ms(_json_dumps(metrics))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+aisimulate_core.sdk.errors.PerfDataNotAvailableError: perf database error: Ascend runtime layer AscendLayerKey { attention_tp: 1, attention_dp: 32, active_attention_dp: 32, moe_ep: 32, layer: 0, quantization_sha256: "3386f968cd7049fe95f896c1a1aeacaa5c1c0659ac2ed9a42cd783cc48ef29ba" } requires measured request brackets: perf database error: Ascend plane outer-axis=9 lacks measured brackets
