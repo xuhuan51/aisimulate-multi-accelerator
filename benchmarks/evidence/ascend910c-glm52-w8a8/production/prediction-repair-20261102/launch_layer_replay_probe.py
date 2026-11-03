@@ -141,8 +141,13 @@ ORIGINAL_FORWARD = DeepseekV2ForCausalLM.forward
 
 
 def probe():
-    control = get_parallel().tp_group.cpu_group
+    parallel = get_parallel()
+    control = parallel.tp_group.cpu_group
     rank = distributed.get_rank(group=control)
+    world_size = distributed.get_world_size(group=control)
+    attention_size = parallel.attn_tp_size
+    if world_size % attention_size:
+        raise AssertionError("Invalid attention tensor/data parallel partition")
     device = torch.get_device_module()
     records = []
     keys = sorted(CAPTURED)
@@ -156,9 +161,10 @@ def probe():
         original_args, original_kwargs, _ = saved
         rank_lengths = [None] * distributed.get_world_size(group=control)
         distributed.all_gather_object(rank_lengths, forward_batch.seq_lens_cpu.tolist(), group=control)
-        if any(rank_lengths[index] != rank_lengths[index // 4 * 4] for index in range(16)):
+        if any(rank_lengths[index] != rank_lengths[index // attention_size * attention_size]
+               for index in range(world_size)):
             raise AssertionError("Attention tensor-parallel ranks disagree on request validity")
-        global_lengths = rank_lengths[::4]
+        global_lengths = rank_lengths[::attention_size]
         final_residual_stream = forward_batch.residual_stream
         samples = []
         for repeat in range(REPEATS):
@@ -218,6 +224,8 @@ def probe():
               "cpu_affinity": sorted(os.sched_getaffinity(0)), "source_sha256": SOURCES,
               "boundaries": records, "status": "completed"}
     result["control"] = CONTROL
+    result["parallelism"] = {"global_tp": world_size, "attention_tp": attention_size,
+                             "attention_dp": world_size // attention_size}
     result["numerical_contract"] = "all_logical_hidden_values_and_all_topk_columns_for_positive_kv_rows/v3"
     output_root = Path("/campaign") / CONTROL["id"] if CONTROL else Path("/campaign")
     output_root.mkdir(exist_ok=True)

@@ -1,0 +1,115 @@
+{
+  "status": "failed",
+  "cases": [
+    {
+      "id": "train-8192-c1",
+      "forward_call": 80,
+      "training": true,
+      "input_length": 8192,
+      "global_requests": 1,
+      "command": [
+        "docker",
+        "exec",
+        "aisim-layer-tp32-node0-20261104",
+        "python3",
+        "-m",
+        "sglang.benchmark.serving",
+        "--backend",
+        "sglang",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "19180",
+        "--model",
+        "/models/glm-q",
+        "--served-model-name",
+        "glm-5",
+        "--dataset-name",
+        "random-ids",
+        "--num-prompts",
+        "1",
+        "--max-concurrency",
+        "1",
+        "--random-input-len",
+        "8192",
+        "--random-output-len",
+        "192",
+        "--random-range-ratio",
+        "1.0",
+        "--request-rate",
+        "inf",
+        "--warmup-requests",
+        "2",
+        "--seed",
+        "910",
+        "--tokenize-prompt",
+        "--output-details",
+        "--output-file",
+        "/campaign/train-8192-c1/requests.jsonl"
+      ],
+      "start_unix": 1793731871.5891635,
+      "status": "running",
+      "end_unix": 1793732182.0952213,
+      "returncode": 137
+    }
+  ],
+  "plan": [
+    [
+      "train-8192-c1",
+      8192,
+      1,
+      true
+    ],
+    [
+      "train-8192-c4",
+      8192,
+      4,
+      true
+    ],
+    [
+      "train-8192-c8",
+      8192,
+      8,
+      true
+    ],
+    [
+      "train-8192-c16",
+      8192,
+      16,
+      true
+    ],
+    [
+      "train-8192-c32",
+      8192,
+      32,
+      true
+    ],
+    [
+      "train-8192-c64",
+      8192,
+      64,
+      true
+    ],
+    [
+      "train-8192-c128",
+      8192,
+      128,
+      true
+    ],
+    [
+      "holdout-12288-c4",
+      12288,
+      4,
+      false
+    ],
+    [
+      "holdout-16384-c32",
+      16384,
+      32,
+      false
+    ]
+  ],
+  "source_sha256": "59b707cb7b942867be0eba577b339bd62761dc33e2a36fa0ee3c69d7713e17dd",
+  "scope": "Real TP32 layer invocation and numeric validation; client latency includes replay pauses and is not serving ground truth",
+  "error": "CalledProcessError(137, ['docker', 'exec', 'aisim-layer-tp32-node0-20261104', 'python3', '-m', 'sglang.benchmark.serving', '--backend', 'sglang', '--host', '127.0.0.1', '--port', '19180', '--model', '/models/glm-q', '--served-model-name', 'glm-5', '--dataset-name', 'random-ids', '--num-prompts', '1', '--max-concurrency', '1', '--random-input-len', '8192', '--random-output-len', '192', '--random-range-ratio', '1.0', '--request-rate', 'inf', '--warmup-requests', '2', '--seed', '910', '--tokenize-prompt', '--output-details', '--output-file', '/campaign/train-8192-c1/requests.jsonl'], None, None)"
+}

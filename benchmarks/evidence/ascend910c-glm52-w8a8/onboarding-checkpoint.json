@@ -4676,6 +4676,21 @@
       "limits": "Only paired steady eager decode calibrated. Colocated diagnostic prefill uses1024tokens/rank to retain650MBHCCL buffer; this is not PD endpoint timing. TTFT remains unaccepted.",
       "new_work": "Request-linked 1P1D campaign on20+25 running with explicit clientRID and Tokenizer stage timestamps. HTTP PD gateway source confirms prefill response body is awaited before decode stream is forwarded. Native gate passes473Rust replay tests; Python and end-to-end validation in progress."
     },
+    "tp32_runtime_layers_20261104": {
+      "campaign": "production/prediction-repair-20261102/layer-tp32-node20-25-20261104-attempt3",
+      "failures": "Attempt2 tmpfs inherited noexec and Triton could not map compiled libkernel.so; both containers stopped and logs preserved. Attempt3 initial control counted client warmups; excluded initial manifest and restarted controller after explicit warmup separation, without restarting healthy serving instances.",
+      "finding": "First two formal populations completed all32rank numerical checks; layer median3.7-5.2ms, CV below0.1. Independent invocation profiles, no additive forward residual. Profiler-export contract extended without adding columns.",
+      "hosts": [
+        "npu1-20",
+        "npu1-25"
+      ],
+      "manifest": "layer-campaign-formal.json",
+      "next_action": "Finish numerical and timing quality gates; publish TP32 curves and extend native exact-topology lookup. Validate independent uninstrumented forward/serving cases and replay original39PD configurations. Broader less-than20% goal still unfinished.",
+      "parallelism": "global TP32/attention DP32/EP32, local attention TP1; graph/overlap/speculation disabled",
+      "protocol": "43 planned populations/context cases; active DP1..32 plus per-DP batch2/4. Two completed uninstrumented warmup requests before arming each collection. 12K and16K excluded from publication as holdouts. Client metrics include layer replay pauses and are not serving latency truth.",
+      "source_identity": "Pinned SGLang0.5.22/CANN9.1 image; model config and quantization SHA256 identical on both hosts",
+      "status": "collecting; no publication or accuracy acceptance yet"
+    },
     "worker_memory_collection": {
       "confidence": "All16ranks have6startup boundaries;52992usabletokens and5833850880KVbytes each;5report validation tests passed",
       "container": "aisim-glm52-memory-20261022",
@@ -4694,7 +4709,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 154,
+  "revision": 155,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

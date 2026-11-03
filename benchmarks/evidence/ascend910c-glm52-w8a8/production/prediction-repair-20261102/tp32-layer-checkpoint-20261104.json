@@ -1,0 +1,16 @@
+{
+  "research": {
+    "tp32_runtime_layers_20261104": {
+      "status": "collecting; no publication or accuracy acceptance yet",
+      "campaign": "production/prediction-repair-20261102/layer-tp32-node20-25-20261104-attempt3",
+      "manifest": "layer-campaign-formal.json",
+      "hosts": ["npu1-20", "npu1-25"],
+      "parallelism": "global TP32/attention DP32/EP32, local attention TP1; graph/overlap/speculation disabled",
+      "source_identity": "Pinned SGLang0.5.22/CANN9.1 image; model config and quantization SHA256 identical on both hosts",
+      "finding": "First two formal populations completed all32rank numerical checks; layer median3.7-5.2ms, CV below0.1. Independent invocation profiles, no additive forward residual. Profiler-export contract extended without adding columns.",
+      "protocol": "43 planned populations/context cases; active DP1..32 plus per-DP batch2/4. Two completed uninstrumented warmup requests before arming each collection. 12K and16K excluded from publication as holdouts. Client metrics include layer replay pauses and are not serving latency truth.",
+      "failures": "Attempt2 tmpfs inherited noexec and Triton could not map compiled libkernel.so; both containers stopped and logs preserved. Attempt3 initial control counted client warmups; excluded initial manifest and restarted controller after explicit warmup separation, without restarting healthy serving instances.",
+      "next_action": "Finish numerical and timing quality gates; publish TP32 curves and extend native exact-topology lookup. Validate independent uninstrumented forward/serving cases and replay original39PD configurations. Broader less-than20% goal still unfinished."
+    }
+  }
+}

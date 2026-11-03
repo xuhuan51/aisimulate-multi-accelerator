@@ -1,0 +1,844 @@
+[2026-11-03 18:48:50] Cannot detect CUDA architecture.
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:48:51] get env SGLANG_DSA_PREFILL_DENSE_ATTN_KV_LEN_THRESHOLD = 2048
+[2026-11-03 18:48:51] Set dense attention kv len threshold to model index_topk=2048 for DeepSeek with DSA.
+[2026-11-03 18:48:51] DP attention is enabled. chunked prefill size is adjusted from 32768 to 1024.
+[2026-11-03 18:48:52] server_args={'model_path': '/models/glm-q', 'tokenizer_path': '/models/glm-q', 'tokenizer_mode': 'auto', 'tokenizer_backend': 'huggingface', 'tokenizer_worker_num': 4, 'detokenizer_worker_num': 1, 'skip_tokenizer_init': False, 'load_format': 'auto', 'model_loader_extra_config': '{}', 'trust_remote_code': True, 'context_length': 180000, 'is_embedding': False, 'enable_multimodal': None, 'revision': None, 'model_impl': 'auto', 'model_config_parser': 'auto', 'json_model_override_args': '{}', 'dtype': 'bfloat16', 'quantization': 'modelslim', 'quantization_param_path': None, 'kv_cache_dtype': 'auto', 'enable_fp32_lm_head': False, 'modelopt_quant': None, 'modelopt_checkpoint_restore_path': None, 'modelopt_checkpoint_save_path': None, 'modelopt_export_path': None, 'quantize_and_serve': False, 'rl_quant_profile': None, 'enable_tf32_matmul': False, 'mem_fraction_static': 0.9, 'max_running_requests': 128, 'max_queued_requests': None, 'max_total_tokens': 123904, 'chunked_prefill_size': 1024, 'prefill_decode_interval': 0, 'enable_dynamic_chunking': False, 'max_prefill_tokens': 32768, 'prefill_max_requests': None, 'schedule_policy': 'fcfs', 'enable_priority_scheduling': False, 'disable_priority_preemption': False, 'default_priority_value': None, 'abort_on_priority_when_disabled': False, 'schedule_low_priority_values_first': False, 'priority_scheduling_preemption_threshold': 10, 'retraction_policy': 'length', 'schedule_conservativeness': 0.3, 'page_size': 128, 'c128_page_size': 16, 'swa_full_tokens_ratio': 0.8, 'disable_hybrid_swa_memory': False, 'radix_eviction_policy': 'lru', 'radix_eviction_policy_config': None, 'prefill_only_disable_kv_cache': False, 'disable_radix_cache': True, 'enable_page_major_kv_layout': False, 'enable_unified_memory': False, 'disable_chunked_prefix_cache': False, 'disable_overlap_schedule': True, 'num_continuous_decode_steps': 1, 'scheduler_recv_interval': 1, 'enable_mixed_chunk': False, 'nccl_port': None, 'dist_timeout': None, 'dist_init_addr': '10.120.72.20:19500', 'gated_launch_port': None, 'nnodes': 2, 'node_rank': 1, 'tp_size': 32, 'dcp_size': 1, 'pp_size': 1, 'pp_max_micro_batch_size': None, 'pp_async_batch_depth': 0, 'dp_size': 1, 'attn_dp_size': 32, 'load_balance_method': 'round_robin', 'attn_cp_size': 1, 'moe_dp_size': 1, 'dwdp_size': 1, 'dcp_comm_backend': 'ag_rs', 'dcp_replicate_q_proj': None, 'enable_prefill_cp': False, 'cp_strategy': None, 'enable_dsa_cache_layer_split': False, 'enable_cp_decode_attn_tp': False, 'enable_kv_cache_sharding': False, 'enable_dp_attention': True, 'enable_dp_attention_local_control_broadcast': False, 'enable_dp_lm_head': False, 'enable_tp_lm_head_all_to_all': True, 'enable_attn_tp_input_scattered': False, 'enable_shared_experts_attn_tp': False, 'shared_experts_tp_size': None, 'enable_dense_mlp_attn_tp': False, 'enable_layernorm_sp': False, 'disable_attn_tp_gather': False, 'enable_p2p_check': False, 'device': 'npu', 'base_gpu_id': 0, 'gpu_id_step': 1, 'random_seed': 303428273, 'mlx_enable_sampling': False, 'watchdog_timeout': 9000.0, 'soft_watchdog_timeout': None, 'sleep_on_idle': False, 'use_ray': False, 'custom_sigquit_handler': None, 'numa_node': None, 'gc_threshold': None, 'host': '0.0.0.0', 'port': 19180, 'fastapi_root_path': '', 'smg_grpc_mode': False, 'grpc_mode': False, 'grpc_port': None, 'grpc_worker_threads': 4, 'sidecar': None, 'sidecar_args': None, 'skip_server_warmup': False, 'warmups': None, 'enable_http2': False, 'http2_max_concurrent_streams': 200, 'http2_initial_connection_window_size': 1048576, 'ssl_keyfile': None, 'ssl_certfile': None, 'ssl_ca_certs': None, 'ssl_keyfile_password': None, 'enable_ssl_refresh': False, 'api_key': None, 'admin_api_key': None, 'served_model_name': 'glm-5', 'weight_version': 'default', 'chat_template': None, 'trust_request_chat_template': False, 'hf_chat_template_name': None, 'completion_template': None, 'file_storage_path': None, 'enable_cache_report': True, 'return_input_ids': False, 'return_output_ids': False, 'reasoning_parser': None, 'default_chat_template_kwargs': None, 'strip_thinking_cache': False, 'enable_strict_thinking': False, 'tool_call_parser': None, 'tool_server': None, 'sampling_defaults': 'model', 'asr_max_buffer_seconds': 60, 'asr_max_concurrent_sessions': 32, 'preferred_sampling_params': None, 'allow_auto_truncate': False, 'stream_interval': 1, 'batch_notify_size': 16, 'stream_response_default_include_usage': False, 'incremental_streaming_output': False, 'enable_streaming_session': False, 'enable_session_radix_cache': False, 'log_level': 'info', 'log_level_http': None, 'log_requests': False, 'log_requests_level': 2, 'log_requests_format': 'text', 'log_requests_target': None, 'uvicorn_access_log_exclude_prefixes': [], 'crash_dump_folder': None, 'show_time_cost': False, 'enable_metrics': True, 'smg_http_sidecar_port': None, 'enable_mfu_metrics': False, 'enable_metrics_for_all_schedulers': True, 'load_snapshot_publish_interval': 15, 'tokenizer_metrics_custom_labels_header': 'x-custom-labels', 'tokenizer_metrics_allowed_custom_labels': None, 'extra_metric_labels': None, 'bucket_time_to_first_token': None, 'bucket_inter_token_latency': None, 'bucket_e2e_request_latency': None, 'prompt_tokens_buckets': None, 'generation_tokens_buckets': None, 'gc_warning_threshold_secs': 0.0, 'decode_log_interval': 40, 'enable_request_time_stats_logging': False, 'kv_events_config': None, 'load_publish_endpoint': None, 'enable_forward_pass_metrics': True, 'forward_pass_metrics_worker_id': 'aisim-layer-tp32-node1-20261104', 'forward_pass_metrics_ipc_name': 'ipc:///campaign/forward-metrics', 'enable_trace': False, 'trace_modules': 'request', 'otlp_traces_endpoint': 'localhost:4317', 'export_metrics_to_file': False, 'export_metrics_to_file_dir': None, 'stat_loggers': None, 'constrained_json_whitespace_pattern': None, 'constrained_json_disable_any_whitespace': False, 'constrained_json_max_whitespace_cnt': None, 'attention_backend': 'ascend', 'decode_attention_backend': 'ascend', 'enable_lean_attention': None, 'prefill_attention_backend': 'ascend', 'sampling_backend': 'pytorch', 'grammar_backend': 'xgrammar', 'radix_cache_backend': None, 'mm_attention_backend': None, 'fp8_gemm_runner_backend': 'auto', 'fp4_gemm_runner_backend': 'auto', 'bf16_gemm_backend': 'auto', 'dsa_prefill_backend': None, 'dsv4_prefill_backend': 'auto', 'dsa_decode_backend': None, 'dsa_paged_mqa_logits_backend': 'auto', 'dsa_topk_backend': 'sgl-kernel', 'disable_flashinfer_autotune': False, 'flashinfer_autotune_skip_ops': None, 'mamba_backend': 'triton', 'cuda_graph_config': {'decode': {'backend': 'disabled', 'max_bs': 256, 'bs': [1, 2, 4, 8, 12, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256], 'tc_compiler': 'eager', 'max_context_size': None, 'full_prefill_max_req': None, 'full_prefill_prefix_chunk_tokens': None, 'max_seq_len': None}, 'prefill': {'backend': 'disabled', 'max_bs': 2048, 'bs': [4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256, 288, 320, 352, 384, 416, 448, 480, 512, 576, 640, 704, 768, 832, 896, 960, 1024, 1280, 1536, 1792, 2048], 'tc_compiler': 'eager', 'max_context_size': None, 'full_prefill_max_req': None, 'full_prefill_prefix_chunk_tokens': None, 'max_seq_len': None}}, 'cuda_graph_backend_decode': 'disabled', 'cuda_graph_backend_prefill': 'disabled', 'cuda_graph_max_bs_decode': None, 'cuda_graph_max_bs_prefill': None, 'cuda_graph_bs_decode': None, 'cuda_graph_bs_prefill': None, 'cuda_graph_prefill_max_context': None, 'disable_prefill_cuda_graph': False, 'disable_decode_cuda_graph': False, 'disable_cuda_graph': False, 'disable_cuda_graph_padding': False, 'enable_profile_cuda_graph': False, 'enable_cudagraph_gc': False, 'debug_cuda_graph': False, 'enable_layerwise_nvtx_marker': False, 'enable_nccl_nvls': False, 'enable_symm_mem': False, 'triton_attention_reduce_in_fp32': False, 'triton_attention_num_kv_splits': 8, 'triton_attention_split_tile_size': None, 'flashinfer_mla_disable_ragged': False, 'enable_fused_qk_norm_rope': False, 'enable_precise_embedding_interpolation': False, 'enable_fused_moe_sum_all_reduce': False, 'enable_deepseek_v4_fp4_indexer': False, 'disable_custom_all_reduce': True, 'enable_mscclpp': False, 'enable_torch_symm_mem': False, 'enable_scattered_sconv': False, 'pre_warm_nccl': False, 'boundary_reduction': 'rs+rsv', 'enable_quant_communications': False, 'enable_flashinfer_allreduce_fusion': False, 'enforce_disable_flashinfer_allreduce_fusion': False, 'flashinfer_allreduce_fusion_backend': None, 'enable_aiter_allreduce_fusion': False, 'enable_torch_compile': False, 'enable_torch_compile_debug_mode': False, 'torch_compile_max_bs': 32, 'speculative_algorithm': None, 'uno_lora_path': None, 'speculative_draft_model_path': None, 'speculative_draft_model_revision': None, 'speculative_draft_load_format': None, 'speculative_num_steps': None, 'speculative_eagle_topk': None, 'speculative_num_draft_tokens': None, 'speculative_dflash_block_size': None, 'speculative_dspark_block_size': None, 'speculative_dspark_sps_table_path': None, 'speculative_dspark_confidence_sts_path': None, 'speculative_dspark_align_verify_tokens_to_graph_tier': False, 'speculative_accept_threshold_single': 1.0, 'speculative_accept_threshold_acc': 1.0, 'speculative_use_rejection_sampling': False, 'speculative_token_map': None, 'speculative_attention_mode': 'prefill', 'speculative_draft_attention_backend': None, 'speculative_dsa_topk_backend': 'sgl-kernel', 'speculative_draft_kv_cache_dtype': None, 'speculative_draft_window_size': None, 'speculative_moe_runner_backend': 'auto', 'speculative_moe_a2a_backend': None, 'speculative_enable_w4a4_mxfp4_megamoe': None, 'speculative_draft_model_quantization': 'modelslim', '_speculative_draft_quantization_explicitly_set': False, 'speculative_skip_dp_mlp_sync': False, 'enable_multi_layer_eagle': False, 'speculative_adaptive': False, 'speculative_adaptive_config': None, 'decoupled_spec_bind_endpoint': None, 'decoupled_spec_connect_endpoints': None, 'decoupled_spec_rank': None, 'decoupled_spec_role': 'null', 'spec_trace_dir': None, 'speculative_ngram_min_bfs_breadth': 1, 'speculative_ngram_max_bfs_breadth': 10, 'speculative_ngram_match_type': 'BFS', 'speculative_ngram_max_trie_depth': 18, 'speculative_ngram_capacity': 10000000, 'speculative_ngram_external_corpus_path': None, 'speculative_ngram_external_sam_budget': 0, 'speculative_ngram_external_corpus_max_tokens': 10000000, 'ep_size': 32, 'moe_a2a_backend': 'deepep', 'enable_w4a4_mxfp4_megamoe': False, 'deepep_v2_mode': 'direct', 'moe_runner_backend': 'auto', 'flashinfer_mxfp4_moe_precision': 'default', 'deepep_mode': 'auto', 'fuseep_mode': 2, 'deepep_dispatcher_output_dtype': 'auto', 'ep_num_redundant_experts': 0, 'ep_dispatch_algorithm': None, 'init_expert_location': 'trivial', 'enable_eplb': False, 'eplb_algorithm': 'auto', 'eplb_rebalance_num_iterations': 1000, 'eplb_rebalance_layers_per_chunk': None, 'eplb_min_rebalancing_utilization_threshold': 1.0, 'expert_distribution_recorder_mode': None, 'expert_distribution_recorder_buffer_size': 1000, 'expert_balancedness_report_mode': 'off', 'deepep_config': None, 'moe_dense_tp_size': None, 'elastic_ep_backend': None, 'enable_elastic_expert_backup': False, 'mooncake_ib_device': None, 'enable_waterfill': False, 'ep_join_mode': None, 'ep_join_rank_offset': 0, 'elastic_ep_initial_size': None, 'max_ep_size': None, 'elastic_ep_scale_timeout': 600, 'disable_flashinfer_cutlass_moe_fp4_allgather': False, 'disable_shared_experts_fusion': True, 'enforce_shared_experts_fusion': False, 'max_mamba_cache_size': None, 'mamba_ssm_dtype': None, 'mamba_max_states_per_path': -1, 'enable_mamba_cache_stochastic_rounding': False, 'mamba_cache_philox_rounds': 0, 'mamba_full_memory_ratio': 0.9, 'mamba_radix_cache_strategy': 'auto', 'uses_mamba_radix_cache': False, 'mamba_track_interval': 256, 'enable_int8_mamba_checkpoint': False, 'int8_mamba_ckpt_size': None, 'linear_attn_backend': 'triton', 'linear_attn_decode_backend': None, 'linear_attn_prefill_backend': None, 'linear_attn_verify_backend': None, 'enable_linear_replayssm': False, 'linear_replayssm_cache_len': 16, 'enable_linear_replayssm_spec': False, 'enable_hierarchical_cache': False, 'hicache_host_memory_mode': 'cache', 'hicache_ratio': 2.0, 'hicache_size': 0, 'hicache_write_policy': 'write_through', 'hicache_io_backend': 'kernel', 'hicache_mem_layout': 'page_first', 'hicache_storage_backend': None, 'hicache_storage_prefetch_policy': 'timeout', 'hicache_storage_backend_extra_config': None, 'hicache_storage_prefetch_retry_poll_interval': 8, 'hicache_storage_prefetch_retry_max_attempts': 8, 'enable_unified_cache_external_linker': False, 'unified_cache_external_linker_backend': 'mooncake', 'enable_hisparse': False, 'hisparse_config': None, 'enable_broadcast_mm_inputs_process': False, 'enable_prefix_mm_cache': False, 'mm_enable_dp_encoder': False, 'mm_process_config': {}, 'mm_processor_worker_num': 0, 'mm_io_worker_num': 0, 'allowed_media_domains': [], 'media_url_max_file_size_mb': 64, 'mm_preprocess_cache_size_mb': None, 'trust_mm_content_hashes': False, 'limit_mm_data_per_request': None, 'enable_mm_global_cache': False, 'image_processor_backend': 'auto', 'mm_global_cache_backend': 'mooncake', 'disable_fast_image_processor': False, 'mm_feature_transport': 'cpu', 'enable_lora': None, 'enable_lora_overlap_loading': None, 'max_lora_rank': None, 'lora_target_modules': None, 'lora_paths': None, 'max_loaded_loras': None, 'max_loras_per_batch': 8, 'lora_eviction_policy': 'lru', 'lora_backend': 'csgmv', 'max_lora_chunk_size': 16, 'experts_shared_outer_loras': None, 'lora_use_virtual_experts': False, 'lora_strict_loading': False, 'lora_drain_wait_threshold': 0.0, 'enable_two_batch_overlap': False, 'enable_single_batch_overlap': False, 'tbo_token_distribution_threshold': 0.48, 'cpu_offload_gb': 0, 'offload_group_size': -1, 'offload_num_in_group': 1, 'offload_prefetch_step': 1, 'offload_mode': 'cpu', 'enable_lmcache': False, 'lmcache_config_file': None, 'enable_flexkv': False, 'flexkv_config_file': None, 'kt_weight_path': None, 'kt_method': 'AMXINT4', 'kt_cpuinfer': None, 'kt_threadpool_count': 2, 'kt_num_gpu_experts': None, 'kt_max_deferred_experts_per_token': None, 'dllm_algorithm': None, 'dllm_algorithm_config': None, 'dllm_fdfo': True, 'disaggregation_mode': 'null', 'disaggregation_transfer_backend': 'mooncake', 'disaggregation_bootstrap_port': 8998, 'disaggregation_ib_device': None, 'disaggregation_decode_enable_radix_cache': False, 'disaggregation_decode_enable_offload_kvcache': False, 'disaggregation_decode_retraction_backup': None, 'num_reserved_decode_tokens': 512, 'disaggregation_decode_extra_slots': None, 'disaggregation_decode_polling_interval': 1, 'optimistic_prefill_attempts': 0, 'encoder_only': False, 'language_only': False, 'language_model_only': False, 'encoder_transfer_backend': 'zmq_to_scheduler', 'encoder_urls': [], 'encoder_bootstrap_port': 8997, 'encoder_register_urls': [], 'enable_adaptive_dispatch_to_encoder': False, 'enable_pdmux': False, 'pdmux_config_path': None, 'sm_group_num': 8, 'startup_weight_load_mode': 'serial', 'custom_weight_loader': [], 'weight_loader_disable_mmap': False, 'weight_loader_prefetch_checkpoints': False, 'weight_loader_prefetch_num_threads': 4, 'weight_loader_drop_cache_after_load': False, 'remote_instance_weight_loader_seed_instance_ip': None, 'remote_instance_weight_loader_seed_instance_service_port': None, 'remote_instance_weight_loader_send_weights_group_ports': None, 'remote_instance_weight_loader_backend': 'nccl', 'remote_instance_weight_loader_start_seed_via_transfer_engine': False, 'engine_info_bootstrap_port': 6789, 'modelexpress_config': None, 'download_dir': None, 'model_checksum': None, 'delete_ckpt_after_loading': False, 'decrypted_config_file': None, 'decrypted_draft_config_file': None, 'checkpoint_engine_wait_weights_before_ready': False, 'enable_prefill_delayer': False, 'prefill_delayer_max_delay_passes': 30, 'prefill_delayer_token_usage_low_watermark': None, 'prefill_delayer_forward_passes_buckets': None, 'prefill_delayer_wait_seconds_buckets': None, 'prefill_delayer_queue_min_ratio': None, 'prefill_delayer_max_delay_ms': None, 'min_free_slots_delay': None, 'enable_deterministic_inference': False, 'rl_on_policy_target': None, 'kv_canary': 'none', 'kv_canary_real_data': 'none', 'kv_canary_sweep_interval': 0, 'enable_dynamic_batch_tokenizer': False, 'dynamic_batch_tokenizer_batch_size': 32, 'dynamic_batch_tokenizer_batch_timeout': 0.002, 'enable_tokenizer_batch_encode': False, 'disable_tokenizer_batch_decode': False, 'debug_tensor_dump_output_folder': None, 'debug_tensor_dump_layers': None, 'debug_tensor_dump_input_file': None, 'enable_memory_saver': False, 'enable_weights_cpu_backup': False, 'enable_draft_weights_cpu_backup': False, 'enable_custom_logit_processor': False, 'enable_return_hidden_states': False, 'return_hidden_states_mode': None, 'enable_return_routed_experts': False, 'enable_return_indexer_topk': False, 'sampling_mask_max_tokens': 4096, 'disable_outlines_disk_cache': False, 'enable_mis': False, 'weight_cache_mode': 'off', 'weight_cache_socket': None, 'weight_cache_timeout': 1800, 'forward_hooks': None, 'msprobe_dump_config': None, 'ple_offload_embedding': None, 'ple_offload_backend': 'pinned', 'ple_offload_dir': None, 'disaggregation_enable_kv_checksum': False, 'enable_pd_role_switch': False, 'speculative_domino_candidate_pool_size': 2048, 'flashinfer_a2a_dispatch_type': None, 'cuda_graph_max_seq_len_prefill': None, 'prefill_kv_cache_dequant_dtype': 'auto', 'dsv4_attn_backend': 'auto', 'otlp_service_name': None, '_radix_eviction_policy_explicitly_set': False, 'hicache_host_memory_fraction': 0.8, 'enable_linker_mla_dedup': False, '_swa_full_tokens_ratio_explicitly_set': False, 'swa_prefix_tails': None, 'enable_encoder_swa_bounded_replay': False, 'enable_decoder_swa_bounded_replay': False, 'enable_response_store': False, 'disaggregation_decode_host_receive_threshold': 1.0, 'qsa_indexer_dtype': 'auto', 'disaggregation_decode_allocation_policy': 'early', 'speculative_boundary_reduction': 'rs+rsv', 'speculative_use_block_verification': False, 'speculative_draft_sink_size': None, 'disable_aiter_allreduce_fusion_in_prefill': False, 'disable_aiter_allreduce_fusion_in_decode': False, 'dsa_triton_union': 0, 'enable_dsa_fused_indexer': None, 'enable_cp_tp_group_sharing': False, 'enable_watermark': False, 'watermark_config': '<redacted>', 'watermark_key': '<redacted>', 'watermark_key_b': '<redacted>', 'watermark_context_window': 4, 'watermark_mixing_probability': 0.5, 'watermark_max_probability': 1.0, 'watermark_default_enabled': False, 'watermark_enforce_all': False, 'grpc_response_timeout_secs': 300}
+[2026-11-03 18:49:04] Cannot detect CUDA architecture.
+[2026-11-03 18:49:04] Cannot detect CUDA architecture.
+[2026-11-03 18:49:05] Cannot detect CUDA architecture.
+[2026-11-03 18:49:05] Cannot detect CUDA architecture.
+[2026-11-03 18:49:05] Cannot detect CUDA architecture.
+[2026-11-03 18:49:05] Cannot detect CUDA architecture.
+[2026-11-03 18:49:05] Cannot detect CUDA architecture.
+[2026-11-03 18:49:05] Cannot detect CUDA architecture.
+[2026-11-03 18:49:05] Cannot detect CUDA architecture.
+[2026-11-03 18:49:05] Cannot detect CUDA architecture.
+[2026-11-03 18:49:05] Cannot detect CUDA architecture.
+[2026-11-03 18:49:05] Cannot detect CUDA architecture.
+[2026-11-03 18:49:06] Cannot detect CUDA architecture.
+[2026-11-03 18:49:06] Cannot detect CUDA architecture.
+[2026-11-03 18:49:06] Cannot detect CUDA architecture.
+[2026-11-03 18:49:06 DP21 TP21 EP21] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP19 TP19 EP19] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP20 TP20 EP20] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP18 TP18 EP18] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP17 TP17 EP17] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP27 TP27 EP27] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP26 TP26 EP26] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP28 TP28 EP28] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP22 TP22 EP22] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP29 TP29 EP29] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP24 TP24 EP24] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP23 TP23 EP23] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06] Cannot detect CUDA architecture.
+[2026-11-03 18:49:06 DP30 TP30 EP30] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06] Cannot detect CUDA architecture.
+[2026-11-03 18:49:06 DP31 TP31 EP31] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP16 TP16 EP16] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP25 TP25 EP25] get env SGLANG_SET_CPU_AFFINITY = 1
+[2026-11-03 18:49:06 DP21 TP21 EP21] Process 247 gpu_id 5 is running on CPUs: [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439]
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:49:06 DP21 TP21 EP21] Init parallel begin.
+[2026-11-03 18:49:07 DP19 TP19 EP19] Process 245 gpu_id 3 is running on CPUs: [60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399]
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:49:07 DP19 TP19 EP19] Init parallel begin.
+[2026-11-03 18:49:07 DP17 TP17 EP17] Process 243 gpu_id 1 is running on CPUs: [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359]
+[2026-11-03 18:49:07 DP26 TP26 EP26] Process 252 gpu_id 10 is running on CPUs: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539]
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:49:07 DP28 TP28 EP28] Process 254 gpu_id 12 is running on CPUs: [240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579]
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:49:07 DP27 TP27 EP27] Process 253 gpu_id 11 is running on CPUs: [220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559]
+[2026-11-03 18:49:07 DP18 TP18 EP18] Process 244 gpu_id 2 is running on CPUs: [40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379]
+[2026-11-03 18:49:07 DP20 TP20 EP20] Process 246 gpu_id 4 is running on CPUs: [80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419]
+[2026-11-03 18:49:07 DP22 TP22 EP22] Process 248 gpu_id 6 is running on CPUs: [120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459]
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:49:07 DP24 TP24 EP24] Process 250 gpu_id 8 is running on CPUs: [160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499]
+[2026-11-03 18:49:07 DP26 TP26 EP26] Init parallel begin.
+[2026-11-03 18:49:07 DP29 TP29 EP29] Process 255 gpu_id 13 is running on CPUs: [260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599]
+[2026-11-03 18:49:07 DP17 TP17 EP17] Init parallel begin.
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:49:07 DP23 TP23 EP23] Process 249 gpu_id 7 is running on CPUs: [140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479]
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:49:07 DP30 TP30 EP30] Process 256 gpu_id 14 is running on CPUs: [280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 600, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 615, 616, 617, 618, 619]
+[2026-11-03 18:49:07 DP28 TP28 EP28] Init parallel begin.
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:49:07 DP16 TP16 EP16] Process 242 gpu_id 0 is running on CPUs: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339]
+[2026-11-03 18:49:07 DP25 TP25 EP25] Process 251 gpu_id 9 is running on CPUs: [180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519]
+[2026-11-03 18:49:07 DP27 TP27 EP27] Init parallel begin.
+[2026-11-03 18:49:07 DP31 TP31 EP31] Process 257 gpu_id 15 is running on CPUs: [300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 620, 621, 622, 623, 624, 625, 626, 627, 628, 629, 630, 631, 632, 633, 634, 635, 636, 637, 638, 639]
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:49:07 DP22 TP22 EP22] Init parallel begin.
+[2026-11-03 18:49:07 DP18 TP18 EP18] Init parallel begin.
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[2026-11-03 18:49:07 DP20 TP20 EP20] Init parallel begin.
+[2026-11-03 18:49:07 DP24 TP24 EP24] Init parallel begin.
+[2026-11-03 18:49:07 DP29 TP29 EP29] Init parallel begin.
+[2026-11-03 18:49:07 DP23 TP23 EP23] Init parallel begin.
+[2026-11-03 18:49:07 DP30 TP30 EP30] Init parallel begin.
+[2026-11-03 18:49:07 DP16 TP16 EP16] Init parallel begin.
+[2026-11-03 18:49:07 DP25 TP25 EP25] Init parallel begin.
+[2026-11-03 18:49:07 DP31 TP31 EP31] Init parallel begin.
+[2026-11-03 18:49:07 DP21 TP21 EP21] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:07 DP19 TP19 EP19] get env HCCL_BUFFSIZE = 650
+[rank19]:[W1103 18:49:07.465968166 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank21]:[W1103 18:49:08.592110001 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[2026-11-03 18:49:08 DP26 TP26 EP26] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:08 DP17 TP17 EP17] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:08 DP28 TP28 EP28] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:08 DP27 TP27 EP27] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:08 DP18 TP18 EP18] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:08 DP22 TP22 EP22] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:08 DP29 TP29 EP29] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:08 DP24 TP24 EP24] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:08 DP23 TP23 EP23] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:08 DP20 TP20 EP20] get env HCCL_BUFFSIZE = 650
+[rank17]:[W1103 18:49:08.745664924 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank26]:[W1103 18:49:08.747064100 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank27]:[W1103 18:49:08.747345502 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank28]:[W1103 18:49:08.748573358 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank20]:[W1103 18:49:08.749427782 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank23]:[W1103 18:49:08.749489552 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank24]:[W1103 18:49:08.749501972 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank29]:[W1103 18:49:08.749618093 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank22]:[W1103 18:49:08.750669457 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[2026-11-03 18:49:08 DP16 TP16 EP16] get env HCCL_BUFFSIZE = 650
+[rank18]:[W1103 18:49:08.755048638 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank16]:[W1103 18:49:08.766448542 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[2026-11-03 18:49:08 DP25 TP25 EP25] get env HCCL_BUFFSIZE = 650
+[rank25]:[W1103 18:49:08.784182515 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[2026-11-03 18:49:08 DP30 TP30 EP30] get env HCCL_BUFFSIZE = 650
+[2026-11-03 18:49:08 DP31 TP31 EP31] get env HCCL_BUFFSIZE = 650
+[rank31]:[W1103 18:49:08.801724888 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[rank30]:[W1103 18:49:08.012531151 NPUCachingAllocator.cpp:202] Warning: The current CANN and HDK(driver) versions require processing for 32 padding size, with memory allocation. (function operator())
+[Gloo] Rank 16 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 17 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 18 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 21 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 31 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 19 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[2026-11-03 18:49:08 DP21 TP21 EP21] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP18 TP18 EP18] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP17 TP17 EP17] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[Gloo] Rank 20 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 22 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 23 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 24 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 25 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 26 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 27 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 28 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 30 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[2026-11-03 18:49:08 DP19 TP19 EP19] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP31 TP31 EP31] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP16 TP16 EP16] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[Gloo] Rank 29 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[2026-11-03 18:49:08 DP27 TP27 EP27] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP25 TP25 EP25] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP24 TP24 EP24] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP23 TP23 EP23] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP29 TP29 EP29] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP20 TP20 EP20] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP30 TP30 EP30] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP26 TP26 EP26] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP28 TP28 EP28] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[2026-11-03 18:49:08 DP22 TP22 EP22] get env SGLANG_ENABLE_DETERMINISTIC_INFERENCE = 0
+[Gloo] Rank 19 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 16 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 29 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 17 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 18 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 21 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 20 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 24 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 27 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 25 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 22 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 30 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 28 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 23 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 26 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 31 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 16 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 28 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 17 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 19 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 18 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 21 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 20 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 22 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 23 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 24 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 25 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 27 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 30 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 29 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 26 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 31 is connected to 31 peer ranks. Expected number of connected peer ranks is : 31
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[2026-11-03 18:49:10 DP28 TP28 EP28] Init parallel ends. elapsed=2.78 s
+[2026-11-03 18:49:10 DP16 TP16 EP16] Init parallel ends. elapsed=2.66 s
+[2026-11-03 18:49:10 DP18 TP18 EP18] Init parallel ends. elapsed=2.75 s
+[2026-11-03 18:49:10 DP16 TP16 EP16] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[2026-11-03 18:49:10 DP28 TP28 EP28] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP31 TP31 EP31] Init parallel ends. elapsed=2.67 s
+[2026-11-03 18:49:10 DP29 TP29 EP29] Init parallel ends. elapsed=2.75 s
+[2026-11-03 18:49:10 DP27 TP27 EP27] Init parallel ends. elapsed=2.79 s
+[2026-11-03 18:49:10 DP30 TP30 EP30] Init parallel ends. elapsed=2.69 s
+[2026-11-03 18:49:10 DP25 TP25 EP25] Init parallel ends. elapsed=2.67 s
+[2026-11-03 18:49:10 DP18 TP18 EP18] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP26 TP26 EP26] Init parallel ends. elapsed=2.86 s
+[2026-11-03 18:49:10 DP23 TP23 EP23] Init parallel ends. elapsed=2.71 s
+[2026-11-03 18:49:10 DP21 TP21 EP21] Init parallel ends. elapsed=3.12 s
+[2026-11-03 18:49:10 DP22 TP22 EP22] Init parallel ends. elapsed=2.78 s
+[2026-11-03 18:49:10 DP17 TP17 EP17] Init parallel ends. elapsed=2.86 s
+[2026-11-03 18:49:10 DP20 TP20 EP20] Init parallel ends. elapsed=2.77 s
+[2026-11-03 18:49:10 DP24 TP24 EP24] Init parallel ends. elapsed=2.75 s
+[2026-11-03 18:49:10 DP19 TP19 EP19] Init parallel ends. elapsed=2.98 s
+[2026-11-03 18:49:10 DP27 TP27 EP27] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP21 TP21 EP21] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP29 TP29 EP29] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP25 TP25 EP25] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP26 TP26 EP26] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP31 TP31 EP31] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP23 TP23 EP23] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP30 TP30 EP30] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP17 TP17 EP17] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP20 TP20 EP20] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP19 TP19 EP19] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP22 TP22 EP22] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:10 DP24 TP24 EP24] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:49:14 DP27 TP27 EP27] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:14 DP21 TP21 EP21] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:14 DP25 TP25 EP25] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP29 TP29 EP29] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP26 TP26 EP26] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP18 TP18 EP18] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP28 TP28 EP28] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP16 TP16 EP16] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP19 TP19 EP19] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP22 TP22 EP22] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP24 TP24 EP24] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP31 TP31 EP31] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP23 TP23 EP23] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP17 TP17 EP17] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP30 TP30 EP30] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:49:15 DP20 TP20 EP20] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/contrib/transfer_to_npu.py:311: RuntimeWarning: torch.jit.script and torch.jit.script_method will be disabled by transfer_to_npu, which currently does not support them, if you need to enable them, please do not use transfer_to_npu.
+  warnings.warn(msg, RuntimeWarning)
+[2026-11-03 18:49:18 DP29 TP29 EP29] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP28 TP28 EP28] Memory baseline taken. mem usage=-0.00 GB
+[2026-11-03 18:49:18 DP30 TP30 EP30] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP27 TP27 EP27] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP25 TP25 EP25] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP22 TP22 EP22] Memory baseline taken. mem usage=-0.00 GB
+[2026-11-03 18:49:18 DP31 TP31 EP31] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP26 TP26 EP26] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP21 TP21 EP21] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP18 TP18 EP18] Memory baseline taken. mem usage=-0.00 GB
+[2026-11-03 18:49:18 DP24 TP24 EP24] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP23 TP23 EP23] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP20 TP20 EP20] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP17 TP17 EP17] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP19 TP19 EP19] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP16 TP16 EP16] Memory baseline taken. mem usage=0.00 GB
+[2026-11-03 18:49:18 DP18 TP18 EP18] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP29 TP29 EP29] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP24 TP24 EP24] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP19 TP19 EP19] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP26 TP26 EP26] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP30 TP30 EP30] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP23 TP23 EP23] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP21 TP21 EP21] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP17 TP17 EP17] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP16 TP16 EP16] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP22 TP22 EP22] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP27 TP27 EP27] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP20 TP20 EP20] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP31 TP31 EP31] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP28 TP28 EP28] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP25 TP25 EP25] Ignore import error when loading sglang.srt.models.bailing_moe_linear: No module named 'vllm'
+[2026-11-03 18:49:18 DP18 TP18 EP18] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP22 TP22 EP22] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP29 TP29 EP29] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP27 TP27 EP27] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP20 TP20 EP20] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP31 TP31 EP31] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP24 TP24 EP24] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP19 TP19 EP19] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP25 TP25 EP25] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP28 TP28 EP28] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP26 TP26 EP26] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP30 TP30 EP30] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP21 TP21 EP21] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP23 TP23 EP23] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP16 TP16 EP16] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:18 DP17 TP17 EP17] Ignore import error when loading sglang.srt.models.bailing_moe_nextn: No module named 'vllm'
+[2026-11-03 18:49:19 DP17 TP17 EP17] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP29 TP29 EP29] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP23 TP23 EP23] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP19 TP19 EP19] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP21 TP21 EP21] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP30 TP30 EP30] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP31 TP31 EP31] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP18 TP18 EP18] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP16 TP16 EP16] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP28 TP28 EP28] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP20 TP20 EP20] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP24 TP24 EP24] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP22 TP22 EP22] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP26 TP26 EP26] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP25 TP25 EP25] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP27 TP27 EP27] Ignore import error when loading sglang.srt.models.falcon_mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:19 DP19 TP19 EP19] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP23 TP23 EP23] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP26 TP26 EP26] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP28 TP28 EP28] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP24 TP24 EP24] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP20 TP20 EP20] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP21 TP21 EP21] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP29 TP29 EP29] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP31 TP31 EP31] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP30 TP30 EP30] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP25 TP25 EP25] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP18 TP18 EP18] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP22 TP22 EP22] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP17 TP17 EP17] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP16 TP16 EP16] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:19 DP27 TP27 EP27] Ignore import error when loading sglang.srt.models.inkling: No module named 'cutlass'
+[2026-11-03 18:49:20 DP23 TP23 EP23] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP21 TP21 EP21] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP22 TP22 EP22] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP20 TP20 EP20] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP19 TP19 EP19] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP25 TP25 EP25] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP31 TP31 EP31] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP30 TP30 EP30] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP27 TP27 EP27] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP28 TP28 EP28] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP29 TP29 EP29] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP24 TP24 EP24] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP26 TP26 EP26] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP18 TP18 EP18] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP17 TP17 EP17] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP16 TP16 EP16] Ignore import error when loading sglang.srt.models.mamba: cannot import name 'causal_conv1d_fn_triton' from 'sglang.srt.layers.attention.mamba.mamba' (/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/mamba.py)
+[2026-11-03 18:49:20 DP19 TP19 EP19] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP28 TP28 EP28] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP17 TP17 EP17] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP29 TP29 EP29] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP24 TP24 EP24] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP22 TP22 EP22] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP21 TP21 EP21] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP23 TP23 EP23] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP26 TP26 EP26] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP27 TP27 EP27] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP20 TP20 EP20] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP31 TP31 EP31] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP30 TP30 EP30] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP25 TP25 EP25] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP18 TP18 EP18] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:20 DP16 TP16 EP16] Ignore import error when loading sglang.srt.models.mindspore: No module named 'mindspore'
+[2026-11-03 18:49:21 DP20 TP20 EP20] Load weight begin. avail mem=60.82 GB
+[2026-11-03 18:49:21 DP26 TP26 EP26] Load weight begin. avail mem=60.83 GB
+[2026-11-03 18:49:21 DP30 TP30 EP30] Load weight begin. avail mem=60.82 GB
+[2026-11-03 18:49:21 DP29 TP29 EP29] Load weight begin. avail mem=61.06 GB
+[2026-11-03 18:49:21 DP23 TP23 EP23] Load weight begin. avail mem=61.06 GB
+[2026-11-03 18:49:21 DP17 TP17 EP17] Load weight begin. avail mem=61.07 GB
+[2026-11-03 18:49:21 DP21 TP21 EP21] Load weight begin. avail mem=61.07 GB
+[2026-11-03 18:49:21 DP18 TP18 EP18] Load weight begin. avail mem=60.83 GB
+[2026-11-03 18:49:21 DP27 TP27 EP27] Load weight begin. avail mem=61.06 GB
+[2026-11-03 18:49:21 DP22 TP22 EP22] Load weight begin. avail mem=60.83 GB
+[2026-11-03 18:49:21 DP19 TP19 EP19] Load weight begin. avail mem=61.06 GB
+[2026-11-03 18:49:21 DP31 TP31 EP31] Load weight begin. avail mem=61.07 GB
+[2026-11-03 18:49:21 DP24 TP24 EP24] Load weight begin. avail mem=60.82 GB
+[2026-11-03 18:49:21 DP25 TP25 EP25] Load weight begin. avail mem=61.07 GB
+[2026-11-03 18:49:21 DP28 TP28 EP28] Load weight begin. avail mem=60.83 GB
+[2026-11-03 18:49:21 DP16 TP16 EP16] Load weight begin. avail mem=60.76 GB
+[2026-11-03 18:49:23 DP24 TP24 EP24] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP24 TP24 EP24] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP20 TP20 EP20] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP20 TP20 EP20] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP30 TP30 EP30] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP30 TP30 EP30] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP23 TP23 EP23] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP23 TP23 EP23] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP31 TP31 EP31] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP31 TP31 EP31] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP24 TP24 EP24] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP24 TP24 EP24] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:23 DP29 TP29 EP29] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP29 TP29 EP29] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP24 TP24 EP24] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:23 DP22 TP22 EP22] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP22 TP22 EP22] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP21 TP21 EP21] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP21 TP21 EP21] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP17 TP17 EP17] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP17 TP17 EP17] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP30 TP30 EP30] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP30 TP30 EP30] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:23 DP30 TP30 EP30] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:23 DP29 TP29 EP29] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP29 TP29 EP29] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:23 DP29 TP29 EP29] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:23 DP20 TP20 EP20] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP20 TP20 EP20] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:23 DP20 TP20 EP20] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:23 DP16 TP16 EP16] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP16 TP16 EP16] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP23 TP23 EP23] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP23 TP23 EP23] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:23 DP23 TP23 EP23] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:23 DP31 TP31 EP31] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP31 TP31 EP31] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:23 DP31 TP31 EP31] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:23 DP19 TP19 EP19] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:23 DP19 TP19 EP19] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:23 DP21 TP21 EP21] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP21 TP21 EP21] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:23 DP21 TP21 EP21] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:23 DP22 TP22 EP22] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP17 TP17 EP17] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP22 TP22 EP22] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:23 DP17 TP17 EP17] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:23 DP22 TP22 EP22] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:23 DP17 TP17 EP17] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:23 DP19 TP19 EP19] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP19 TP19 EP19] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:23 DP19 TP19 EP19] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:23 DP16 TP16 EP16] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:23 DP16 TP16 EP16] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:24 DP16 TP16 EP16] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:24 DP26 TP26 EP26] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:24 DP26 TP26 EP26] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:24 DP26 TP26 EP26] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:24 DP26 TP26 EP26] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:24 DP26 TP26 EP26] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:24 DP25 TP25 EP25] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:24 DP25 TP25 EP25] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:24 DP25 TP25 EP25] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:24 DP25 TP25 EP25] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:24 DP25 TP25 EP25] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:25 DP27 TP27 EP27] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:25 DP27 TP27 EP27] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:25 DP27 TP27 EP27] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:25 DP27 TP27 EP27] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:25 DP27 TP27 EP27] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:25 DP28 TP28 EP28] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:25 DP28 TP28 EP28] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:25 DP18 TP18 EP18] get env SGLANG_NPU_USE_MULTI_STREAM = 1
+[2026-11-03 18:49:25 DP18 TP18 EP18] Using ModelSlimW8A8Int8
+[2026-11-03 18:49:25 DP18 TP18 EP18] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:25 DP18 TP18 EP18] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:25 DP18 TP18 EP18] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:25 DP28 TP28 EP28] Using ModelSlimW8A8Int8MoE for W13
+[2026-11-03 18:49:25 DP28 TP28 EP28] Using ModelSlimW8A8Int8MoE for W2
+[2026-11-03 18:49:25 DP28 TP28 EP28] get env SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK = 32
+[2026-11-03 18:49:30 DP31 TP31 EP31] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP30 TP30 EP30] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP29 TP29 EP29] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP28 TP28 EP28] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP27 TP27 EP27] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP26 TP26 EP26] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP25 TP25 EP25] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP24 TP24 EP24] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP23 TP23 EP23] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP22 TP22 EP22] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP21 TP21 EP21] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP18 TP18 EP18] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP19 TP19 EP19] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP17 TP17 EP17] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP16 TP16 EP16] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:49:30 DP20 TP20 EP20] multimem all-gather disabled because the TP group spans across nodes.
+[2026-11-03 18:50:01 DP17 TP17 EP17] rot.weight not found in params_dict.
+[2026-11-03 18:50:03 DP17 TP17 EP17] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:04 DP24 TP24 EP24] rot.weight not found in params_dict.
+[2026-11-03 18:50:04 DP19 TP19 EP19] rot.weight not found in params_dict.
+[2026-11-03 18:50:04 DP16 TP16 EP16] rot.weight not found in params_dict.
+[2026-11-03 18:50:05 DP22 TP22 EP22] rot.weight not found in params_dict.
+[2026-11-03 18:50:06 DP24 TP24 EP24] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:06 DP26 TP26 EP26] rot.weight not found in params_dict.
+[2026-11-03 18:50:06 DP23 TP23 EP23] rot.weight not found in params_dict.
+[2026-11-03 18:50:06 DP27 TP27 EP27] rot.weight not found in params_dict.
+[2026-11-03 18:50:06 DP16 TP16 EP16] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:07 DP19 TP19 EP19] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:07 DP28 TP28 EP28] rot.weight not found in params_dict.
+[2026-11-03 18:50:07 DP31 TP31 EP31] rot.weight not found in params_dict.
+[2026-11-03 18:50:08 DP26 TP26 EP26] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:08 DP22 TP22 EP22] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:08 DP23 TP23 EP23] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:08 DP27 TP27 EP27] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:08 DP30 TP30 EP30] rot.weight not found in params_dict.
+[2026-11-03 18:50:09 DP28 TP28 EP28] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:09 DP31 TP31 EP31] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:09 DP18 TP18 EP18] rot.weight not found in params_dict.
+[2026-11-03 18:50:09 DP29 TP29 EP29] rot.weight not found in params_dict.
+[2026-11-03 18:50:10 DP21 TP21 EP21] rot.weight not found in params_dict.
+[2026-11-03 18:50:10 DP20 TP20 EP20] rot.weight not found in params_dict.
+[2026-11-03 18:50:10 DP25 TP25 EP25] rot.weight not found in params_dict.
+[2026-11-03 18:50:10 DP30 TP30 EP30] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:12 DP18 TP18 EP18] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:12 DP29 TP29 EP29] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:12 DP25 TP25 EP25] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:12 DP21 TP21 EP21] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:12 DP20 TP20 EP20] get env ASCEND_OPP_PATH = /usr/local/Ascend/cann-9.1.0/opp
+[2026-11-03 18:50:15] Cannot detect CUDA architecture.
+[2026-11-03 18:50:16 DP17 TP17 EP17] get env HOME = /root
+[2026-11-03 18:50:16 DP17 TP17 EP17] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:17 DP17 TP17 EP17] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_legacy/dynamic/gelu_grad_v2.py:97: SyntaxWarning: invalid escape sequence '\h'
+  gelu_grad_erf = erfc(-\hat{x}) / 2 + (1 /sqrt(Pi)) * (\hat{x}) * exp(-\hat{x}^2)
+[2026-11-03 18:50:19] Cannot detect CUDA architecture.
+[2026-11-03 18:50:19 DP24 TP24 EP24] get env HOME = /root
+[2026-11-03 18:50:19 DP24 TP24 EP24] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:19] Cannot detect CUDA architecture.
+[2026-11-03 18:50:19 DP16 TP16 EP16] get env HOME = /root
+[2026-11-03 18:50:19 DP16 TP16 EP16] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:20] Cannot detect CUDA architecture.
+[2026-11-03 18:50:20 DP19 TP19 EP19] get env HOME = /root
+[2026-11-03 18:50:20 DP19 TP19 EP19] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:20 DP24 TP24 EP24] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:21] Cannot detect CUDA architecture.
+[2026-11-03 18:50:21 DP26 TP26 EP26] get env HOME = /root
+[2026-11-03 18:50:21 DP26 TP26 EP26] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:21] Cannot detect CUDA architecture.
+[2026-11-03 18:50:21 DP16 TP16 EP16] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:21 DP27 TP27 EP27] get env HOME = /root
+[2026-11-03 18:50:21 DP27 TP27 EP27] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:21] Cannot detect CUDA architecture.
+[2026-11-03 18:50:21] Cannot detect CUDA architecture.
+[2026-11-03 18:50:21] Cannot detect CUDA architecture.
+[2026-11-03 18:50:22 DP28 TP28 EP28] get env HOME = /root
+[2026-11-03 18:50:22 DP22 TP22 EP22] get env HOME = /root
+[2026-11-03 18:50:22 DP23 TP23 EP23] get env HOME = /root
+[2026-11-03 18:50:22 DP19 TP19 EP19] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:22 DP28 TP28 EP28] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:22 DP22 TP22 EP22] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:22 DP23 TP23 EP23] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:22] Cannot detect CUDA architecture.
+[2026-11-03 18:50:22 DP31 TP31 EP31] get env HOME = /root
+[2026-11-03 18:50:22 DP31 TP31 EP31] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:22 DP26 TP26 EP26] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:23 DP27 TP27 EP27] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:23 DP28 TP28 EP28] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:23 DP23 TP23 EP23] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:24 DP22 TP22 EP22] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:24] Cannot detect CUDA architecture.
+[2026-11-03 18:50:24 DP31 TP31 EP31] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:24 DP30 TP30 EP30] get env HOME = /root
+[2026-11-03 18:50:24 DP30 TP30 EP30] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:25 DP19 TP19 EP19] Load weight end. elapsed=64.04 s, type=GlmMoeDsaForCausalLM, avail mem=19.05 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:25 DP17 TP17 EP17] Load weight end. elapsed=64.04 s, type=GlmMoeDsaForCausalLM, avail mem=19.07 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:25] Cannot detect CUDA architecture.
+[2026-11-03 18:50:25 DP16 TP16 EP16] Load weight end. elapsed=64.04 s, type=GlmMoeDsaForCausalLM, avail mem=18.75 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:25 DP18 TP18 EP18] get env HOME = /root
+[2026-11-03 18:50:25 DP24 TP24 EP24] Load weight end. elapsed=64.12 s, type=GlmMoeDsaForCausalLM, avail mem=18.81 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:25 DP26 TP26 EP26] Load weight end. elapsed=64.20 s, type=GlmMoeDsaForCausalLM, avail mem=18.82 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:25 DP18 TP18 EP18] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:26 DP30 TP30 EP30] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:26 DP28 TP28 EP28] Load weight end. elapsed=64.41 s, type=GlmMoeDsaForCausalLM, avail mem=18.82 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:26 DP27 TP27 EP27] Load weight end. elapsed=64.61 s, type=GlmMoeDsaForCausalLM, avail mem=19.05 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:26] Cannot detect CUDA architecture.
+[2026-11-03 18:50:26] Cannot detect CUDA architecture.
+[2026-11-03 18:50:26 DP25 TP25 EP25] get env HOME = /root
+[2026-11-03 18:50:26 DP29 TP29 EP29] get env HOME = /root
+[2026-11-03 18:50:26 DP23 TP23 EP23] Load weight end. elapsed=64.85 s, type=GlmMoeDsaForCausalLM, avail mem=19.05 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:26 DP25 TP25 EP25] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:26 DP29 TP29 EP29] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:27] Cannot detect CUDA architecture.
+[2026-11-03 18:50:27 DP21 TP21 EP21] get env HOME = /root
+[2026-11-03 18:50:27 DP22 TP22 EP22] Load weight end. elapsed=65.42 s, type=GlmMoeDsaForCausalLM, avail mem=18.82 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:27 DP21 TP21 EP21] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:27 DP31 TP31 EP31] Load weight end. elapsed=65.57 s, type=GlmMoeDsaForCausalLM, avail mem=19.06 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:27 DP18 TP18 EP18] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:27] Cannot detect CUDA architecture.
+[2026-11-03 18:50:27 DP20 TP20 EP20] get env HOME = /root
+[2026-11-03 18:50:27 DP20 TP20 EP20] get env TE_AUTO_RESTART_COUNTER = 0
+[2026-11-03 18:50:28 DP29 TP29 EP29] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:28 DP25 TP25 EP25] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:28 DP21 TP21 EP21] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:28 DP30 TP30 EP30] Load weight end. elapsed=67.27 s, type=GlmMoeDsaForCausalLM, avail mem=18.81 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:29 DP20 TP20 EP20] get env PYTHONPATH = /usr/local/Ascend/cann-9.1.0/python/site-packages:/usr/local/Ascend/cann-9.1.0/opp/built-in/op_impl/ai_core/tbe:/usr/local/Ascend/ascend-toolkit/latest/python/site-packages:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe:
+[2026-11-03 18:50:30 DP18 TP18 EP18] Load weight end. elapsed=68.69 s, type=GlmMoeDsaForCausalLM, avail mem=18.83 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:31 DP25 TP25 EP25] Load weight end. elapsed=69.31 s, type=GlmMoeDsaForCausalLM, avail mem=19.06 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:31 DP29 TP29 EP29] Load weight end. elapsed=69.44 s, type=GlmMoeDsaForCausalLM, avail mem=19.05 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:31 DP21 TP21 EP21] Load weight end. elapsed=69.86 s, type=GlmMoeDsaForCausalLM, avail mem=19.07 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:32 DP20 TP20 EP20] Load weight end. elapsed=70.46 s, type=GlmMoeDsaForCausalLM, avail mem=18.81 GB, mem usage=42.01 GB.
+[2026-11-03 18:50:44 DP16 TP16 EP16] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP21 TP21 EP21] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP23 TP23 EP23] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP31 TP31 EP31] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP22 TP22 EP22] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP30 TP30 EP30] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP24 TP24 EP24] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP28 TP28 EP28] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP25 TP25 EP25] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP29 TP29 EP29] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP17 TP17 EP17] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP20 TP20 EP20] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:44 DP19 TP19 EP19] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:45 DP27 TP27 EP27] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:45 DP26 TP26 EP26] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:46 DP18 TP18 EP18] Tokenizer for /models/glm-q is still TokenizersBackend after retries with --trust-remote-code. Model-specific tokenizer attributes may be missing.
+[2026-11-03 18:50:48 DP29 TP29 EP29] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP31 TP31 EP31] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP27 TP27 EP27] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP23 TP23 EP23] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP28 TP28 EP28] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP21 TP21 EP21] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP22 TP22 EP22] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP20 TP20 EP20] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP26 TP26 EP26] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP16 TP16 EP16] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP18 TP18 EP18] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP19 TP19 EP19] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP17 TP17 EP17] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP25 TP25 EP25] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP30 TP30 EP30] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:48 DP24 TP24 EP24] max_total_tokens=123904 is larger than the profiled value 123776. Use the profiled value instead.
+[2026-11-03 18:50:49 DP27 TP27 EP27] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP27 TP27 EP27] Memory pool end. avail mem=6.37 GB
+[2026-11-03 18:50:49 DP27 TP27 EP27] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP27 TP27 EP27] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP27 TP27 EP27] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP27 TP27 EP27] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP27 TP27 EP27] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.27 (dp_rank=27, device_timer=True)
+[2026-11-03 18:50:49 DP21 TP21 EP21] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP31 TP31 EP31] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP20 TP20 EP20] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP21 TP21 EP21] Memory pool end. avail mem=6.39 GB
+[2026-11-03 18:50:49 DP30 TP30 EP30] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP31 TP31 EP31] Memory pool end. avail mem=6.38 GB
+[2026-11-03 18:50:49 DP30 TP30 EP30] Memory pool end. avail mem=6.13 GB
+[2026-11-03 18:50:49 DP26 TP26 EP26] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP20 TP20 EP20] Memory pool end. avail mem=6.13 GB
+[2026-11-03 18:50:49 DP19 TP19 EP19] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP26 TP26 EP26] Memory pool end. avail mem=6.15 GB
+[2026-11-03 18:50:49 DP19 TP19 EP19] Memory pool end. avail mem=6.37 GB
+[2026-11-03 18:50:49 DP18 TP18 EP18] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP28 TP28 EP28] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP28 TP28 EP28] Memory pool end. avail mem=6.14 GB
+[2026-11-03 18:50:49 DP22 TP22 EP22] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP18 TP18 EP18] Memory pool end. avail mem=6.15 GB
+[2026-11-03 18:50:49 DP22 TP22 EP22] Memory pool end. avail mem=6.14 GB
+[2026-11-03 18:50:49 DP30 TP30 EP30] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP19 TP19 EP19] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP31 TP31 EP31] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP29 TP29 EP29] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP23 TP23 EP23] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP19 TP19 EP19] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP17 TP17 EP17] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP29 TP29 EP29] Memory pool end. avail mem=6.37 GB
+[2026-11-03 18:50:49 DP23 TP23 EP23] Memory pool end. avail mem=6.37 GB
+[2026-11-03 18:50:49 DP19 TP19 EP19] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP19 TP19 EP19] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP30 TP30 EP30] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP17 TP17 EP17] Memory pool end. avail mem=6.38 GB
+[2026-11-03 18:50:49 DP30 TP30 EP30] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP30 TP30 EP30] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP19 TP19 EP19] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.19 (dp_rank=19, device_timer=True)
+[2026-11-03 18:50:49 DP21 TP21 EP21] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP31 TP31 EP31] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP28 TP28 EP28] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP30 TP30 EP30] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.30 (dp_rank=30, device_timer=True)
+[2026-11-03 18:50:49 DP31 TP31 EP31] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP31 TP31 EP31] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP25 TP25 EP25] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP31 TP31 EP31] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.31 (dp_rank=31, device_timer=True)
+[2026-11-03 18:50:49 DP18 TP18 EP18] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP26 TP26 EP26] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP25 TP25 EP25] Memory pool end. avail mem=6.38 GB
+[2026-11-03 18:50:49 DP22 TP22 EP22] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP24 TP24 EP24] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP24 TP24 EP24] Memory pool end. avail mem=6.13 GB
+[2026-11-03 18:50:49 DP21 TP21 EP21] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP21 TP21 EP21] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP21 TP21 EP21] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP28 TP28 EP28] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP20 TP20 EP20] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP28 TP28 EP28] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP28 TP28 EP28] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP28 TP28 EP28] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.28 (dp_rank=28, device_timer=True)
+[2026-11-03 18:50:49 DP21 TP21 EP21] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.21 (dp_rank=21, device_timer=True)
+[2026-11-03 18:50:49 DP18 TP18 EP18] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP22 TP22 EP22] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP18 TP18 EP18] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP18 TP18 EP18] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP22 TP22 EP22] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP22 TP22 EP22] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP26 TP26 EP26] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP26 TP26 EP26] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP26 TP26 EP26] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP22 TP22 EP22] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.22 (dp_rank=22, device_timer=True)
+[2026-11-03 18:50:49 DP18 TP18 EP18] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.18 (dp_rank=18, device_timer=True)
+[2026-11-03 18:50:49 DP29 TP29 EP29] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP17 TP17 EP17] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP20 TP20 EP20] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP16 TP16 EP16] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 123776, KV size: 12.67 GB
+[2026-11-03 18:50:49 DP20 TP20 EP20] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP20 TP20 EP20] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP23 TP23 EP23] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP16 TP16 EP16] Memory pool end. avail mem=6.07 GB
+[2026-11-03 18:50:49 DP26 TP26 EP26] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.26 (dp_rank=26, device_timer=True)
+[2026-11-03 18:50:49 DP20 TP20 EP20] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.20 (dp_rank=20, device_timer=True)
+[2026-11-03 18:50:49 DP29 TP29 EP29] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP17 TP17 EP17] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP25 TP25 EP25] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP29 TP29 EP29] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP29 TP29 EP29] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP17 TP17 EP17] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP17 TP17 EP17] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP23 TP23 EP23] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP23 TP23 EP23] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP23 TP23 EP23] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP29 TP29 EP29] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.29 (dp_rank=29, device_timer=True)
+[2026-11-03 18:50:49 DP24 TP24 EP24] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP17 TP17 EP17] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.17 (dp_rank=17, device_timer=True)
+[2026-11-03 18:50:49 DP23 TP23 EP23] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.23 (dp_rank=23, device_timer=True)
+[2026-11-03 18:50:49 DP25 TP25 EP25] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP25 TP25 EP25] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP25 TP25 EP25] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP24 TP24 EP24] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP25 TP25 EP25] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.25 (dp_rank=25, device_timer=True)
+[2026-11-03 18:50:49 DP24 TP24 EP24] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP24 TP24 EP24] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP24 TP24 EP24] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.24 (dp_rank=24, device_timer=True)
+[2026-11-03 18:50:49 DP16 TP16 EP16] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-11-03 18:50:49 DP16 TP16 EP16] Using the Python TreeCore: PyTorch 2.10.0+cpu is outside the Rust TreeCore support range
+[2026-11-03 18:50:49 DP16 TP16 EP16] Init Unified Radix Cache. Components: (<ComponentType.FULL: 0>,). Tree Core: UnifiedTreeCore
+[2026-11-03 18:50:49 DP16 TP16 EP16] Tree cache initialized: source=default impl=UnifiedRadixCache hybrid_swa=False hybrid_ssm=False hicache_attached=False
+[2026-11-03 18:50:49 DP16 TP16 EP16] FPM: ZMQ PUB bound on ipc:///campaign/forward-metrics.16 (dp_rank=16, device_timer=True)
+[2026-11-03 18:50:50] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8
+[2026-11-03 18:50:50] Dummy health check server started in background thread at 0.0.0.0:19180
+[2026-11-03 18:50:55] get env PROMETHEUS_MULTIPROC_DIR = /tmp/tmp1elfaeo8

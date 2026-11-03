@@ -17,9 +17,12 @@ NUMERICAL_CONTRACTS = {
 }
 
 
-def qualified_population(records, layer, control):
-    if len(records) != 16:
-        raise ValueError("All sixteen rank observations are required")
+def qualified_population(records, layer, control, *, attention_tp=4, attention_dp=4, moe_ep=16):
+    if (attention_tp, attention_dp, moe_ep) not in ((4, 4, 16), (1, 32, 32)):
+        raise ValueError("Unqualified layer population topology")
+    world_size = attention_tp * attention_dp
+    if len(records) != world_size:
+        raise ValueError(f"All {world_size} rank observations are required")
     boundaries = []
     counts = []
     for rank, record in enumerate(records):
@@ -29,6 +32,11 @@ def qualified_population(records, layer, control):
             or record["control"] != control
             or record["source_sha256"].get(MODEL_SOURCE) != MODEL_SHA256
             or record.get("numerical_contract") not in NUMERICAL_CONTRACTS
+            or (
+                world_size == 32
+                and record.get("parallelism")
+                != {"global_tp": world_size, "attention_tp": attention_tp, "attention_dp": attention_dp}
+            )
         ):
             raise ValueError("Unqualified population source or numerical contract")
         boundary = next(value for value in record["boundaries"] if value["layer"] == layer)
@@ -42,22 +50,22 @@ def qualified_population(records, layer, control):
             raise ValueError("Captured population differs from the requested workload")
         counts.append(len(positive))
         boundaries.append(boundary)
-    if any(counts[rank] != counts[rank // 4 * 4] for rank in range(16)):
+    if any(counts[rank] != counts[rank // attention_tp * attention_tp] for rank in range(world_size)):
         raise ValueError("Tensor-parallel ranks disagree on request population")
-    population = counts[::4]
+    population = counts[::attention_tp]
     positive_counts = {count for count in population if count > 0}
     if len(positive_counts) != 1 or sum(population) != control["global_requests"]:
         raise ValueError("Requires uniform active-rank requests matching the requested concurrency")
     requests = positive_counts.pop()
     active = sum(count > 0 for count in population)
-    aligned = [(count + 3) // 4 * 4 for count in population]
-    if sum(aligned) * 2 >= max(aligned) * 4:
-        aligned = [max(aligned)] * 4
+    aligned = [(count + attention_tp - 1) // attention_tp * attention_tp for count in population]
+    if sum(aligned) * 2 >= max(aligned) * attention_dp:
+        aligned = [max(aligned)] * attention_dp
     for rank, boundary in enumerate(boundaries):
         if (
             boundary["forward_mode"] != ("2" if counts[rank] else "4")
-            or boundary["batch_size"] != aligned[rank // 4]
-            or len(boundary["sequence_lengths"]) != aligned[rank // 4]
+            or boundary["batch_size"] != aligned[rank // attention_tp]
+            or len(boundary["sequence_lengths"]) != aligned[rank // attention_tp]
             or boundary["global_num_tokens_cpu"] != aligned
         ):
             raise ValueError("Captured idle/decode mode or DP padding differs from the source contract")
@@ -82,16 +90,16 @@ def qualified_population(records, layer, control):
         raise ValueError("Nonpositive or nonfinite layer timing")
     return {
         "layer": layer,
-        "attention_tp": 4,
-        "attention_dp": 4,
+        "attention_tp": attention_tp,
+        "attention_dp": attention_dp,
         "active_attention_dp": active,
-        "moe_ep": 16,
+        "moe_ep": moe_ep,
         "requests_per_dp": requests,
         "kv_tokens": max(length for boundary in boundaries for length in boundary["sequence_lengths"]),
         "latency_ms": statistics.median(maxima),
         "cv": statistics.pstdev(maxima) / statistics.mean(maxima),
         "sample_count": 9,
-        "numerical_checks": 16 * 12,
+        "numerical_checks": world_size * 12,
         "boundary_contract": CONTRACT,
         "kernel_source": SOURCE,
     }, maxima
@@ -117,7 +125,7 @@ def export_population(campaign_set, model_config, output, collector_ref):
         info = json.loads((campaign / "server-info.json").read_text())
         if (
             IMAGE not in command
-            or (info["tp_size"], info["attn_dp_size"], info["ep_size"]) != (16, 4, 16)
+            or (info["tp_size"], info["attn_dp_size"], info["ep_size"]) not in ((16, 4, 16), (32, 32, 32))
             or not info["disable_overlap_schedule"]
             or info["speculative_algorithm"] is not None
             or any(info["cuda_graph_config"][phase]["backend"] != "disabled" for phase in ("prefill", "decode"))
@@ -140,7 +148,7 @@ def export_population(campaign_set, model_config, output, collector_ref):
             "model-identity.json",
             "launch_layer_replay_probe.py",
             "layer_output_validation.py",
-            "run_layer_chain_campaign.py",
+            "run_tp32_layer_campaign.py" if info["tp_size"] == 32 else "run_layer_chain_campaign.py",
         ):
             sources[str(campaign / filename)] = digest(campaign / filename)
         for script in sorted(campaign.glob("*.py")):
@@ -152,6 +160,7 @@ def export_population(campaign_set, model_config, output, collector_ref):
             "quantization_sha256": digest(model_config.parent / "quant_model_description.json"),
             "model_source_sha256": MODEL_SHA256,
             "boundary_contract": CONTRACT,
+            "parallelism": {key: info[key] for key in ("tp_size", "attn_dp_size", "ep_size")},
             "environment": {
                 key: value
                 for key, value in environment.items()
@@ -173,7 +182,7 @@ def export_population(campaign_set, model_config, output, collector_ref):
                     name: case[name] for name in ("id", "forward_call", "training", "input_length", "global_requests")
                 }
                 records = []
-                for rank in range(16):
+                for rank in range(info["tp_size"]):
                     path = campaign / case["id"] / f"layer-replay-rank{rank}.json"
                     sources[str(path)] = digest(path)
                     records.append(json.loads(path.read_text()))
@@ -190,7 +199,14 @@ def export_population(campaign_set, model_config, output, collector_ref):
                     raise ValueError("Campaigns have different runtime/host/model identities")
                 identity_hash = hashlib.sha256(json.dumps(current_identity, sort_keys=True).encode()).hexdigest()
                 for layer in LAYERS:
-                    row, samples = qualified_population(records, layer, control)
+                    row, samples = qualified_population(
+                        records,
+                        layer,
+                        control,
+                        attention_tp=info["tp_size"] // info["attn_dp_size"],
+                        attention_dp=info["attn_dp_size"],
+                        moe_ep=info["ep_size"],
+                    )
                     key = (layer, row["active_attention_dp"], row["requests_per_dp"], case["input_length"])
                     required.add(key)
                     if row["cv"] > 0.1:
