@@ -1,0 +1,22 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Repair normal-MoE routing/load and inter-rank dependency modeling using measured expert counts and numerically verified component boundaries; validate independent prompts/lengths. Model input IPC/poll timing without a fitted batching window, then rerun matched 2-node and 4-node PD layouts."
+  },
+  "research": {
+    "mixed_prefill_repair_20261103": {
+      "implementation": "Cross-DP mixed rounds preserve per-rank attention geometry and use global eager SUM_LEN plus normal DeepEP/expert execution. Anchored mode explicitly composes independent kernels with estimated provenance; measured mode rejects unqualified mixed profiles. Same-rank mixed chunking remains unsupported. Pure-decode runtime profiles are not reused in mixed rounds. New canonical estimate_ascend_dp_operations exposes the same Rust critical-rank decomposition. No timing constant, residual or operator parquet changed.",
+      "measurements": "28 completed diagnostic8192/8 cases on node25,16 continuous layer/attention/MoE cases and12 detailed communication/expert cases.14 matched warm-geometry forward pairs differ-0.79..+2.04percent; earlier/cold/unmatched observations preserved. Both diagnostic containers stopped. These diagnostic traces were not published as numerically qualified operator profiles.",
+      "confirmed_prefill_gap": "Representative activeDP1/2/4 measurements show MoE335.61/536.69/794.09ms versus native335.01/365.48/422.55ms while attention remains about1030..1065ms. The gap is concentrated in MoE. One four-DP layer4 routing observation has mean8192 received expert tokens/rank and maximum18150,2.22x mean. Balanced-shape lookup and inter-rank communication/dependency modeling need repair; the ratio is not a latency multiplier.",
+      "input_admission": "New source-bound poll snapshots show requests sent milliseconds apart entering different rounds when overlap is disabled. Tokenizer send precedes DP-controller transport and scheduler polling; forward launch time is not the admission cutoff. Per-rank poll phase is not yet modeled precisely.",
+      "conditional_full_request_validation": "Replayed external tokenizer-send-start timestamps from existing unchanged full8192/1024 N=C1/4/8 data. Native scheduler determines all batches; no measured forward durations, scheduler_received times, route assignments or serving residual injected. TTFT signed error-2.947/-6.079/-15.428percent,TPOT+0.281/+2.219/+7.795percent,input/output throughput-0.247/-2.058/-6.927percent. This is a conditional input-trace diagnosis, not unconditional burst or PD accuracy acceptance. Original simultaneous-burst C4/C8TTFT remains about30percent low; model gaps may partly cancel.",
+      "validation": "Rust2134passed1existingignored; packagedPythonmodel/API/collector/canonicalcontract/bothparity540passed.19 actual-model prefill/mixed observed groups verify canonical breakdown conservation and no pure-decode runtime-profile leakage. Initial fixture coverage/identity failures and two invalid trace-format attempts retained; gates not relaxed. Ruff and package legal checks passed.",
+      "image": "aisimulate-910c:mixed-round-repair-20261103-r2",
+      "image_id": "sha256:9f8b7b90c438b10daa203fadb3beebc537e61c722019915265aa002d7738c6c9",
+      "artifacts": "production/prediction-repair-20261102/prefill-events-node25-20261103;moe-events-node25-20261103;prefill-event-analysis-20261103.json;moe-event-analysis-20261103.json;input-poll-analysis-20261103.json;full-request-mixed-diagnosis-20261103.json;external-ingress-replay-20261103;mixed-prefill-validation-20261103",
+      "documentation": "md/910c-glm52-w8a8-causal-gap-analysis-20261102.md",
+      "limitations": "No new2-node/4-nodePD accuracy acceptance. Native simultaneous-input assumption, normal MoE imbalance, other topologies and workload transfer remain unresolved. Goal remains incomplete.217 prior checkpoint integrity issues are preserved separately."
+    }
+  }
+}

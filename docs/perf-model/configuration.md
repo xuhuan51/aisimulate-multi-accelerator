@@ -222,7 +222,7 @@ explicit Ascend controls.
 whole-forward measurements. Its table contains the isolated invocation of each
 of eight structural layer types. The engine combines them using the audited
 GLM layer counts, replaces all covered timings, and retains the covered
-operations only for resident-weight accounting. The scope includes real Python
+operations for resident-weight accounting and explicit mixed-round kernel composition. The scope includes real Python
 and runtime work around kernels; it must not be described as pure device-kernel
 time. The table never extrapolates beyond measured request/KV brackets, even if
 `shape_policy` permits extrapolation for the independent kernel tables. A missing
@@ -275,9 +275,22 @@ SGLang replay uses synchronized attention-DP timing for supported Ascend
 aggregated deployments as well as disaggregated workers. Every committed pass
 passes all rank metrics, including idle ranks, into the same native estimator.
 This prevents a single active rank from being priced as a uniformly occupied
-DP group. The measured Ascend group model currently requires pure prefill or
-pure decode rounds. Cross-rank mixed prefill/decode rounds fail explicitly;
-they do not silently use uniform-rank timing or a serving residual.
+DP group. Pure prefill and pure decode retain their existing measured paths.
+Cross-rank mixed prefill/decode rounds require `shape_policy: anchored` and
+report `estimated` provenance. Each rank retains its own attention phase and KV
+length. Any prefill rank selects eager SUM_LEN padding and normal DeepEP expert
+dispatch for the whole group, including ranks doing decode. These rounds use
+the independent kernel composition; `runtime_layers` expands its covered kernels
+instead of applying a pure-decode layer profile to a different communication
+path. This composition does not include unmeasured eager layer overhead and is
+not a claim of mixed-round accuracy. `shape_policy: measured` rejects the
+unqualified mixed boundary. Prefill and decode within the same rank remain
+unsupported; this matches the validated deployment's disabled mixed chunking.
+The canonical Python model's `estimate_ascend_dp_operations(rank_metrics)` returns
+the selected critical rank's `(name, latency_ms, energy_wms, source)` breakdown
+from the same Rust group query. Include every DP rank, including idle ranks.
+This is diagnostic evidence for that forward, not an alternate estimator or a
+measurement of host scheduling time. Unsupported hardware/estimators reject it.
 
 The GLM adapter requires the local checkpoint's `config.json` and
 `quant_model_description.json`. It validates the full ModelSlim precision

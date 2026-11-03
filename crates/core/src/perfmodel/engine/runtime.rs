@@ -2313,28 +2313,50 @@ impl Engine {
             })
             .unwrap_or_default();
         let shape = super::ascend_dp::GroupShape::new(metrics, attention_tp, buckets)?;
-        let operations = if shape.decode {
-            &self.generation_ops
-        } else {
-            &self.context_ops
-        };
+        if shape.mixed && self.db.ascend_shape_policy.is_measured() {
+            return Err(AicError::InvalidForwardPassMetrics(
+                "Ascend cross-rank mixed timing requires shape_policy=anchored; mixed runtime-layer profiles are not measured".into(),
+            ));
+        }
         let mut maximum = 0.0_f64;
         let mut max_rank = None;
         let mut critical_operations = Vec::new();
         for (rank, metrics) in metrics.iter().enumerate() {
+            let decode = metrics.scheduled_requests.sum_prefill_tokens == 0;
+            let operations = if decode {
+                &self.generation_ops
+            } else {
+                &self.context_ops
+            };
             let context = shape.context(metrics);
             if context.batch_size == 0 {
                 continue;
             }
-            let mut fold = PerOpFold::new(if shape.decode {
-                "generation"
-            } else {
-                "context"
-            });
+            let mut fold = PerOpFold::new(if decode { "generation" } else { "context" });
             let mut latency = 0.0;
             for operation in operations {
+                if shape.mixed
+                    && let Op::AscendDecoderLayers(layers) = operation
+                {
+                    let mut result = PerformanceResult::zero();
+                    for child in &layers.covered_ops {
+                        if let Some(bound) = shape.bind(child, rank, context.batch_size, false)? {
+                            result = result.plus(bound.query(&self.db, &context)?);
+                        }
+                    }
+                    let mut result = result.scaled(layers.scale_factor);
+                    result.source = crate::operators::Source::Estimated;
+                    latency += result.latency_ms;
+                    if capture {
+                        fold.add(operation, result);
+                    }
+                    continue;
+                }
                 if let Some(bound) = shape.bind(operation, rank, context.batch_size, false)? {
-                    let result = bound.query(&self.db, &context)?;
+                    let mut result = bound.query(&self.db, &context)?;
+                    if shape.mixed {
+                        result.source = crate::operators::Source::Estimated;
+                    }
                     latency += result.latency_ms;
                     if capture {
                         fold.add(&bound, result);

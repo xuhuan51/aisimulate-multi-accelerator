@@ -888,6 +888,19 @@ It invokes the installed implementation, replaces covered kernel timings, and
 preserves their memory inventory. No upstream implementation is copied; the
 runtime module measurements include host dispatch and are not a fitted residual.
 
+The cross-rank mixed-phase composition in
+`crates/core/src/perfmodel/engine/{ascend_dp,runtime}.rs` and its tests independently
+implement the same pinned runtime's `model_executor/forward_batch_info.py`,
+`layers/dp_attention.py`, and `layers/moe/token_dispatcher/deepep.py` contracts:
+local attention phases retain their meaning while global prefill selects SUM_LEN
+and normal expert communication. The independently written continuous-forward
+event and scheduler-input probes `launch_prefill_event_probe.py` and
+`run_prefill_event_campaign.py` under the same evidence directory invoke
+`models/deepseek_v2.py`, `managers/scheduler.py`, and the benchmark serving API.
+These are modified adaptations of the contracts, without copied upstream source;
+the immutable revision, Copyright 2023-2026 SGLang Team and contributors, and
+Apache-2.0 attribution above apply.
+
 The diagnostic `layer_output_validation.py` and associated replay tests under
 `benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/`
 independently implement logical-row validity for the same SGLang revision's

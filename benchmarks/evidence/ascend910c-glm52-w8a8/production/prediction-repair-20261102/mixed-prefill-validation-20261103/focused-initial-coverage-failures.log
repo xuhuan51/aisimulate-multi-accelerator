@@ -1,0 +1,34 @@
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.12.13, pytest-8.3.2, pluggy-1.7.0
+rootdir: /tgm_rent_data/data/youxingye/aisimulate-910c/python/aisimulate
+configfile: pytest.ini
+plugins: typeguard-2.13.3, jaxtyping-0.3.11, xdist-3.6.1, anyio-4.15.1
+collected 37 items / 35 deselected / 2 selected
+
+python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py [31mF[0m[31mF[0m[31m          [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_________ test_synchronized_sum_len_executes_with_idle_and_mixed_ranks _________[0m
+[1m[31mpython/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py[0m:520: in test_synchronized_sum_len_executes_with_idle_and_mixed_ranks
+    [0mmixed = model.estimate_forward_pass_time_ms([active, prefill, idle, idle])[90m[39;49;00m
+[1m[31m/usr/local/python3.12.13/lib/python3.12/site-packages/aisimulate_core/sdk/rust_engine_step.py[0m:459: in estimate_forward_pass_time_ms
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._inner.estimate_forward_pass_time_ms(_json_dumps(metrics))[90m[39;49;00m
+[1m[31mE   aisimulate_core.sdk.errors.PerfDataNotAvailableError: perf database error: Ascend DeepEP sent tokens=2048 outside measured [1, 1024][0m
+[31m[1m_______ test_mixed_ranks_use_normal_experts_in_both_decode_timing_scopes _______[0m
+[1m[31mpython/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py[0m:538: in test_mixed_ranks_use_normal_experts_in_both_decode_timing_scopes
+    [0mmodel = transfer_model([90m[39;49;00m
+[1m[31mpython/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py[0m:461: in transfer_model
+    [0m[94mreturn[39;49;00m RustForwardPassPerfModel.best_available([90m[39;49;00m
+[1m[31m/usr/local/python3.12.13/lib/python3.12/site-packages/aisimulate_core/sdk/rust_engine_step.py[0m:369: in best_available
+    [0m[94mreturn[39;49;00m [96mcls[39;49;00m(aisimulate_core.RustForwardPassPerfModel.best_available(_forward_pass_config_json(config)))[90m[39;49;00m
+[1m[31mE   aisimulate_core.sdk.errors.PerfDataNotAvailableError: perf database error: unmeasured Ascend runtime layer: AscendLayerKey { attention_tp: 4, attention_dp: 4, active_attention_dp: 4, moe_ep: 16, layer: 0, quantization_sha256: "f00fd9a482807de6b86f617786c4596dccb107b69e6dd93fa1aa0689ef3c0d89" }[0m
+============================= slowest 10 durations =============================
+0.43s call     tests/unit/sdk/models/test_ascend_glm52.py::test_synchronized_sum_len_executes_with_idle_and_mixed_ranks
+0.08s setup    tests/unit/sdk/models/test_ascend_glm52.py::test_synchronized_sum_len_executes_with_idle_and_mixed_ranks
+0.07s call     tests/unit/sdk/models/test_ascend_glm52.py::test_mixed_ranks_use_normal_experts_in_both_decode_timing_scopes
+
+(3 durations < 0.005s hidden.  Use -vv to show these durations.)
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py::[1mtest_synchronized_sum_len_executes_with_idle_and_mixed_ranks[0m - aisimulate_core.sdk.errors.PerfDataNotAvailableError: perf database error: ...
+[31mFAILED[0m python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py::[1mtest_mixed_ranks_use_normal_experts_in_both_decode_timing_scopes[0m - aisimulate_core.sdk.errors.PerfDataNotAvailableError: perf database error: ...
+[31m================= [31m[1m2 failed[0m, [33m35 deselected[0m, [33m1 warning[0m[31m in 1.08s[0m[31m ==================[0m

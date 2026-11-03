@@ -475,6 +475,10 @@ class RustForwardPassPerfModel:
         """
         return json.loads(self._inner.estimate_forward_pass_detailed(_json_dumps(metrics)))
 
+    def estimate_ascend_dp_operations(self, metrics: list[dict[str, Any]]) -> list[PerOpValue]:
+        """Return critical-rank (name, latency_ms, energy_wms, source) values for an Ascend DP group."""
+        return self._inner.estimate_ascend_dp_operations(_json_dumps(metrics))
+
     def tune_with_fpms(self, iterations: dict[str, Any] | list[Any]) -> None:
         """API: ``model.tune_with_fpms(iterations) -> None``.
 

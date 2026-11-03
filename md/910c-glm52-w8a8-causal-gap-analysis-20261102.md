@@ -17,6 +17,69 @@
 
 配置固定为同一个 SGLang 镜像摘要、0.5.22 对应源码提交 `baa9befa381511cd4d56f83980951e5a45fffc6d`、CANN 9.1，模型位于 `/data_lib/data/models/glm-q`。prefill/decode graph 均关闭，overlap scheduler 关闭，投机解码关闭，radix cache 关闭；共享专家自己的 NPU 多流仍开启。前期诊断使用 64/96/128/192 的短输出，最新又独立验证了完整 1024 输出；两种验证不能混为一谈。
 
+## 2026-11-03：补齐混合 DP，并把剩余 prefill 缺口定位到 MoE
+
+本轮新增了跨 DP 的 prefill/decode 混合轮次支持，完成 28 组短请求诊断，并用已有完整 8K/1K 请求的实际入口时间重新做了原生调度预测。没有修改旧实测，没有新增整轮残差，也没有修改已经发布的算子 parquet。精度目标尚未完成，特别是多 DP prefill 的 MoE 和两节点、四节点 PD 仍需要继续验证。
+
+### 源码修复
+
+实际容器内的源码重新从固定摘要 `sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443` 提取。历史 `runtime-audit-20261029/latest` 缓存与该镜像部分文件不同，本轮使用镜像内的源码 SHA 校验，不依据目录名推断版本。
+
+此前 `GroupShape` 只接受全组纯 prefill 或纯 decode。实际 8K/1K 记录中却出现 `[decode, prefill, prefill, decode]`，以及 `[prefill, decode, prefill, prefill]`。现已对齐以下规则：
+
+- 每个 DP 保留本地注意力的阶段、query 长度和 KV 长度。
+- 全组只要含 prefill，就使用 eager `SUM_LEN` padding；decode rank 也走全局 `normal` DeepEP 和 prefill 专家计算路径。
+- 纯 decode 的真实层曲线只用于它所测量的路径。混合轮次展开其保留的独立算子列表，按上述通信规则计算，并明确标记 `estimated`。
+- 混合轮次需要 `shape_policy: anchored`；`measured` 不将未采集的混合边界当作已测数据。同一个 DP 内的混合 chunk 仍不支持，与此次实测关闭 mixed chunking 的配置一致。
+- 增加规范模型接口 `estimate_ascend_dp_operations(rank_metrics)`，返回同一次 Rust 查询所选关键 rank 的算子分解；分解合计与 forward 查询一致。
+
+修改集中在 `crates/core/src/perfmodel/engine/ascend_dp.rs`、`runtime.rs`、`crates/core/src/perfmodel/py.rs` 及 Python 薄接口。当前验证镜像为 `aisimulate-910c:mixed-round-repair-20261103-r2`，镜像 ID 为 `sha256:9f8b7b90c438b10daa203fadb3beebc537e61c722019915265aa002d7738c6c9`。
+
+### 新测量说明了哪部分仍不准
+
+在 node25 完成了 16 组连续 forward 分层事件诊断和 12 组更细的 MoE 诊断，均为输入 8192、输出 8；它们用于定位 prefill，不替代完整 1024 输出的端到端验证。正常执行期间记录层、注意力、MoE，以及部分层的 dispatch、专家 GMM、激活、combine 边界，另有不记录这些细分事件的对照。14 个能匹配几何的暖态轮次，设备 forward 时间变化为 -0.79%～+2.04%。未匹配、冷启动和首次触达的记录全部保留，没有作为暖态精度通过项。该数据没有导入性能库，也没有以生成文本相同替代张量级数值校验。
+
+以下为暖态代表轮次，单位 ms；MoE 是同一活跃 prefill rank 上的实际边界合计，包含通信依赖，不能再与它内部的子项重复相加。各活跃 DP 本轮均处理 4096 个 query token，KV prefix 以 JSON 中的完整指标为准。
+
+| 活跃 prefill DP | 实测 forward | 当前预测 forward | 该活跃 rank 实测 MoE | 对应逻辑 MoE 预测 |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 1423.37 | 1420.01 | 335.61 | 335.01 |
+| 2 | 1628.98 | 1454.49 | 536.69 | 365.48 |
+| 4 | 1899.01 | 1549.70 | 794.09 | 422.55 |
+
+注意力边界大致保持在 1030～1065 ms，而多 DP 下 MoE 增长显著。原模型对 MoE 增长的估计偏小，已能解释该组 prefill 缺口的大部分。空闲 rank 的 MoE 事件会包含等待其他 rank 注意力完成的时间，分析中没有把这个等待重复加进关键路径。
+
+细分诊断还确认了一个具体的 shape 假设缺口：4 个 DP 的一个第 4 层样本，总共收到 131072 条专家 token，16 个 EP rank 的平均值是 8192，但最忙 rank 收到 **18150**，约为平均值的 **2.22 倍**。现有 `routing: balanced` 算子组合使用均匀接收量；实际专家分配和 combine 等待存在明显不均衡。这个倍率来自真实路由计数，不能直接乘到整轮延迟。后续需要补齐每层专家计数、通信和同步所决定的关键路径，再用独立输入验证；本轮没有将约 350 ms 的差值硬加回预测。
+
+### 用实际入口时间重新预测完整 8K/1K
+
+原来的合成负载把同批请求设为同时到达。真实 tokenizer/IPC 发送有毫秒级先后；关闭 overlap 后，错过本轮输入轮询会等待整轮 prefill。新增探针直接记录了轮询起止和本轮接收的请求，确认不能用“forward 启动之前已经发送”来判定请求一定进入这一轮。
+
+重放使用原完整请求中 tokenizer **发送调用开始**的相对时间作为输入，再由 AISimulate 的原生调度器独立排批。没有注入 `scheduler_received`、真实 forward 时长、实际 DP 分配或拟合值。请求数、token 数和实际 253 个 KV 页/rank 保持一致。这里的 TTFT 起点位于服务端 tokenizer 发送边界；客户端 HTTP/序列化及前端之前的耗时尚未建模，因此这是带实测输入时间的条件预测。
+
+| 并发 N=C | 实测 TTFT ms | 原同时到达预测 ms | 入口时间重放 TTFT ms | 新 TTFT 误差 | 实测 TPOT ms | 新 TPOT ms | TPOT 误差 | 实测输出 tok/s | 新输出 tok/s | 吞吐误差 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 2957.70 | 2870.52 | 2870.52 | -2.95% | 405.84 | 406.99 | +0.28% | 2.4487 | 2.4426 | -0.25% |
+| 4 | 4372.17 | 3068.91 | 4106.38 | -6.08% | 431.57 | 441.14 | +2.22% | 9.1812 | 8.9922 | -2.06% |
+| 8 | 6696.52 | 4603.36 | 5663.35 | -15.43% | 436.88 | 470.94 | +7.80% | 18.0531 | 16.8026 | -6.93% |
+
+输入吞吐分别为实测 19.5896 / 73.4493 / 144.4247 tok/s，对应预测 19.5412 / 71.9376 / 134.4211 tok/s；由于固定为 8192/1024，输入与输出吞吐的相对误差相同。
+
+这张表说明请求入口时序确实影响 TTFT；它不能证明任意未来的同并发 burst 已经预测准确。模型尚未精确模拟每个 rank 的轮询相位，MoE 又有低估，两者可能部分抵消。未提供入口 trace 时，同步 burst 的原预测仍然存在此前约 30% 的 C4/C8 TTFT 低估。两节点和四节点 PD 本轮没有新增精度验收。
+
+可复现本次条件重放：
+
+```bash
+cd /home/youxingye/youxingye_data/aisimulate-910c
+python3 benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/predict_external_ingress.py \
+  --image aisimulate-910c:mixed-round-repair-20261103-r2 \
+  --output aisimulate-output/external-ingress-recheck
+```
+
+本阶段完整 Rust 测试 2134 项通过、1 项原有跳过；Python 规范接口、模型、collector 和两组 parity 共 540 项通过。真实量化模型的 19 组 prefill/混合轮次同时检查了 `runtime_layers` 与独立内核在该边界的一致性，并检查算子分解和总时长守恒。测试构造中发现的越界 shape、测试用量化描述与实测曲线身份不匹配，以及前两次 trace 格式错误，均保留失败日志；没有放松这些校验来通过测试。
+
+本节证据均位于 `benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/`：`prefill-events-node25-20261103/`、`moe-events-node25-20261103/` 保存原始测量及 SHA；`prefill-event-analysis-20261103.json`、`moe-event-analysis-20261103.json` 保存逐轮算子对照；`input-poll-analysis-20261103.json` 保存入批诊断；`external-ingress-replay-20261103/comparison.json` 保存上表和三次重放的完整记录；`mixed-prefill-validation-20261103/` 保存验证日志。两次诊断服务均已停止。
+
 ## 已经落实的修复
 
 1. **补齐 CPU 到 NPU 的长度元数据拷贝。** 真实 DCP=1 eager 路径每轮有 78 次注意力边界、21 次 indexer 刷新边界，把 CPU 上未锁页的 INT32 长度数组送到 NPU。此前注意力采集器预先准备了设备数组，遗漏了这段实际调用。现在增加 `seq_lens_h2d` 实测曲线，覆盖长度数组元素数 1、2、3、4、8、16、24、32，按真实 padding 后的 shape 查询；prefill 使用请求数，不把输入 token 总数误当成数组长度。主数据和另一个 device 的留出测量分别保留，发布继续执行原有完整性、数值正确性和 CV 门槛。

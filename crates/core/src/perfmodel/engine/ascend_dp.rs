@@ -12,6 +12,7 @@ pub(super) struct GroupShape {
     pub max_tokens: u32,
     pub mode: DpPaddingMode,
     pub decode: bool,
+    pub mixed: bool,
     pub graph: bool,
 }
 
@@ -36,16 +37,19 @@ impl GroupShape {
         let has_decode = metrics
             .iter()
             .any(|rank| rank.scheduled_requests.num_decode_requests > 0);
-        if has_prefill && has_decode {
+        if metrics.iter().any(|rank| {
+            rank.scheduled_requests.sum_prefill_tokens > 0
+                && rank.scheduled_requests.num_decode_requests > 0
+        }) {
             return Err(invalid(
-                "Ascend synchronized operator timing requires a pure prefill or pure decode group",
+                "Ascend synchronized timing does not support prefill and decode within the same rank",
             ));
         }
         let mut local_tokens = metrics
             .iter()
             .map(|rank| {
                 let scheduled = &rank.scheduled_requests;
-                let tokens = if has_prefill {
+                let tokens = if scheduled.sum_prefill_tokens > 0 {
                     scheduled.sum_prefill_tokens
                 } else {
                     scheduled.num_decode_requests
@@ -91,7 +95,7 @@ impl GroupShape {
             request_counts: metrics
                 .iter()
                 .map(|rank| {
-                    if has_prefill {
+                    if rank.scheduled_requests.sum_prefill_tokens > 0 {
                         rank.scheduled_requests.num_prefill_requests
                     } else {
                         rank.scheduled_requests.num_decode_requests
@@ -103,13 +107,15 @@ impl GroupShape {
             global_tokens,
             mode,
             decode: !has_prefill,
+            mixed: has_prefill && has_decode,
             graph: graph_bucket.is_some(),
         })
     }
 
     pub fn context(&self, metrics: &ForwardPassMetrics) -> RuntimeContext {
         let scheduled = &metrics.scheduled_requests;
-        let batch_size = if self.decode {
+        let decode = scheduled.sum_prefill_tokens == 0;
+        let batch_size = if decode {
             scheduled.num_decode_requests
         } else {
             scheduled.num_prefill_requests
@@ -117,12 +123,12 @@ impl GroupShape {
         RuntimeContext {
             batch_size,
             num_tokens: 1,
-            s: if self.decode {
+            s: if decode {
                 scheduled.sum_decode_kv_tokens / batch_size.max(1)
             } else {
                 scheduled.sum_prefill_tokens / batch_size.max(1)
             },
-            prefix: if self.decode {
+            prefix: if decode {
                 0
             } else {
                 scheduled.sum_prefill_kv_tokens / batch_size.max(1)
@@ -230,7 +236,7 @@ impl GroupShape {
             }
             Op::AscendAttention(attention) => {
                 attention.key.execution_mode = execution_mode.into();
-                if self.decode {
+                if attention.key.phase == "decode" {
                     attention.graph_buckets = if self.graph { vec![tokens] } else { Vec::new() };
                     attention.eager_token_multiple = tokens.max(1);
                 }
@@ -271,6 +277,9 @@ impl GroupShape {
                 experts.token_numerator /= dp;
                 experts.input_token_multiple = 1;
                 experts.key.execution_mode = execution_mode.into();
+                if self.mixed {
+                    experts.key.phase = "prefill".into();
+                }
                 self.global_tokens
             }
             Op::AscendMoeTensor(experts) => {
@@ -281,6 +290,9 @@ impl GroupShape {
             Op::AscendDeepEp(transport) => {
                 transport.input_token_multiple = 1;
                 transport.key.execution_mode = execution_mode.into();
+                if self.mixed {
+                    transport.key.phase = "normal".into();
+                }
                 self.max_tokens
             }
             Op::Hccl(collective) => {
@@ -441,6 +453,82 @@ mod tests {
         assert_eq!(shape.global_tokens, 8200);
         assert_eq!(shape.mode, DpPaddingMode::SumLen);
         assert!(!shape.graph);
+    }
+
+    #[test]
+    fn mixed_round_keeps_local_attention_and_global_sum_len_geometry() {
+        let mut metrics = decode(&[0, 1, 0, 0]);
+        for rank in [0, 3] {
+            metrics[rank].scheduled_requests.num_prefill_requests = 1;
+            metrics[rank].scheduled_requests.sum_prefill_tokens = 4096;
+            metrics[rank].scheduled_requests.sum_prefill_kv_tokens = 4096;
+        }
+        let shape = GroupShape::new(&metrics, 4, &[8, 16, 32]).unwrap();
+        assert_eq!(shape.local_tokens, [4096, 4, 0, 4096]);
+        assert_eq!(shape.global_tokens, 8196);
+        assert_eq!(shape.request_counts, [1, 1, 0, 1]);
+        assert_eq!(shape.mode, DpPaddingMode::SumLen);
+        assert!(shape.mixed);
+        assert!(!shape.decode);
+        assert!(!shape.graph);
+        let prefill = shape.context(&metrics[0]);
+        assert_eq!(
+            (prefill.batch_size, prefill.s, prefill.prefix),
+            (1, 4096, 4096)
+        );
+        let decode = shape.context(&metrics[1]);
+        assert_eq!((decode.batch_size, decode.s, decode.prefix), (1, 8193, 0));
+        assert_eq!(shape.context(&metrics[2]).batch_size, 0);
+        metrics[0].scheduled_requests.num_decode_requests = 1;
+        assert!(GroupShape::new(&metrics, 4, &[]).is_err());
+    }
+
+    #[test]
+    fn mixed_round_uses_decode_attention_with_normal_expert_communication() {
+        let mut metrics = decode(&[0, 1, 0, 0]);
+        metrics[0].scheduled_requests.num_prefill_requests = 1;
+        metrics[0].scheduled_requests.sum_prefill_tokens = 4096;
+        let shape = GroupShape::new(&metrics, 4, &[8, 16, 32]).unwrap();
+        let attention: Op = serde_json::from_value(serde_json::json!({"AscendAttention": {
+            "name":"attention", "scale_factor":78.0,
+            "key":{"phase":"decode", "operation":"sparse_attention", "local_heads":16, "execution_mode":"graph"},
+            "graph_buckets":[8,16,32], "eager_token_multiple":4
+        }})).unwrap();
+        let Some(Op::AscendAttention(bound)) = shape.bind(&attention, 1, 1, false).unwrap() else {
+            panic!("expected decode attention");
+        };
+        assert_eq!(bound.key.phase, "decode");
+        assert_eq!(bound.key.execution_mode, "eager");
+        assert!(bound.graph_buckets.is_empty());
+        assert_eq!(bound.padded_batch(1).unwrap(), 4);
+        let expert: Op = serde_json::from_value(serde_json::json!({"AscendMoeChain": {
+            "name":"experts", "scale_factor":75.0,
+            "key":{"phase":"decode", "local_experts":16, "distribution":"balanced", "execution_mode":"eager"},
+            "token_numerator":32, "token_denominator":16, "input_token_multiple":4
+        }})).unwrap();
+        let Some(Op::TokenScale(bound)) = shape.bind(&expert, 1, 1, false).unwrap() else {
+            panic!("expected globally routed experts");
+        };
+        let Op::AscendMoeChain(experts) = *bound.op else {
+            panic!("expected expert chain");
+        };
+        assert_eq!(experts.key.phase, "prefill");
+        assert_eq!(experts.received_tokens(bound.numerator).unwrap(), 2050);
+        let transport: Op = serde_json::from_value(serde_json::json!({"AscendDeepEp": {
+            "name":"dispatch", "scale_factor":75.0,
+            "key":{"phase":"low_latency", "operation":"dispatch", "num_ranks":16,
+                   "ranks_per_node":16, "distribution":"balanced", "execution_mode":"eager"},
+            "token_split":4, "input_token_multiple":4
+        }}))
+        .unwrap();
+        let Some(Op::TokenScale(bound)) = shape.bind(&transport, 1, 1, false).unwrap() else {
+            panic!("expected synchronized normal dispatch");
+        };
+        let Op::AscendDeepEp(transport) = *bound.op else {
+            panic!("expected transport");
+        };
+        assert_eq!(transport.key.phase, "normal");
+        assert_eq!(transport.sent_tokens(bound.numerator).unwrap(), 1024);
     }
 
     #[test]

@@ -2281,6 +2281,16 @@ impl PyForwardPassPerfModel {
         serde_json::to_string(&result).map_err(|error| PyValueError::new_err(error.to_string()))
     }
 
+    fn estimate_ascend_dp_operations(
+        &self,
+        py: Python<'_>,
+        fpm_json: &str,
+    ) -> PyResult<Vec<crate::perfmodel::engine::PerOpValue>> {
+        let metrics = parse_fpm_iteration(fpm_json)?;
+        py.allow_threads(|| self.inner.estimate_ascend_dp_operations(&metrics))
+            .map_err(aic_to_py)
+    }
+
     /// Tune from observed FPM iterations. `iterations_json` is the nested list
     /// `[[iter0_rank0, ...], [iter1_rank0, ...]]` (the wrapper normalizes the
     /// convenience forms before calling). Pure-Rust compute (GIL freed).

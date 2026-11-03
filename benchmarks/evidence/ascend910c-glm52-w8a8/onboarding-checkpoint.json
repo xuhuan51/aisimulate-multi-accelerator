@@ -3037,7 +3037,7 @@
     "blockers": [
       "High-concurrency64K search has unresolved CPU/timeouts. Formal direct-FPM and whole-serving accuracy remain unaccepted."
     ],
-    "next_action": "Resolve source-defined mixed-rank prefill/decode timing and ingress-to-scheduler round admission; isolate multi-DP prefill underprediction; then validate matched PD layouts and other parallel strategies. Preserve current independent full-request results and do not fit serving residuals.",
+    "next_action": "Repair normal-MoE routing/load and inter-rank dependency modeling using measured expert counts and numerically verified component boundaries; validate independent prompts/lengths. Model input IPC/poll timing without a fitted batching window, then rerun matched 2-node and 4-node PD layouts.",
     "stage": 2,
     "status": "in_progress"
   },
@@ -3825,6 +3825,26 @@
       "validation": "8vllm/sglang/trtllm configurations,5000orderedMooncake requests per process,2baseline+2candidate processes each; all32reportsbyteidentical within frozen rows. Queue,reuse,handoff,1..3applicablepreemptions/retractions andfullcompletion evidenced. Originaloldgoldensrequalifiedonbaseline; capacities andexclusionallowlistidenticalbetweencomparedrevisions."
     },
     "memory_component_commit": "f5349d2f: KV layout component, complete startup memory observations and unprofiled serving baselines;99+5tests and390GPUparitypassed.",
+    "mixed_prefill_progress_20261103": {
+      "draft_fix": "Cross-rank P/D preserves each rank's attention mode/KV while global prefill selects SUM_LEN and normal DeepEP/expert paths. Anchored mixed composition explicitly uses independent kernels, not pure-decode runtime layer profiles, and reports estimated. Measured policy and same-rank mixed chunking reject. No new residual or table fit.",
+      "measurement": "Completed 16 diagnostic cases on node25: C1/2/4/8, input8192/output8, paired controls and continuous layer/attention/MoE events. Original data frozen in prefill-events-node25-20261103; its service stopped. Warm examples show attention about1030..1065ms while active-rank MoE grows about335ms(oneDP),530ms(twoDP),794ms(fourDP). Idle-rank waiting is not added to active compute. Finer communication/expert event campaign now running separately.",
+      "resume_integrity": "217 pre-existing checkpoint artifact integrity issues remain; no old evidence hashes rewritten.",
+      "source_identity": "Re-extracted actual sources from immutable image sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443. Cached runtime-audit latest sources differ and were not treated as this image's source. Pinned scheduler SHA256 ab23556739fc4a1a089da5d33f8cb925c14b7c68ae564294b5ed13d96b427c36; model SHA256 remains1edf877e54ca6acf37e2d7dccb1704054175e2b78b8737bb9b617ffc97a2134e.",
+      "validation": "Initial mixed-geometry Rust changes:2134 passed,1 existing ignored. Canonical diagnostic binding and packaged public/parity verification still in progress. No claim of full-request improvement or complete PD accuracy."
+    },
+    "mixed_prefill_repair_20261103": {
+      "artifacts": "production/prediction-repair-20261102/prefill-events-node25-20261103;moe-events-node25-20261103;prefill-event-analysis-20261103.json;moe-event-analysis-20261103.json;input-poll-analysis-20261103.json;full-request-mixed-diagnosis-20261103.json;external-ingress-replay-20261103;mixed-prefill-validation-20261103",
+      "conditional_full_request_validation": "Replayed external tokenizer-send-start timestamps from existing unchanged full8192/1024 N=C1/4/8 data. Native scheduler determines all batches; no measured forward durations, scheduler_received times, route assignments or serving residual injected. TTFT signed error-2.947/-6.079/-15.428percent,TPOT+0.281/+2.219/+7.795percent,input/output throughput-0.247/-2.058/-6.927percent. This is a conditional input-trace diagnosis, not unconditional burst or PD accuracy acceptance. Original simultaneous-burst C4/C8TTFT remains about30percent low; model gaps may partly cancel.",
+      "confirmed_prefill_gap": "Representative activeDP1/2/4 measurements show MoE335.61/536.69/794.09ms versus native335.01/365.48/422.55ms while attention remains about1030..1065ms. The gap is concentrated in MoE. One four-DP layer4 routing observation has mean8192 received expert tokens/rank and maximum18150,2.22x mean. Balanced-shape lookup and inter-rank communication/dependency modeling need repair; the ratio is not a latency multiplier.",
+      "documentation": "md/910c-glm52-w8a8-causal-gap-analysis-20261102.md",
+      "image": "aisimulate-910c:mixed-round-repair-20261103-r2",
+      "image_id": "sha256:9f8b7b90c438b10daa203fadb3beebc537e61c722019915265aa002d7738c6c9",
+      "implementation": "Cross-DP mixed rounds preserve per-rank attention geometry and use global eager SUM_LEN plus normal DeepEP/expert execution. Anchored mode explicitly composes independent kernels with estimated provenance; measured mode rejects unqualified mixed profiles. Same-rank mixed chunking remains unsupported. Pure-decode runtime profiles are not reused in mixed rounds. New canonical estimate_ascend_dp_operations exposes the same Rust critical-rank decomposition. No timing constant, residual or operator parquet changed.",
+      "input_admission": "New source-bound poll snapshots show requests sent milliseconds apart entering different rounds when overlap is disabled. Tokenizer send precedes DP-controller transport and scheduler polling; forward launch time is not the admission cutoff. Per-rank poll phase is not yet modeled precisely.",
+      "limitations": "No new2-node/4-nodePD accuracy acceptance. Native simultaneous-input assumption, normal MoE imbalance, other topologies and workload transfer remain unresolved. Goal remains incomplete.217 prior checkpoint integrity issues are preserved separately.",
+      "measurements": "28 completed diagnostic8192/8 cases on node25,16 continuous layer/attention/MoE cases and12 detailed communication/expert cases.14 matched warm-geometry forward pairs differ-0.79..+2.04percent; earlier/cold/unmatched observations preserved. Both diagnostic containers stopped. These diagnostic traces were not published as numerically qualified operator profiles.",
+      "validation": "Rust2134passed1existingignored; packagedPythonmodel/API/collector/canonicalcontract/bothparity540passed.19 actual-model prefill/mixed observed groups verify canonical breakdown conservation and no pure-decode runtime-profile leakage. Initial fixture coverage/identity failures and two invalid trace-format attempts retained; gates not relaxed. Ruff and package legal checks passed."
+    },
     "model_content_pin": {
       "checkpoint_sha256": "b3645035a8b916c630ccab2f0d9be6b5971202e0ac47c9cf2d6dab63c1c6a9cc",
       "scope": "SHA256 of canonical sorted per-file relative paths, sizes and full SHA256 values;196files, including all weight bytes and tokenizer/config assets.",
@@ -4621,7 +4641,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 146,
+  "revision": 148,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

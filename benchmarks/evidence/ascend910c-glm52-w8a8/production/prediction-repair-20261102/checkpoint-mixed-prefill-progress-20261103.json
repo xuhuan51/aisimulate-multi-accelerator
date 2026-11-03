@@ -1,0 +1,16 @@
+{
+  "progress": {
+    "stage": 2,
+    "status": "in_progress",
+    "next_action": "Validate the mixed-rank native implementation and source-bound continuous-prefill attribution; isolate normal DeepEP versus expert compute, without fitting a forward residual. Then compare measured external input traces with independent scheduler replay."
+  },
+  "research": {
+    "mixed_prefill_progress_20261103": {
+      "source_identity": "Re-extracted actual sources from immutable image sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443. Cached runtime-audit latest sources differ and were not treated as this image's source. Pinned scheduler SHA256 ab23556739fc4a1a089da5d33f8cb925c14b7c68ae564294b5ed13d96b427c36; model SHA256 remains1edf877e54ca6acf37e2d7dccb1704054175e2b78b8737bb9b617ffc97a2134e.",
+      "draft_fix": "Cross-rank P/D preserves each rank's attention mode/KV while global prefill selects SUM_LEN and normal DeepEP/expert paths. Anchored mixed composition explicitly uses independent kernels, not pure-decode runtime layer profiles, and reports estimated. Measured policy and same-rank mixed chunking reject. No new residual or table fit.",
+      "measurement": "Completed 16 diagnostic cases on node25: C1/2/4/8, input8192/output8, paired controls and continuous layer/attention/MoE events. Original data frozen in prefill-events-node25-20261103; its service stopped. Warm examples show attention about1030..1065ms while active-rank MoE grows about335ms(oneDP),530ms(twoDP),794ms(fourDP). Idle-rank waiting is not added to active compute. Finer communication/expert event campaign now running separately.",
+      "validation": "Initial mixed-geometry Rust changes:2134 passed,1 existing ignored. Canonical diagnostic binding and packaged public/parity verification still in progress. No claim of full-request improvement or complete PD accuracy.",
+      "resume_integrity": "217 pre-existing checkpoint artifact integrity issues remain; no old evidence hashes rewritten."
+    }
+  }
+}

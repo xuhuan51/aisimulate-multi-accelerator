@@ -1,0 +1,42 @@
+{
+  "image": "aisimulate-910c:mixed-round-repair-20261103-r2",
+  "image_id": "sha256:9f8b7b90c438b10daa203fadb3beebc537e61c722019915265aa002d7738c6c9",
+  "rust": {
+    "passed": 2134,
+    "failed": 0,
+    "ignored": 1
+  },
+  "python_public_model_collector_and_both_parity": {
+    "passed": 540,
+    "failed": 0
+  },
+  "operator_database_changed": false,
+  "source_sha256": {
+    "crates/core/src/perfmodel/engine/ascend_dp.rs": "e0f01c37740bb533a86a4724742a892a8e22ff6bdd2c6459a9d31b4b2beefe56",
+    "crates/core/src/perfmodel/engine/runtime.rs": "b236bea037fc5bc5fbbdc08e98dd8ae517af53d17d10adce0656a0542e7b600d",
+    "crates/core/src/perfmodel/py.rs": "46e560b4320b83e0caaf808363518b355feab439808e58709f9e98e9b9031450",
+    "python/aisimulate/src/aisimulate_core/sdk/rust_engine_step.py": "3c8e31dffd9fa7c104e64691ce1130b65d42844d06b05ba5efcecd6ff242fc96"
+  },
+  "measurements": {
+    "prefill_event_cases": 16,
+    "moe_event_cases": 12,
+    "all_completed": true,
+    "scope": "diagnostic8192/8; full8192/1024 measured serving results reused unchanged"
+  },
+  "external_ingress_replay": {
+    "completed": true,
+    "concurrencies": [
+      1,
+      4,
+      8
+    ],
+    "conditional_input_trace": true,
+    "measured_forward_injection": false,
+    "residual_fit": false
+  },
+  "limitations": [
+    "Mixed kernel timing is explicitly estimated and does not include unmeasured eager-layer costs.",
+    "Normal MoE expert-load and communication dependencies remain under-modeled.",
+    "No new 2-node/4-node PD accuracy acceptance."
+  ]
+}

@@ -73,10 +73,10 @@ def main():
                          "measured_ms": max(row["elapsed_ms"] for row in rows),
                          "mixed_prefill_decode": has_prefill and has_decode,
                          "metrics": metrics, "requests_by_dp": [row["requests"] for row in rows]}
-                if has_prefill and has_decode:
-                    entry["prediction_unavailable"] = "Mixed-rank prefill/decode boundary remains unsupported; no timing substituted"
-                else:
+                try:
                     entry["prediction_ms"] = models["runtime_layers"].estimate_forward_pass_time_ms(metrics)
+                except ValueError as error:
+                    entry["prediction_unavailable"] = str(error)
                 timelines.append(entry)
             if (has_prefill or len(requests) != case["concurrency"]
                     or any(not 64 <= request["output_tokens"] <= 1008 for request in requests)):

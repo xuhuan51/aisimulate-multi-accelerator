@@ -503,7 +503,7 @@ def test_synchronized_dp_estimator_preserves_uniform_cost_and_rank_permutation(m
         model.estimate_forward_pass_time_ms([metrics(1)] * 3)
 
 
-def test_synchronized_sum_len_executes_with_idle_ranks_and_rejects_mixed_phases(model_path):
+def test_synchronized_sum_len_executes_with_idle_and_mixed_ranks(model_path):
     model = transfer_model(
         model_path,
         "decode",
@@ -516,9 +516,38 @@ def test_synchronized_sum_len_executes_with_idle_ranks_and_rejects_mixed_phases(
     duration = model.estimate_forward_pass_time_ms([active, idle, idle, idle])
     assert duration > 0
     assert duration == model.estimate_forward_pass_time_ms([idle, idle, idle, active])
-    prefill = {"scheduled_requests": {"num_prefill_requests": 1, "sum_prefill_tokens": 8192}}
-    with pytest.raises(ValueError, match="pure prefill or pure decode"):
-        model.estimate_forward_pass_time_ms([active, prefill, idle, idle])
+    prefill = {"scheduled_requests": {"num_prefill_requests": 1, "sum_prefill_tokens": 4096}}
+    mixed = model.estimate_forward_pass_time_ms([active, prefill, idle, idle])
+    assert mixed > duration
+    assert mixed == model.estimate_forward_pass_time_ms([idle, idle, prefill, active])
+    within_rank = {"scheduled_requests": {**active["scheduled_requests"], **prefill["scheduled_requests"]}}
+    with pytest.raises(ValueError, match="within the same rank"):
+        model.estimate_forward_pass_time_ms([within_rank, idle, idle, idle])
+
+
+def test_mixed_ranks_expose_estimated_native_operation_breakdown(model_path):
+    ranks = [
+        {"scheduled_requests": {"num_prefill_requests": 1, "sum_prefill_tokens": 4096,
+                                "sum_prefill_kv_tokens": 4096}},
+        {"scheduled_requests": {"num_decode_requests": 1, "sum_decode_kv_tokens": 8193}},
+        {"scheduled_requests": {}},
+        {"scheduled_requests": {}},
+    ]
+    model = transfer_model(
+        model_path, "aggregated", tp=4, attention_dp=4,
+        estimator_config={"op_level": {"ascend": {"decode_execution_mode": "eager", "shape_policy": "anchored"}}},
+    )
+    duration = model.estimate_forward_pass_time_ms(ranks)
+    operations = model.estimate_ascend_dp_operations(ranks)
+    assert sum(entry[1] for entry in operations) == pytest.approx(duration, rel=1e-12)
+    assert all(entry[3] == "estimated" for entry in operations)
+    assert duration > 0
+    strict = transfer_model(
+        model_path, "aggregated", tp=4, attention_dp=4,
+        estimator_config={"op_level": {"ascend": {"decode_execution_mode": "eager", "shape_policy": "measured"}}},
+    )
+    with pytest.raises(ValueError, match="mixed timing requires shape_policy=anchored"):
+        strict.estimate_forward_pass_time_ms(ranks)
 
 
 def test_eager_runtime_overhead_is_once_per_forward_with_explicit_topology(model_path):
