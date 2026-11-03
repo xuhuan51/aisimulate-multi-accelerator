@@ -128,7 +128,8 @@ impl AscendDecoderLayersOp {
             }
             match attention.key.operation.as_str() {
                 "sparse_attention"
-                    if attention.key.local_heads == 16 && attention.scale_factor == 78.0 =>
+                    if attention.key.local_heads == 64 / self.attention_tp
+                        && attention.scale_factor == 78.0 =>
                 {
                     attention_count += 1;
                 }

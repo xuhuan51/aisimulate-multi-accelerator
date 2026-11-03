@@ -9,15 +9,16 @@ from pathlib import Path
 from aisimulate_core.sdk.rust_engine_step import RustForwardPassPerfModel
 
 
-def configuration(scope):
+def configuration(scope, attention_tp=4, attention_dp=4, moe_ep=16, tp_lm_head_all_to_all=False):
     return {
         "model": "/data_lib/data/models/glm-q", "system": "ascend910c", "backend": "sglang",
-        "backend_version": "0.5.22", "worker_type": "decode", "tp": 4, "attention_dp": 4,
-        "moe_tp_size": 1, "moe_ep_size": 16, "kv_block_size": 128, "gemm_quant_mode": "w8a8",
+        "backend_version": "0.5.22", "worker_type": "decode", "tp": attention_tp, "attention_dp": attention_dp,
+        "moe_tp_size": 1, "moe_ep_size": moe_ep, "kv_block_size": 128, "gemm_quant_mode": "w8a8",
         "moe_quant_mode": "w8a8_dynamic", "kvcache_quant_mode": "bfloat16", "fmha_quant_mode": "bfloat16",
         "estimation_mode": "op_level", "estimator_config": {"op_level": {"ascend": {
             "decode_execution_mode": "eager", "shape_policy": "anchored", "enable_dp_lm_head": False,
             "decode_timing_scope": scope,
+            "enable_tp_lm_head_all_to_all": tp_lm_head_all_to_all,
         }}},
     }
 
@@ -28,6 +29,12 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest", default="chain-campaign.json")
     parser.add_argument("--allow-asymmetric", action="store_true")
+    parser.add_argument("--attention-tp", type=int, default=4)
+    parser.add_argument("--attention-dp", type=int, default=4)
+    parser.add_argument("--moe-ep", type=int, default=16)
+    parser.add_argument("--tp-lm-head-all-to-all", action="store_true")
+    parser.add_argument("--output-length", type=int)
+    parser.add_argument("--telemetry-dir", type=Path, action="append")
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
@@ -37,19 +44,22 @@ def main():
         raise ValueError("Only completed diagnostic campaigns can be compared")
     group_rows = collections.defaultdict(dict)
     sources = {}
-    for path in sorted(campaign.glob("paired-forward-rank*.jsonl")):
-        sources[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    telemetry_files = [path for folder in (args.telemetry_dir or [campaign])
+                       for path in folder.glob("paired-forward-rank*.jsonl")]
+    for path in sorted(telemetry_files):
+        sources[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
         for line in path.read_text().splitlines():
             row = json.loads(line)
             group = group_rows[row["timed_forward_iteration"]]
             if row["dp_rank"] in group:
                 raise ValueError("Duplicate paired rank/iteration")
             group[row["dp_rank"]] = row
-    raw_config, layer_config = configuration("isolated_kernels"), configuration("runtime_layers")
+    topology = (args.attention_tp, args.attention_dp, args.moe_ep, args.tp_lm_head_all_to_all)
+    raw_config, layer_config = configuration("isolated_kernels", *topology), configuration("runtime_layers", *topology)
     raw_model = RustForwardPassPerfModel.best_available(raw_config)
     layer_model = RustForwardPassPerfModel.best_available(layer_config)
     results = []
-    output_length = manifest.get("output_length", 192)
+    output_length = args.output_length or manifest.get("output_length", 192)
     minimum_output = min(40, output_length // 4)
     maximum_output = output_length - 8
     for case in manifest["cases"]:
@@ -59,9 +69,9 @@ def main():
         gaps = collections.Counter()
         excluded = collections.Counter()
         for iteration, rank_rows in sorted(group_rows.items()):
-            if len(rank_rows) != 4:
+            if len(rank_rows) != args.attention_dp:
                 continue
-            rows = [rank_rows[rank] for rank in range(4)]
+            rows = [rank_rows[rank] for rank in range(args.attention_dp)]
             if not all(case["start_unix"] <= row["launch_unix"] <= case["end_unix"] for row in rows):
                 continue
             if abs(iteration - probe_iteration) <= 4:
@@ -75,7 +85,7 @@ def main():
                 excluded["prefill_warmup_or_unsteady_requests"] += 1
                 continue
             if not args.allow_asymmetric and any(
-                    row["scheduled_requests"]["num_decode_requests"] != case["global_requests"] // 4 for row in rows):
+                    row["scheduled_requests"]["num_decode_requests"] != case["global_requests"] // args.attention_dp for row in rows):
                 excluded["unbalanced_dp"] += 1
                 continue
             metrics = [{"scheduled_requests": row["scheduled_requests"]} for row in rows]
@@ -88,6 +98,7 @@ def main():
                 if not any(message in str(error) for message in (
                     "measured request/KV brackets", "unmeasured Ascend runtime layer",
                     "skewed active-rank profiles",
+                    "lacks a common measured anchor",
                 )):
                     raise
                 result["runtime_layer_unavailable"] = str(error)

@@ -27,10 +27,10 @@ pub struct AscendLayerKey {
 
 impl AscendLayerKey {
     pub fn validate(&self) -> Result<(), AicError> {
-        if self.attention_tp != 4
-            || self.attention_dp != 4
-            || !(1..=self.attention_dp).contains(&self.active_attention_dp)
-            || self.moe_ep != 16
+        if !matches!(
+            (self.attention_tp, self.attention_dp, self.moe_ep),
+            (4, 4, 16) | (1, 32, 32)
+        ) || !(1..=self.attention_dp).contains(&self.active_attention_dp)
             || !matches!(self.layer, 0..=6 | 77)
             || self.quantization_sha256.len() != 64
             || !self
@@ -169,7 +169,7 @@ fn load(path: &Path) -> Result<LayerPlanes, AicError> {
     let identity = reader.col("runtime_identity_sha256")?;
     let quantization = reader.col("quantization_sha256")?;
     let mut raw: BTreeMap<AscendLayerKey, BTreeMap<u32, BTreeMap<u32, f64>>> = BTreeMap::new();
-    let mut runtime = None;
+    let mut runtime = BTreeMap::new();
     for row in reader.rows()? {
         let row = row?;
         let key = AscendLayerKey {
@@ -178,7 +178,7 @@ fn load(path: &Path) -> Result<LayerPlanes, AicError> {
             active_attention_dp: active_attention_dp
                 .map(|column| row.u32(column))
                 .transpose()?
-                .unwrap_or(4),
+                .unwrap_or(row.u32(attention_dp)?),
             moe_ep: row.u32(moe_ep)?,
             layer: row.u32(layer)?,
             quantization_sha256: row.str_owned(quantization)?,
@@ -196,9 +196,10 @@ fn load(path: &Path) -> Result<LayerPlanes, AicError> {
             || !variation.is_finite()
             || !(0.0..=0.1).contains(&variation)
             || row.u32(samples)? < 9
-            || row.u32(checks)? < 16 * 9
+            || row.u32(checks)? < key.attention_tp * key.attention_dp * 9
             || !matches!(row.str(contract)?, CONTRACT | VALID_ROWS_CONTRACT)
-            || (key.active_attention_dp != 4 && row.str(contract)? != VALID_ROWS_CONTRACT)
+            || (key.active_attention_dp != key.attention_dp
+                && row.str(contract)? != VALID_ROWS_CONTRACT)
             || row.str(source)? != SOURCE
             || signature.len() != 64
             || !signature.bytes().all(|byte| byte.is_ascii_hexdigit())
@@ -207,9 +208,14 @@ fn load(path: &Path) -> Result<LayerPlanes, AicError> {
                 "unqualified Ascend runtime layer row: {key:?}"
             )));
         }
-        if runtime.get_or_insert_with(|| signature.to_owned()).as_str() != signature {
+        if runtime
+            .entry((key.attention_tp, key.attention_dp, key.moe_ep))
+            .or_insert_with(|| signature.to_owned())
+            .as_str()
+            != signature
+        {
             return Err(AicError::InvalidPerfData(
-                "Ascend runtime layers mix collection identities".into(),
+                "Ascend runtime layers mix collection identities within a topology".into(),
             ));
         }
         if raw
@@ -239,6 +245,50 @@ fn load(path: &Path) -> Result<LayerPlanes, AicError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::perf_database::energy_test_fixtures::{Col, write_parquet};
+
+    #[test]
+    fn runtime_identity_and_numeric_coverage_are_scoped_to_measured_topology() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join(BASENAME);
+        let first_identity = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let second_identity = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        let quantization = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+        for (second_tp, second_dp, second_ep, checked_ranks, valid) in [
+            (1, 32, 32, 32, true),
+            (1, 32, 32, 16, false),
+            (4, 4, 16, 16, false),
+        ] {
+            write_parquet(
+                &path,
+                &[
+                    Col::I64("layer", vec![0, 1]),
+                    Col::I64("attention_tp", vec![4, second_tp]),
+                    Col::I64("attention_dp", vec![4, second_dp]),
+                    Col::I64("active_attention_dp", vec![4, second_dp]),
+                    Col::I64("moe_ep", vec![16, second_ep]),
+                    Col::I64("requests_per_dp", vec![1; 2]),
+                    Col::I64("kv_tokens", vec![8192; 2]),
+                    Col::F64("latency_ms", vec![2.0, 3.0]),
+                    Col::F64("cv", vec![0.01; 2]),
+                    Col::I64("sample_count", vec![9; 2]),
+                    Col::I64("numerical_checks", vec![144, checked_ranks * 9]),
+                    Col::Str("boundary_contract", vec![VALID_ROWS_CONTRACT; 2]),
+                    Col::Str("kernel_source", vec![SOURCE; 2]),
+                    Col::Str(
+                        "runtime_identity_sha256",
+                        vec![first_identity, second_identity],
+                    ),
+                    Col::Str("quantization_sha256", vec![quantization; 2]),
+                ],
+            );
+            let result = load(&path);
+            assert_eq!(result.is_ok(), valid);
+            if valid {
+                assert_eq!(result.unwrap().len(), 2);
+            }
+        }
+    }
 
     #[test]
     fn sparse_grid_interpolates_only_inside_measured_brackets() {

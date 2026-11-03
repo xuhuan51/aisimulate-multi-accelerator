@@ -134,8 +134,10 @@ def configure_ascend_glm52(model, raw_config):
     settings = config.op_level_config.options["ascend"]
     decode_mode = settings["decode_execution_mode"]
     runtime_layers = settings["decode_timing_scope"] == "runtime_layers"
-    if runtime_layers and (local_tp, attention_dp, experts_parallel, dcp) != (4, 4, 16, 1):
-        raise InvalidEngineConfigurationError("Ascend runtime-layer measurements currently require TP16/ADP4/EP16/DCP1")
+    if runtime_layers and (local_tp, attention_dp, experts_parallel, dcp) not in ((4, 4, 16, 1), (1, 32, 32, 1)):
+        raise InvalidEngineConfigurationError(
+            "Ascend runtime-layer measurements require TP16/ADP4/EP16/DCP1 or TP32/ADP32/EP32/DCP1"
+        )
     overhead = settings.get("eager_runtime_overhead")
     if overhead is not None and (overhead["attention_tp"], overhead["attention_dp"], overhead["moe_ep_size"]) != (
         local_tp,

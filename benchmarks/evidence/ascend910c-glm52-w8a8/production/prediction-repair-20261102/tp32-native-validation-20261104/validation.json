@@ -1,0 +1,19 @@
+{
+  "base_commit": "327b09727aac080893b617eff38f7bd56c81175e",
+  "rust": {
+    "passed": 4,
+    "command": "cargo test --offline -p aisimulate-core --lib ascend_layer"
+  },
+  "python": {
+    "passed": 438,
+    "command": "python3 -m pytest -c python/aisimulate/pytest.ini -o addopts=\"\" -o timeout=600 -p no:cacheprovider crates/core/parity_tests/perfmodel/test_engine_step_parity.py crates/core/parity_tests/perfmodel/test_compile_engine_parity.py python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py python/aisimulate/tests/cross_package/test_single_oracle_contract.py -q"
+  },
+  "wheel_sha256": "c88b163c0346dfc0d9d86d9f2bbd7a3dd39de945192bff6298d9d27da468e773",
+  "source_sha256": {
+    "crates/core/src/perfmodel/perf_database/ascend_layer.rs": "69454cb4e41231c1fea019a95dd916c8eda245c8ca4fac78486d8c98f9254ba0",
+    "crates/core/src/perfmodel/operators/ascend_layer.rs": "c6836986836f359636e5274acb271cfc9f3ae471a23fd96e52214da11b2e6803",
+    "python/aisimulate/src/aisimulate_core/sdk/models/ascend_glm52.py": "c0e774b35b3d69e88098ea8ae7a3612367f4d547fce6452af4dd58e9397b8658",
+    "python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py": "b91ddd9c55dd3e8033395a3108aa2d7a51ca999799fa2717fd0bbcc34a93ab16"
+  },
+  "scope": "Native topology support and existing-data regression only; TP32 collection still running, no new data publication or serving accuracy acceptance"
+}

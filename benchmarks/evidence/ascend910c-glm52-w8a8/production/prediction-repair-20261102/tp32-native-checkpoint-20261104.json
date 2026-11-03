@@ -1,0 +1,13 @@
+{
+  "research": {
+    "tp32_runtime_layers_20261104": {
+      "status": "native consumer verified; collection and qualification still running",
+      "native_validation": "production/prediction-repair-20261102/tp32-native-validation-20261104/validation.json",
+      "native_changes": "Exact TP32/ADP32/EP32 data selection; all32rank numeric coverage; runtime identity checked within each topology; long-context sparse-attention delta uses64/local_attention_tp heads. No TP16-to-TP32 timing reuse.",
+      "validation": "4 targeted Rust tests and438 Python/parity/contract tests passed. Preliminary wheel contains existing TP16 data only; no TP32 serving accuracy acceptance.",
+      "collection_progress": "22of43 formal cases complete at2026-11-04T03:34+08:00. Qualification follower records all numerical/timing failures, repeats only missing CV-qualified cells at most twice, retains first qualified observation, excludes12K/16K holdouts from publication.",
+      "remaining_coverage": "Uniform active populations1..32; per-DP batch2/4 only at fullDP. Heterogeneous populations spanning different padding buckets remain explicitly unsupported; broader search coverage is not complete.",
+      "next_action": "Finish TP32 collection/qualification, merge independently qualified topologies with provenance, validate uninstrumented forward/serving cases and rerun same-condition historical PD configurations. Continue causal PD TTFT analysis; no whole-forward residuals."
+    }
+  }
+}

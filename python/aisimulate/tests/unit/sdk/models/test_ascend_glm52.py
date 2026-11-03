@@ -68,9 +68,10 @@ def test_resident_inventory_matches_loaded_united_parameters(model_path):
     assert context["context_logits_finalize"][1]["token_axis"] == "requests"
 
 
-def test_runtime_layers_replace_timing_and_preserve_resident_weights(model_path):
+@pytest.mark.parametrize("attention_tp,attention_dp,expert_ep", [(4, 4, 16), (1, 32, 32)])
+def test_runtime_layers_replace_timing_and_preserve_resident_weights(model_path, attention_tp, attention_dp, expert_ep):
     config = configuration()
-    config.tp_size, config.attention_dp_size = 4, 4
+    config.tp_size, config.attention_dp_size, config.moe_ep_size = attention_tp, attention_dp, expert_ep
     settings = {"decode_execution_mode": "eager"}
     config.op_level_config = OpLevelCompileConfig({"ascend": settings}, system="ascend910c", backend="sglang")
     isolated = get_model(model_path, config, "sglang")
@@ -88,7 +89,7 @@ def test_runtime_layers_replace_timing_and_preserve_resident_weights(model_path)
     assert "generation_logits_gemm" in specs
     kind, layers = specs["generation_decoder_layers"]
     assert kind == "AscendDecoderLayers"
-    assert (layers["attention_tp"], layers["attention_dp"], layers["moe_ep"]) == (4, 4, 16)
+    assert (layers["attention_tp"], layers["attention_dp"], layers["moe_ep"]) == (attention_tp, attention_dp, expert_ep)
     assert layers["covered_ops"]
     assert "generation_eager_runtime_overhead" not in specs
 
@@ -527,14 +528,16 @@ def test_synchronized_sum_len_executes_with_idle_and_mixed_ranks(model_path):
 
 def test_mixed_ranks_expose_estimated_native_operation_breakdown(model_path):
     ranks = [
-        {"scheduled_requests": {"num_prefill_requests": 1, "sum_prefill_tokens": 4096,
-                                "sum_prefill_kv_tokens": 4096}},
+        {"scheduled_requests": {"num_prefill_requests": 1, "sum_prefill_tokens": 4096, "sum_prefill_kv_tokens": 4096}},
         {"scheduled_requests": {"num_decode_requests": 1, "sum_decode_kv_tokens": 8193}},
         {"scheduled_requests": {}},
         {"scheduled_requests": {}},
     ]
     model = transfer_model(
-        model_path, "aggregated", tp=4, attention_dp=4,
+        model_path,
+        "aggregated",
+        tp=4,
+        attention_dp=4,
         estimator_config={"op_level": {"ascend": {"decode_execution_mode": "eager", "shape_policy": "anchored"}}},
     )
     duration = model.estimate_forward_pass_time_ms(ranks)
@@ -543,7 +546,10 @@ def test_mixed_ranks_expose_estimated_native_operation_breakdown(model_path):
     assert all(entry[3] == "estimated" for entry in operations)
     assert duration > 0
     strict = transfer_model(
-        model_path, "aggregated", tp=4, attention_dp=4,
+        model_path,
+        "aggregated",
+        tp=4,
+        attention_dp=4,
         estimator_config={"op_level": {"ascend": {"decode_execution_mode": "eager", "shape_policy": "measured"}}},
     )
     with pytest.raises(ValueError, match="mixed timing requires shape_policy=anchored"):
