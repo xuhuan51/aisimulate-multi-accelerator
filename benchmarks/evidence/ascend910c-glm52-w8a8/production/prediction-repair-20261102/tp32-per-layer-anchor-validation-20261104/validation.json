@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "native_tests_passed": 5,
+  "goldens_refreshed": false,
+  "wheel": "build/tp32-runtime-per-layer-anchor-20261104/aisimulate-0.13.0-cp311-abi3-manylinux_2_34_aarch64.whl",
+  "wheel_sha256": "738ef2764f1e8a7936476299a45d12a4df72360fcd813500d04ca5070820224d",
+  "scope": "Native per-layer attention/indexer KV transfer only; preliminary wheel still contains TP16 runtime layer data only",
+  "source_sha256": {
+    "crates/core/src/perfmodel/operators/ascend_layer.rs": "f774238bc9fb26caff63b4e4aa8cf902ff6c8ebdaee6a9ff5feedad6dca13dfc",
+    "docs/perf-model/configuration.md": "2b48adb8a9331c329f690f4b6d4052a65453993ff80b0d0966b051baf0f20dd0"
+  },
+  "python_tests_passed": 446,
+  "parity_suites_passed": true,
+  "production_tp32_data_published": false,
+  "serving_accuracy_accepted": false,
+  "commands": [
+    "cargo test --offline -p aisimulate-core --lib ascend_layer",
+    "python3 -m pytest -c python/aisimulate/pytest.ini -o addopts=\"\" -o timeout=600 -p no:cacheprovider crates/core/parity_tests/perfmodel/test_engine_step_parity.py crates/core/parity_tests/perfmodel/test_compile_engine_parity.py python/aisimulate/tests/unit/sdk/models/test_ascend_glm52.py python/aisimulate/tests/cross_package/test_single_oracle_contract.py python/aisimulate/tests/unit/collector/test_ascend_layer_population_export.py -q"
+  ],
+  "log_sha256": {
+    "native-tests.log": "62c354f9fd2fe9465c75a87d277fd740fa82de6a8fbb06d103e3b24f330f6844",
+    "wheel-build.log": "8f737c9243798a3ec8b54ab4a8a2de286efb983d9a216fde6b53fa1154e51d7d",
+    "workflow-lint.log": "80571b652269249b7b7c43198f5faf493e4f500b5e879fb5884880fbcf06454b",
+    "python-tests.log": "f04ffca8afe5ab22f0227d33fb67730cee8adffc142edb0ba9227b1802d4fd55"
+  }
+}

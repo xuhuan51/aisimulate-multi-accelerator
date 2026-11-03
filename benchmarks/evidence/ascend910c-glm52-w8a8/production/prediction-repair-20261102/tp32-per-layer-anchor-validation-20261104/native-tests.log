@@ -1,0 +1,25 @@
+Processing ./build/validation-tools/maturin-1.15.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl
+Installing collected packages: maturin
+Successfully installed maturin-1.15.0
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+   Compiling aisimulate-core v0.13.0 (/workspace/crates/core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 18s
+     Running unittests src/lib.rs (target/debug/deps/aisimulate_core-af87b37bbcf144e9)
+
+running 5 tests
+test perfmodel::operators::ascend_layer::tests::independent_layer_anchors_follow_indexer_sharing_without_changing_observations ... ok
+test perfmodel::operators::ascend_layer::tests::seventy_eight_measured_layers_replace_instead_of_adding_covered_timings ... ok
+test perfmodel::perf_database::ascend_layer::tests::context_anchor_uses_intersection_of_batch_brackets ... ok
+test perfmodel::perf_database::ascend_layer::tests::sparse_grid_interpolates_only_inside_measured_brackets ... ok
+test perfmodel::perf_database::ascend_layer::tests::runtime_identity_and_numeric_coverage_are_scoped_to_measured_topology ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 2136 filtered out; finished in 0.02s
+
+💥 maturin failed
+  Caused by: Failed to parse Cargo.toml at /workspace/Cargo.toml
+  Caused by: TOML parse error at line 1, column 1
+  |
+1 | # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+  | ^
+missing field `package`
+

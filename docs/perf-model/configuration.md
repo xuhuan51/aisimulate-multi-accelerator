@@ -228,13 +228,14 @@ time. With `shape_policy: measured`, both request and KV coordinates must have
 measured interpolation brackets. With `shape_policy: anchored`, the engine can
 extend the KV coordinate in either direction within the sparse-attention regime,
 while retaining the measured request population, padding, topology and quantization
-identity. It chooses the nearest KV coordinate in the intersection of all eight
-layer types' applicable request brackets, then
-computes:
+identity. Each structural layer type chooses its nearest measured KV coordinate
+inside its applicable request brackets, then computes:
 
 ```text
-layers(new_KV) = measured_layers(anchor_KV)
-               + attention_kernels(new_KV) - attention_kernels(anchor_KV)
+layer(new_KV) = measured_layer(layer_anchor_KV)
+              + sparse_attention(new_KV) - sparse_attention(layer_anchor_KV)
+              + indexer_delta_if_this_layer_computes_an_index
+layers(new_KV) = sum(layer_count * layer(new_KV))
 ```
 
 Collection identities are checked separately for each exact TP/ADP/EP topology.
@@ -245,8 +246,13 @@ The sparse-attention delta uses 64 total heads divided by the local attention TP
 the replicated indexer retains its 32-head identity. An enabled topology still
 fails when its actual active-rank, request, or KV coordinates lack qualified data.
 
-The delta contains exactly 78 sparse-attention and 21 indexer calls, evaluated by
-the canonical Rust operator model with the same active and padded batch. The
+The eight representative layer IDs are 0, 1, 2, 3, 4, 5, 6 and 77; only
+0, 1, 2 and 6 compute an index. Their multiplicities yield exactly 78
+sparse-attention and 21 indexer calls, evaluated by the canonical Rust operator
+model with the same active and padded batch. Independent, quality-qualified
+captures may have different actual KV lengths; those measured coordinates and
+latencies remain unchanged. Layers with an existing KV bracket use that bracket
+directly. The
 anchor and requested context must both be at least the model's DSA top-k of 2048, so the extension cannot
 cross that execution boundary. Dense projections, expert work, host dispatch and
 collectives retain the measured invocation boundary at that request population;

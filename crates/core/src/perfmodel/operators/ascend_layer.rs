@@ -110,10 +110,11 @@ impl AscendDecoderLayersOp {
         db: &PerfDatabase,
         requests: u32,
         kv_tokens: u32,
-    ) -> Result<f64, AicError> {
+    ) -> Result<(f64, f64), AicError> {
         let mut attention_count = 0;
         let mut indexer_count = 0;
-        let mut latency = 0.0;
+        let mut attention_ms = 0.0;
+        let mut indexer_ms = 0.0;
         for operation in &self.covered_ops {
             let Op::AscendAttention(attention) = operation else {
                 continue;
@@ -132,11 +133,13 @@ impl AscendDecoderLayersOp {
                         && attention.scale_factor == 78.0 =>
                 {
                     attention_count += 1;
+                    attention_ms = attention.query(db, requests, kv_tokens, 0)?.latency_ms / 78.0;
                 }
                 "lightning_indexer"
                     if attention.key.local_heads == 32 && attention.scale_factor == 21.0 =>
                 {
                     indexer_count += 1;
+                    indexer_ms = attention.query(db, requests, kv_tokens, 0)?.latency_ms / 21.0;
                 }
                 _ => {
                     return Err(AicError::InvalidEngineConfig(
@@ -144,7 +147,6 @@ impl AscendDecoderLayersOp {
                     ));
                 }
             }
-            latency += attention.query(db, requests, kv_tokens, 0)?.latency_ms;
         }
         if (attention_count, indexer_count) != (1, 1) {
             return Err(AicError::InvalidEngineConfig(
@@ -152,7 +154,7 @@ impl AscendDecoderLayersOp {
                     .into(),
             ));
         }
-        Ok(latency)
+        Ok((attention_ms, indexer_ms))
     }
 
     fn estimate_layers(
@@ -161,40 +163,49 @@ impl AscendDecoderLayersOp {
         policy: AscendShapePolicy,
         requests: u32,
         kv_tokens: u32,
-        attention_ms: impl Fn(u32) -> Result<f64, AicError>,
+        attention_ms: impl Fn(u32) -> Result<(f64, f64), AicError>,
     ) -> Result<(f64, bool), AicError> {
         if policy.is_measured() {
             return Ok((self.query_layers(table, requests, kv_tokens)?, false));
         }
-        let mut minimum = 0;
-        let mut maximum = u32::MAX;
-        for (layer, _) in LAYER_COUNTS {
-            let (lower, upper) = table.kv_bounds(&self.key(layer), requests)?;
-            minimum = minimum.max(lower);
-            maximum = maximum.min(upper);
+        let mut contexts = std::collections::HashMap::new();
+        let mut components = |sequence| -> Result<(f64, f64), AicError> {
+            if let Some(&timing) = contexts.get(&sequence) {
+                return Ok(timing);
+            }
+            let timing = attention_ms(sequence)?;
+            contexts.insert(sequence, timing);
+            Ok(timing)
+        };
+        let mut latency = 0.0;
+        let mut estimated = false;
+        for (layer, count) in LAYER_COUNTS {
+            let key = self.key(layer);
+            let (minimum, maximum) = table.kv_bounds(&key, requests)?;
+            let anchor_kv = kv_tokens.clamp(minimum, maximum);
+            let mut layer_ms = table.query(&key, requests, anchor_kv)?;
+            if anchor_kv != kv_tokens {
+                if anchor_kv < 2048 || kv_tokens < 2048 {
+                    return Err(AicError::PerfDatabase(
+                        "Ascend context transfer cannot cross the DSA top-k=2048 execution boundary".into(),
+                    ));
+                }
+                let (attention_new, indexer_new) = components(kv_tokens)?;
+                let (attention_anchor, indexer_anchor) = components(anchor_kv)?;
+                layer_ms += attention_new - attention_anchor;
+                if matches!(layer, 0 | 1 | 2 | 6) {
+                    layer_ms += indexer_new - indexer_anchor;
+                }
+                estimated = true;
+            }
+            if !layer_ms.is_finite() || layer_ms <= 0.0 {
+                return Err(AicError::InvalidPerfData(
+                    "Ascend attention context transfer produced an invalid layer latency".into(),
+                ));
+            }
+            latency += layer_ms * f64::from(count);
         }
-        if minimum > maximum {
-            return Err(AicError::PerfDatabase(format!(
-                "Ascend runtime-layer KV={kv_tokens} lacks a common measured anchor [{minimum}, {maximum}]"
-            )));
-        }
-        if (minimum..=maximum).contains(&kv_tokens) {
-            return Ok((self.query_layers(table, requests, kv_tokens)?, false));
-        }
-        let anchor_kv = kv_tokens.clamp(minimum, maximum);
-        if anchor_kv < 2048 || kv_tokens < 2048 {
-            return Err(AicError::PerfDatabase(
-                "Ascend context transfer cannot cross the DSA top-k=2048 execution boundary".into(),
-            ));
-        }
-        let anchor = self.query_layers(table, requests, anchor_kv)?;
-        let latency = anchor + attention_ms(kv_tokens)? - attention_ms(anchor_kv)?;
-        if !latency.is_finite() || latency <= 0.0 {
-            return Err(AicError::InvalidPerfData(
-                "Ascend attention context transfer produced an invalid layer latency".into(),
-            ));
-        }
-        Ok((latency, true))
+        Ok((latency, estimated))
     }
 
     fn timing_source(
@@ -236,6 +247,80 @@ mod tests {
     use super::*;
     use crate::perf_database::ascend_layer::{BASENAME, CONTRACT, SOURCE};
     use crate::perf_database::energy_test_fixtures::{Col, write_parquet};
+
+    #[test]
+    fn independent_layer_anchors_follow_indexer_sharing_without_changing_observations() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join(BASENAME);
+        write_parquet(
+            &path,
+            &[
+                Col::I64("layer", vec![0, 1, 2, 3, 4, 5, 6, 77]),
+                Col::I64("attention_tp", vec![1; 8]),
+                Col::I64("attention_dp", vec![32; 8]),
+                Col::I64("moe_ep", vec![32; 8]),
+                Col::I64("requests_per_dp", vec![1; 8]),
+                Col::I64(
+                    "kv_tokens",
+                    vec![4096, 4096, 8192, 8192, 4096, 8192, 4096, 8192],
+                ),
+                Col::F64("latency_ms", vec![2.0; 8]),
+                Col::F64("cv", vec![0.01; 8]),
+                Col::I64("sample_count", vec![9; 8]),
+                Col::I64("numerical_checks", vec![384; 8]),
+                Col::Str("boundary_contract", vec![CONTRACT; 8]),
+                Col::Str("kernel_source", vec![SOURCE; 8]),
+                Col::Str(
+                    "runtime_identity_sha256",
+                    vec!["2222222222222222222222222222222222222222222222222222222222222222"; 8],
+                ),
+                Col::Str(
+                    "quantization_sha256",
+                    vec!["1111111111111111111111111111111111111111111111111111111111111111"; 8],
+                ),
+            ],
+        );
+        let layers = AscendDecoderLayersOp {
+            name: "layers".into(),
+            scale_factor: 1.0,
+            attention_tp: 1,
+            attention_dp: 32,
+            active_attention_dp: None,
+            population_transfer: false,
+            moe_ep: 32,
+            covered_ops: vec![],
+            quantization_sha256: "1".repeat(64),
+        };
+        let table = AscendLayerTable::new(Some(path));
+        for (sequence, expected) in [(12288, 244.8832), (4096, 146.5792)] {
+            let calls = std::cell::RefCell::new(Vec::new());
+            let (latency, estimated) = layers
+                .estimate_layers(
+                    &table,
+                    AscendShapePolicy::Anchored,
+                    1,
+                    sequence,
+                    |context| {
+                        calls.borrow_mut().push(context);
+                        Ok((f64::from(context) * 0.0001, f64::from(context) * 0.0002))
+                    },
+                )
+                .unwrap();
+            assert!((latency - expected).abs() < 1e-10);
+            assert!(estimated);
+            let mut unique = calls.borrow().clone();
+            unique.sort_unstable();
+            unique.dedup();
+            assert_eq!(unique.len(), calls.borrow().len());
+        }
+        assert!(
+            layers
+                .estimate_layers(&table, AscendShapePolicy::Measured, 1, 8192, |_| {
+                    panic!("measured mode cannot transfer any layer")
+                })
+                .is_err()
+        );
+    }
 
     #[test]
     fn seventy_eight_measured_layers_replace_instead_of_adding_covered_timings() {
@@ -289,12 +374,15 @@ mod tests {
         };
         let table = AscendLayerTable::new(Some(path));
         assert_eq!(layers.query_layers(&table, 1, 8192).unwrap(), 156.0);
-        let attention_oracle = |sequence| match sequence {
-            2048 => Ok(2.10),
-            4096 => Ok(4.00),
-            8192 => Ok(8.22),
-            12288 => Ok(12.54),
-            _ => Err(AicError::PerfDatabase("unmeasured test attention".into())),
+        let attention_oracle = |sequence| {
+            let aggregate = match sequence {
+                2048 => 2.10,
+                4096 => 4.00,
+                8192 => 8.22,
+                12288 => 12.54,
+                _ => return Err(AicError::PerfDatabase("unmeasured test attention".into())),
+            };
+            Ok((aggregate / 156.0, aggregate / 42.0))
         };
         let (extended, estimated) = layers
             .estimate_layers(
