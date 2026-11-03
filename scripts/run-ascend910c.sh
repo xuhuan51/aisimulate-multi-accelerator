@@ -18,6 +18,7 @@ if ! docker image inspect "$image_name" >/dev/null 2>&1; then
 fi
 
 exec docker run --rm --network none \
+    --tmpfs /tmp:rw,nosuid,nodev,size=1g,mode=1777 \
     --user "$runtime_uid:$runtime_gid" \
     --cpus "${AISIMULATE_910C_CPUS:-16}" \
     --cpuset-cpus "$runtime_cpuset" \

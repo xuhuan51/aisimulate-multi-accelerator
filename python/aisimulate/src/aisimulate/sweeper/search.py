@@ -1211,6 +1211,8 @@ class Sweeper:
             raise ValueError("pd_response requires the engine stack without adapters")
         if config.search_space.tokenization is not None and config.adapters:
             raise ValueError("tokenization requires the engine stack without adapters")
+        if config.workload.client_dispatch is not None and config.adapters:
+            raise ValueError("client_dispatch requires the engine stack without adapters")
         retention = CandidateRetention(candidate_retention)
         runner_factory = self._runner_factory
         from functools import partial

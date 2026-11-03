@@ -37,6 +37,7 @@ from ..config.common import (
     requested_backend_version,
 )
 from ..config.engine import NgramSpeculationConfig, TokenizationConfig
+from ..config.traffic import ClientDispatchConfig
 
 
 class OptimizationTarget(str, Enum):
@@ -250,6 +251,7 @@ class Workload(BaseModel):
     isl: int | None = None
     osl: int | None = None
     concurrency: int | None = None
+    client_dispatch: ClientDispatchConfig | None = None
     kv_load_ratio: float | list[float] | None = None
     request_rate: float | None = None
     request_count: int | None = None
@@ -391,6 +393,16 @@ class Workload(BaseModel):
 
     @model_validator(mode="after")
     def _validate_workload(self) -> Workload:
+        if self.client_dispatch is not None and (
+            self.load_type not in {None, "concurrency", "kv_capacity_fraction"}
+            or self.request_rate is not None
+            or (
+                self.trace_path is not None
+                and self.replay_concurrency is None
+                and self.load_search_field != "replay_concurrency"
+            )
+        ):
+            raise ValueError("client_dispatch requires closed-loop concurrency load")
         if self.agentic_profile is not None:
             if self.agentic_snapshot is None:
                 raise ValueError("agentic_profile requires agentic_snapshot")

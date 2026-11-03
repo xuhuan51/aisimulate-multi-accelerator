@@ -11,6 +11,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--campaign", type=Path, required=True)
     parser.add_argument("--container", required=True)
+    parser.add_argument("--plan", type=Path)
+    parser.add_argument("--client-script")
     args = parser.parse_args()
     root = args.campaign
     destination = root / "context-holdouts.json"
@@ -26,13 +28,17 @@ def main():
         raise ValueError("Unexpected graph mode")
     (root / "holdout-server-info.json").write_text(json.dumps(info, indent=2) + "\n")
     previous = root / "layer-probe-control.json"
-    previous.rename(root / "layer-probe-control-before-holdouts.json")
+    if previous.exists():
+        previous.rename(root / "layer-probe-control-before-holdouts.json")
     manifest = {"status": "running", "cases": [], "instrumentation": "No replay, cProfile or per-component events; existing forward telemetry retained",
                 "scope": "Independent serving validation, never used to fit the context extrapolation rule",
                 "source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 "plan": [("control-8192-128-c4", 8192, 128, 4, 8),
                          ("holdout-12288-4096-c4", 12288, 4096, 4, 4),
                          ("holdout-16384-128-c4", 16384, 128, 4, 8)]}
+    if args.plan:
+        manifest["plan"] = json.loads(args.plan.read_text())
+        manifest["plan_sha256"] = hashlib.sha256(args.plan.read_bytes()).hexdigest()
 
     def save():
         destination.write_text(json.dumps(manifest, indent=2) + "\n")
@@ -42,7 +48,8 @@ def main():
         for name, input_length, output_length, concurrency, prompts in manifest["plan"]:
             case_root = root / name
             case_root.mkdir(exist_ok=False)
-            command = ["docker", "exec", args.container, "python3", "-m", "sglang.benchmark.serving",
+            client = [args.client_script] if args.client_script else ["-m", "sglang.benchmark.serving"]
+            command = ["docker", "exec", args.container, "python3", *client,
                        "--backend", "sglang", "--host", "127.0.0.1", "--port", "18080",
                        "--model", "/models/glm-q", "--served-model-name", "glm-5", "--dataset-name", "random-ids",
                        "--num-prompts", str(prompts), "--max-concurrency", str(concurrency),

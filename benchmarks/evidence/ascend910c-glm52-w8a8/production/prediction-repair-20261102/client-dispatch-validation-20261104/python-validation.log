@@ -1,0 +1,353 @@
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+.............................................FF...................F..... [  6%]
+........................................................................ [ 12%]
+........................................................................ [ 18%]
+........................................................................ [ 24%]
+........................................................................ [ 30%]
+........................................................................ [ 36%]
+........................................................................ [ 42%]
+........................................................................ [ 48%]
+........................................................................ [ 54%]
+........F............................................................... [ 60%]
+........................................................................ [ 66%]
+........................................................................ [ 72%]
+........................................................................ [ 78%]
+........................................................................ [ 85%]
+........................................................................ [ 91%]
+........................................................................ [ 97%]
+.................................                                        [100%]
+=================================== FAILURES ===================================
+___ test_sglang_interval_idle_tail_does_not_relax_later_kv_admission[fresh] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_sglang_interval_idle_tail0')
+seeded = False
+
+    @pytest.mark.parametrize("seeded", [False, True], ids=["fresh", "completed_prior_wave"])
+    def test_sglang_interval_idle_tail_does_not_relax_later_kv_admission(tmp_path, seeded) -> None:
+        rows = [{"timestamp": 0, "input_length": 4, "output_length": 1, "hash_ids": [1] * 4}] if seeded else []
+        rows += [
+            {"timestamp": 100, "input_length": 4, "output_length": 200, "hash_ids": [2] * 4},
+            {"timestamp": 100.5, "input_length": 4, "output_length": 106, "hash_ids": [3] * 4},
+        ]
+        trace = tmp_path / "interval-idle-pressure.jsonl"
+        trace.write_text("\n".join(json.dumps(row) for row in rows), encoding="utf-8")
+        engine = _engine()
+        engine["backend"] = "sglang"
+        worker = engine["workers"]["aggregated"]
+        worker["scheduler"] = {"max_sequences": 2, "prefill_decode_interval": 20}
+        worker["kv_cache"] = {
+            "block_size": 1,
+            "prefix_caching": False,
+            "capacity": {"type": "fixed", "blocks": 256},
+        }
+        report = _run(
+            {
+                "engine": engine,
+                "traffic": {
+                    "source": {"type": "trace", "paths": [str(trace)], "format": "mooncake", "block_size": 1},
+                    "load": {"type": "trace_timestamps"},
+                },
+            }
+        )
+        waiting = max(report.metadata["native_report"]["per_request"], key=lambda row: row["arrival_time_ms"])
+        # With the normal reservation ratio the first request holds enough KV budget
+        # to keep the second waiting until t=300. The trace reader normalizes its
+        # origin, so compare delays. A completed earlier wave and its idle cooldown
+        # must not lower that reservation and admit the second request at t=121.
+>       assert waiting["first_admit_ms"] - waiting["arrival_time_ms"] == pytest.approx(199.5)
+E       assert 20.5 == 199.5 ± 2.0e-04
+E         
+E         comparison failed
+E         Obtained: 20.5
+E         Expected: 199.5 ± 2.0e-04
+
+tests/test_unified_traffic_runtime.py:543: AssertionError
+_ test_sglang_interval_idle_tail_does_not_relax_later_kv_admission[completed_prior_wave] _
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_sglang_interval_idle_tail1')
+seeded = True
+
+    @pytest.mark.parametrize("seeded", [False, True], ids=["fresh", "completed_prior_wave"])
+    def test_sglang_interval_idle_tail_does_not_relax_later_kv_admission(tmp_path, seeded) -> None:
+        rows = [{"timestamp": 0, "input_length": 4, "output_length": 1, "hash_ids": [1] * 4}] if seeded else []
+        rows += [
+            {"timestamp": 100, "input_length": 4, "output_length": 200, "hash_ids": [2] * 4},
+            {"timestamp": 100.5, "input_length": 4, "output_length": 106, "hash_ids": [3] * 4},
+        ]
+        trace = tmp_path / "interval-idle-pressure.jsonl"
+        trace.write_text("\n".join(json.dumps(row) for row in rows), encoding="utf-8")
+        engine = _engine()
+        engine["backend"] = "sglang"
+        worker = engine["workers"]["aggregated"]
+        worker["scheduler"] = {"max_sequences": 2, "prefill_decode_interval": 20}
+        worker["kv_cache"] = {
+            "block_size": 1,
+            "prefix_caching": False,
+            "capacity": {"type": "fixed", "blocks": 256},
+        }
+        report = _run(
+            {
+                "engine": engine,
+                "traffic": {
+                    "source": {"type": "trace", "paths": [str(trace)], "format": "mooncake", "block_size": 1},
+                    "load": {"type": "trace_timestamps"},
+                },
+            }
+        )
+        waiting = max(report.metadata["native_report"]["per_request"], key=lambda row: row["arrival_time_ms"])
+        # With the normal reservation ratio the first request holds enough KV budget
+        # to keep the second waiting until t=300. The trace reader normalizes its
+        # origin, so compare delays. A completed earlier wave and its idle cooldown
+        # must not lower that reservation and admit the second request at t=121.
+>       assert waiting["first_admit_ms"] - waiting["arrival_time_ms"] == pytest.approx(199.5)
+E       assert 20.5 == 199.5 ± 2.0e-04
+E         
+E         comparison failed
+E         Obtained: 20.5
+E         Expected: 199.5 ± 2.0e-04
+
+tests/test_unified_traffic_runtime.py:543: AssertionError
+________________ test_predict_detail_uses_real_native_evidence _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_predict_detail_uses_real_0')
+capsys = <_pytest.capture.CaptureFixture object at 0xffff80539c40>
+
+    def test_predict_detail_uses_real_native_evidence(tmp_path, capsys):
+        import yaml
+    
+        from aisimulate.main import main
+    
+        config = {
+            "traffic": {
+                "source": {"type": "synthetic", "input_tokens": 128, "output_tokens": 4},
+                "load": {"type": "concurrency", "concurrency": 1},
+                "stop": {"requests": 1},
+            },
+            "engine": {
+                "model": "Qwen/Qwen3-30B-A3B",
+                "hardware": "b200_sxm",
+                "backend": "vllm",
+                "backend_version": "current",
+                "context_length": 4096,
+                "workers": {
+                    "aggregated": {
+                        "parallelism": {"tensor": 4, "moe_tensor": 1, "moe_expert": 4},
+                        "scheduler": {"max_batched_tokens": 8192, "max_sequences": 256},
+                        "kv_cache": {"block_size": 64},
+                    }
+                },
+            },
+        }
+        path = tmp_path / "native-detail.yaml"
+        path.write_text(yaml.safe_dump(config))
+        out = tmp_path / "out"
+        assert (
+            main(
+                [
+                    "predict",
+                    "-c",
+                    str(path),
+                    "--detail",
+                    "all",
+                    "--format",
+                    "json",
+                    "--output-dir",
+                    str(out),
+                ]
+            )
+            == 0
+        )
+        stdout = json.loads(capsys.readouterr().out)
+        saved = json.loads((out / "prediction.json").read_text())
+        assert stdout["details"] == saved["details"]
+        from jsonschema import validate
+    
+        schema = json.loads(
+            (Path(__file__).resolve().parents[1] / "docs/reference/schemas/prediction-details.schema.json").read_text()
+        )
+        validate(stdout["details"], schema)
+        sections = stdout["details"]["sections"]
+        assert set(sections) == {"summary", "memory", "time", "energy", "source"}
+        assert saved["power_diagnostics"]["power_w"] is None
+        assert stdout["summary"]["power_w"] is None
+        memory = sections["memory"]["roles"]["aggregated"]
+        assert memory["status"] == "available"
+        assert memory["stage"] == "before_native_capacity_adjustments"
+        assert "num_gpu_blocks" not in memory
+        assert memory["memory_breakdown"]["weights_bytes"] > 0
+        assert memory["estimated_num_gpu_blocks"] == memory["total_kv_size_tokens"] // 64
+        assert memory["total_gpu_capacity_bytes"] > memory["total_kv_size_bytes"] > 0
+        assert sections["time"]["serving_metrics"]["mean_ttft_ms"] == stdout["summary"]["mean_ttft_ms"]
+        assert "wall_time_ms" not in sections["time"]["serving_metrics"]
+        assert "duration_ms" not in sections["time"]["serving_metrics"]
+        assert stdout["summary"]["duration_ms"] > 0
+        timing = sections["time"]["diagnostics"]
+        assert timing["status"] == "available"
+        assert timing["scope"] == "accumulated_active_forward_pass_per_gpu"
+        assert sections["source"]["status"] == "available"
+        assert len(timing["phases"]) == 2
+        for phase, source in zip(timing["phases"], sections["source"]["phases"], strict=True):
+            assert phase["latency_ms"] == pytest.approx(sum(op["latency_ms"] for op in phase["operations"]))
+            assert phase["operations"]
+            assert any(op["sol"] is not None for op in phase["operations"])
+            for op, provenance in zip(phase["operations"], source["operations"], strict=True):
+                assert provenance == {key: op[key] for key in ("name", "latency_ms", "source", "fallbacks")}
+                assert isinstance(op["fallbacks"], list)
+                if op["sol"] is None:
+                    assert op["sol_unavailable_reason"]
+                elif op["sol"]["latency_ms"] > 0:
+                    assert op["latency_to_sol_ratio"] == pytest.approx(op["latency_ms"] / op["sol"]["latency_ms"])
+        assert "performance_diagnostics" not in stdout["summary"]
+        # Repeating the same prediction without diagnostics keeps modeled metrics identical.
+        plain_out = tmp_path / "plain"
+        assert main(["predict", "-c", str(path), "--format", "json", "--output-dir", str(plain_out)]) == 0
+        plain = json.loads(capsys.readouterr().out)
+        for key, value in stdout["summary"].items():
+            if key not in {"wall_time_ms", "processed_tokens_per_s", "processed_output_tokens_per_s"}:
+>               assert plain[key] == value, key
+E               KeyError: 'forward_pass_batches'
+
+tests/test_unified_traffic_runtime.py:1048: KeyError
+__________ test_role_context_limits_work_without_shared_model_context __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff6b340860>
+
+    def test_role_context_limits_work_without_shared_model_context(monkeypatch):
+        shape = ParallelShape(tp=1, pp=1, dp=1, moe_tp=1, moe_ep=1)
+        parallel = DisaggParallelConfig(
+            prefill=ReplicaParallelConfig(shape=shape, replicas=1),
+            decode=ReplicaParallelConfig(shape=shape, replicas=1),
+        )
+        seen = {}
+    
+        monkeypatch.setattr(
+            model_hw,
+            "resolve_model_hardware",
+            lambda *args, **kwargs: SimpleNamespace(max_context=None, is_moe=False, enable_wideep=False),
+        )
+        monkeypatch.setattr(model_hw, "enumerate_disagg_configs", lambda **kwargs: [parallel])
+    
+        def feasible(shapes, **kwargs):
+            seen[kwargs["max_seq_len"]] = True
+            return dict.fromkeys(shapes, 1)
+    
+        monkeypatch.setattr(model_hw, "feasible_shape_tokens", feasible)
+    
+>       result = model_hw.parallel_configs_for(
+            "example/model",
+            "example-gpu",
+            gpu_budget=2,
+            deployment_mode="disagg",
+            backend="vllm",
+            role_max_seq_len={"prefill": 64_000, "decode": 128_000},
+        )
+
+python/aisimulate/tests/unit/test_modern_recommend_context.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+model_name = 'example/model', hardware_sku = 'example-gpu'
+
+    def parallel_configs_for(
+        model_name: str,
+        hardware_sku: str,
+        *,
+        gpu_budget: int,
+        deployment_mode: str,
+        backend: str,
+        backend_version: str | None = None,
+        max_seq_len: int | None = None,
+        min_gpu_budget: int | None = None,
+        max_num_tokens: int = DEFAULT_MAX_NUM_TOKENS,
+        max_batch_size: int = DEFAULT_MAX_BATCH_SIZE,
+        memory_fraction: float = DEFAULT_MEMORY_FRACTION,
+        role_runtime: dict[str, tuple[int, int, float] | tuple[int, int, float, int | None]] | None = None,
+        role_max_seq_len: dict[str, int | None] | None = None,
+        systems_paths: list[str] | None = None,
+        fpm_profile: dict[str, Any] | None = None,
+        worker_type: str = "aggregated",
+        model_controls: dict[str, str | int | bool] | None = None,
+        nextn: int = 0,
+        candidate_configs: list[ReplicaParallelConfig] | list[DisaggParallelConfig] | None = None,
+    ) -> list[ReplicaParallelConfig] | list[DisaggParallelConfig]:
+        """Resolve the model/hardware, then enumerate the parallel configs that fit
+        the GPU budget and can hold a ``max_seq_len``-token sequence.
+    
+        Validity is **KV-cache based**: shapes are enumerated from 1 GPU/worker and a
+        shape is kept iff its estimated KV capacity exceeds ``max_seq_len`` (the
+        accurate, per-shape check; see :mod:`aisimulate.sweeper.kv_estimate`). ``max_num_tokens`` /
+        ``max_batch_size`` / ``memory_fraction`` are the runtime knobs the estimate
+        reserves around the KV budget.
+    
+        ``max_seq_len`` defaults to the model's max context length (the engine's
+        ``max_model_len`` -> the longest sequence any request can occupy); pass a
+        smaller value only to tune for a workload known to be shorter.
+    
+        ``deployment_mode`` is ``"agg"`` (-> ``list[ReplicaParallelConfig]``) or
+        ``"disagg"`` (-> ``list[DisaggParallelConfig]``). Raises
+        :class:`NoViableParallelConfig` when no shape can hold the sequence within the
+        budget.
+        """
+        profile = None
+        if fpm_profile is not None:
+            from aisimulate_core.sdk.fpm_profile import load_fpm_profile
+    
+            profile = load_fpm_profile(fpm_profile)
+            if profile.model != model_name:
+                raise ValueError("FPM profile model identity does not match the requested model")
+            seq_len = max_seq_len if max_seq_len is not None else profile.context_length
+            if seq_len > profile.context_length:
+                raise ValueError("max_seq_len exceeds FPM profile context_length")
+            configs = (
+                candidate_configs
+                if candidate_configs is not None
+                else _profile_parallel_configs(
+                    profile,
+                    hardware_sku=hardware_sku,
+                    backend=backend,
+                    backend_version=backend_version,
+                    gpu_budget=gpu_budget,
+                    min_gpu_budget=min_gpu_budget,
+                    deployment_mode=deployment_mode,
+                    worker_type=worker_type,
+                )
+            )
+        else:
+            mh = resolve_model_hardware(model_name, hardware_sku, backend=backend, systems_paths=systems_paths)
+            seq_len = max_seq_len if max_seq_len is not None else mh.max_context
+        # Enumerate from 1 GPU/worker; the KV estimate is the sole feasibility filter.
+        # MoE tensor-parallel (moe_ep == 1) is enabled for every MoE model, MLA
+        # included: real deployments (e.g. InferenceX GLM-5, reported as EP=1) run it,
+        # so the search must be able to find it rather than have it filtered out here.
+        if profile is None and candidate_configs is not None:
+            # Explicit pins need not occur in the automatic pure-pattern menu.
+            # Reuse its width/backend checks, then apply the usual KV feasibility.
+            shape_support: dict[ParallelShape, bool] = {}
+            configs = []
+            for candidate in candidate_configs:
+                if candidate.total_gpus > gpu_budget or (
+                    min_gpu_budget is not None and candidate.total_gpus < min_gpu_budget
+                ):
+                    continue
+                roles = (candidate,) if deployment_mode == "agg" else (candidate.prefill, candidate.decode)
+                for role in roles:
+                    shape = role.shape
+                    if shape not in shape_support:
+                        shape_support[shape] = shape in enumerate_worker_shapes(
+                            is_moe=mh.is_moe,
+                            backend=backend,
+                            gpus_per_worker=shape.gpus_per_worker,
+                            enable_wideep=mh.enable_wideep,
+                            allow_hybrid=True,
+                        )
+                if all(shape_support[role.shape] for role in roles):
+                    configs.append(candidate)
+>       elif profile is None and mh.parallel_shape_candidates is not None:
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'parallel_shape_candidates'
+
+/usr/local/python3.12.13/lib/python3.12/site-packages/aisimulate/sweeper/model_hw.py:227: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_unified_traffic_runtime.py::test_sglang_interval_idle_tail_does_not_relax_later_kv_admission[fresh]
+FAILED tests/test_unified_traffic_runtime.py::test_sglang_interval_idle_tail_does_not_relax_later_kv_admission[completed_prior_wave]
+FAILED tests/test_unified_traffic_runtime.py::test_predict_detail_uses_real_native_evidence
+FAILED python/aisimulate/tests/unit/test_modern_recommend_context.py::test_role_context_limits_work_without_shared_model_context
+4 failed, 1181 passed in 396.74s (0:06:36)

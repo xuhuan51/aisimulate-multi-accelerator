@@ -1,0 +1,54 @@
+NVIDIA AIPerf | LLM Metrics
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┓
+┃ Metric                                             ┃                                        avg ┃        min ┃        max ┃        p99 ┃        p90 ┃        p75 ┃      std ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━┩
+┃ Time to First Token (ms)                           ┃                                  11,764.51 ┃   3,251.03 ┃  26,231.02 ┃  26,231.02 ┃  24,666.74 ┃  15,368.40 ┃ 6,758.26 ┃
+┃ Time to Second Token (ms)                          ┃                                      22.06 ┃       0.00 ┃     203.19 ┃     203.19 ┃     201.41 ┃       0.00 ┃    62.94 ┃
+┃ Request Latency (ms)                               ┃                                 216,475.07 ┃ 208,990.54 ┃ 231,952.18 ┃ 231,952.18 ┃ 229,015.17 ┃ 219,995.44 ┃ 6,793.26 ┃
+┃ Inter Token Latency (ms)                           ┃                                     200.11 ┃       0.00 ┃     203.19 ┃     203.36 ┃     201.74 ┃     201.74 ┃    15.79 ┃
+┃ Output Token Throughput Per User (tokens/sec/user) ┃                                       4.97 ┃       4.92 ┃      81.02 ┃       5.14 ┃       4.97 ┃       4.97 ┃     0.59 ┃
+┃ Output Token Throughput (tokens/sec)               ┃                                     295.07 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃      N/A ┃
+┃ Request Throughput (requests/sec)                  ┃                                       0.29 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃      N/A ┃
+┃ Request Count (requests)                           ┃                                     128.00 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃      N/A ┃
+┃ Active Power per GPU (W) [power_w]                 ┃ unavailable (insufficient energy coverage) ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃      N/A ┃
+┃ Power Data Coverage (%) [power_coverage]           ┃                                       0.00 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃      N/A ┃
+└━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┴━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━┘
+Wall Time (ms): 1,940.85
+Prefix Cache Reused Ratio: 0.00
+First Admission Prefix Cache Reused Ratio: 0.00
+Timing (decode): estimator=op_level; source=aic; data_version=0.5.22
+Timing (kv_transfer): estimator=measured; source=ascend_memfabric; data_version=0.5.22
+Timing (prefill): estimator=op_level; source=aic; data_version=0.5.22
+
+Detail: source
+  scope: accumulated_active_forward_pass_per_gpu
+  status: available
+  prefill:
+    context_attention: silicon; fallbacks: unavailable
+    context_moe_overlap: silicon; fallbacks: unavailable
+    context_indexer: silicon; fallbacks: unavailable
+    context_attention_output: silicon; fallbacks: unavailable
+    context_qkv_a: silicon; fallbacks: unavailable
+    context_sparse_reduce_scatter: silicon; fallbacks: unavailable
+    context_sparse_output_gather: silicon; fallbacks: unavailable
+    context_qk_norm: silicon; fallbacks: unavailable
+    context_cache_latent: silicon; fallbacks: unavailable
+    context_cache_rope: silicon; fallbacks: unavailable
+    context_q_b: silicon; fallbacks: unavailable
+    context_rope_attention: silicon; fallbacks: unavailable
+    ... 34 more operations in JSON
+  decode:
+    generation_moe_overlap: silicon; fallbacks: unavailable
+    generation_qk_norm: silicon; fallbacks: unavailable
+    generation_rope_attention: silicon; fallbacks: unavailable
+    generation_attention: silicon; fallbacks: unavailable
+    generation_attention_output: silicon; fallbacks: unavailable
+    generation_qkv_a: silicon; fallbacks: unavailable
+    generation_q_b: silicon; fallbacks: unavailable
+    generation_sparse_post_norm: silicon; fallbacks: unavailable
+    generation_sparse_input_norms: silicon; fallbacks: unavailable
+    generation_dense_input_gather: estimated; fallbacks: unavailable
+    generation_mla_output_decode: silicon; fallbacks: unavailable
+    generation_mla_query_nope: silicon; fallbacks: unavailable
+    ... 30 more operations in JSON
+Saved full report to: benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/client-dispatch-validation-20261104/pd/jobs/1bae726c87796aa7b0ead60ce8d72b819751a2aca74baae385869ee2a79b3c21/prediction/prediction.json

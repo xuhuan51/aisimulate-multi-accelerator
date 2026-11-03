@@ -164,6 +164,17 @@ def recommendation_to_sweeper(
     stack: str = "engine",
 ) -> SmartSearchConfig:
     engine = config.engine.model_dump(mode="python", exclude_none=True)
+    if (
+        config.traffic is not None
+        and config.traffic.load.client_dispatch is not None
+        and (
+            stack != "engine"
+            or adapter_configs
+            or "afd" in _choices(engine.get("mode"), default=[])
+            or engine.get("workers", {}).get("encoder") is not None
+        )
+    ):
+        raise ValueError("traffic.load.client_dispatch requires offline token replay without adapters")
     if engine.get("pd_routing") is not None and (stack != "engine" or adapter_configs):
         raise ValueError("engine.pd_routing requires the engine stack without adapters")
     if engine.get("pd_response") is not None and (stack != "engine" or adapter_configs):
@@ -716,6 +727,8 @@ def _recommendation_workload(raw: dict[str, Any] | None) -> dict[str, Any]:
         "source_type": source_type,
         "load_type": load_type,
     }
+    if load.get("client_dispatch") is not None:
+        result["client_dispatch"] = deepcopy(load["client_dispatch"])
     if source_type == "trace":
         paths = source.get("paths")
         if not isinstance(paths, list) or not paths:
@@ -1079,8 +1092,11 @@ def _candidate_traffic(raw: dict[str, Any] | None, sample: dict[str, Any]) -> di
     traffic = deepcopy(raw)
     load = traffic["load"]
     if load.get("type") == "kv_capacity_fraction":
+        client_dispatch = load.get("client_dispatch")
         load.clear()
         load.update(type="concurrency", concurrency=sample["concurrency"])
+        if client_dispatch is not None:
+            load["client_dispatch"] = client_dispatch
         return traffic
     for name in (
         "concurrency",

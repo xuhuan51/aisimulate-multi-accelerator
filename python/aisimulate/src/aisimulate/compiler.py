@@ -41,6 +41,13 @@ def prediction_to_replay_spec(
 ) -> ReplaySpec:
     """Compile one concrete public prediction config."""
 
+    if config.traffic.load.client_dispatch is not None and (
+        adapter_specs
+        or execution_mode != "offline"
+        or config.engine.mode == "afd"
+        or config.engine.workers.encoder is not None
+    ):
+        raise ValueError("traffic.load.client_dispatch requires offline token replay without adapters")
     if config.engine.pd_routing is not None and (adapter_specs or execution_mode != "offline"):
         raise ValueError("engine.pd_routing requires the offline engine stack without adapters")
     if config.engine.pd_response is not None and (adapter_specs or execution_mode != "offline"):
@@ -847,6 +854,8 @@ def _traffic(
         "source_type": source.type,
         "load_type": load.type,
     }
+    if load.client_dispatch is not None:
+        workload["client_dispatch"] = load.client_dispatch.model_dump(mode="json")
     concurrency: int | None = None
     if isinstance(source, TraceSource):
         workload.update(

@@ -1617,3 +1617,31 @@ https://github.com/alibaba/tair-kvcache/blob/85402f1a012fb4279be5bb4b57613bb0a06
 
 The AISimulate files are modified re-implementations, not verbatim copies.
 Both derived files carry the source URLs and revisions in their headers.
+
+## SGLang client dispatch measurements and closed-loop admission
+
+The client dispatch additions to `crates/core/src/replay/loadgen/driver.rs`,
+`crates/core/src/replay/loadgen/mod.rs`, `crates/core/src/python.rs`, the public
+traffic/compiler/recommendation/runner and sweeper configuration paths,
+`tests/test_unified_traffic_runtime.py`, and `docs/replay/workloads.md` are
+modified, independently implemented models of a sequential client preparation
+lane. Their source contract is the semaphore and request-construction flow in
+`python/sglang/benchmark/serving.py` from SGLang commit
+`baa9befa381511cd4d56f83980951e5a45fffc6d`:
+https://github.com/sgl-project/sglang/blob/baa9befa381511cd4d56f83980951e5a45fffc6d/python/sglang/benchmark/serving.py
+(Copyright 2023-2026 SGLang Team and contributors; Apache License 2.0).
+
+Under `benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/`,
+`profile_client_dispatch.py`, `run_traced_client.py`, `fit_client_dispatch.py`,
+`start_ingress_diagnostic.py`, `replay_client_dispatch.py`,
+`replay_pd_client_dispatch.py`, `report_client_dispatch.py`,
+the extended `run_context_holdouts.py`, and their
+frozen copies and derived measurement artifacts in `ingress-validation-node20-20261104/`
+use that same immutable source contract. These are modified diagnostic wrappers,
+not replacements for the upstream client or scheduler. The inherited
+`launch_paired_telemetry.py` retains the earlier pinned SGLang telemetry
+attribution in this notice. CPU-only client preparation measurements are kept
+separate from serving latency observations and are not whole-forward residuals.
+
+The applicable upstream license is preserved at
+https://github.com/sgl-project/sglang/blob/baa9befa381511cd4d56f83980951e5a45fffc6d/LICENSE.

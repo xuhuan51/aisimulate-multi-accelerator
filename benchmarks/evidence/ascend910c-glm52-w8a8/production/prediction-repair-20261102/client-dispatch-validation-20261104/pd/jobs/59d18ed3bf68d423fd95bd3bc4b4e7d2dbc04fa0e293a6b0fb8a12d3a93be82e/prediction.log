@@ -1,0 +1,47 @@
+NVIDIA AIPerf | LLM Metrics
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Metric                                             ┃                                        avg ┃        min ┃        max ┃        p99 ┃        p90 ┃        p75 ┃        std ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+┃ Time to First Token (ms)                           ┃                                 125,783.06 ┃   2,875.93 ┃ 487,993.97 ┃ 487,993.97 ┃ 485,139.79 ┃   8,473.80 ┃ 207,408.95 ┃
+┃ Time to Second Token (ms)                          ┃                                     160.72 ┃       0.00 ┃     475.70 ┃     475.70 ┃     475.68 ┃     471.66 ┃     222.35 ┃
+┃ Request Latency (ms)                               ┃                                 603,196.23 ┃ 480,514.86 ┃ 964,452.79 ┃ 964,452.79 ┃ 963,140.78 ┃ 486,399.83 ┃ 207,686.92 ┃
+┃ Inter Token Latency (ms)                           ┃                                     466.68 ┃       0.00 ┃     475.92 ┃     475.80 ┃     473.90 ┃     471.07 ┃      20.22 ┃
+┃ Output Token Throughput Per User (tokens/sec/user) ┃                                       2.15 ┃       2.10 ┃      83.58 ┃       2.18 ┃       2.17 ┃       2.16 ┃       0.60 ┃
+┃ Output Token Throughput (tokens/sec)               ┃                                      22.62 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃
+┃ Request Throughput (requests/sec)                  ┃                                       0.02 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃
+┃ Request Count (requests)                           ┃                                      32.00 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃
+┃ Active Power per GPU (W) [power_w]                 ┃ unavailable (insufficient energy coverage) ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃
+┃ Power Data Coverage (%) [power_coverage]           ┃                                       0.00 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃
+└━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┴━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┘
+Wall Time (ms): 224.76
+Prefix Cache Reused Ratio: 0.00
+First Admission Prefix Cache Reused Ratio: 0.00
+Timing (decode): estimator=op_level; source=aic; data_version=0.5.22
+Timing (kv_transfer): estimator=measured; source=ascend_memfabric; data_version=0.5.22
+Timing (prefill): estimator=op_level; source=aic; data_version=0.5.22
+
+Detail: source
+  scope: accumulated_active_forward_pass_per_gpu
+  status: available
+  prefill:
+    context_attention: silicon; fallbacks: unavailable
+    context_moe_overlap: silicon; fallbacks: unavailable
+    context_indexer: silicon; fallbacks: unavailable
+    context_attention_output: silicon; fallbacks: unavailable
+    context_qkv_a: silicon; fallbacks: unavailable
+    context_sparse_reduce_scatter: silicon; fallbacks: unavailable
+    context_sparse_output_gather: silicon; fallbacks: unavailable
+    context_qk_norm: silicon; fallbacks: unavailable
+    context_cache_latent: silicon; fallbacks: unavailable
+    context_cache_rope: silicon; fallbacks: unavailable
+    context_q_b: silicon; fallbacks: unavailable
+    context_rope_attention: silicon; fallbacks: unavailable
+    ... 34 more operations in JSON
+  decode:
+    generation_decoder_layers: mixed; fallbacks: unavailable
+    generation_global_logits: mixed; fallbacks: unavailable
+    generation_embedding_all_reduce: silicon; fallbacks: unavailable
+    generation_final_norm: silicon; fallbacks: unavailable
+    generation_embedding: silicon; fallbacks: unavailable
+    generation_final_residual_add: silicon; fallbacks: unavailable
+Saved full report to: benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/client-dispatch-validation-20261104/pd/jobs/59d18ed3bf68d423fd95bd3bc4b4e7d2dbc04fa0e293a6b0fb8a12d3a93be82e/prediction/prediction.json

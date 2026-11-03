@@ -18,10 +18,11 @@ use crate::replay::{
     ReplayOperationPowerDiagnostics, ReplayPhasePowerDiagnostics, ReplayPowerDiagnostics,
     ReplayRoleConfig, ReplayRuntimeInput, ReplaySpec, ReplayTopology, Replayer, TracePowerStats,
     loadgen::{
-        AgenticProfileOptions, AgenticSnapshotOptions, ArrivalSpec, DelaySpec, DynamoRequestTrace,
-        LengthSpec, SyntheticTraceSpec, Trace, ValidatedAgenticGraph, WekaImportOptions,
-        WekaNestedTimestampBasis, WekaResolvedTimestampBasis, WorkloadDriver,
-        load_agentic_mooncake, load_weka_agentic_graph_cached,
+        AgenticProfileOptions, AgenticSnapshotOptions, ArrivalSpec, ClientDispatchLatency,
+        DelaySpec, DynamoRequestTrace, LengthSpec, SyntheticTraceSpec, Trace,
+        ValidatedAgenticGraph, WekaImportOptions, WekaNestedTimestampBasis,
+        WekaResolvedTimestampBasis, WorkloadDriver, load_agentic_mooncake,
+        load_weka_agentic_graph_cached,
     },
 };
 use crate::{
@@ -71,6 +72,8 @@ fn default_tokenization_workers() -> usize {
 #[serde(deny_unknown_fields)]
 struct RuntimeTraffic {
     source_type: String,
+    #[serde(default)]
+    client_dispatch: Option<ClientDispatchLatency>,
     /// Configured deployment model used to time every agentic request. Source
     /// model labels remain provenance on the validated graph.
     #[serde(default)]
@@ -1625,6 +1628,27 @@ fn build_agentic_driver(
 }
 
 fn build_runtime_input(
+    traffic: RuntimeTraffic,
+    engine_block_size: usize,
+) -> Result<BuiltRuntimeInput> {
+    let client_dispatch = traffic.client_dispatch;
+    let mut built = build_runtime_input_inner(traffic, engine_block_size)?;
+    if let Some(latency) = client_dispatch {
+        built.input = match built.input {
+            ReplayRuntimeInput::Workload(driver) => {
+                ReplayRuntimeInput::Workload(driver.with_client_dispatch(latency)?)
+            }
+            _ => {
+                return Err(anyhow!(
+                    "client_dispatch requires a concurrency workload driver"
+                ));
+            }
+        };
+    }
+    Ok(built)
+}
+
+fn build_runtime_input_inner(
     traffic: RuntimeTraffic,
     engine_block_size: usize,
 ) -> Result<BuiltRuntimeInput> {

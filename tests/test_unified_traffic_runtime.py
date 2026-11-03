@@ -55,6 +55,67 @@ def _run(config: dict):
     )
 
 
+@pytest.mark.parametrize("mode", ["aggregated", "disaggregated"])
+def test_client_dispatch_paces_closed_loop_requests_before_placement(mode):
+    config = {
+        "engine": _engine(mode),
+        "traffic": {
+            "source": {"type": "synthetic", "input_tokens": 16, "output_tokens": 64},
+            "load": {
+                "type": "concurrency",
+                "concurrency": 3,
+                "client_dispatch": {"base_ms": 4, "per_input_token_us": 1000},
+            },
+            "stop": {"requests": 3},
+        },
+    }
+    parsed = CorePredictionConfig.model_validate(config)
+    restored = CorePredictionConfig.model_validate_json(parsed.model_dump_json())
+    spec = prediction_to_replay_spec(restored)
+    assert spec.workload["client_dispatch"] == {"base_ms": 4, "per_input_token_us": 1000}
+    report = _run(config)
+    records = report.metadata["native_report"]["per_request"]
+    assert sorted(record["arrival_time_ms"] for record in records) == [0, 20, 40]
+    assert report.metrics["completed_requests"] == 3
+
+
+@pytest.mark.parametrize(
+    "kind,extra",
+    [("trace_timestamps", {}), ("poisson", {"requests_per_second": 4}), ("constant_rate", {"requests_per_second": 4})],
+)
+def test_client_dispatch_rejects_open_loop_load(kind, extra):
+    from aisimulate.config.traffic import TrafficPredictionLoad
+
+    with pytest.raises(ValueError, match="client_dispatch"):
+        TrafficPredictionLoad.model_validate({"type": kind, **extra, "client_dispatch": {"base_ms": 1}})
+
+
+def test_client_dispatch_preserved_in_recommendation_and_materialized_candidate():
+    from aisimulate.recommend import _candidate_traffic, _recommendation_workload
+    from aisimulate.sweeper.config import Workload
+
+    raw = {
+        "source": {"type": "synthetic", "input_tokens": 16, "output_tokens": 64},
+        "load": {
+            "type": "concurrency",
+            "concurrency": 3,
+            "client_dispatch": {"base_ms": 4, "per_input_token_us": 1000},
+        },
+        "stop": {"requests": 3},
+    }
+    internal = Workload.model_validate(_recommendation_workload(raw)).model_dump(mode="json", exclude_none=True)
+    assert internal["client_dispatch"] == raw["load"]["client_dispatch"]
+    raw["load"]["type"] = "kv_capacity_fraction"
+    raw["load"].pop("concurrency")
+    raw["load"]["fraction"] = 0.5
+    candidate = _candidate_traffic(raw, {"concurrency": 5})
+    assert candidate["load"] == {
+        "type": "concurrency",
+        "concurrency": 5,
+        "client_dispatch": {"base_ms": 4, "per_input_token_us": 1000},
+    }
+
+
 def _agentic_profile_config(tmp_path: Path, backend: str, mode: str, warmup: bool, duration: float) -> dict:
     """Locally authored corpus with long idle gaps and enough work to recycle."""
     path = tmp_path / "continuous-profile.jsonl"

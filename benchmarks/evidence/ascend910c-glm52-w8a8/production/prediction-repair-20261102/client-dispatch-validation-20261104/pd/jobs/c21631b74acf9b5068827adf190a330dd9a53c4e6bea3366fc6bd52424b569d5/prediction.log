@@ -1,0 +1,47 @@
+NVIDIA AIPerf | LLM Metrics
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┓
+┃ Metric                                             ┃                                        avg ┃        min ┃        max ┃        p99 ┃        p90 ┃        p75 ┃    std ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━┩
+┃ Time to First Token (ms)                           ┃                                   3,747.32 ┃   2,875.93 ┃   4,797.82 ┃   4,797.82 ┃   4,609.01 ┃   4,356.42 ┃ 677.18 ┃
+┃ Time to Second Token (ms)                          ┃                                     327.12 ┃       0.00 ┃     442.73 ┃     442.73 ┃     442.73 ┃     442.73 ┃ 189.20 ┃
+┃ Request Latency (ms)                               ┃                                 454,421.42 ┃ 453,865.57 ┃ 455,525.56 ┃ 455,525.56 ┃ 454,341.44 ┃ 454,341.44 ┃ 444.36 ┃
+┃ Inter Token Latency (ms)                           ┃                                     440.54 ┃       0.00 ┃     442.74 ┃     440.98 ┃     440.98 ┃     440.98 ┃  11.25 ┃
+┃ Output Token Throughput Per User (tokens/sec/user) ┃                                       2.27 ┃       2.26 ┃       3.90 ┃       2.27 ┃       2.27 ┃       2.27 ┃   0.02 ┃
+┃ Output Token Throughput (tokens/sec)               ┃                                       9.00 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃    N/A ┃
+┃ Request Throughput (requests/sec)                  ┃                                       0.01 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃    N/A ┃
+┃ Request Count (requests)                           ┃                                       8.00 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃    N/A ┃
+┃ Active Power per GPU (W) [power_w]                 ┃ unavailable (insufficient energy coverage) ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃    N/A ┃
+┃ Power Data Coverage (%) [power_coverage]           ┃                                       0.00 ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃        N/A ┃    N/A ┃
+└━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┴━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━━━━━┴━━━━━━━━┘
+Wall Time (ms): 143.96
+Prefix Cache Reused Ratio: 0.00
+First Admission Prefix Cache Reused Ratio: 0.00
+Timing (decode): estimator=op_level; source=aic; data_version=0.5.22
+Timing (kv_transfer): estimator=measured; source=ascend_memfabric; data_version=0.5.22
+Timing (prefill): estimator=op_level; source=aic; data_version=0.5.22
+
+Detail: source
+  scope: accumulated_active_forward_pass_per_gpu
+  status: available
+  prefill:
+    context_attention: silicon; fallbacks: unavailable
+    context_moe_overlap: silicon; fallbacks: unavailable
+    context_indexer: silicon; fallbacks: unavailable
+    context_attention_output: silicon; fallbacks: unavailable
+    context_qkv_a: silicon; fallbacks: unavailable
+    context_sparse_reduce_scatter: silicon; fallbacks: unavailable
+    context_sparse_output_gather: silicon; fallbacks: unavailable
+    context_qk_norm: silicon; fallbacks: unavailable
+    context_cache_latent: silicon; fallbacks: unavailable
+    context_cache_rope: silicon; fallbacks: unavailable
+    context_q_b: silicon; fallbacks: unavailable
+    context_rope_attention: silicon; fallbacks: unavailable
+    ... 34 more operations in JSON
+  decode:
+    generation_decoder_layers: silicon; fallbacks: unavailable
+    generation_global_logits: mixed; fallbacks: unavailable
+    generation_embedding_all_reduce: silicon; fallbacks: unavailable
+    generation_final_norm: silicon; fallbacks: unavailable
+    generation_embedding: silicon; fallbacks: unavailable
+    generation_final_residual_add: silicon; fallbacks: unavailable
+Saved full report to: benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/client-dispatch-validation-20261104/pd/jobs/c21631b74acf9b5068827adf190a330dd9a53c4e6bea3366fc6bd52424b569d5/prediction/prediction.json

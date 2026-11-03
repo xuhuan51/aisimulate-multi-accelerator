@@ -136,6 +136,11 @@ class AgenticProfileOptions(StrictModel):
         return self
 
 
+class ClientDispatchConfig(StrictModel):
+    base_ms: NonNegativeFloat = 0.0
+    per_input_token_us: NonNegativeFloat = 0.0
+
+
 class TrafficPredictionLoad(StrictModel):
     type: Literal[
         "concurrency",
@@ -144,6 +149,7 @@ class TrafficPredictionLoad(StrictModel):
         "trace_timestamps",
     ] = "concurrency"
     concurrency: PositiveInt | None = None
+    client_dispatch: ClientDispatchConfig | None = None
     requests_per_second: PositiveFloat | None = None
     sessions_per_second: PositiveFloat | None = None
     seed: NonNegativeInt | None = None
@@ -176,6 +182,7 @@ class TrafficRecommendationLoad(StrictModel):
         "trace_timestamps",
     ] = "concurrency"
     concurrency: PositiveInt | Choices[PositiveInt] | IntegerRange | None = None
+    client_dispatch: ClientDispatchConfig | None = None
     requests_per_second: PositiveFloat | Choices[PositiveFloat] | NumericRange | None = None
     sessions_per_second: PositiveFloat | Choices[PositiveFloat] | NumericRange | None = None
     seed: NonNegativeInt | None = None
@@ -216,6 +223,7 @@ def _validate_load_fields(load) -> None:
         name
         for name in (
             "concurrency",
+            "client_dispatch",
             "requests_per_second",
             "sessions_per_second",
             "seed",
@@ -230,10 +238,10 @@ def _validate_load_fields(load) -> None:
     if load.agentic_warmup:
         used.add("agentic_warmup")
     allowed = {
-        "concurrency": {"concurrency"},
+        "concurrency": {"concurrency", "client_dispatch"},
         "poisson": {"requests_per_second", "sessions_per_second", "seed"},
         "constant_rate": {"requests_per_second", "sessions_per_second"},
-        "kv_capacity_fraction": {"fraction"},
+        "kv_capacity_fraction": {"fraction", "client_dispatch"},
         "trace_timestamps": {"speedup", "agentic_lanes", "agentic_snapshot", "agentic_warmup", "agentic_profile"},
     }[load.type]
     unexpected = used - allowed

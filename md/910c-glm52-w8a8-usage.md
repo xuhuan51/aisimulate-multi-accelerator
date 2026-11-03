@@ -1,6 +1,6 @@
 # 910C + GLM-5.2 W8A8：离线预测与配置搜索
 
-更新时间：2026-11-02。本文面向当前仓库和本机运行镜像；历史32节点命令仍可复用。
+更新时间：2026-11-04。本文面向当前仓库和本机运行镜像；历史结果需按对应镜像区分。
 适配原理、源码位置和与GPU版的区别见 [实现说明](910c-glm52-w8a8-implementation.md)。
 最多四节点、64-device预算下的两组完整PD搜索已运行，结果见
 [8K/1K与32K/1K搜索报告](910c-glm52-w8a8-four-node-pd-results.md)。
@@ -29,23 +29,24 @@ KV容量推导 → 请求调度模拟 → PD传输 → 配置搜索。
 
 ## 1. 在当前节点运行
 
-2026-11-02的精度修复已另建本机镜像，原默认镜像保留用于对照。需要复现最新
-同配置结果时，先使用下面这组已验证配置；其中包含HTTP PD网关等待P响应、
-tokenization时序，以及分别校准的TP16/TP32 eager forward开销和真实活跃DP数量。
+当前因果模型使用 `aisimulate-910c:client-dispatch-20261104`，不使用旧的整轮
+eager forward 残差。原默认镜像保留为历史对照，所以请显式指定新镜像。
+下面是单节点 global TP16/ADP4/EP16、eager、无投机的完整闭环预测；客户端发送准备
+成本来自本机独立 CPU 微测。Decode 使用有数值校验的 runtime layer profile，P 使用独立算子。
 
 ```bash
 cd /home/youxingye/youxingye_data/aisimulate-910c
 
-sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:forward-batch-repair-20261102 \
+sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:client-dispatch-20261104 \
   AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q \
   bash scripts/run-ascend910c.sh predict --stack engine \
-  --config benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/active-rank-configs/recommended-2p1d-dtp32-8k1k-c8.yaml \
-  --capture-per-request --detail time --output-dir aisimulate-output/current-repair-c8
+  --config examples/cli/ascend910c-glm52-eager-client.yaml \
+  --capture-per-request --detail time --output-dir aisimulate-output/client-paced-8k1k
 ```
 
-该配置占4台机器：2个独立P各TP16/ADP4/EP16，1个D跨2台TP32/ADP32/EP32；
-8192/1024，C8/N16。同目录还有1P3D、2P2D、3P1D的C8对照，以及
-`paired-1p1d-8k1k-c4.yaml`双节点验证配置。修改并发时同时指定
+该配置使用单节点，8192/1024、C4/N8。预测12K/4K可增加
+`--set traffic.source.input_tokens=12288 --set traffic.source.output_tokens=4096`。
+修改并发时同时指定
 `--set traffic.load.concurrency=32 --set traffic.stop.requests=64`，并使用新的输出目录。
 
 `--detail time`也导出`prediction.json.forward_pass_batches`：`dp_rank: null`
@@ -53,20 +54,35 @@ sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:forward-batch-repair-20261102 \
 平均batch是`request_instances / passes`，峰值是`max_batch_size`，按forward耗时
 加权的平均值是`request_duration_ms / duration_ms`。Prefill、decode、mixed分开计数，
 不含等待队列、padding和未完成forward；它与客户端并发、请求占用量不是同一指标。
-这次新增统计没有改变预测时序。当前完整8K/1K双节点验证的decode平均batch误差
-为-0.19%，prefill为-14.29%；详见
-[逐轮batch对照](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/forward-batch-comparison.md)。
+历史逐轮 batch 对照另存于
+[逐轮batch对照](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/forward-batch-comparison.md)，
+其旧校准结果不能作为当前无残差版本的精度证明。
 
 `engine.tokenization`现在可作为固定参数进入`recommend`，保存的候选YAML也保留它；
 `engine.pd_response: sglang_gateway`使客户端首字等待P响应，默认`direct`则直接观察D输出。
-forward残差只用于对应的P/TP16-D/TP32-D拓扑，不应把固定TP16残差用于其他ADP/EP搜索候选。
-这些校准目前限于固定v0.5.22/CANN9.1镜像、graph/调度overlap/投机解码关闭、相同模型。
-完整对照和仍未解决的低并发TTFT偏差见
-[活跃DP修复结果](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/active-rank-serving-comparison.md)。
+`traffic.load.client_dispatch` 独立模拟单个压测客户端逐个构造和序列化请求的时间，
+与服务端 tokenization 分开。它保留闭环补发，未输入实测到达轨迹；不填时仍为理想同时发送。
+新增示例的 CPU 参数只对应本机 SGLang `random-ids` 客户端，不是其他客户端的通用常数。
+完整的新旧预测及39组历史PD同条件对照见
+[客户端发送节奏修复报告](910c-glm52-client-dispatch-validation-20261104.md)。
 
-新增`decode_per_extra_active_rank_ms`按真实非空attention-DP rank计数，padding出来的
-空rank不收费。原C1基值保持不变；两个额外逐轮工况用于拟合该项，原23个端到端点
-未参与拟合。目前23点TPOT最大绝对误差3.65%、吞吐最大5.20%，TTFT仍有8点超出15%。
+下面在最多4节点预算内搜索 PD 副本配比和并发，限定每个实例为有 runtime-layer 数据的
+global TP16/ADP4/EP16；不是所有 TP/ADP/EP 组合的全局最优证明。
+
+```bash
+sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:client-dispatch-20261104 \
+  AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q \
+  bash scripts/run-ascend910c.sh recommend --stack engine \
+  --config examples/cli/ascend910c-glm52-pd-client-search.yaml \
+  --output-dir aisimulate-output/client-paced-pd-search
+```
+
+此例保留历史实测的 P/D KV 每-rank容量135/253页，以及P/D不同的LM-head布局；
+修改并行策略时需要重新确认KV容量和对应运行时性能覆盖。TP32仍有明显 eager 时延缺口，
+不能将其 kernel-only 预测和已验证的 TP16 配置视为同等精度。
+旧 `active-rank-configs/`、`request-timing-configs/` 中的 forward 残差只保留历史诊断用途，
+当前推荐示例不启用它们。
+
 已测到首次4K/8K KV分页分配的Triton编译约2秒，后续allocator约0.5ms；该冷状态
 尚未进入模拟，两个warmup不能保证所有副本/rank/shape预热。不能据此承诺低并发冷请求的TTFT SLO。
 
@@ -77,7 +93,7 @@ forward残差只用于对应的P/TP16-D/TP32-D拓扑，不应把固定TP16残差
 [冷编译归因](../benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/allocator-cold-validation.md)。
 前一版`request-timing-configs/`和`aisimulate-910c:request-timing-repair-20261102`保留用于对照。
 
-以下保留通用适配入口和原始镜像用法，供未启用上述校准的基线对照：
+以下保留通用适配入口和原始镜像用法，供历史基线对照：
 
 以下命令都在仓库根目录运行，需要本机Docker及已构建的
 `aisimulate-910c:glm52-w8a8` 镜像。使用新的输出目录保存每次实验。

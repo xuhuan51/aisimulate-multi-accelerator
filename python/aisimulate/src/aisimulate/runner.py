@@ -58,6 +58,7 @@ _RUNTIME_TRAFFIC_FIELDS = frozenset(
     {
         "source_type",
         "load_type",
+        "client_dispatch",
         "trace_path",
         "trace_paths",
         "trace_format",
@@ -478,6 +479,13 @@ class EngineReplayRunner:
         encoder = spec.backend_deployment.encoder
         if encoder is None and spec.workload.get("images") is not None:
             raise InvalidRunnerError("image workloads require an encoder pool")
+        if spec.workload.get("client_dispatch") is not None and (
+            encoder is not None
+            or spec.backend_deployment.deployment_mode in {"afd", "afd+pd"}
+            or spec.adapters
+            or spec.execution_mode != "offline"
+        ):
+            raise InvalidRunnerError("client_dispatch requires offline token replay without adapters")
         if spec.backend_deployment.deployment_mode in {"afd", "afd+pd"}:
             return _run_afd_replay(
                 spec,

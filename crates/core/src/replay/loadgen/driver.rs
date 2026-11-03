@@ -9,7 +9,7 @@ use anyhow::{Context, Result, anyhow, bail};
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 use rustc_hash::{FxHashMap, FxHashSet};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::phase::{AgenticPhaseEvidence, AgenticPreparation, AgenticPreparationTransition};
@@ -845,6 +845,33 @@ impl AgenticState {
     }
 }
 
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ClientDispatchLatency {
+    #[serde(default)]
+    pub base_ms: f64,
+    #[serde(default)]
+    pub per_input_token_us: f64,
+}
+
+impl ClientDispatchLatency {
+    pub fn validate(&self) -> Result<()> {
+        if !self.base_ms.is_finite()
+            || self.base_ms < 0.0
+            || !self.per_input_token_us.is_finite()
+            || self.per_input_token_us < 0.0
+            || !self.spacing_ms(usize::MAX).is_finite()
+        {
+            bail!("client_dispatch requires finite nonnegative costs without overflow");
+        }
+        Ok(())
+    }
+
+    fn spacing_ms(&self, input_tokens: usize) -> f64 {
+        self.base_ms + self.per_input_token_us / 1000.0 * input_tokens as f64
+    }
+}
+
 #[derive(Debug)]
 pub struct WorkloadDriver {
     policy: SchedulingPolicy,
@@ -863,9 +890,28 @@ pub struct WorkloadDriver {
     in_flight: FxHashMap<Uuid, InFlightTurn>,
     agentic_settling: FxHashMap<Uuid, usize>,
     ready_sessions: BinaryHeap<ReadySession>,
+    client_dispatch: Option<ClientDispatchLatency>,
+    next_client_dispatch_ms: f64,
 }
 
 impl WorkloadDriver {
+    pub fn with_client_dispatch(mut self, latency: ClientDispatchLatency) -> Result<Self> {
+        latency.validate()?;
+        if !matches!(self.policy, SchedulingPolicy::Concurrency(_)) {
+            bail!("client_dispatch requires closed-loop concurrency load");
+        }
+        if !self.in_flight.is_empty()
+            || self
+                .sessions
+                .iter()
+                .any(|session| session.next_turn_index > 0)
+        {
+            bail!("client_dispatch must be configured before dispatch");
+        }
+        self.client_dispatch = Some(latency);
+        Ok(self)
+    }
+
     /// Opt in before dispatch. Corpus data remains immutable while each lane
     /// gets fresh identities on every reuse.
     pub fn enable_agentic_profile(&mut self, options: AgenticProfileOptions) -> Result<()> {
@@ -1674,6 +1720,8 @@ impl WorkloadDriver {
             in_flight: FxHashMap::default(),
             agentic_settling: FxHashMap::default(),
             ready_sessions,
+            client_dispatch: None,
+            next_client_dispatch_ms: 0.0,
         })
     }
 
@@ -2020,6 +2068,8 @@ impl WorkloadDriver {
             in_flight: FxHashMap::default(),
             agentic_settling: FxHashMap::default(),
             ready_sessions,
+            client_dispatch: None,
+            next_client_dispatch_ms: 0.0,
         })
     }
 
@@ -2136,6 +2186,8 @@ impl WorkloadDriver {
             in_flight: FxHashMap::default(),
             agentic_settling: FxHashMap::default(),
             ready_sessions,
+            client_dispatch: None,
+            next_client_dispatch_ms: 0.0,
         };
         if let SchedulingPolicy::Concurrency(state) = &mut driver.policy {
             state.activate_pending(&mut driver.sessions, &mut driver.ready_sessions, 0.0);
@@ -2305,6 +2357,9 @@ impl WorkloadDriver {
 
         let mut emitted = Vec::new();
         while emitted.len() < effective_limit {
+            if self.client_dispatch.is_some() && now_ms < self.next_client_dispatch_ms {
+                break;
+            }
             let Some(ready_session) = self.ready_sessions.pop() else {
                 break;
             };
@@ -2431,6 +2486,9 @@ impl WorkloadDriver {
                     (request, replay_hashes)
                 }
             };
+            if let Some(latency) = self.client_dispatch {
+                self.next_client_dispatch_ms = now_ms + latency.spacing_ms(request.input_length());
+            }
             session.in_flight = Some(request_uuid);
             session.next_ready_at_ms = None;
             self.in_flight.insert(
@@ -2950,9 +3008,12 @@ impl WorkloadDriver {
                 self.ready_sessions.pop();
                 continue;
             }
-            return Some(control_ms.map_or(ready_session.ready_at_ms, |control| {
-                control.min(ready_session.ready_at_ms)
-            }));
+            let ready_at_ms = if self.client_dispatch.is_some() {
+                ready_session.ready_at_ms.max(self.next_client_dispatch_ms)
+            } else {
+                ready_session.ready_at_ms
+            };
+            return Some(control_ms.map_or(ready_at_ms, |control| control.min(ready_at_ms)));
         }
     }
 
@@ -3509,6 +3570,97 @@ mod tests {
 
         assert!(driver.in_flight.contains_key(&request_uuid));
         assert_eq!(driver.sessions[session_index].in_flight, Some(request_uuid));
+    }
+
+    #[test]
+    fn client_dispatch_serializes_preparation_and_respects_closed_loop_slots() {
+        let mut trace = three_session_trace();
+        trace.sessions[0].turns.truncate(1);
+        trace.sessions[1].turns[0].input_length = 4;
+        trace.sessions[1].turns[0].hash_ids = vec![5, 6, 7, 8];
+        let mut driver = WorkloadDriver::new_concurrency(trace, 1, 2)
+            .unwrap()
+            .with_client_dispatch(ClientDispatchLatency {
+                base_ms: 1.0,
+                per_input_token_us: 500.0,
+            })
+            .unwrap();
+        assert_eq!(driver.next_ready_time_ms(), Some(0.0));
+        let first = driver.pop_ready(0.0, 10);
+        assert_eq!(first.len(), 1);
+        assert_eq!(first[0].session_id, "a");
+        assert_eq!(driver.next_ready_time_ms(), Some(2.0));
+        assert!(driver.pop_ready(1.0, 10).is_empty());
+        let second = driver.pop_ready(2.0, 10);
+        assert_eq!(second.len(), 1);
+        assert_eq!(second[0].session_id, "b");
+        assert_eq!(driver.next_ready_time_ms(), None);
+        driver.on_complete(first[0].request_uuid, 3.0).unwrap();
+        assert_eq!(driver.next_ready_time_ms(), Some(5.0));
+        assert!(driver.pop_ready(4.0, 10).is_empty());
+        let third = driver.pop_ready(5.0, 10);
+        assert_eq!(third.len(), 1);
+        assert_eq!(third[0].session_id, "c");
+    }
+
+    #[test]
+    fn client_dispatch_does_not_add_spacing_after_long_idle_or_disable_default_bursts() {
+        let mut driver = WorkloadDriver::new_concurrency(three_session_trace(), 1, 1)
+            .unwrap()
+            .with_client_dispatch(ClientDispatchLatency {
+                base_ms: 2.0,
+                per_input_token_us: 0.0,
+            })
+            .unwrap();
+        let first = driver.pop_ready(0.0, 10).pop().unwrap();
+        driver.on_complete(first.request_uuid, 100.0).unwrap();
+        assert_eq!(driver.next_ready_time_ms(), Some(105.0));
+        let followup = driver.pop_ready(105.0, 10).pop().unwrap();
+        driver.on_complete(followup.request_uuid, 200.0).unwrap();
+        assert_eq!(driver.next_ready_time_ms(), Some(200.0));
+        assert_eq!(driver.pop_ready(200.0, 10).len(), 1);
+        let mut simultaneous =
+            WorkloadDriver::new_concurrency(three_session_trace(), 1, 3).unwrap();
+        assert_eq!(simultaneous.pop_ready(0.0, 10).len(), 3);
+    }
+
+    #[test]
+    fn client_dispatch_rejects_invalid_costs_and_authored_timestamp_load() {
+        for value in [-1.0, f64::INFINITY, f64::NAN] {
+            assert!(
+                ClientDispatchLatency {
+                    base_ms: value,
+                    per_input_token_us: 0.0
+                }
+                .validate()
+                .is_err()
+            );
+            assert!(
+                ClientDispatchLatency {
+                    base_ms: 0.0,
+                    per_input_token_us: value
+                }
+                .validate()
+                .is_err()
+            );
+        }
+        assert!(
+            ClientDispatchLatency {
+                base_ms: 0.0,
+                per_input_token_us: f64::MAX
+            }
+            .validate()
+            .is_err()
+        );
+        assert!(
+            WorkloadDriver::new_trace(two_session_trace(), 1)
+                .unwrap()
+                .with_client_dispatch(ClientDispatchLatency {
+                    base_ms: 1.0,
+                    per_input_token_us: 0.0
+                })
+                .is_err()
+        );
     }
 
     #[test]

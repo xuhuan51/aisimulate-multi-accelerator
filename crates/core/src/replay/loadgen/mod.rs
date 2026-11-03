@@ -19,7 +19,7 @@ use rand::rngs::StdRng;
 pub use driver::{
     AGENTIC_LIFECYCLE_SCHEMA_V1, AgenticLifecycleEvent, AgenticLifecycleEventKind,
     AgenticLifecycleTranscript, AgenticOutputFeedback, AgenticRuntimeFeedback,
-    AgenticTerminalFeedback, WorkloadDriver,
+    AgenticTerminalFeedback, ClientDispatchLatency, WorkloadDriver,
 };
 pub use dynamo::DynamoRequestTrace;
 pub use generated::GeneratedRequests;

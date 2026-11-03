@@ -65,6 +65,7 @@ the current SA convention.
 | `traffic.source.nested_timestamp_basis` | `auto` | `x` | `-` | `auto`, `absolute`, or `relative`; Weka only. |
 | `traffic.load.type` | `concurrency` | `x` | `-` | Synthetic: `concurrency`, `poisson`, `constant_rate`, or `kv_capacity_fraction`; trace: `trace_timestamps` or `concurrency`. |
 | `traffic.load.concurrency` | `10` | `-` | `-` | Positive integer; explicit domains are allowed in `recommend`. |
+| `traffic.load.client_dispatch` | Unset (instantaneous) | `x` | `-` | Optional `{base_ms, per_input_token_us}`, both finite nonnegative numbers defaulting to zero. One shared client dispatch lane for closed-loop `concurrency` or recommendation `kv_capacity_fraction`; offline token replay without adapters only. |
 | `traffic.load.requests_per_second` | `null` | `-` | `-` | Positive; synthetic request open-loop load only. |
 | `traffic.load.sessions_per_second` | `null` | `-` | `-` | Positive; synthetic session open-loop load only. |
 | `traffic.load.seed` | `42` | `x` | `-` | Nonnegative; `poisson` only. |
@@ -197,6 +198,43 @@ Mooncake session traces it scales both first-turn arrival timestamps and inter-t
 agentic traces it scales root-node timestamps and the combined dependency delay and tool wait.
 `speedup` is deliberately rejected with `load.type: concurrency`: concurrency replaces authored
 first-arrival pacing, and inter-turn or dependency delays remain unscaled.
+
+<a id="client-dispatch"></a>
+
+### Client dispatch preparation
+
+Closed-loop concurrency bounds outstanding requests. A real benchmark client also spends CPU
+time constructing and serializing each request. Configure that independently measured cost with:
+
+```yaml
+traffic:
+  source: {type: synthetic, input_tokens: 12288, output_tokens: 4096}
+  load:
+    type: concurrency
+    concurrency: 4
+    client_dispatch:
+      base_ms: 0.2
+      per_input_token_us: 0.1
+  stop: {requests: 8}
+```
+
+These numbers are illustrative, not portable calibration defaults. The first eligible request
+starts immediately. After issuing a request, the shared client lane next becomes available after
+`base_ms + input_tokens × per_input_token_us / 1000` milliseconds. The next request starts when
+both that lane and a concurrency slot are free. Idle time does not incur an extra preparation gap;
+multi-turn think times and completion-driven replacement still apply. The interval models spacing
+between client request starts, so it is not added again to server forward latency or individual TTFT.
+
+The lane is shared across all serving replicas and DP ranks. Its cost must come from the actual
+client implementation and host, not from the difference between measured and predicted TTFT.
+Server tokenization remains a separate stage. This option does not model HTTP connection setup,
+network jitter, IPC polling, or multiple independent client processes. Authored timestamp and
+open-loop loads reject it; use their own arrival schedule instead. Without the option, simultaneous
+concurrency admission remains unchanged. Recommendation retains the same fixed client cost in every
+candidate and in the saved prediction configuration, including materialized KV-relative loads.
+
+Only the offline engine stack with aggregated or disaggregated token replay supports this field.
+Adapters, online execution, AFD, and analytical EPD reject it rather than silently dropping it.
 
 <a id="same-timestamp-admission"></a>
 

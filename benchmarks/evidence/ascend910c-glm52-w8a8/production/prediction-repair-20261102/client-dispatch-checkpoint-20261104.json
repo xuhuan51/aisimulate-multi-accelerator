@@ -1,0 +1,15 @@
+{
+  "research": {
+    "client_dispatch_20261104": {
+      "status": "implemented and committed-stage-ready; broader accuracy goal unfinished",
+      "cpu_profile": "production/prediction-repair-20261102/ingress-validation-node20-20261104/client-dispatch-profile.json",
+      "implementation_validation": "production/prediction-repair-20261102/client-dispatch-validation-20261104/implementation-validation.json",
+      "comparison": "production/prediction-repair-20261102/client-dispatch-validation-20261104/report-final/comparison.json",
+      "finding": "Native closed-loop client preparation lane uses independent CPU-only input-length costs. Fresh five-workload serving MAPE: TTFT18.61%, TPOT7.83%, input/output throughput5.26%. Two individual TTFT points still exceed20%; PD historical groups are evaluated separately and most still fail TTFT.",
+      "validation": "2138 Rust passed,1ignored;6 new Python passed; broad1181passed4failed, all4failures reproduced on prior context-transfer image.30 PD search candidates successful; saved winner rereplay matches all four metrics and completed count. All16local and62uniquePD comparative replays completed. Raw evidence preserved.",
+      "runtime": "aisimulate-910c:client-dispatch-20261104 sha256:10c9de2512355ab49915c30471f3826dc7325a188d6cd27c8123c58cfe3133e7",
+      "next_action": "Collect numerical-validated TP32/ADP32/EP32 real decoder-layer invocation data on node20+25; continue causal PD TTFT decomposition. No topology residual, fitted forward correction, actual arrival/routing/batch injection, or universal accuracy claim.",
+      "scope": "Fresh single-node aggregated TP16/ADP4/EP16 serving stopped after48formalrequests; historical39PD rows rereplayed with predeclared K/L topology rule. TP32 K group still TPOT44.94% and throughput78.65% MAPE. Nodes20+25 now idle and authorized for next collection.217 preexisting checkpoint integrity issues unchanged."
+    }
+  }
+}
