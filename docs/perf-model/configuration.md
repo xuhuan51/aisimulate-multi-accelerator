@@ -226,9 +226,10 @@ operations for resident-weight accounting and explicit mixed-round kernel compos
 and runtime work around kernels; it must not be described as pure device-kernel
 time. With `shape_policy: measured`, both request and KV coordinates must have
 measured interpolation brackets. With `shape_policy: anchored`, the engine can
-extend the KV coordinate upward while retaining the measured request population,
-padding, topology and quantization identity. It chooses the largest KV coordinate
-in the intersection of all eight layer types' applicable request brackets, then
+extend the KV coordinate in either direction within the sparse-attention regime,
+while retaining the measured request population, padding, topology and quantization
+identity. It chooses the nearest KV coordinate in the intersection of all eight
+layer types' applicable request brackets, then
 computes:
 
 ```text
@@ -246,13 +247,14 @@ fails when its actual active-rank, request, or KV coordinates lack qualified dat
 
 The delta contains exactly 78 sparse-attention and 21 indexer calls, evaluated by
 the canonical Rust operator model with the same active and padded batch. The
-anchor must be at least the model's DSA top-k of 2048, so the extension cannot
+anchor and requested context must both be at least the model's DSA top-k of 2048, so the extension cannot
 cross that execution boundary. Dense projections, expert work, host dispatch and
 collectives retain the measured invocation boundary at that request population;
 they are not scaled with context length. This is a modeled context transfer,
 always reported as `estimated`, not a new measurement or a fitted whole-forward
 residual. Missing attention data, request brackets or layer identities still fail
-explicitly. Shorter contexts below coverage are not extrapolated. No request-count
+explicitly. This also covers the early decode steps whose context is slightly
+shorter than the captured profile after its warmup iterations. No request-count
 or topology extrapolation is implied, and this opt-in scope does not establish
 complete PD search coverage or end-to-end serving accuracy. Changed token content
 can change expert routing; independent workload validation remains necessary.

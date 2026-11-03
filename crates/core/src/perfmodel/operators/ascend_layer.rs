@@ -173,21 +173,22 @@ impl AscendDecoderLayersOp {
             minimum = minimum.max(lower);
             maximum = maximum.min(upper);
         }
-        if minimum > maximum || kv_tokens < minimum {
+        if minimum > maximum {
             return Err(AicError::PerfDatabase(format!(
                 "Ascend runtime-layer KV={kv_tokens} lacks a common measured anchor [{minimum}, {maximum}]"
             )));
         }
-        if kv_tokens <= maximum {
+        if (minimum..=maximum).contains(&kv_tokens) {
             return Ok((self.query_layers(table, requests, kv_tokens)?, false));
         }
-        if maximum < 2048 {
+        let anchor_kv = kv_tokens.clamp(minimum, maximum);
+        if anchor_kv < 2048 || kv_tokens < 2048 {
             return Err(AicError::PerfDatabase(
                 "Ascend context transfer cannot cross the DSA top-k=2048 execution boundary".into(),
             ));
         }
-        let anchor = self.query_layers(table, requests, maximum)?;
-        let latency = anchor + attention_ms(kv_tokens)? - attention_ms(maximum)?;
+        let anchor = self.query_layers(table, requests, anchor_kv)?;
+        let latency = anchor + attention_ms(kv_tokens)? - attention_ms(anchor_kv)?;
         if !latency.is_finite() || latency <= 0.0 {
             return Err(AicError::InvalidPerfData(
                 "Ascend attention context transfer produced an invalid layer latency".into(),
@@ -289,6 +290,8 @@ mod tests {
         let table = AscendLayerTable::new(Some(path));
         assert_eq!(layers.query_layers(&table, 1, 8192).unwrap(), 156.0);
         let attention_oracle = |sequence| match sequence {
+            2048 => Ok(2.10),
+            4096 => Ok(4.00),
             8192 => Ok(8.22),
             12288 => Ok(12.54),
             _ => Err(AicError::PerfDatabase("unmeasured test attention".into())),
@@ -304,6 +307,19 @@ mod tests {
             .unwrap();
         assert!((extended - 160.32).abs() < 1e-10);
         assert!(estimated);
+        for (sequence, expected) in [(2048, 149.88), (4096, 151.78)] {
+            let (latency, estimated) = layers
+                .estimate_layers(
+                    &table,
+                    AscendShapePolicy::Anchored,
+                    1,
+                    sequence,
+                    attention_oracle,
+                )
+                .unwrap();
+            assert!((latency - expected).abs() < 1e-10);
+            assert!(estimated);
+        }
         assert_eq!(
             layers
                 .estimate_layers(&table, AscendShapePolicy::Anchored, 1, 8192, |_| {
@@ -312,10 +328,20 @@ mod tests {
                 .unwrap(),
             (156.0, false)
         );
+        assert!(
+            layers
+                .estimate_layers(&table, AscendShapePolicy::Anchored, 1, 2047, |_| {
+                    panic!("execution-boundary crossings must fail before querying attention")
+                })
+                .unwrap_err()
+                .to_string()
+                .contains("top-k=2048 execution boundary")
+        );
         for (policy, requests, context) in [
             (AscendShapePolicy::Measured, 1, 12288),
+            (AscendShapePolicy::Measured, 1, 4096),
             (AscendShapePolicy::Anchored, 2, 12288),
-            (AscendShapePolicy::Anchored, 1, 4096),
+            (AscendShapePolicy::Anchored, 1, 2047),
             (AscendShapePolicy::Anchored, 1, 16384),
         ] {
             assert!(
