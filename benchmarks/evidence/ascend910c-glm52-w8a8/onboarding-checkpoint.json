@@ -3038,7 +3038,7 @@
       "Arbitrary DP batch populations and topologies do not yet have qualified runtime-layer coverage.",
       "Independent TTFT accuracy and broad-workload per-metric MAPE below20% remain unaccepted."
     ],
-    "next_action": "Validate observed expert compute shapes through canonical FPM, run same-condition serving/PD predictions, and separately qualify repeated runtime-layer populations and investigate transport imbalance. Serving MAPE<20% is not yet accepted.",
+    "next_action": "Finish repeat serving diagnostics, validate/publish the16 qualified runtime-layer observations, resolve heterogeneous DP population coverage, and model remaining MoE transport/host critical paths before global accuracy acceptance.",
     "stage": 6,
     "status": "in_progress"
   },
@@ -4689,15 +4689,17 @@
       "new_work": "Request-linked 1P1D campaign on20+25 running with explicit clientRID and Tokenizer stage timestamps. HTTP PD gateway source confirms prefill response body is awaited before decode stream is forwarded. Native gate passes473Rust replay tests; Python and end-to-end validation in progress."
     },
     "tp32_prefill_combine_gap_20261104": {
+      "accuracy": "All39 historical rows attempted:36 complete,3 existing DP-population coverage failures retained. Matched historical TTFT MAPE24.41%->21.57%, TPOT6.90%->6.88%, throughput5.08%->5.17%. Five of six independent workloads predict successfully: TTFT MAPE19.27%->12.73%;16K/C32 TTFT remains-31.28%,12K/4K/C4 is-7.23%. No blanket20% acceptance.",
       "finding": "All six count-only campaigns completed across32 ranks and75 MoE layers.590848 pure-prefill training tokens from8K seed910/920 predict heldout12K and16K peak-rank expert counts with7.36% and5.80% MAPE. Seven mixed-phase groups are explicitly retained but excluded from prefill-only statistics. These are shape errors, not serving errors. Detailed trace confirms both receive-volume imbalance and synchronization; no Combine residual is added.",
       "implementation": "Optional canonical prefill_expert_workload binds observed top8 counts to the quantization descriptor. Composition partitions contiguous experts under candidateEP and sends each layer's maximum-rank compute volume to existing native kernel models. Transport remains explicitly balanced; no new perf-row dimension or additive latency. Native conservation/serialization test passes; wheel/parity and independent serving reruns pending.",
+      "remaining": "Critical-rank expert compute is now represented; nonuniform dispatch/combine traffic and cross-rank readiness remain separately unmodeled. Do not add observed Combine wait to corrected compute. Two repeat16K/C32 cases still have28-29s TTFT, so warming alone does not remove the high-population gap. Their TPOT increased to567.54 and535.73ms. Complete32-rank windows show one request per rank in both cases; a preliminary inference from unfiltered prior-population telemetry was rejected. The slowdown is inside forward: mean max536.42/527.57ms versus earlier372.26ms, with similar8-9ms inter-forward gaps. Investigate the runtime operator path before treating these as interchangeable timing observations.",
       "restriction": "Profiled serving durations are diagnostic only. Do not fit or add whole-forward or Combine residuals; model actual per-expert/rank work and synchronization before claiming accuracy.",
       "sources": [
-        "production/prediction-repair-20261102/routing-profile-tp32-node20-25-20261104-attempt2/routing-analysis-pure-prefill.json",
-        "production/prediction-repair-20261102/tp32-prefill-operator-trace-20261104/moe-chain-diagnostic.json",
-        "production/prediction-repair-20261102/tp32-completed-evidence-archive-20261104/manifest.json"
+        "production/prediction-repair-20261102/observed-expert-workload-validation-20261104/validation.json",
+        "production/prediction-repair-20261102/observed-expert-workload-validation-20261104/comparison.json"
       ],
-      "status": "count_observations_validated_compute_model_in_progress"
+      "status": "observed_compute_volume_implemented_and_independently_replayed",
+      "validation": "Native top8 count conservation and serialization test passes;449 Python/parity/model/contract/collector tests pass with unchanged goldens, plus8 observed-model tests after format-only cleanup. Measured timing tables are unchanged by this feature. All inference passes use the canonical Rust FPM."
     },
     "tp32_runtime_layers_20261104": {
       "campaign": "production/prediction-repair-20261102/layer-tp32-node20-25-20261104-attempt4",
@@ -4719,7 +4721,7 @@
       "publication": "560 rows: 240 unchanged TP16 rows plus 320 qualified TP32 rows. No averaging or fitted whole-forward residual. serving_accuracy_acceptance remains false.",
       "qualification_recovery": "Initial CPU qualification invocation used a host path absent inside its /workspace mount. Failure and logs retained; helper now resolves the source relative to the mounted repository. Qualification selects first numerically valid CV<=0.1 cell, independently of serving errors. No production TP32 data has been published yet.",
       "remaining_coverage": "Historical TP32 high-concurrency PD replay rejects skewed DP populations across padding buckets or missing request-count anchors. Independent aggregate C64 likewise fails on active31/requests2. Failures retained; no isolated-kernel fallback.",
-      "routed_population_followup": "Initial active4/request2 and active31/request2 collections fail the unchanged0.1 CV gate for some layers. No rows published. Two predeclared populations are being repeated in a fresh frozen campaign; original failed and heterogeneous heldout observations preserved.",
+      "routed_population_followup": "16 new cells for active4/request2 and active31/request2 pass unchanged numeric andCV<=0.1 gates using only quiet repeats after own CPU compilation/prediction ended. Earlier observations retained but excluded from this extension. Export contains336 TP32 rows preserving all320 old rows exactly;576-row merged candidate exists but is not yet published to canonical tables or used in the compute-only ablation.",
       "serving_validation": "All six independent aggregate cases finished.39-row same-condition historical report and six-case serving report saved in md/910c-glm52-tp32-runtime-validation-20261104.md. High-population prefill and three historical coverage failures remain.",
       "source_identity": "Pinned SGLang0.5.22/CANN9.1 image; model config and quantization SHA256 identical on both hosts",
       "sources": [
@@ -4750,7 +4752,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 162,
+  "revision": 163,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }

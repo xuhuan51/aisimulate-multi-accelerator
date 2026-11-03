@@ -69,6 +69,61 @@ def test_resident_inventory_matches_loaded_united_parameters(model_path):
 
 
 @pytest.mark.parametrize("attention_tp,attention_dp,expert_ep", [(4, 4, 16), (1, 32, 32)])
+def test_observed_prefill_counts_change_compute_shape_without_adding_latency(
+    model_path, attention_tp, attention_dp, expert_ep
+):
+    config = configuration()
+    config.tp_size, config.attention_dp_size, config.moe_ep_size = attention_tp, attention_dp, expert_ep
+    baseline = get_model(model_path, config, "sglang")
+    workload = {
+        "observation_id": "synthetic32-token-top8-workload",
+        "quantization_sha256": baseline.raw_config["modelslim_metadata"]["source_sha256"],
+        "input_tokens": 32,
+        "layer_expert_counts": [[32] * 8 + [0] * 248 for _ in range(75)],
+    }
+    config.op_level_config = OpLevelCompileConfig(
+        {"ascend": {"shape_policy": "anchored", "prefill_expert_workload": workload}},
+        system="ascend910c",
+        backend="sglang",
+    )
+    observed = get_model(model_path, config, "sglang")
+    operations = flattened(observed.context_ops)
+    experts = [spec for kind, spec in operations.values() if kind == "AscendMoeChain"]
+    assert len(experts) == 75
+    for spec in experts:
+        assert spec["scale_factor"] == 1
+        assert spec["token_numerator"] % attention_dp == 0
+        assert spec["token_numerator"] == 8 * attention_dp * spec["token_denominator"]
+    assert sum(op.get_weights() for op in observed.context_ops) == sum(op.get_weights() for op in baseline.context_ops)
+    assert [op._spec_json() for op in observed.generation_ops] == [op._spec_json() for op in baseline.generation_ops]
+    assert observed.execution_assumptions["prefill_expert_workload"] == workload
+    transports = [spec for kind, spec in operations.values() if kind == "AscendDeepEp"]
+    assert len(transports) == 150
+    assert all(spec["scale_factor"] == 1 and spec["key"]["distribution"] == "balanced" for spec in transports)
+
+
+def test_observed_prefill_workload_rejects_another_quantization(model_path):
+    config = configuration()
+    config.op_level_config = OpLevelCompileConfig(
+        {
+            "ascend": {
+                "shape_policy": "anchored",
+                "prefill_expert_workload": {
+                    "observation_id": "wrong-checkpoint",
+                    "quantization_sha256": "a" * 64,
+                    "input_tokens": 32,
+                    "layer_expert_counts": [[1] * 256 for _ in range(75)],
+                },
+            }
+        },
+        system="ascend910c",
+        backend="sglang",
+    )
+    with pytest.raises(InvalidEngineConfigurationError, match="observed ModelSlim"):
+        get_model(model_path, config, "sglang")
+
+
+@pytest.mark.parametrize("attention_tp,attention_dp,expert_ep", [(4, 4, 16), (1, 32, 32)])
 def test_runtime_layers_replace_timing_and_preserve_resident_weights(model_path, attention_tp, attention_dp, expert_ep):
     config = configuration()
     config.tp_size, config.attention_dp_size, config.moe_ep_size = attention_tp, attention_dp, expert_ep

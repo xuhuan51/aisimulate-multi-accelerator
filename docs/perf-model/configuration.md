@@ -207,6 +207,7 @@ explicit Ascend controls.
 | Field under `estimator_config.op_level.ascend` | Default | Behavior |
 | --- | --- | --- |
 | `routing` | `balanced` | Uses the measured synthetic balanced expert-count profile. Other distributions are not yet supported by the complete model composition. |
+| `prefill_expert_workload` | omitted | Optional observed expert assignment counts for DeepEP prefill compute. Requires `shape_policy: anchored`, an `observation_id`, matching `quantization_sha256`, positive `input_tokens`, and 75 `layer_expert_counts` vectors of 256 nonnegative counts. Each vector sums to eight times `input_tokens`, with no expert count exceeding `input_tokens`. Changes the critical-rank compute shape; does not replace transport measurements or add a latency residual. |
 | `shared_expert_overlap` | `true` | Overlaps the shared expert with routed work where the pinned runtime permits it. Tensor-MoE prefill stays serial; its decode and the DeepEP path may overlap. `false` adds the streams serially. |
 | `decode_execution_mode` | `graph` | `graph` selects captured decode profiles and padding buckets; `eager` selects eager profiles with attention-TP token alignment. Missing eager identities fail explicitly. Prefill remains eager. This does not control scheduler overlap or CPU launch overhead. |
 | `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations, including eager host dispatch, stream management and communication boundaries. Requires exact-topology profiles for eager TP16/ADP4/EP16/DCP1 or TP32/ADP32/EP32/DCP1, shared-expert multistream execution and measured request-count brackets. Idle DP populations need their own curves; padding does not count as a real request. With `shape_policy: anchored`, unequal counts within one TP padding bucket reuse each rank's homogeneous-population curve, and longer KV contexts use the attention-only delta described below. Both transfers are `estimated`. Cross-bucket populations, request-count extrapolation, other topologies, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
@@ -269,6 +270,26 @@ ModelSlim descriptor SHA256, and expose `decode_routing:
 captured_model_selected_top8` in execution assumptions. The `routing` option
 continues to describe the independent kernel tables used by prefill; these
 layer observations are not labeled as synthetic balanced expert routing.
+
+`prefill_expert_workload` represents the input distribution, not a timing
+calibration. For each MoE layer, contiguous expert placement partitions its
+observed assignments according to the requested EP16 or EP32 topology. The
+largest rank's assignment fraction determines the routed compute token count
+from the actual global padded token volume. Native operators still perform
+all timing interpolation and extrapolation. Each layer keeps its own shared
+expert overlap boundary, and weight accounting remains unchanged. The complete
+observed counts and their identity survive canonical configuration serialization.
+Tensor-MoE rejects this option; runtime-layer decode is unchanged.
+
+This option models only the critical rank's compute volume. The existing
+balanced within-rank compute kernel profiles and maximum-sender communication
+profiles remain explicit assumptions. It neither scales a measured Combine wait
+nor counts that wait on top of the late rank's compute. Profiles must come from
+the same weights and representative input distribution; matching the quantization
+descriptor alone does not establish matching weights. Exclude validation prompts
+and seeds when producing the workload observations. A new prompt distribution,
+expert placement or transport bottleneck requires separate validation; this
+option alone does not establish a serving accuracy bound.
 
 `eager_runtime_overhead` preserves the raw operator estimates and adds a separately
 named, `estimated` runtime contribution once per nonempty forward, including
@@ -368,7 +389,8 @@ eager decode uses MAX_LEN when twice the aligned token sum is at least the
 maximum aligned length times DP. Captured decode uses a shared graph bucket.
 Global dense/tensor-MoE work uses the resulting global buffer; attention
 retains each rank's active sequences. SUM_LEN gather/combine uses the measured
-all-reduce branch. Expert receive counts still assume balanced routing, and
+all-reduce branch. Expert receive counts assume balanced routing unless an
+observed `prefill_expert_workload` is supplied for prefill compute, and
 DeepEP time uses the measured maximum-sender profile; a nonuniform transport
 profile is not inferred from it. Mixed prefill/decode groups remain unsupported
 by this synchronized timing path. Aggregated execution retains its prior model.

@@ -38,6 +38,8 @@ pub struct AscendOpLevelConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eager_runtime_overhead: Option<AscendEagerRuntimeOverhead>,
     pub routing: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefill_expert_workload: Option<AscendExpertWorkload>,
     pub kv_transfer_page_layout: String,
     #[serde(
         skip_serializing_if = "crate::perf_database::ascend_shape::AscendShapePolicy::is_measured"
@@ -55,9 +57,44 @@ impl Default for AscendOpLevelConfig {
             enable_tp_lm_head_all_to_all: false,
             eager_runtime_overhead: None,
             routing: "balanced".into(),
+            prefill_expert_workload: None,
             kv_transfer_page_layout: "contiguous".into(),
             shape_policy: Default::default(),
         }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AscendExpertWorkload {
+    pub observation_id: String,
+    pub quantization_sha256: String,
+    pub input_tokens: u32,
+    pub layer_expert_counts: Vec<Vec<u32>>,
+}
+
+impl AscendExpertWorkload {
+    fn validate(&self) -> Result<(), AicError> {
+        if self.observation_id.trim().is_empty()
+            || self.quantization_sha256.len() != 64
+            || !self
+                .quantization_sha256
+                .bytes()
+                .all(|value| value.is_ascii_hexdigit())
+            || self.input_tokens == 0
+            || self.layer_expert_counts.len() != 75
+            || self.layer_expert_counts.iter().any(|counts| {
+                counts.len() != 256
+                    || counts.iter().map(|count| u64::from(*count)).sum::<u64>()
+                        != u64::from(self.input_tokens) * 8
+                    || counts.iter().any(|count| *count > self.input_tokens)
+            })
+        {
+            return Err(AicError::InvalidEngineConfig(
+                "Ascend prefill expert workload requires observation identity, quantization SHA256 and75 complete256-expert top8 count vectors conserving positive input_tokens".into(),
+            ));
+        }
+        Ok(())
     }
 }
 
@@ -93,6 +130,15 @@ pub enum AscendDecodeTimingScope {
 impl OpLevelConfig {
     pub(crate) fn validate_for(&self, system: &str, backend: &str) -> Result<(), AicError> {
         if let Some(options) = &self.ascend {
+            if let Some(workload) = &options.prefill_expert_workload {
+                workload.validate()?;
+                if options.shape_policy.is_measured() {
+                    return Err(AicError::InvalidEngineConfig(
+                        "Ascend observed prefill expert workload requires shape_policy=anchored"
+                            .into(),
+                    ));
+                }
+            }
             if options.decode_timing_scope == AscendDecodeTimingScope::RuntimeLayers
                 && (options.decode_execution_mode != AscendExecutionMode::Eager
                     || !options.shared_expert_overlap
@@ -163,6 +209,42 @@ impl OpLevelConfig {
 #[cfg(test)]
 mod ascend_tests {
     use super::*;
+
+    #[test]
+    fn observed_expert_counts_conserve_top8_and_round_trip() {
+        let mut counts = vec![0; 256];
+        counts[..8].fill(32);
+        let workload = AscendExpertWorkload {
+            observation_id: "synthetic-top8-shape-oracle".into(),
+            quantization_sha256: "a".repeat(64),
+            input_tokens: 32,
+            layer_expert_counts: vec![counts; 75],
+        };
+        let mut config = OpLevelConfig {
+            ascend: Some(AscendOpLevelConfig {
+                prefill_expert_workload: Some(workload.clone()),
+                shape_policy: crate::perf_database::ascend_shape::AscendShapePolicy::Anchored,
+                ..Default::default()
+            }),
+        };
+        config.resolve_for("ascend910c", "sglang").unwrap();
+        let restored: OpLevelConfig =
+            serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+        assert_eq!(restored, config);
+        let mut invalid = workload.clone();
+        invalid.layer_expert_counts[0][0] += 1;
+        assert!(invalid.validate().is_err());
+        invalid = workload.clone();
+        invalid.layer_expert_counts.pop();
+        assert!(invalid.validate().is_err());
+        invalid = workload;
+        invalid.layer_expert_counts[0][0] = 33;
+        invalid.layer_expert_counts[0][1] = 31;
+        assert!(invalid.validate().is_err());
+        config.ascend.as_mut().unwrap().shape_policy = Default::default();
+        assert!(config.resolve_for("ascend910c", "sglang").is_err());
+        assert!(restored.validate_for("a100_sxm", "sglang").is_err());
+    }
 
     #[test]
     fn eager_residual_requires_the_current_operator_composition() {

@@ -1,0 +1,22 @@
+{
+  "research": {
+    "tp32_prefill_combine_gap_20261104": {
+      "status": "observed_compute_volume_implemented_and_independently_replayed",
+      "validation": "Native top8 count conservation and serialization test passes;449 Python/parity/model/contract/collector tests pass with unchanged goldens, plus8 observed-model tests after format-only cleanup. Measured timing tables are unchanged by this feature. All inference passes use the canonical Rust FPM.",
+      "accuracy": "All39 historical rows attempted:36 complete,3 existing DP-population coverage failures retained. Matched historical TTFT MAPE24.41%->21.57%, TPOT6.90%->6.88%, throughput5.08%->5.17%. Five of six independent workloads predict successfully: TTFT MAPE19.27%->12.73%;16K/C32 TTFT remains-31.28%,12K/4K/C4 is-7.23%. No blanket20% acceptance.",
+      "sources": [
+        "production/prediction-repair-20261102/observed-expert-workload-validation-20261104/validation.json",
+        "production/prediction-repair-20261102/observed-expert-workload-validation-20261104/comparison.json"
+      ],
+      "remaining": "Critical-rank expert compute is now represented; nonuniform dispatch/combine traffic and cross-rank readiness remain separately unmodeled. Do not add observed Combine wait to corrected compute. Two repeat16K/C32 cases still have28-29s TTFT, so warming alone does not remove the high-population gap. Their TPOT increased to567.54 and535.73ms. Complete32-rank windows show one request per rank in both cases; a preliminary inference from unfiltered prior-population telemetry was rejected. The slowdown is inside forward: mean max536.42/527.57ms versus earlier372.26ms, with similar8-9ms inter-forward gaps. Investigate the runtime operator path before treating these as interchangeable timing observations."
+    },
+    "tp32_runtime_layers_20261104": {
+      "routed_population_followup": "16 new cells for active4/request2 and active31/request2 pass unchanged numeric andCV<=0.1 gates using only quiet repeats after own CPU compilation/prediction ended. Earlier observations retained but excluded from this extension. Export contains336 TP32 rows preserving all320 old rows exactly;576-row merged candidate exists but is not yet published to canonical tables or used in the compute-only ablation."
+    }
+  },
+  "progress": {
+    "stage": 6,
+    "status": "in_progress",
+    "next_action": "Finish repeat serving diagnostics, validate/publish the16 qualified runtime-layer observations, resolve heterogeneous DP population coverage, and model remaining MoE transport/host critical paths before global accuracy acceptance."
+  }
+}

@@ -2,10 +2,13 @@
 
 The United observations use attention-local TP, global dense TP and DeepEP EP.
 Timing and weight arithmetic remain in the native operations. The supported
-MoE estimate uses the explicitly recorded synthetic balanced routing profile.
+MoE kernel tables use synthetic balanced routing; optional observed expert
+counts determine the prefill critical-rank compute shape separately.
 """
 
 import json
+import math
+from copy import deepcopy
 
 import aisimulate_core._native as core
 from aisimulate_core.sdk import common
@@ -132,6 +135,13 @@ def configure_ascend_glm52(model, raw_config):
     if config.op_level_config is None:
         config.op_level_config = OpLevelCompileConfig(None, system=config.system, backend=model._backend_name)
     settings = config.op_level_config.options["ascend"]
+    expert_workload = settings.get("prefill_expert_workload")
+    if expert_workload is not None and (
+        tensor_moe or expert_workload["quantization_sha256"] != raw_config["modelslim_metadata"]["source_sha256"]
+    ):
+        raise InvalidEngineConfigurationError(
+            "Observed prefill expert workload requires DeepEP and the observed ModelSlim descriptor"
+        )
     decode_mode = settings["decode_execution_mode"]
     runtime_layers = settings["decode_timing_scope"] == "runtime_layers"
     if runtime_layers and (local_tp, attention_dp, experts_parallel, dcp) not in ((4, 4, 16, 1), (1, 32, 32, 1)):
@@ -160,6 +170,12 @@ def configure_ascend_glm52(model, raw_config):
     model.execution_assumptions = {
         "routing": settings["routing"],
         "decode_routing": "captured_model_selected_top8" if runtime_layers else settings["routing"],
+        "prefill_expert_workload": expert_workload,
+        "prefill_expert_compute_shape": "observed_peak_rank" if expert_workload is not None else "balanced_mean_rank",
+        "prefill_expert_workload_limit": (
+            "Per-rank compute volume only; within-rank kernel distribution "
+            "and transport remain measured balanced profiles"
+        ),
         "shared_expert_overlap": settings["shared_expert_overlap"],
         "batch_scope": "per_attention_dp_replica",
         "attention_dp_load": "uniform",
@@ -508,7 +524,41 @@ def configure_ascend_glm52(model, raw_config):
                 },
                 vector("routed_scale", "routed_scale", [6144], 75, global_tokens=True),
             ]
-        if settings["shared_expert_overlap"] and (not tensor_moe or not context):
+        if context and expert_workload is not None:
+            local_experts = 256 // experts_parallel
+            for offset, counts in enumerate(expert_workload["layer_expert_counts"]):
+                maximum = max(sum(counts[start : start + local_experts]) for start in range(0, 256, local_experts))
+                numerator = maximum * attention_dp
+                denominator = expert_workload["input_tokens"]
+                divisor = math.gcd(numerator, denominator)
+                numerator //= divisor
+                denominator //= divisor
+                divisor = math.gcd(numerator, attention_dp)
+                numerator *= attention_dp // divisor
+                denominator *= attention_dp // divisor
+                if max(numerator, denominator) >= 2**32:
+                    raise InvalidEngineConfigurationError("Observed expert count ratio exceeds native shape limits")
+                layer_routed, layer_shared = deepcopy(routed), deepcopy(shared)
+                for operation in [*layer_routed, *layer_shared]:
+                    kind, spec = next(iter(operation.items()))
+                    spec["name"] += f"_layer{offset + 3}"
+                    spec["scale_factor"] = 1.0
+                    if kind == "AscendMoeChain":
+                        spec["token_numerator"] = numerator
+                        spec["token_denominator"] = denominator
+                if settings["shared_expert_overlap"]:
+                    entries.append(
+                        {
+                            "Overlap": {
+                                "name": f"{phase}_moe_overlap_layer{offset + 3}",
+                                "group_a": layer_routed,
+                                "group_b": layer_shared,
+                            }
+                        }
+                    )
+                else:
+                    entries.extend([*layer_routed, *layer_shared])
+        elif settings["shared_expert_overlap"] and (not tensor_moe or not context):
             entries.append({"Overlap": {"name": phase + "_moe_overlap", "group_a": routed, "group_b": shared}})
         else:
             entries.extend([*routed, *shared])
