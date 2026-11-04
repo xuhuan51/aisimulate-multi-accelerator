@@ -1,0 +1,26 @@
+{
+  "research": {
+    "tp32_runtime_layers_20261104": {
+      "max_len_replay_result": "All39 historical rows attempted with unchanged configurations and independent expert workload:36 succeed,3 fail on SUM_LEN cross-bucket geometry. Successful historical numeric results unchanged from the prior version: TTFT MAPE21.5713%,TPOT6.8847%,input/output throughput5.1742%. All14 serving/control predictions attempted:13 succeed. Original C64/N128 still fails because active29/request2 lacks layer brackets; fresh C64/N64 succeeds. These are different total-request workloads and are not conflated.",
+      "fresh_accuracy": "Four fresh measured cases all predict: TTFT MAPE28.7766%,TPOT4.1255%,input/output throughput10.4501%. Earlier two slow repeats remain in a separate cohort with TTFT32.1071%,TPOT27.1773%,throughput40.3483% MAPE. Do not pool repeated conditions to claim independent coverage or accept the20% goal.",
+      "publication": "Native MAX_LEN code,16 qualified added cells, data-preservation verification and449 Python plus10 native tests committed as00a779ca. Diagnostic retries and32-rank trace evidence committed asb1bf3d78. Final replay report and full raw archive completed; archive547 members/10733069bytes verified byte-for-byte.",
+      "sources": [
+        "production/prediction-repair-20261102/maxlen-population-validation-20261104/comparison.json",
+        "production/prediction-repair-20261102/maxlen-population-validation-20261104/final-consistency.json",
+        "production/prediction-repair-20261102/maxlen-completed-evidence-archive-20261104/manifest.json"
+      ],
+      "cli_runtime": "aisimulate-910c:maxlen-population-cli-20261104; image sha256:fc65d388984af172b461d63f38ddbb265b0b4436df8a1e057d2bc549f7694fe7. CLI entrypoint explicitly corrected in this separate image; original CPU analysis image82a1339a retained. Native binary and576-row table match the tested wheel. scripts/run-ascend910c.sh help and an8192/32/C4/N4 prediction pass,4requests/128outputtokens complete. Usage documentation now explicitly selects this image; old default tag retained for historical reproduction."
+    },
+    "tp32_decode_slowdown_20261104": {
+      "status": "fresh_shape_history_and_single_layer_replay_controls_completed_cause_unresolved",
+      "finding": "Fresh steady C32 forward is358-361ms. TPOT after ordinary shape history372.09ms; after one isolated layer replay369.52ms. The previous528-536ms forward was not reproduced. This control does not establish ordinary shape history or one layer replay as its cause. All unfavorable observations retained; no fixed runtime penalty fitted. First fresh TTFT exceeds the second by5.4s, but this is not a separately measured compilation cost.",
+      "deployment_verification": "Both nodes' image, launch arguments, environment and entrypoint source hashes equal the pre-restart campaign. All32-rank traces snapshotted. Owned node20+25 containers stopped after all six fresh measurements/controls completed; no NPU serving job left running by this task.",
+      "source": "production/prediction-repair-20261102/tp32-fresh-steady-validation-20261104/paired-serving-analysis.json"
+    }
+  },
+  "progress": {
+    "stage": 6,
+    "status": "in_progress",
+    "next_action": "Continue causal Prefill forward attribution (nonuniform MoE traffic and host/stream readiness), qualify missing sparse active-rank/request-count cells, and design a validated SUM_LEN heterogeneous-population model. Global arbitrary-workload/PD/parallelism20% accuracy acceptance remains unmet."
+  }
+}

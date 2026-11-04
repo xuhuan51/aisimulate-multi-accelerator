@@ -15,10 +15,13 @@ def main():
     parser.add_argument("--ssh-socket", required=True)
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--qualification", type=Path)
+    parser.add_argument("--output-name", default="serving-validation")
     args = parser.parse_args()
+    if Path(args.output_name).name != args.output_name or args.output_name in (".", ".."):
+        parser.error("Output name must be a single directory name")
     campaign = args.campaign.resolve()
     qualification = args.qualification or campaign / "qualification-progress.json"
-    root = campaign / "serving-validation"
+    root = campaign / args.output_name
     root.mkdir(exist_ok=False)
     remote = json.loads((campaign / "node1/launch.json").read_text())["remote_root"]
     ssh = ["ssh", "-S", args.ssh_socket, "-o", "BatchMode=yes", "youxingye@npu1-25"]
@@ -71,7 +74,7 @@ def main():
             verify_disarmed()
             case_root = root / name
             case_root.mkdir(exist_ok=False)
-            mounted = campaign / "node0/serving-validation" / name
+            mounted = campaign / "node0" / args.output_name / name
             mounted.mkdir(parents=True, exist_ok=False)
             command = ["docker", "exec", "aisim-layer-tp32-node0-20261104", "python3", "-u", "/campaign/run_traced_client.py",
                        "--backend", "sglang", "--host", "127.0.0.1", "--port", "19180", "--model", "/models/glm-q",
@@ -79,7 +82,7 @@ def main():
                        "--max-concurrency", str(concurrency), "--random-input-len", str(input_length),
                        "--random-output-len", str(output_length), "--random-range-ratio", "1.0", "--request-rate", "inf",
                        "--warmup-requests", "2", "--seed", str(manifest["seed"]), "--tokenize-prompt", "--output-details",
-                       "--output-file", f"/campaign/serving-validation/{name}/requests.jsonl"]
+                       "--output-file", f"/campaign/{args.output_name}/{name}/requests.jsonl"]
             case = {"id": name, "input_length": input_length, "output_length": output_length,
                     "concurrency": concurrency, "prompts": prompts, "command": command,
                     "status": "running", "start_unix": time.time()}

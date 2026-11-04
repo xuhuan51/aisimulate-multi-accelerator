@@ -29,15 +29,23 @@ KV容量推导 → 请求调度模拟 → PD传输 → 配置搜索。
 
 ## 1. 在当前节点运行
 
-当前因果模型使用 `aisimulate-910c:client-dispatch-20261104`，不使用旧的整轮
+当前因果模型使用 `aisimulate-910c:maxlen-population-cli-20261104`，不使用旧的整轮
 eager forward 残差。原默认镜像保留为历史对照，所以请显式指定新镜像。
+这是离线模拟器的CLI镜像；实测SGLang镜像仍固定在0.5.22/CANN9.1。
+本版有576条runtime-layer记录，保留全部560条旧数据，新增16个TP32 population测量点，
+并支持有测量锚点的MAX_LEN跨补齐区间估计。SUM_LEN跨区间与缺少request-count测量锚点仍会明确失败。
+最新39条历史数据、14项请求验证及复测全部列于
+[MAX_LEN修复与同条件对照](910c-glm52-maxlen-validation-20261104.md)。历史成功36条的TTFT平均误差仍为21.57%，
+新实测组的TTFT也尚未达到20%目标，不能据此宣布所有workload和并行配置已通过精度验收。
+该报告还显式输入独立采集的`prefill_expert_workload`；要复现报告中的具体数字，应使用其记录的完整`config.yaml`。
+下面通用示例未填写该字段，使用原有的均衡专家工作量假设。
 下面是单节点 global TP16/ADP4/EP16、eager、无投机的完整闭环预测；客户端发送准备
 成本来自本机独立 CPU 微测。Decode 使用有数值校验的 runtime layer profile，P 使用独立算子。
 
 ```bash
 cd /home/youxingye/youxingye_data/aisimulate-910c
 
-sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:client-dispatch-20261104 \
+sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:maxlen-population-cli-20261104 \
   AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q \
   bash scripts/run-ascend910c.sh predict --stack engine \
   --config examples/cli/ascend910c-glm52-eager-client.yaml \
@@ -70,7 +78,7 @@ sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:client-dispatch-20261104 \
 global TP16/ADP4/EP16；不是所有 TP/ADP/EP 组合的全局最优证明。
 
 ```bash
-sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:client-dispatch-20261104 \
+sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:maxlen-population-cli-20261104 \
   AISIMULATE_910C_MODEL=/data_lib/data/models/glm-q \
   bash scripts/run-ascend910c.sh recommend --stack engine \
   --config examples/cli/ascend910c-glm52-pd-client-search.yaml \
@@ -78,8 +86,8 @@ sudo env AISIMULATE_910C_IMAGE=aisimulate-910c:client-dispatch-20261104 \
 ```
 
 此例保留历史实测的 P/D KV 每-rank容量135/253页，以及P/D不同的LM-head布局；
-修改并行策略时需要重新确认KV容量和对应运行时性能覆盖。TP32仍有明显 eager 时延缺口，
-不能将其 kernel-only 预测和已验证的 TP16 配置视为同等精度。
+修改并行策略时需要重新确认KV容量和对应运行时性能覆盖。TP32/ADP32/EP32现已接入
+runtime-layer数据，但仍有SUM_LEN、稀疏population与Prefill耗时缺口；其覆盖和精度应按最新报告逐项核对。
 旧 `active-rank-configs/`、`request-timing-configs/` 中的 forward 残差只保留历史诊断用途，
 当前推荐示例不启用它们。
 

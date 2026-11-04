@@ -10,16 +10,20 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--campaign", type=Path, action="append", required=True)
     parser.add_argument("--snapshot-name", action="append", required=True)
+    parser.add_argument("--serving-name", action="append")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if len(args.campaign) != len(args.snapshot_name):
         parser.error("Each campaign needs one snapshot name")
+    serving_names = args.serving_name or ["serving-validation"] * len(args.campaign)
+    if len(serving_names) != len(args.campaign):
+        parser.error("Each campaign needs one serving directory name")
     if args.output.exists():
         raise FileExistsError(args.output)
     sources = {}
     results = []
-    for campaign, snapshot in zip(args.campaign, args.snapshot_name):
-        serving = campaign / "serving-validation"
+    for campaign, snapshot, serving_name in zip(args.campaign, args.snapshot_name, serving_names):
+        serving = campaign / serving_name
         manifest_path = serving / "campaign.json"
         manifest = json.loads(manifest_path.read_text())
         if manifest["status"] != "completed":
@@ -70,7 +74,7 @@ def main():
                     or client["input_lens"] != [case["input_length"]] * case["prompts"]
                     or client["output_lens"] != [case["output_length"]] * case["prompts"]):
                 raise ValueError("Request/token conservation failed")
-            result = {"campaign": str(campaign), "case": case, "forwards": steady,
+            result = {"campaign": str(campaign), "serving_source": str(serving), "case": case, "forwards": steady,
                       "population_histogram": [{"counts": counts, "rounds": rounds} for counts, rounds in populations.items()],
                       "summary": {"rounds": len(steady), "mean_max_forward_ms": statistics.mean(row["measured_max_forward_ms"] for row in steady),
                                   "mean_rank0_forward_ms": statistics.mean(row["rank0_forward_ms"] for row in steady),
