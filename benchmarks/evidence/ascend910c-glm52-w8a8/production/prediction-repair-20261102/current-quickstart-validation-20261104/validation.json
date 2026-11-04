@@ -1,0 +1,236 @@
+{
+  "date": "2026-11-04T18:07:01.928298",
+  "image": "aisimulate-910c:maxlen-population-cli-20261104",
+  "git_head": "8e2f242965b586efc44cdd7d22e40392b68b1ae7",
+  "documentation": "md/910c-glm52-current-quickstart.md",
+  "documentation_sha256": "1f24e27f4225c1677c5040322fbd14ff3b82849d24966249cc15f9bc2c366bad",
+  "results": [
+    {
+      "name": "single-L",
+      "documentation_block": 1,
+      "command": "aisim910c predict --stack engine \\\n  --config examples/cli/ascend910c-glm52-eager-client.yaml \\\n  --set engine.model=\"$AISIMULATE_910C_MODEL\" \\\n  --capture-per-request --detail time \\\n  --output-dir \"aisimulate-output/quickstart-$RUN_ID/single-L\"\n",
+      "exit_code": 0,
+      "wall_seconds": 5.87,
+      "output_dir": "aisimulate-output/quickstart-validation-20261104-180454/single-L",
+      "log": "aisimulate-output/quickstart-validation-20261104-180454/single-L.log",
+      "overrides": {
+        "cpus": 2,
+        "cpuset": "300-307",
+        "max_trials": null
+      },
+      "metrics": {
+        "mean_ttft_ms": 3912.8800670943915,
+        "mean_tpot_ms": 441.7451367949656,
+        "input_throughput_tok_s": 71.86359176826562,
+        "output_throughput_tok_s": 8.982948971033203,
+        "duration_ms": 911949.9650299996
+      },
+      "request_and_token_conservation_verified": true,
+      "completed_requests": 8
+    },
+    {
+      "name": "single-K",
+      "documentation_block": 2,
+      "command": "aisim910c predict --stack engine \\\n  --config examples/cli/ascend910c-glm52-eager-client.yaml \\\n  --set engine.model=\"$AISIMULATE_910C_MODEL\" \\\n  --set engine.estimator_config.op_level.ascend.decode_timing_scope=isolated_kernels \\\n  --capture-per-request --detail time \\\n  --output-dir \"aisimulate-output/quickstart-$RUN_ID/single-K\"\n",
+      "exit_code": 0,
+      "wall_seconds": 5.97,
+      "output_dir": "aisimulate-output/quickstart-validation-20261104-180454/single-K",
+      "log": "aisimulate-output/quickstart-validation-20261104-180454/single-K.log",
+      "overrides": {
+        "cpus": 2,
+        "cpuset": "300-307",
+        "max_trials": null
+      },
+      "metrics": {
+        "mean_ttft_ms": 3912.8800670943806,
+        "mean_tpot_ms": 202.02432306989257,
+        "input_throughput_tok_s": 155.54886641256442,
+        "output_throughput_tok_s": 19.443608301570553,
+        "duration_ms": 421320.9746330002
+      },
+      "request_and_token_conservation_verified": true,
+      "completed_requests": 8
+    },
+    {
+      "name": "single-12k4k",
+      "documentation_block": 3,
+      "command": "aisim910c predict --stack engine \\\n  --config examples/cli/ascend910c-glm52-eager-client.yaml \\\n  --set engine.model=\"$AISIMULATE_910C_MODEL\" \\\n  --set traffic.source.input_tokens=12288 \\\n  --set traffic.source.output_tokens=4096 \\\n  --set traffic.load.concurrency=4 \\\n  --set traffic.stop.requests=8 \\\n  --set engine.context_length=16384 \\\n  --capture-per-request --detail time \\\n  --output-dir \"aisimulate-output/quickstart-$RUN_ID/single-12k4k\"\n",
+      "exit_code": 0,
+      "wall_seconds": 6.68,
+      "output_dir": "aisimulate-output/quickstart-validation-20261104-180454/single-12k4k",
+      "log": "aisimulate-output/quickstart-validation-20261104-180454/single-12k4k.log",
+      "overrides": {
+        "cpus": 2,
+        "cpuset": "300-307",
+        "max_trials": null
+      },
+      "metrics": {
+        "mean_ttft_ms": 5525.935799962523,
+        "mean_tpot_ms": 441.12756586016485,
+        "input_throughput_tok_s": 27.12424403135269,
+        "output_throughput_tok_s": 9.041414677117563,
+        "duration_ms": 3624211.6051739994
+      },
+      "request_and_token_conservation_verified": true,
+      "completed_requests": 8
+    },
+    {
+      "name": "pd-1p1d-L",
+      "documentation_block": 4,
+      "command": "aisim910c predict --stack engine \\\n  --config examples/cli/ascend910c-glm52-pd-eager-client.yaml \\\n  --set engine.model=\"$AISIMULATE_910C_MODEL\" \\\n  --capture-per-request --detail time \\\n  --output-dir \"aisimulate-output/quickstart-$RUN_ID/pd-1p1d-L\"\n",
+      "exit_code": 0,
+      "wall_seconds": 6.17,
+      "output_dir": "aisimulate-output/quickstart-validation-20261104-180454/pd-1p1d-L",
+      "log": "aisimulate-output/quickstart-validation-20261104-180454/pd-1p1d-L.log",
+      "overrides": {
+        "cpus": 2,
+        "cpuset": "300-307",
+        "max_trials": null
+      },
+      "metrics": {
+        "mean_ttft_ms": 4131.121961610416,
+        "mean_tpot_ms": 440.4789177689086,
+        "input_throughput_tok_s": 72.02335802691844,
+        "output_throughput_tok_s": 9.002919753364806,
+        "duration_ms": 909927.0263892191
+      },
+      "request_and_token_conservation_verified": true,
+      "completed_requests": 8
+    },
+    {
+      "name": "pd-1p1d-K",
+      "documentation_block": 5,
+      "command": "aisim910c predict --stack engine \\\n  --config examples/cli/ascend910c-glm52-pd-eager-client.yaml \\\n  --set engine.model=\"$AISIMULATE_910C_MODEL\" \\\n  --set engine.workers.decode.timing.estimator_config.op_level.ascend.decode_timing_scope=isolated_kernels \\\n  --capture-per-request --detail time \\\n  --output-dir \"aisimulate-output/quickstart-$RUN_ID/pd-1p1d-K\"\n",
+      "exit_code": 0,
+      "wall_seconds": 5.77,
+      "output_dir": "aisimulate-output/quickstart-validation-20261104-180454/pd-1p1d-K",
+      "log": "aisimulate-output/quickstart-validation-20261104-180454/pd-1p1d-K.log",
+      "overrides": {
+        "cpus": 2,
+        "cpuset": "300-307",
+        "max_trials": null
+      },
+      "metrics": {
+        "mean_ttft_ms": 4041.467061485446,
+        "mean_tpot_ms": 200.56890474129392,
+        "input_throughput_tok_s": 156.46589779684678,
+        "output_throughput_tok_s": 19.558237224605847,
+        "duration_ms": 418851.6534452195
+      },
+      "request_and_token_conservation_verified": true,
+      "completed_requests": 8
+    },
+    {
+      "name": "pd-2p2d-c16",
+      "documentation_block": 6,
+      "command": "aisim910c predict --stack engine \\\n  --config examples/cli/ascend910c-glm52-pd-eager-client.yaml \\\n  --set engine.model=\"$AISIMULATE_910C_MODEL\" \\\n  --set engine.workers.prefill.parallelism.replicas=2 \\\n  --set engine.workers.decode.parallelism.replicas=2 \\\n  --set traffic.load.concurrency=16 \\\n  --set traffic.stop.requests=32 \\\n  --capture-per-request --detail time \\\n  --output-dir \"aisimulate-output/quickstart-$RUN_ID/pd-2p2d-c16\"\n",
+      "exit_code": 0,
+      "wall_seconds": 6.32,
+      "output_dir": "aisimulate-output/quickstart-validation-20261104-180454/pd-2p2d-c16",
+      "log": "aisimulate-output/quickstart-validation-20261104-180454/pd-2p2d-c16.log",
+      "overrides": {
+        "cpus": 2,
+        "cpuset": "300-307",
+        "max_trials": null
+      },
+      "metrics": {
+        "mean_ttft_ms": 6355.192314997224,
+        "mean_tpot_ms": 468.205483069793,
+        "input_throughput_tok_s": 269.2934089136853,
+        "output_throughput_tok_s": 33.661676114210664,
+        "duration_ms": 973451.2294878451
+      },
+      "request_and_token_conservation_verified": true,
+      "completed_requests": 32
+    },
+    {
+      "name": "search-pd-4node",
+      "documentation_block": 7,
+      "command": "aisim910c recommend --stack engine \\\n  --config examples/cli/ascend910c-glm52-pd-client-search.yaml \\\n  --set engine.model=\"$AISIMULATE_910C_MODEL\" \\\n  --set optimization.constraints.min_candidate_gpus=64 \\\n  --set optimization.constraints.max_candidate_gpus=64 \\\n  --output-dir \"aisimulate-output/quickstart-$RUN_ID/search-pd-4node\"\n",
+      "exit_code": 0,
+      "wall_seconds": 103.04,
+      "output_dir": "aisimulate-output/quickstart-validation-20261104-180454/search-pd-4node",
+      "log": "aisimulate-output/quickstart-validation-20261104-180454/search-pd-4node.log",
+      "overrides": {
+        "cpus": 2,
+        "cpuset": "300-307",
+        "max_trials": null
+      },
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 15,
+        "failed": 0,
+        "feasible": 15,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "all_candidates_use_exactly_64_devices": true,
+      "complete_declared_pd_grid_verified": true,
+      "top1_replay_absolute_differences": {
+        "mean_ttft_ms": 7.275957614183426e-12,
+        "mean_tpot_ms": 5.684341886080802e-14,
+        "input_throughput_tok_s": 0.0,
+        "output_throughput_tok_s": 0.0,
+        "duration_ms": 0.0
+      }
+    },
+    {
+      "name": "search-parallel-K",
+      "documentation_block": 8,
+      "command": "aisim910c recommend --stack engine \\\n  --config examples/cli/ascend910c-glm52-auto-search-8k1k.yaml \\\n  --set engine.model=\"$AISIMULATE_910C_MODEL\" \\\n  --set engine.nextn=0 \\\n  --set engine.estimator_config.correction.enabled=false \\\n  --set engine.estimator_config.op_level.ascend.decode_execution_mode=eager \\\n  --set engine.estimator_config.op_level.ascend.decode_timing_scope=isolated_kernels \\\n  --set optimization.target=throughput \\\n  --set optimization.constraints.min_candidate_gpus=64 \\\n  --set optimization.constraints.max_candidate_gpus=64 \\\n  --set optimizer.max_trials=12 \\\n  --set optimizer.parallelism=2 \\\n  --output-dir \"aisimulate-output/quickstart-$RUN_ID/search-parallel-K\"\n",
+      "exit_code": 0,
+      "wall_seconds": 103.65,
+      "output_dir": "aisimulate-output/quickstart-validation-20261104-180454/search-parallel-K",
+      "log": "aisimulate-output/quickstart-validation-20261104-180454/search-parallel-K.log",
+      "overrides": {
+        "cpus": 2,
+        "cpuset": "300-307",
+        "max_trials": 12
+      },
+      "counts": {
+        "cache_hits": 0,
+        "evaluated": 12,
+        "failed": 0,
+        "feasible": 12,
+        "infeasible": 0,
+        "resource_limited": 0,
+        "timed_out": 0,
+        "unsupported": 0
+      },
+      "all_candidates_use_exactly_64_devices": true
+    },
+    {
+      "name": "recheck-top1",
+      "documentation_block": 9,
+      "command": "aisim910c predict --stack engine \\\n  --config \"aisimulate-output/quickstart-$RUN_ID/search-pd-4node/recommendations/0001.yaml\" \\\n  --capture-per-request --detail time \\\n  --output-dir \"aisimulate-output/quickstart-$RUN_ID/recheck-top1\"\n",
+      "exit_code": 0,
+      "wall_seconds": 4.67,
+      "output_dir": "aisimulate-output/quickstart-validation-20261104-180454/recheck-top1",
+      "log": "aisimulate-output/quickstart-validation-20261104-180454/recheck-top1.log",
+      "overrides": {
+        "cpus": 2,
+        "cpuset": "300-307",
+        "max_trials": null
+      },
+      "metrics": {
+        "mean_ttft_ms": 11802.354793510583,
+        "mean_tpot_ms": 468.6452147327688,
+        "input_throughput_tok_s": 526.8460826748565,
+        "output_throughput_tok_s": 65.85576033435706,
+        "duration_ms": 995144.5350758445
+      },
+      "request_and_token_conservation_verified": true,
+      "completed_requests": 64
+    }
+  ],
+  "image_id": "sha256:fc65d388984af172b461d63f38ddbb265b0b4436df8a1e057d2bc549f7694fe7",
+  "scope": "CPU-only documentation command verification; not new measured serving accuracy acceptance.",
+  "archive": {
+    "path": "benchmarks/evidence/ascend910c-glm52-w8a8/production/prediction-repair-20261102/current-quickstart-validation-20261104/evidence.tar.gz",
+    "bytes": 296589,
+    "sha256": "5f1a5c0062f2ca9ac33ed32e1ea7f540879989971774ca36e5448ed64d255a9d",
+    "verified_files": 84
+  }
+}

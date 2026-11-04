@@ -3299,6 +3299,16 @@
       "status": "published_selected_and_verified_partial_payload_coverage",
       "validation": "Installed ascend910c.yaml misc.hccl_version resolves the new table;385exact native queries pass.390GPUparity tests pass in117.54s. No native code or golden changes for this stage."
     },
+    "current_usage_and_github_publication_20261104": {
+      "documentation": "../../../md/910c-glm52-current-quickstart.md",
+      "evidence": "production/prediction-repair-20261102/current-quickstart-validation-20261104/validation.json",
+      "example": "../../../examples/cli/ascend910c-glm52-pd-eager-client.yaml",
+      "limitations": "No new serving accuracy qualification. Existing K/L historical accuracy limits and unsupported runtime layer shapes remain. Resume reported 217 pre-existing integrity issues; none were hidden or cleared by this documentation change.",
+      "publication": "Commit the usage documentation, example and verification evidence, then push all existing pending main commits to origin/main and verify the remote commit ID. Docker images and model weights are separate runtime prerequisites.",
+      "request": "Write current usage documentation and commit/push the current code to GitHub.",
+      "status": "documentation_and_cli_validation_complete",
+      "validation": "All nine documented CLI invocations completed: six fixed predictions, two searches and a saved top recommendation replay. The four-node PD search evaluated all 15 eligible candidates. The broader kernel parallel search used a 12-trial smoke budget, not the documented 180-trial full budget. Request/token conservation and saved recommendation metric equality verified. All execution used CPUs only."
+    },
     "current_vector_input_state": {
       "evidence": "107requests,288rankforwardrecords,currentmodel41795173,graph8/16/24/32.16rankstartupmemoryvalidated,usableKV53248. C4firsthealthrecordexcluded;startupgraphmemoryincludesobserverallocations. Firstattempthealthtimeoutpreserved;Python3.9socket.timeout handling fixed.",
       "source_commit": "75584894",
@@ -4786,7 +4796,7 @@
       "status": "validated_observations_and_serving_baselines"
     }
   },
-  "revision": 168,
+  "revision": 169,
   "schema_version": "aisimulate-onboarding-checkpoint/v1",
   "validation_inputs": {}
 }
