@@ -1,0 +1,18 @@
+{
+  "research": {
+    "historical_modes_rerun_20261104": {
+      "status": "completed_with_explicit_coverage_failures",
+      "results": "All39 historical measurements checked against original and archived hashes. Freshly executed31 unique configs in each mode,62 jobs total. K39/39 observation rows succeed; L36/39 succeed, rows4/5/6 retain SUM_LEN cross-padding coverage failure. No fallback, residual fitting or model/data change.",
+      "accuracy": "K overall MAPE: TTFT26.8526%,TPOT51.0111%,input/output throughput98.5763%. L: TTFT21.5713%,TPOT6.8847%,throughput5.1742%. All36 successful L results exactly match the previous report. K four-node23/23:30.7980/50.2809/99.3579%; L four-node20/23:18.6450/8.8997/7.5924%. K two-node16/16:21.1812/52.0607/97.4528%; L two-node16/16:25.2292/4.3659/2.1516%.",
+      "verification": "Original measured request and token conservation checked for39 observations; prediction conservation checked for75 successful mode/observation pairs. CSV78 rows independently recalculated300 metric comparisons. Same-condition configs differ only in decode_timing_scope; raw predictions, request traces, logs and failure states archived.",
+      "limits": "This reporting request is completed; the broader less-than20% accuracy objective is not achieved, especially for independent kernels. Layer-mode accuracy must not be attributed to isolated kernels. Old measurements include repeated conditions and known KV capacities; this is not new blind validation.",
+      "sources": [
+        "production/prediction-repair-20261102/historical-kernel-layer-rerun-20261104-1430/comparison.json",
+        "production/prediction-repair-20261102/historical-kernel-layer-rerun-20261104-1430/comparison.csv",
+        "production/prediction-repair-20261102/historical-kernel-layer-rerun-20261104-1430/report-verification.json",
+        "production/prediction-repair-20261102/historical-modes-rerun-evidence-archive-20261104/manifest.json"
+      ],
+      "next_action": "Continue causal modeling of isolated-kernel eager forward gaps and missing heterogeneous layer geometry; do not apply fixed latency corrections or claim universal search accuracy"
+    }
+  }
+}
