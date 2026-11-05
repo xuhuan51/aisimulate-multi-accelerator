@@ -44,6 +44,17 @@ The performance-modeling methodology is described in
 [AIConfigurator: Lightning-Fast Configuration Optimization for Multi-Framework
 LLM Serving](https://arxiv.org/abs/2601.06288).
 
+## 910C 模拟与负载回放
+
+本分支维护 Ascend 910C 的算子数据、性能模型和原生 SGLang 调度回放接口。
+基础 910C 适配来自 yaleyoou 分支，本分支补充算子校准和负载集成。
+安装、配置和复现入口见 [SGLang simulator 集成](integrations/sglang-simulator/README.md)。
+
+GLM-5.2 W8A8 已完成六种单机 Graph 配置的 8K/1K、C32/N128 回放，
+其中四种有真机对照。EP16 预测吞吐仍低估约 38% 至 40%。
+Qwen3.5-397B-A17B 的 Graph 模拟适配正在进行，当前完成 0/9。
+不同模型的可用范围由算子、精度、形状和运行版本的数据覆盖决定。
+
 ## Install
 
 See the [installation guide](docs/getting-started/installation.md) for published versions,

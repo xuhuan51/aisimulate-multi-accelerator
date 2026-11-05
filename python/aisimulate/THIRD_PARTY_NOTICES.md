@@ -1653,3 +1653,25 @@ separate from serving latency observations and are not whole-forward residuals.
 
 The applicable upstream license is preserved at
 https://github.com/sgl-project/sglang/blob/baa9befa381511cd4d56f83980951e5a45fffc6d/LICENSE.
+
+## Bundled SGLang simulator integration
+
+`integrations/sglang-simulator/src/sglang_simulator/`, its packaging files and
+upstream tests are modified derivatives of `tools/sglang-simulator/` from
+SGLang commit `59799a368793b9f795baf59b067233a65ad8e38e`.
+The original project is Copyright 2023-2026 SGLang Team and contributors and
+is licensed under Apache-2.0. The immutable upstream source is
+https://github.com/sgl-project/sglang/tree/59799a368793b9f795baf59b067233a65ad8e38e/tools/sglang-simulator.
+The upstream license is preserved in `integrations/sglang-simulator/LICENSE`.
+
+The downstream changes add the canonical AISimulate timing worker, native
+SGLang RunnerFactory, Ascend scheduler and KV hooks, metric checks and
+closed-loop workload handling. They retain upstream copyright notices.
+`integrations/sglang-simulator/source-manifest.json` records the source pin,
+modification status and hashes. New integration tests under its `tests/`
+directory exercise these downstream contracts.
+
+The AISimulate Ascend hardware specification, original silicon tables and
+base Ascend operators retain their history from
+https://github.com/yaleyoou/aisimulate-910c/tree/252051a8114c2e9ef4f2458b4da0070b77264c35.
+The local calibration and workload integration changes extend that work.
