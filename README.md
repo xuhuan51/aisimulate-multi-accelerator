@@ -22,7 +22,7 @@ Maintainers and agents: CI executes the bash/yaml examples in this README.
 See docs/ci/README.md and scripts/readme/check_readme_commands.py for execution details.
 -->
 
-# AISimulate
+# AISimulate Multi-Accelerator
 
 AISimulate predicts LLM serving behavior and searches for strong deployment
 configurations offline, without bringing up a GPU serving cluster.
@@ -44,9 +44,10 @@ The performance-modeling methodology is described in
 [AIConfigurator: Lightning-Fast Configuration Optimization for Multi-Framework
 LLM Serving](https://arxiv.org/abs/2601.06288).
 
-## 910C 模拟与负载回放
+## 多硬件与负载回放
 
-本分支维护 Ascend 910C 的算子数据、性能模型和原生 SGLang 调度回放接口。
+本仓库面向多种加速卡整理模型性能数据和负载模拟，继承 AISimulate 的硬件与模型接口，
+并扩展 Ascend 910C 的算子数据、性能模型和原生 SGLang 调度回放接口。
 基础 910C 适配来自 yaleyoou 分支，本分支补充算子校准和负载集成。
 安装、配置和复现入口见 [SGLang simulator 集成](integrations/sglang-simulator/README.md)。
 

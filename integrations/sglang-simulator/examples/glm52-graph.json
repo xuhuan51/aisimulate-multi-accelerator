@@ -1,0 +1,100 @@
+{
+  "traffic": {
+    "source": {
+      "type": "synthetic",
+      "input_tokens": 8192,
+      "output_tokens": 1024
+    },
+    "load": {
+      "type": "concurrency",
+      "concurrency": 32
+    },
+    "stop": {
+      "requests": 128
+    }
+  },
+  "engine": {
+    "model": "/absolute/path/to/glm52-modelslim",
+    "hardware": "ascend910c",
+    "backend": "sglang",
+    "backend_version": "0.5.22",
+    "mode": "aggregated",
+    "context_length": 10240,
+    "gemm_quant_mode": "w8a8",
+    "moe_quant_mode": "w8a8_dynamic",
+    "fmha_quant_mode": "bfloat16",
+    "kvcache_quant_mode": "bfloat16",
+    "comm_quant_mode": "half",
+    "estimation_mode": "op_level",
+    "fallback_policy": "deny",
+    "estimator_config": {
+      "op_level": {
+        "ascend": {
+          "shape_policy": "anchored",
+          "decode_execution_mode": "graph",
+          "decode_timing_scope": "isolated_kernels"
+        }
+      }
+    },
+    "workers": {
+      "aggregated": {
+        "parallelism": {
+          "preset": [
+            {
+              "tensor": 4,
+              "attention_data": 4,
+              "moe_tensor": 1,
+              "moe_expert": 16,
+              "pipeline": 1,
+              "replicas": 1
+            },
+            {
+              "tensor": 8,
+              "attention_data": 2,
+              "moe_tensor": 1,
+              "moe_expert": 16,
+              "pipeline": 1,
+              "replicas": 1
+            },
+            {
+              "tensor": 16,
+              "attention_data": 1,
+              "moe_tensor": 1,
+              "moe_expert": 16,
+              "pipeline": 1,
+              "replicas": 1
+            }
+          ]
+        },
+        "scheduler": {
+          "max_batched_tokens": 8192,
+          "max_sequences": 32,
+          "chunked_prefill_size": 8192,
+          "max_prefill_tokens": 16384
+        },
+        "kv_cache": {
+          "block_size": 128,
+          "prefix_caching": true,
+          "capacity": {
+            "type": "fixed",
+            "blocks": 256
+          }
+        }
+      }
+    }
+  },
+  "optimization": {
+    "target": "throughput_per_gpu",
+    "constraints": {
+      "min_candidate_gpus": 16,
+      "max_candidate_gpus": 16
+    }
+  },
+  "optimizer": {
+    "algorithm": "random",
+    "max_trials": 3,
+    "parallelism": 1,
+    "candidate_timeout_seconds": 7200,
+    "seed": 910
+  }
+}
