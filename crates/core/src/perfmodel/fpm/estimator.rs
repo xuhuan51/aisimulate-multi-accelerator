@@ -40,6 +40,9 @@ pub struct AscendOpLevelConfig {
     pub routing: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefill_expert_workload: Option<AscendExpertWorkload>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tensor_moe_routing_profile:
+        Option<crate::operators::ascend_moe_routing::TensorMoeRoutingProfile>,
     pub kv_transfer_page_layout: String,
     #[serde(
         skip_serializing_if = "crate::perf_database::ascend_shape::AscendShapePolicy::is_measured"
@@ -58,6 +61,7 @@ impl Default for AscendOpLevelConfig {
             eager_runtime_overhead: None,
             routing: "balanced".into(),
             prefill_expert_workload: None,
+            tensor_moe_routing_profile: None,
             kv_transfer_page_layout: "contiguous".into(),
             shape_policy: Default::default(),
         }
@@ -168,6 +172,13 @@ impl OpLevelConfig {
                     return Err(AicError::InvalidEngineConfig("Ascend eager runtime overhead needs finite nonnegative timings, calibration identity, positive topology and eager execution".into()));
                 }
             }
+        }
+        if let Some(profile) = self
+            .ascend
+            .as_ref()
+            .and_then(|options| options.tensor_moe_routing_profile.as_ref())
+        {
+            profile.validate()?;
         }
         if self.ascend.is_some() && (system != "ascend910c" || backend != "sglang") {
             return Err(AicError::InvalidEngineConfig(

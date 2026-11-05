@@ -140,3 +140,27 @@ def test_eager_padding_planes_cover_every_decode_batch_up_to_thirty_two(model):
             and case["padded_batch"] > case["active_batch"]
         }
         assert planes == set(range(max(2, parallel), 33, parallel))
+
+
+@pytest.mark.parametrize("prefix", [0, 1024, 2048, 4096, 8192])
+def test_sparse_prefill_covers_observed_1024_query_interpolation_gap(model, prefix):
+    # NPU20 controls reproduced a 20-22% underestimate at query=1024 and
+    # prefix=1024/2048. Declare those coordinates and neighboring anchors;
+    # interpolation across the sparse-selection transition needs measurements.
+    cases = get_ascend_attention_cases(model)["cases"]
+    matching = [
+        case
+        for case in cases
+        if case["operation"] == "sparse_attention"
+        and case["phase"] == "prefill"
+        and case["local_heads"] == 32
+        and case["execution_mode"] == "eager"
+        and case["active_batch"] == 1
+        and case["tokens"] == 1024
+        and case["prefix"] == prefix
+    ]
+    assert len(matching) == 1
+    case = matching[0]
+    assert case["sequence_length"] == 1024 + prefix
+    assert case["block_table_width"] == (1024 + prefix) // 128
+    assert case["sparse_topk"] == 2048

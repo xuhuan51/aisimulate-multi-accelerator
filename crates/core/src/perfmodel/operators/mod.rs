@@ -22,6 +22,7 @@ pub mod ascend_layer;
 pub mod ascend_linear;
 pub mod ascend_logits;
 pub mod ascend_moe_chain;
+pub mod ascend_moe_routing;
 pub mod ascend_moe_tensor;
 pub mod ascend_vector;
 pub mod attention;

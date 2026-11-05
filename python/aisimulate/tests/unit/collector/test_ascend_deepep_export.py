@@ -1,10 +1,36 @@
 import hashlib
 import json
+from types import SimpleNamespace
 
 import pytest
+from collector.sglang.ascend_deepep import checked_combine_precision, checked_dispatch_precision
 from collector.sglang.ascend_deepep_export import validated_rows
 
 pytestmark = pytest.mark.unit
+
+
+def test_combine_precision_requires_bf16_even_when_values_match():
+    assert checked_combine_precision(SimpleNamespace(dtype="torch.bfloat16")) == {"combine_dtype": "bfloat16"}
+    with pytest.raises(ValueError, match="actual combine precision"):
+        checked_combine_precision(SimpleNamespace(dtype="torch.float32"))
+
+
+@pytest.mark.parametrize("dtype,scale", [("torch.bfloat16", None), ("torch.int8", "torch.bfloat16")])
+def test_dispatch_precision_is_checked_before_dequantization(dtype, scale):
+    output = SimpleNamespace(
+        hidden_states=SimpleNamespace(dtype=dtype),
+        hidden_states_scale=None if scale is None else SimpleNamespace(dtype=scale),
+    )
+    with pytest.raises(ValueError, match="actual dispatch precision"):
+        checked_dispatch_precision(output)
+
+
+def test_recorded_dispatch_precision_matches_actual_output():
+    output = SimpleNamespace(
+        hidden_states=SimpleNamespace(dtype="torch.int8"),
+        hidden_states_scale=SimpleNamespace(dtype="torch.float32"),
+    )
+    assert checked_dispatch_precision(output) == {"dispatch_dtype": "int8", "dispatch_scale_dtype": "float32"}
 
 
 @pytest.fixture
@@ -109,6 +135,40 @@ def test_rank_critical_path_and_empty_receivers_keep_full_checks(campaign):
     assert rows[0]["numerical_checks"] == 128 * 6144 * 2
     assert rows[1]["numerical_checks"] == 16 * 6144 * 2
     assert {row["dispatch_dtype"] for row in rows} == {"int8"}
+
+
+@pytest.mark.parametrize(
+    "precision",
+    [
+        {"dispatch_dtype": "bfloat16", "dispatch_scale_dtype": None},
+        {"dispatch_dtype": "int8"},
+        {"dispatch_dtype": "int8", "dispatch_scale_dtype": "bfloat16"},
+    ],
+)
+def test_export_rejects_precision_mislabeled_as_int8(campaign, precision):
+    plan, observation, identity, record = campaign
+    record["cases"][0]["measurements"][0]["rank_results"][0].update(precision)
+    observation.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Observed dispatch precision"):
+        validated_rows(plan, [observation], identity)
+
+
+def test_export_accepts_explicit_precision_from_every_rank(campaign):
+    plan, observation, identity, record = campaign
+    for measurement in record["cases"][0]["measurements"]:
+        for rank in measurement["rank_results"]:
+            rank.update(dispatch_dtype="int8", dispatch_scale_dtype="float32", combine_dtype="bfloat16")
+    observation.write_text(json.dumps(record))
+    rows, _ = validated_rows(plan, [observation], identity)
+    assert {row["dispatch_dtype"] for row in rows} == {"int8"}
+
+
+def test_export_rejects_combine_output_mislabeled_as_bf16(campaign):
+    plan, observation, identity, record = campaign
+    record["cases"][0]["measurements"][1]["rank_results"][0]["combine_dtype"] = "float32"
+    observation.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Observed combine precision"):
+        validated_rows(plan, [observation], identity)
 
 
 @pytest.mark.parametrize("failure", ("missing_rank", "unchecked_output", "wrong_routing", "rank_runtime", "negative"))

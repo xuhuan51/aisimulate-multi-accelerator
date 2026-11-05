@@ -1,5 +1,18 @@
 # Ascend 910C hardware calibration
 
+The experimental `vector/sglang/0.5.21.dev223+g76f9213a4` dataset contains
+160 NPU25 measurements of attention RoPE and split Q/K normalization from
+SGLang commit `76f9213a411018547f4fd6a75f36feaa4d6bed58`.
+It covers 112 eager and 48 captured-graph points. Two unstable eager points
+are excluded. Each curve uses one frozen collection protocol. The original
+0.5.22 dataset remains the comparison baseline.
+The version requires explicit `allow_unlisted_version=True` for experimental
+SDK queries. Other operator families still need matching-runtime coverage
+before this version can support a complete GLM forward prediction.
+The 160 exact native queries and 27 separately collected interpolation cases
+are recorded under
+`benchmarks/evidence/ascend910c-glm52-w8a8/production/operator-repair-20261104/`.
+
 `ascend910c.yaml` describes one runtime-visible `Ascend910_9382` chip in an
 Atlas 800T A3 node. A node exposes **16 chips on eight dual-chip boards**.
 Memory capacity and throughput are per chip, never per board or per node.

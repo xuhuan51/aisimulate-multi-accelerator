@@ -128,6 +128,13 @@ pub fn anchored_axis(
     )
 }
 
+pub(crate) fn sparse_prefill_pairs(queries: u32, prefix: u32) -> f64 {
+    let queries = f64::from(queries);
+    let prefix = f64::from(prefix);
+    let unsaturated = (2048.0 - prefix).max(0.0).min(queries);
+    unsaturated * (prefix + (unsaturated + 1.0) / 2.0) + (queries - unsaturated) * 2048.0
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn attention_work(
     spec: &SystemSpec,
@@ -154,10 +161,7 @@ pub fn attention_work(
     let pairs = if indexer {
         causal_pairs
     } else if prefill {
-        let limit = 2048.0;
-        let unsaturated = (limit - f64::from(prefix)).max(0.0).min(queries);
-        unsaturated * (f64::from(prefix) + (unsaturated + 1.0) / 2.0)
-            + (queries - unsaturated) * limit
+        sparse_prefill_pairs(sequence, prefix)
     } else {
         context.min(2048.0)
     };

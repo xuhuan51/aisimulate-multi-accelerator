@@ -13,6 +13,34 @@ import time
 import traceback
 from pathlib import Path
 
+AUDITED_RUNTIMES = {
+    "baa9befa381511cd4d56f83980951e5a45fffc6d": "0.5.22",
+    "76f9213a411018547f4fd6a75f36feaa4d6bed58": "0.5.21.dev223+g76f9213a4",
+}
+
+
+def runtime_version(revision, expected_revision=None):
+    if expected_revision is not None and revision != expected_revision:
+        raise ValueError("Measured framework revision differs from the frozen vector plan")
+    try:
+        return AUDITED_RUNTIMES[revision]
+    except KeyError as error:
+        raise ValueError("Reaudit vector dispatch for this runtime") from error
+
+
+def validate_runtime_case(revision, case):
+    runtime_version(revision)
+    # The 2026-10-28 NPU25 vector-native76 probe verified these two call
+    # boundaries against their shape/stride/dtype and numerical contracts.
+    # Serving sites at 76f9213a: hardware_backend/npu/modules/
+    # deepseek_v2_attention_mla_npu.py:219,439 and layers/rotary_embedding/
+    # base.py:315-323. Both call the installed sgl_kernel_npu implementations.
+    if revision == "76f9213a411018547f4fd6a75f36feaa4d6bed58" and case["role"] not in {
+        "rope_attention",
+        "split_qk_norm",
+    }:
+        raise ValueError(f"Vector role {case['role']} needs a serving audit for {revision}")
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -48,8 +76,7 @@ def main():
     else:
         from ascend_vector_kernels import prepare
     revision = subprocess.check_output(["git", "-C", "/sgl-workspace/sglang", "rev-parse", "HEAD"], text=True).strip()
-    if revision != "baa9befa381511cd4d56f83980951e5a45fffc6d":
-        raise ValueError("Reaudit vector dispatch for this runtime")
+    runtime_version(revision, plan.get("framework_commit"))
     init_npu_backend()
     torch.npu.set_device(args.device)
     torch.set_num_threads(1)
@@ -109,6 +136,7 @@ def main():
         return value
 
     def collect(index, case):
+        validate_runtime_case(revision, case)
         torch.manual_seed(910 + index)
         prepared = prepare({**case, "iterations": protocol["iterations"]}, torch, torch_npu)
         input_signature = {name: describe(value) for name, value in prepared.inputs.items()}

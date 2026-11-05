@@ -16,6 +16,26 @@ import traceback
 from pathlib import Path
 
 
+def checked_dispatch_precision(output):
+    precision = {
+        "dispatch_dtype": str(output.hidden_states.dtype).removeprefix("torch."),
+        "dispatch_scale_dtype": (
+            None if output.hidden_states_scale is None else str(output.hidden_states_scale.dtype).removeprefix("torch.")
+        ),
+    }
+    if precision != {"dispatch_dtype": "int8", "dispatch_scale_dtype": "float32"}:
+        raise ValueError(f"DeepEP actual dispatch precision differs from the audited INT8 path: {precision}")
+    return precision
+
+
+def checked_combine_precision(output):
+    dtype = str(output.dtype).removeprefix("torch.")
+    # torch.equal checks values but accepts equal values with different dtypes.
+    if dtype != "bfloat16":
+        raise ValueError(f"DeepEP actual combine precision differs from the audited BF16 path: {dtype}")
+    return {"combine_dtype": dtype}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--plan", type=Path, required=True)
@@ -205,6 +225,7 @@ def main():
 
         first = dispatch()
         torch.npu.synchronize()
+        dispatch_precision = checked_dispatch_precision(first)
         if rank == 0:
             print(json.dumps({"plan_index": index, "stage": "initial_verification"}), flush=True)
         combine_values = (first.hidden_states.float() * first.hidden_states_scale.reshape(-1, 1)).to(torch.bfloat16)
@@ -217,6 +238,7 @@ def main():
             return dispatcher.combine_b(*dispatcher.combine_a(combine_values, first.topk_ids, first.topk_weights))
 
         def check_dispatch(output, sign):
+            checked_dispatch_precision(output)
             raw_counts = output.num_recv_tokens_per_expert if case["phase"] == "normal" else output.masked_m
             counts = raw_counts.cpu().tolist() if isinstance(raw_counts, torch.Tensor) else list(raw_counts)
             if (
@@ -258,8 +280,11 @@ def main():
 
         check_dispatch(first, 1)
         barrier()
-        if not torch.equal(combine(), inputs):
+        combined = combine()
+        combine_precision = checked_combine_precision(combined)
+        if not torch.equal(combined, inputs):
             raise ValueError("DeepEP initial roundtrip numerical check failed")
+        del combined
         measured = []
         for operation, invoke in (("dispatch", dispatch), ("combine", combine)):
             if rank == 0:
@@ -317,6 +342,7 @@ def main():
                     if operation == "dispatch":
                         checks.append(check_dispatch(output, sign))
                     else:
+                        checked_combine_precision(output)
                         if not torch.equal(output, inputs * sign):
                             raise ValueError("DeepEP combine numerical check failed: full payload")
                         checks.append({"checked_elements": output.numel()})
@@ -352,6 +378,8 @@ def main():
                     "checks": checks,
                     "expected_counts": expected_counts,
                     "received_shape": list(first.hidden_states.shape),
+                    **dispatch_precision,
+                    **combine_precision,
                 },
                 group=control,
             )

@@ -298,9 +298,14 @@ def main():
     import pyarrow as arrow
     import pyarrow.parquet as parquet
     from collector.provenance import case_plan_hash, collector_hash, load_closures, write_collection_meta
+    from collector.sglang.ascend_vector import runtime_version, validate_runtime_case
 
     package = Path(__file__).resolve().parents[2]
     identity = report["identity"]["runtime"]
+    plan = json.loads(args.plan.read_text())
+    version = runtime_version(identity["framework_commit"], plan.get("framework_commit"))
+    for case in plan["cases"]:
+        validate_runtime_case(identity["framework_commit"], case)
     sources = {"collector": "ascend_vector.py", "kernels": "ascend_vector_kernels.py"}
     if any(
         hashlib.sha256(Path(__file__).with_name(filename).read_bytes()).hexdigest()
@@ -313,12 +318,11 @@ def main():
         arrow.Table.from_pylist(rows), args.output_dir / "ascend_vector_perf.parquet", compression="zstd"
     )
     (args.output_dir / "provenance.json").write_text(json.dumps(report, indent=2) + "\n")
-    plan = json.loads(args.plan.read_text())
     write_collection_meta(
         args.output_dir,
         {
             "framework": "sglang",
-            "version": "0.5.22",
+            "version": version,
             "image_digest": identity["image_digest"],
             "source_commit": identity["framework_commit"],
             "abi": {name: identity[name] for name in ("torch", "torch_npu", "driver_version_info")},

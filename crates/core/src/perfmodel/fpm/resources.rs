@@ -313,6 +313,11 @@ impl ForwardPassPerfModelConfig {
         request: &FpmCacheBudgetRequest,
     ) -> Result<FpmCacheBudget, AicError> {
         let resolved = self.clone().resolve()?;
+        if resolved.backend == BackendKind::Sglang {
+            return Err(invalid(
+                "SGLang FPM timing requires native fixed cache capacity; automatic profile cache budgeting is unsupported",
+            ));
+        }
         let resources = resolved
             .fpm_resources()?
             .ok_or_else(|| invalid("cache budget requires fpm_profile resources"))?;
@@ -338,13 +343,13 @@ impl ForwardPassPerfModelConfig {
         if profile.get("model").and_then(serde_json::Value::as_str) != Some(self.model.as_str()) {
             return Err(invalid("FPM profile model identity mismatch"));
         }
-        if self.backend != BackendKind::Vllm
+        if !matches!(self.backend, BackendKind::Vllm | BackendKind::Sglang)
             || self.pp != 1
             || self.nextn != 0
             || self.speculation.is_some()
         {
             return Err(invalid(
-                "FPM resources require vLLM PP1 plain autoregressive execution",
+                "FPM resources require vLLM or SGLang PP1 plain autoregressive execution",
             ));
         }
         let deployments = profile

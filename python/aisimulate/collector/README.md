@@ -190,6 +190,36 @@ The default command continues to accept only disjoint whole curves. Both inputs
 must already have passed their normal exporter checks; this command does not
 turn diagnostic or held-out measurements into qualified calibration data.
 
+### Ascend vector runtime and transport precision
+
+`sglang/ascend_vector.py` accepts the audited SGLang commit
+`baa9befa381511cd4d56f83980951e5a45fffc6d`. For the earlier measured commit
+`76f9213a411018547f4fd6a75f36feaa4d6bed58`, collection supports the verified
+`rope_attention` and `split_qk_norm` boundaries. Other roles on that revision
+produce a recorded failure requesting a serving audit. Freeze a plan containing
+the requested roles before collection so its exporter can verify complete
+coverage. Input layout, numerical checks and timing qualification still apply.
+
+The vector exporter records `0.5.21.dev223+g76f9213a4` for that earlier commit
+and `0.5.22` for the newer commit. Publish each runtime into its corresponding
+data directory using its measured image and ABI identity.
+An optional `framework_commit` in the frozen vector plan pins the expected
+runtime. Collection and export reject a different observed commit.
+
+The DeepEP collector verifies actual INT8 hidden states and FP32 scales before
+dequantization, then records both dtypes for every rank. The exporter rejects
+explicit precision mismatches and incomplete precision pairs. Historical rows
+without dtype fields retain the earlier collector's INT8/FP32 checked contract.
+BF16 dispatch observations require a separately qualified transport and compute
+path before publication through this INT8 contract.
+
+Combine outputs also receive an explicit BF16 check and a per-rank dtype record.
+Value equality alone accepts tensors with different dtypes, as documented by
+[PyTorch](https://docs.pytorch.org/docs/2.10/generated/torch.equal.html).
+Explicit non-BF16 combine records are rejected by the exporter. Historical
+records without this field retain their existing contract but lack this new
+explicit dtype evidence.
+
 Generation-time admission may omit a topology only when a concrete AIC
 size-vs-capacity estimate proves its configured token envelope cannot fit.
 Missing performance data, bootstrap architectures, and structural estimator

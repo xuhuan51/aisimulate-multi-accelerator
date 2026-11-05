@@ -108,13 +108,18 @@ def main():
         if (
             (hidden, experts, top_k) != (6144, 256, 8)
             or intermediate not in (64, 128, 256, 512)
-            or case["distribution"] != "balanced"
+            or case["distribution"] not in ("balanced", "balanced_subset")
             or tokens < 1
         ):
             raise ValueError("Unqualified tensor-MoE geometry")
-        torch.manual_seed(910 + index)
+        active_experts = experts if case["distribution"] == "balanced" else case["active_experts"]
+        if not isinstance(active_experts, int) or not top_k <= active_experts <= experts:
+            raise ValueError("Active expert count must be between top-k and the model expert count")
+        if case["distribution"] == "balanced_subset" and active_experts > tokens * top_k:
+            raise ValueError("The requested active expert count exceeds the number of assignments")
+        torch.manual_seed(case.get("random_seed", 910 + index))
         values = (torch.randint(-31, 32, (tokens, hidden), device="npu").float() / 32).bfloat16()
-        ids_cpu = torch.arange(tokens * top_k, dtype=torch.int32).reshape(tokens, top_k) % experts
+        ids_cpu = torch.arange(tokens * top_k, dtype=torch.int32).reshape(tokens, top_k) % active_experts
         ids = ids_cpu.npu()
         probabilities = torch.full((tokens, top_k), 1 / top_k, device="npu", dtype=torch.bfloat16)
         raw_up = torch.randint(-3, 4, (experts, hidden, intermediate * 2), device="npu", dtype=torch.int8)

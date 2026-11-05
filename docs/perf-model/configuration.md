@@ -208,6 +208,7 @@ explicit Ascend controls.
 | --- | --- | --- |
 | `routing` | `balanced` | Uses the measured synthetic balanced expert-count profile. Other distributions are not yet supported by the complete model composition. |
 | `prefill_expert_workload` | omitted | Optional observed expert assignment counts for DeepEP prefill compute. Requires `shape_policy: anchored`, an `observation_id`, matching `quantization_sha256`, positive `input_tokens`, and 75 `layer_expert_counts` vectors of 256 nonnegative counts. Each vector sums to eight times `input_tokens`, with no expert count exceeding `input_tokens`. Changes the critical-rank compute shape; does not replace transport measurements or add a latency residual. |
+| `tensor_moe_routing_profile` | unset | Explicit GLM tensor-MoE Decode calibration with a model/backend identity, evidence hash, 75 per-layer expert probabilities and padding IDs, and a measured `(physical_tokens, active_experts, latency_ms)` grid. Requires Graph execution and matching EP1 geometry. Rust counts real and padding tokens separately, interpolates within the grid, and rejects uncovered queries. Prefill retains its existing measured path. |
 | `shared_expert_overlap` | `true` | Overlaps the shared expert with routed work where the pinned runtime permits it. Tensor-MoE prefill stays serial; its decode and the DeepEP path may overlap. `false` adds the streams serially. |
 | `decode_execution_mode` | `graph` | `graph` selects captured decode profiles and padding buckets; `eager` selects eager profiles with attention-TP token alignment. Missing eager identities fail explicitly. Prefill remains eager. This does not control scheduler overlap or CPU launch overhead. |
 | `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations, including eager host dispatch, stream management and communication boundaries. Requires exact-topology profiles for eager TP16/ADP4/EP16/DCP1 or TP32/ADP32/EP32/DCP1, shared-expert multistream execution and measured request-count brackets. Idle DP populations need their own curves; padding does not count as a real request. With `shape_policy: anchored`, unequal counts within one TP padding bucket reuse each rank's homogeneous-population curve; MAX_LEN populations crossing buckets use the maximum active request count as their physical-population anchor. KV context transfers use the attention-only delta described below. All transfers are `estimated`. SUM_LEN cross-bucket populations, request-count extrapolation, other topologies, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
@@ -419,7 +420,14 @@ payloads are rejected rather than decoded using the new positional layout.
 
 These tables support workload-dependent shape queries, not just 8192-input,
 1024-output requests. The default `shape_policy: measured` interpolates only
-inside measured bounds. `shape_policy: anchored` extends numeric axes while
+inside measured bounds. Sparse Attention prefill prefix interpolation weights
+the anchors by the number of causally selected query/key pairs, capped at 2048
+keys per query. Exact table entries retain their measured values. When both
+prefix anchors are saturated, their measured variation is interpolated by
+prefix distance. Indexer and DCP-chain tables retain their own interpolation.
+Anchored estimates use the same sparse-prefix weights when a bracket requires
+extrapolating a missing inner coordinate or batch partition.
+`shape_policy: anchored` extends numeric axes while
 retaining the original rows. Attention/indexer estimates use causal query/key
 work, the sparse top2048 limit, HBM traffic and the calibrated BF16 rate;
 DCP also accounts for storage and query/output communication. The measured
@@ -453,7 +461,7 @@ establish whole-serving accuracy. Long-context estimates can be substantially
 less accurate than nearby measured points, especially across runtime tiling
 changes. Use `measured` to require the original data domain.
 
-EngineSpec schema29 carries request-based HCCL payload sizing and separate
+EngineSpec schema35 adds the optional tensor-MoE routing profile. Schema29 added request-based HCCL payload sizing and separate
 resident-copy counts for shared RoPE storage and retained MLA weight views.
 Recompile older binary specs from their canonical configuration.
 
@@ -466,6 +474,13 @@ declare recorded DCP, so combining `fpm_profile` with an explicit `dcp` is
 rejected; measured DCP profiles without `fpm_profile` retain their existing route.
 Profile/schema and precision conflicts fail before estimator fallback. Omitted precision fields are filled
 from the profile and preserved in the resolved canonical configuration.
+
+The canonical SDK also accepts SGLang PP1 profiles for measured forward timing.
+The SGLang scheduler integration supplies its independently verified native KV
+capacity. Automatic profile cache budgeting remains unsupported for SGLang and
+raises explicitly, because the existing budget arithmetic describes vLLM's
+total-memory fraction. The self-service collector and profile-based Sweeper
+enumeration retain their vLLM backend restriction.
 
 Each deployment may declare `worker_type: prefill`, `decode`, or `aggregated`.
 The canonical construction request selects only the matching role's precision,

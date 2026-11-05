@@ -165,7 +165,7 @@ class FpmDeploymentProfile(_ProfileModel):
     """One hardware, runtime, topology, precision and optional serving-role identity."""
 
     system: _Nonempty
-    backend: Literal["vllm"]
+    backend: Literal["vllm", "sglang"]
     # Registration may precede target-container version detection. Such a
     # profile is a draft; simulation still requires a literal selected version.
     backend_version: _Nonempty | None = None
@@ -314,9 +314,14 @@ class FpmModelProfile(_ProfileModel):
             dep = deployment.tp == 1 and deployment.moe_tp == 1 and deployment.moe_ep == deployment.dp
             tep = deployment.dp == 1 and deployment.moe_tp == 1 and deployment.moe_ep == deployment.tp
             dense_tp = deployment.dp == 1 and deployment.moe_ep == 1 and deployment.moe_tp in (1, deployment.tp)
-            if not (dense_tp if self.num_experts == 0 else tp or dep or tep):
+            sglang_attention_dp = (
+                deployment.backend == "sglang"
+                and deployment.tp * deployment.dp == deployment.moe_tp * deployment.moe_ep
+            )
+            if not (dense_tp if self.num_experts == 0 else tp or dep or tep or sglang_attention_dp):
                 raise ValueError(
-                    "FPM profile requires dense TP or an MoE TP, DEP, or TEP topology with matching world sizes"
+                    "FPM profile requires dense TP or a supported MoE topology "
+                    "with matching attention and MoE world sizes"
                 )
             identity = (
                 deployment.system,

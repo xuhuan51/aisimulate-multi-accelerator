@@ -841,6 +841,44 @@ def test_aggregated_replay_prices_the_actual_active_dp_population(model_path):
     assert report.metrics["mean_tpot_ms"] == pytest.approx(expected_tpot, abs=1e-6)
 
 
+def test_tensor_moe_routing_profile_reaches_canonical_model_and_preserves_identity(model_path):
+    from aisimulate_core.sdk.rust_engine_step import RustForwardPassPerfModel
+
+    # Hand-written calibration. All real tokens choose experts 0..7,
+    # padding chooses 8..15. The measured grid is 1 ms at 8 experts,
+    # 3 ms at 16 experts. This tests routing/count semantics, not accuracy.
+    layer = {"expert_probabilities": [1.0] * 8 + [0.0] * 248, "padding_experts": list(range(8, 16))}
+    profile = {
+        "model": model_path,
+        "backend_version": "0.5.22",
+        "evidence_sha256": "a" * 64,
+        "intermediate_size": 128,
+        "layers": [layer] * 75,
+        "costs": [
+            {"physical_tokens": 16, "active_experts": 8, "latency_ms": 1.0},
+            {"physical_tokens": 16, "active_experts": 16, "latency_ms": 3.0},
+        ],
+    }
+    options = {"op_level": {"ascend": {"tensor_moe_routing_profile": profile}}}
+    model = transfer_model(model_path, "aggregated", moe_tp_size=16, moe_ep_size=1, estimator_config=options)
+    saved = json.loads(json.dumps(model.diagnostics()["provenance"]["config"]))
+    assert saved["estimator_config"]["op_level"]["ascend"]["tensor_moe_routing_profile"] == profile
+    restored = RustForwardPassPerfModel.best_available(saved)
+    metrics = {"scheduled_requests": {"num_decode_requests": 3, "sum_decode_kv_tokens": 3 * 8192}}
+    assert model.estimate_forward_pass_time_ms(metrics) == restored.estimate_forward_pass_time_ms(metrics)
+    assert model.estimate_forward_pass_time_ms(metrics) >= 75 * 3.0
+    for changes in ({"backend_version": "other"}, {"moe_tp_size": 1, "moe_ep_size": 16}, {"model": "other"}):
+        with pytest.raises(ValueError, match="routing profile requires"):
+            RustForwardPassPerfModel.normalize_config({**saved, **changes})
+
+    config = configuration()
+    config.moe_tp_size, config.moe_ep_size = 16, 1
+    config.op_level_config = OpLevelCompileConfig(options["op_level"], system="ascend910c", backend="sglang")
+    composed = get_model(model_path, config, "sglang")
+    assert flattened(composed.context_ops)["context_routed_experts"][1]["routing_profile"] is None
+    assert flattened(composed.generation_ops)["generation_routed_experts"][1]["routing_profile"] == profile
+
+
 def test_canonical_pd_model_selects_measured_mapping_and_rejects_unknown_geometry(model_path):
     source = transfer_model(model_path, "prefill")
     target = transfer_model(model_path, "decode")

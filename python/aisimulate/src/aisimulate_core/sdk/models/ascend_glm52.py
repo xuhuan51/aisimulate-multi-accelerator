@@ -159,6 +159,13 @@ def configure_ascend_glm52(model, raw_config):
         raise InvalidEngineConfigurationError(
             "Ascend DCP eager decode requires eager DCP profiles, which are unavailable"
         )
+
+
+    routing_profile = settings.get("tensor_moe_routing_profile")
+    if routing_profile is not None and (
+        not tensor_moe or routing_profile["intermediate_size"] * global_tp != 2048
+    ):
+        raise InvalidEngineConfigurationError("Tensor-MoE routing calibration requires matching EP1 geometry")
     if tensor_moe and settings["routing"] != "balanced":
         raise InvalidEngineConfigurationError("Ascend tensor-MoE currently requires measured balanced top8 routing")
     model.raw_config = raw_config
@@ -518,6 +525,7 @@ def configure_ascend_glm52(model, raw_config):
                                     "execution_mode": mode,
                                 },
                                 "input_token_multiple": padding * attention_dp,
+                                "routing_profile": None if context else routing_profile,
                             }
                         },
                     }

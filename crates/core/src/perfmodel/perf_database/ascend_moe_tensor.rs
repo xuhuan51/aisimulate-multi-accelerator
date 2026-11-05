@@ -394,6 +394,7 @@ mod tests {
             scale_factor: 75.0,
             key: key(),
             input_token_multiple: 16,
+            routing_profile: None,
         };
         assert_eq!(operation.measured_tokens(0).unwrap(), 0);
         assert_eq!(operation.measured_tokens(1).unwrap(), 16);

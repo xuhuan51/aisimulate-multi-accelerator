@@ -345,6 +345,26 @@ impl ForwardPassPerfModelConfig {
         self.estimator_config
             .op_level
             .validate_for(&self.system, self.backend.as_str())?;
+        if let Some(profile) = self
+            .estimator_config
+            .op_level
+            .ascend
+            .as_ref()
+            .and_then(|options| options.tensor_moe_routing_profile.as_ref())
+        {
+            if profile.model != self.model
+                || self.backend_version.as_deref() != Some(profile.backend_version.as_str())
+                || self.moe_ep_size != Some(1)
+                || self
+                    .moe_tp_size
+                    .and_then(|tp| tp.checked_mul(profile.intermediate_size))
+                    != Some(2048)
+            {
+                return Err(invalid_config(
+                    "tensor-MoE routing profile requires its recorded model/backend version and matching EP1 geometry",
+                ));
+            }
+        }
         if let Some(overhead) = self
             .estimator_config
             .op_level

@@ -654,8 +654,12 @@ def test_select_rejects_zero_or_boolean_dimensions(profile_dict, kwargs):
 
 @pytest.fixture
 def profile_memory(profile_dict, monkeypatch):
-    monkeypatch.setattr(memory, "get_model", _fail_graph)
-    monkeypatch.setattr(memory, "build_model_config", _fail_graph)
+    # Patch the owning module: pytest 9.2 restores module __dict__ entries,
+    # while the public memory package forwards these names dynamically.
+    from aisimulate_core.sdk.memory import kv_cache
+
+    monkeypatch.setattr(kv_cache, "get_model", _fail_graph)
+    monkeypatch.setattr(kv_cache, "build_model_config", _fail_graph)
     monkeypatch.setattr(memory.perf_database, "get_database", _fail_graph)
     monkeypatch.setattr(memory.perf_database, "resolve_query_version", _fail_graph)
     monkeypatch.setattr(memory.perf_database, "load_system_spec", lambda *_a, **_k: {"gpu": {"mem_capacity": 1000}})
@@ -1271,6 +1275,79 @@ def full_grid_median_profile(profile_dict, monkeypatch, tmp_path):
         },
     )
     return config, path
+
+
+@pytest.mark.parametrize("tp,dp,moe_tp,moe_ep", [(8, 2, 16, 1), (2, 8, 16, 1), (4, 4, 1, 16)])
+def test_sglang_direct_profile_preserves_backend_and_queries_measured_cells(
+    profile_dict, monkeypatch, tmp_path, tp, dp, moe_tp, moe_ep
+):
+    """Synthetic 2ms/3ms cells exercise the canonical SGLang FPM entry point."""
+    deployment = profile_dict["deployments"][0]
+    deployment.update(
+        system="ascend910c",
+        backend="sglang",
+        backend_version="0.5.21.dev223+g76f9213a4",
+        tp=tp,
+        dp=dp,
+        moe_tp=moe_tp,
+        moe_ep=moe_ep,
+        gemm_quant_mode="w8a8",
+        moe_quant_mode="w8a8_dynamic",
+        fmha_quant_mode="bfloat16",
+        comm_quant_mode="half",
+        kv_cache_dtype="bfloat16",
+    )
+    monkeypatch.setenv("AIC_ALLOW_UNLISTED_VERSIONS", "1")
+    monkeypatch.setattr(engine, "get_model", _fail_graph)
+    monkeypatch.setattr(engine, "build_model_config", _fail_graph)
+    monkeypatch.setattr(engine, "_maybe_load_database", _fail_graph)
+    path = _write_external_profile_pair(profile_dict, tmp_path)
+    config = _request(
+        profile_dict,
+        backend="sglang",
+        estimator_config={
+            "fpm_interpolation": {"method": "direct", "fpm_parquet_path": str(path)},
+            "correction": {"enabled": False},
+        },
+    )
+    forward = RustForwardPassPerfModel.best_available(config)
+    saved = json.loads(json.dumps(forward.diagnostics()["provenance"]["config"]))
+    assert saved["backend"] == "sglang"
+    assert saved["fpm_profile"]["deployments"][0]["backend"] == "sglang"
+    restored = RustForwardPassPerfModel.best_available(saved)
+    assert restored.estimate_forward_pass_time_ms(
+        {"scheduled_requests": {"num_prefill_requests": 1, "sum_prefill_tokens": 1}}
+    ) == pytest.approx(2.0)
+    assert restored.estimate_forward_pass_time_ms(
+        {"scheduled_requests": {"num_decode_requests": 1, "sum_decode_kv_tokens": 1}}
+    ) == pytest.approx(3.0)
+    assert restored.estimate_forward_pass_time_ms(
+        [
+            {"dp_rank": rank, "scheduled_requests": {"num_decode_requests": 1, "sum_decode_kv_tokens": 1}}
+            for rank in range(dp)
+        ]
+    ) == pytest.approx(3.0)
+    with pytest.raises(ValueError, match="native fixed cache capacity"):
+        RustForwardPassPerfModel.estimate_cache_budget(
+            saved,
+            {
+                "total_gpu_capacity_bytes": 1000,
+                "memory_fraction_kind": "of_free",
+                "memory_fraction_value": 0.8,
+                "max_num_tokens": 8192,
+                "max_batch_size": 256,
+            },
+        )
+    wrong_backend = copy.deepcopy(config)
+    wrong_backend["backend"] = "vllm"
+    with pytest.raises(ValueError, match="matching"):
+        RustForwardPassPerfModel.best_available(wrong_backend)
+
+
+def test_sglang_profile_rejects_mismatched_attention_and_expert_groups(profile_dict):
+    profile_dict["deployments"][0].update(backend="sglang", tp=8, dp=2, moe_tp=8, moe_ep=1)
+    with pytest.raises(ValueError, match="matching attention and MoE world sizes"):
+        load_fpm_profile(profile_dict)
 
 
 def test_full_grid_medians_query_and_reload_without_campaign_files(full_grid_median_profile, tmp_path):

@@ -5,13 +5,27 @@ use std::sync::OnceLock;
 use serde::{Deserialize, Serialize};
 
 use super::SourceResolver;
-use super::ascend_shape::{AscendShapePolicy, ShapeEstimate, attention_work};
+use super::ascend_shape::{AscendShapePolicy, ShapeEstimate, attention_work, sparse_prefill_pairs};
 use super::axis_curve::AxisCurve;
 use super::parquet_loader::PerfReader;
 use crate::common::error::AicError;
 use crate::common::system_spec::SystemSpec;
 
 pub const BASENAME: &str = "ascend_attention_perf.parquet";
+
+fn prefix_weight(lower: u32, upper: u32, prefix: u32, queries: u32, sparse: bool) -> f64 {
+    if sparse {
+        let lower_work = sparse_prefill_pairs(queries, lower);
+        let upper_work = sparse_prefill_pairs(queries, upper);
+        if upper_work > lower_work {
+            return (sparse_prefill_pairs(queries, prefix) - lower_work)
+                / (upper_work - lower_work);
+        }
+    }
+    // Whole-context indexers and already saturated brackets retain measured
+    // prefix variation, including storage/cache effects.
+    f64::from(prefix - lower) / f64::from(upper - lower)
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -175,10 +189,27 @@ impl Plane {
         }
     }
 
+    fn query_prefill(&self, prefix: u32, queries: u32, sparse: bool) -> Result<f64, AicError> {
+        if !sparse || self.0.contains_key(&prefix) {
+            return self.query(prefix, queries);
+        }
+        let (Some((lower, lower_curve)), Some((upper, upper_curve))) = (
+            self.0.range(..prefix).next_back(),
+            self.0.range(prefix..).next(),
+        ) else {
+            return self.query(prefix, queries);
+        };
+        let weight = prefix_weight(*lower, *upper, prefix, queries, sparse);
+        let lower_value = lower_curve.query(queries)?;
+        let upper_value = upper_curve.query(queries)?;
+        Ok(lower_value + (upper_value - lower_value) * weight)
+    }
+
     fn estimate(
         &self,
         outer: u32,
         inner: u32,
+        sparse_prefill: bool,
         work: &dyn Fn(u32, u32) -> Result<f64, AicError>,
     ) -> Result<ShapeEstimate, AicError> {
         if let Some(curve) = self.0.get(&outer) {
@@ -191,7 +222,7 @@ impl Plane {
                 .estimate(inner, &|value| work(*lower_axis, value))?
                 .blend(
                     upper_curve.estimate(inner, &|value| work(*upper_axis, value))?,
-                    f64::from(outer - lower_axis) / f64::from(upper_axis - lower_axis),
+                    prefix_weight(*lower_axis, *upper_axis, outer, inner, sparse_prefill),
                 ));
         }
         let (anchor, curve) = lower
@@ -226,6 +257,7 @@ pub(crate) fn estimate_attention_grid(
     padded: u32,
     sequence: u32,
     prefix: u32,
+    sparse_prefill: bool,
     work: &dyn Fn(u32, u32, u32) -> Result<f64, AicError>,
 ) -> Result<ShapeEstimate, AicError> {
     if !prefill {
@@ -234,20 +266,24 @@ pub(crate) fn estimate_attention_grid(
                 "unmeasured Ascend attention padding bucket={padded}"
             ))
         })?;
-        return plane.estimate(active, sequence, &|batch, length| work(batch, length, 0));
+        return plane.estimate(active, sequence, false, &|batch, length| {
+            work(batch, length, 0)
+        });
     }
     if let Some(plane) = partitions.get(&active) {
-        return plane.estimate(prefix, sequence, &|past, tokens| work(active, tokens, past));
+        return plane.estimate(prefix, sequence, sparse_prefill, &|past, tokens| {
+            work(active, tokens, past)
+        });
     }
     let lower = partitions.range(..active).next_back();
     let upper = partitions.range(active..).next();
     if let (Some((lower_batch, lower_plane)), Some((upper_batch, upper_plane))) = (lower, upper) {
         return Ok(lower_plane
-            .estimate(prefix, sequence, &|past, tokens| {
+            .estimate(prefix, sequence, sparse_prefill, &|past, tokens| {
                 work(*lower_batch, tokens, past)
             })?
             .blend(
-                upper_plane.estimate(prefix, sequence, &|past, tokens| {
+                upper_plane.estimate(prefix, sequence, sparse_prefill, &|past, tokens| {
                     work(*upper_batch, tokens, past)
                 })?,
                 f64::from(active - lower_batch) / f64::from(upper_batch - lower_batch),
@@ -256,7 +292,7 @@ pub(crate) fn estimate_attention_grid(
     let (anchor, plane) = lower
         .or(upper)
         .ok_or_else(|| AicError::PerfDatabase("empty Ascend batch grid".into()))?;
-    let value = plane.estimate(prefix, sequence, &|past, tokens| {
+    let value = plane.estimate(prefix, sequence, sparse_prefill, &|past, tokens| {
         work(*anchor, tokens, past)
     })?;
     let anchor_work = work(*anchor, sequence, prefix)?;
@@ -268,7 +304,9 @@ pub(crate) fn estimate_attention_grid(
             Ok((
                 work(*batch, sequence, prefix)?,
                 plane
-                    .estimate(prefix, sequence, &|past, tokens| work(*batch, tokens, past))?
+                    .estimate(prefix, sequence, sparse_prefill, &|past, tokens| {
+                        work(*batch, tokens, past)
+                    })?
                     .latency_ms,
             ))
         })
@@ -282,16 +320,17 @@ pub(crate) fn query_prefill_batch(
     batch: u32,
     prefix: u32,
     sequence: u32,
+    sparse: bool,
 ) -> Result<f64, AicError> {
     if let Some(plane) = partitions.get(&batch) {
-        return plane.query(prefix, sequence);
+        return plane.query_prefill(prefix, sequence, sparse);
     }
     let lower = partitions.range(..batch).next_back();
     let upper = partitions.range(batch..).next();
     match (lower, upper) {
         (Some((lower_batch, lower_plane)), Some((upper_batch, upper_plane))) => {
-            let lower_value = lower_plane.query(prefix, sequence)?;
-            let upper_value = upper_plane.query(prefix, sequence)?;
+            let lower_value = lower_plane.query_prefill(prefix, sequence, sparse)?;
+            let upper_value = upper_plane.query_prefill(prefix, sequence, sparse)?;
             let weight = f64::from(batch - lower_batch) / f64::from(upper_batch - lower_batch);
             Ok(lower_value + (upper_value - lower_value) * weight)
         }
@@ -341,6 +380,7 @@ impl AscendAttentionTable {
             key.partition(active, padded),
             sequence,
             prefix,
+            key.operation == "sparse_attention",
             &|batch, tokens, past| {
                 attention_work(
                     spec,
@@ -449,7 +489,13 @@ impl AscendAttentionTable {
             AicError::PerfDatabase(format!("unmeasured Ascend attention identity: {key:?}"))
         })?;
         if key.phase == "prefill" && key.execution_mode == "eager" {
-            return query_prefill_batch(partitions, active, prefix, sequence);
+            return query_prefill_batch(
+                partitions,
+                active,
+                prefix,
+                sequence,
+                key.operation == "sparse_attention",
+            );
         }
         let plane = partitions
             .get(&key.partition(active, padded))
@@ -459,7 +505,7 @@ impl AscendAttentionTable {
                 ))
             })?;
         if key.phase == "prefill" {
-            plane.query(prefix, sequence)
+            plane.query_prefill(prefix, sequence, key.operation == "sparse_attention")
         } else {
             plane.query(active, sequence)
         }
@@ -754,6 +800,165 @@ mod tests {
     }
 
     #[test]
+    fn sparse_prefill_interpolates_selected_keys_across_saturation() {
+        let plane = Plane::from_raw(BTreeMap::from([
+            (2040, BTreeMap::from([(4, 10.0)])),
+            (2048, BTreeMap::from([(4, 32.0)])),
+        ]));
+        // Four queries visit 8170 keys at prefix 2040 and 8192 at 2048.
+        // Prefix 2044 visits 8186 keys: 16/22 of the measured latency span.
+        assert_eq!(plane.query_prefill(2044, 4, true).unwrap(), 26.0);
+        // Prefix 2046 visits 2047+2048+2048+2048=8191 keys.
+        assert_eq!(plane.query_prefill(2046, 4, true).unwrap(), 31.0);
+        assert_eq!(plane.query_prefill(2040, 4, true).unwrap(), 10.0);
+        assert_eq!(plane.query_prefill(2048, 4, true).unwrap(), 32.0);
+        // The indexer scans the whole context and retains prefix interpolation.
+        assert_eq!(plane.query_prefill(2044, 4, false).unwrap(), 21.0);
+        assert!(plane.query_prefill(2049, 4, true).is_err());
+        assert!(plane.query_prefill(2044, 5, true).is_err());
+    }
+
+    #[test]
+    fn ragged_sparse_prefill_keeps_selected_key_weights_when_extrapolating() {
+        let partitions = BTreeMap::from([(
+            1,
+            Plane::from_raw(BTreeMap::from([
+                (2040, BTreeMap::from([(1, 1.0), (2, 5.0)])),
+                (2048, BTreeMap::from([(4, 32.0)])),
+            ])),
+        )]);
+        let work = |_, tokens, _| Ok(f64::from(tokens));
+        assert!(query_prefill_batch(&partitions, 1, 2044, 4, true).is_err());
+        let sparse =
+            estimate_attention_grid(&partitions, true, 1, 1, 4, 2044, true, &work).unwrap();
+        // The fitted intercept is negative and clamps to zero, so the lower
+        // prefix extrapolates to 5*4/2=10 ms. Selected-pair weight 16/22
+        // blends it with the 32 ms upper measurement to yield 26 ms.
+        assert!((sparse.latency_ms - 26.0).abs() < 1e-12);
+        assert!(sparse.extrapolated);
+        let indexer =
+            estimate_attention_grid(&partitions, true, 1, 1, 4, 2044, false, &work).unwrap();
+        assert_eq!(indexer.latency_ms, 21.0);
+        assert!(indexer.extrapolated);
+    }
+
+    #[test]
+    fn npu20_sparse_prefix_controls_reduce_interpolation_error() {
+        // NPU20 2026-10-30, BF16, 32 local heads, batch 1, eager.
+        // Source: sglang-npu-aisimulate-20261028/causal-npu20/results/
+        // attention-result.json and attention-extra-result.json.
+        // Only the four original query=512/2048, prefix=0/8192 anchors
+        // enter the lookup. The query=1024 measurements are comparisons.
+        let plane = Plane::from_raw(BTreeMap::from([
+            (
+                0,
+                BTreeMap::from([(512, 0.377685010433197), (2048, 5.164682388305664)]),
+            ),
+            (
+                8192,
+                BTreeMap::from([(512, 1.4184075593948364), (2048, 5.435235023498535)]),
+            ),
+        ]));
+        for (prefix, measured) in [(1024, 2.660517454147339), (2048, 2.7320799827575684)] {
+            let original = plane.query(prefix, 1024).unwrap();
+            let repaired = plane.query_prefill(prefix, 1024, true).unwrap();
+            let relative_error = (repaired / measured - 1.0).abs();
+            assert!((repaired - measured).abs() < (original - measured).abs());
+            assert!(relative_error < 0.07);
+            println!(
+                "NPU20 prefix={prefix} original={original:.6} repaired={repaired:.6} measured={measured:.6} error={relative_error:.4}"
+            );
+        }
+    }
+
+    #[test]
+    fn npu25_fresh_sparse_prefix_controls_generalize_across_heads() {
+        // Independently measured NPU25 controls, 2026-11-04, native76,
+        // BF16, batch 1, eager. Raw observations and fixed plan are in
+        // benchmarks/evidence/ascend910c-glm52-w8a8/production/
+        // operator-repair-20261104/attention-measurements/.
+        // Four anchors build each plane. The other four shapes are held out.
+        // This exercises interpolation independent of runtime-specific cache geometry.
+        let profiles = [
+            (
+                8,
+                [
+                    0.358489990234375,
+                    4.949772357940674,
+                    1.364704966545105,
+                    5.18538761138916,
+                ],
+                [
+                    2.5329949855804443,
+                    2.6136274337768555,
+                    1.9451475143432617,
+                    3.8721349239349365,
+                ],
+            ),
+            (
+                16,
+                [
+                    0.37226250767707825,
+                    5.081614971160889,
+                    1.406462550163269,
+                    5.355609893798828,
+                ],
+                [
+                    2.612067461013794,
+                    2.7017300128936768,
+                    1.996090054512024,
+                    4.0067925453186035,
+                ],
+            ),
+            (
+                32,
+                [
+                    0.3793124854564667,
+                    5.1151275634765625,
+                    1.422629952430725,
+                    5.429880142211914,
+                ],
+                [
+                    2.644277572631836,
+                    2.7224299907684326,
+                    2.0391175746917725,
+                    4.055657386779785,
+                ],
+            ),
+        ];
+        for (heads, anchors, measured) in profiles {
+            let plane = Plane::from_raw(BTreeMap::from([
+                (0, BTreeMap::from([(512, anchors[0]), (2048, anchors[1])])),
+                (
+                    8192,
+                    BTreeMap::from([(512, anchors[2]), (2048, anchors[3])]),
+                ),
+            ]));
+            for ((queries, prefix), real) in [(1024, 1024), (1024, 2048), (768, 1536), (1536, 3072)]
+                .into_iter()
+                .zip(measured)
+            {
+                let old = plane.query(prefix, queries).unwrap();
+                let repaired = plane.query_prefill(prefix, queries, true).unwrap();
+                assert!((repaired - real).abs() < (old - real).abs());
+                assert!((repaired / real - 1.0).abs() < 0.06);
+                println!(
+                    "NPU25 heads={heads} queries={queries} prefix={prefix} old={old:.9} new={repaired:.9} measured={real:.9}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn saturated_prefill_uses_measured_prefix_variation() {
+        let plane = Plane::from_raw(BTreeMap::from([
+            (2048, BTreeMap::from([(4, 10.0)])),
+            (4096, BTreeMap::from([(4, 14.0)])),
+        ]));
+        assert_eq!(plane.query_prefill(3072, 4, true).unwrap(), 12.0);
+    }
+
+    #[test]
     fn prefill_uses_tokens_and_prefix_without_decode_padding() {
         let root = tempfile::tempdir().unwrap();
         let path = root.path().join(BASENAME);
@@ -769,7 +974,9 @@ mod tests {
         let table = AscendAttentionTable::new(Some(path));
         let mut prefill = key();
         prefill.phase = "prefill".into();
-        assert_eq!(table.query(&prefill, 1, 1, 576, 4096).unwrap(), 4.0);
+        // At prefix=4096 all queries have reached the 2048 selected-key cap,
+        // matching the prefix=8192 anchor (6 ms at query midpoint 576).
+        assert_eq!(table.query(&prefill, 1, 1, 576, 4096).unwrap(), 6.0);
         assert!(
             table
                 .query(&prefill, 2, 2, 576, 0)
@@ -786,7 +993,7 @@ mod tests {
         let path = root.path().join("two-requests.parquet");
         write_parquet(&path, &data);
         let table = AscendAttentionTable::new(Some(path));
-        assert_eq!(table.query(&prefill, 2, 2, 576, 4096).unwrap(), 4.0);
+        assert_eq!(table.query(&prefill, 2, 2, 576, 4096).unwrap(), 6.0);
         assert!(
             table
                 .query(&prefill, 1, 1, 576, 4096)
@@ -956,13 +1163,13 @@ fn anchored_ragged_grid_scales_only_the_missing_boundary() {
         ),
     ]);
     let work = |batch, tokens, _| Ok(f64::from(batch) * f64::from(tokens));
-    let estimate = estimate_attention_grid(&partitions, true, 3, 3, 4096, 0, &work).unwrap();
+    let estimate = estimate_attention_grid(&partitions, true, 3, 3, 4096, 0, false, &work).unwrap();
     let expected = (8.0 + 2.0 + (4096.0 - 1.0) * 6.0 / (2048.0 - 1.0)) / 2.0;
     assert!((estimate.latency_ms - expected).abs() < 1e-12);
     assert!(estimate.extrapolated);
-    assert!(query_prefill_batch(&partitions, 3, 0, 4096).is_err());
-    assert!(estimate_attention_grid(&partitions, false, 1, 8, 4096, 0, &work).is_err());
-    let measured = estimate_attention_grid(&partitions, true, 2, 2, 4096, 0, &work).unwrap();
+    assert!(query_prefill_batch(&partitions, 3, 0, 4096, false).is_err());
+    assert!(estimate_attention_grid(&partitions, false, 1, 8, 4096, 0, false, &work).is_err());
+    let measured = estimate_attention_grid(&partitions, true, 2, 2, 4096, 0, false, &work).unwrap();
     assert_eq!(measured.latency_ms, 8.0);
     assert!(!measured.extrapolated);
 }
@@ -1001,7 +1208,9 @@ fn missing_prefix_and_batch_axes_use_their_own_work_intercepts() {
         (4096, BTreeMap::from([(1024, 7.0)])),
     ]));
     let estimate = plane
-        .estimate(8192, 1024, &|prefix, tokens| Ok(f64::from(prefix + tokens)))
+        .estimate(8192, 1024, false, &|prefix, tokens| {
+            Ok(f64::from(prefix + tokens))
+        })
         .unwrap();
     assert!((estimate.latency_ms - 11.0).abs() < 1e-12);
     assert!(estimate.extrapolated);
@@ -1015,11 +1224,17 @@ fn missing_prefix_and_batch_axes_use_their_own_work_intercepts() {
             Plane::from_raw(BTreeMap::from([(0, BTreeMap::from([(1024, 9.0)]))])),
         ),
     ]);
-    let estimate =
-        estimate_attention_grid(&partitions, true, 8, 8, 1024, 0, &|batch, tokens, _| {
-            Ok(f64::from(batch) * f64::from(tokens))
-        })
-        .unwrap();
+    let estimate = estimate_attention_grid(
+        &partitions,
+        true,
+        8,
+        8,
+        1024,
+        0,
+        false,
+        &|batch, tokens, _| Ok(f64::from(batch) * f64::from(tokens)),
+    )
+    .unwrap();
     assert!((estimate.latency_ms - 17.0).abs() < 1e-12);
     assert!(estimate.extrapolated);
 }

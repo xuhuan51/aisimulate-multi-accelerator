@@ -135,6 +135,15 @@ def validated_rows(plan_path, observations, runtime_identity):
                     raise ValueError("Missing actual execution/rank results")
                 checked = 0
                 for rank in rank_results:
+                    if "combine_dtype" in rank and rank["combine_dtype"] != "bfloat16":
+                        raise ValueError("Observed combine precision differs from the BF16 performance-table contract")
+                    # Historical collectors checked INT8/FP32 before publishing
+                    # but omitted these fields. New records also persist them.
+                    precision_fields = {"dispatch_dtype", "dispatch_scale_dtype"}
+                    if precision_fields.intersection(rank) and (
+                        rank.get("dispatch_dtype") != "int8" or rank.get("dispatch_scale_dtype") != "float32"
+                    ):
+                        raise ValueError("Observed dispatch precision differs from the INT8 performance-table contract")
                     for name in ("samples_ms", "wall_samples_ms"):
                         samples = rank[name]
                         if len(samples) != protocol["repeats"] or any(

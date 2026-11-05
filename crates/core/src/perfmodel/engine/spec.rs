@@ -936,6 +936,7 @@ mod tests {
                     execution_mode: "graph".into(),
                 },
                 input_token_multiple: 16,
+                routing_profile: None,
             }),
             OpSpec::AscendDcpAttention(crate::operators::AscendDcpAttentionOp {
                 name: "ascend_dcp_storage_attention".into(),
@@ -1461,7 +1462,7 @@ mod tests {
             Err(AicError::UnsupportedSchemaVersion {
                 kind: "EngineSpec",
                 got: 32,
-                expected: 34,
+                expected: ENGINE_SPEC_SCHEMA_VERSION,
             })
         ));
     }
@@ -1473,7 +1474,19 @@ mod tests {
             Err(AicError::UnsupportedSchemaVersion {
                 kind: "EngineSpec",
                 got: 33,
-                expected: 34,
+                expected: ENGINE_SPEC_SCHEMA_VERSION,
+            })
+        ));
+    }
+
+    #[test]
+    fn tensor_moe_routing_layout_rejects_schema34_before_payload_decode() {
+        assert!(matches!(
+            EngineSpec::from_bincode(&34_u32.to_le_bytes()),
+            Err(AicError::UnsupportedSchemaVersion {
+                kind: "EngineSpec",
+                got: 34,
+                expected: 35,
             })
         ));
     }

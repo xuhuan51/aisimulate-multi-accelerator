@@ -77,6 +77,7 @@ impl AscendDcpAttentionTable {
             padded,
             sequence,
             prefix,
+            false,
             &|batch, tokens, past| {
                 attention_work(
                     spec,
@@ -185,7 +186,7 @@ impl AscendDcpAttentionTable {
             AicError::PerfDatabase(format!("unmeasured Ascend DCP tuple: {key:?}"))
         })?;
         if key.phase == "prefill" {
-            return query_prefill_batch(partitions, active, prefix, sequence);
+            return query_prefill_batch(partitions, active, prefix, sequence, false);
         }
         let plane = partitions.get(&padded).ok_or_else(|| {
             AicError::PerfDatabase(format!(

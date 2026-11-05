@@ -1,10 +1,82 @@
 import hashlib
 import json
+import sys
+from pathlib import Path
 
 import pytest
+
+
+from collector.sglang.ascend_vector import runtime_version, validate_runtime_case
 from collector.sglang.ascend_vector_export import expected_invocation, matches_signature, validated_rows
 
 pytestmark = pytest.mark.unit
+
+
+def test_legacy_vector_runtime_is_limited_to_audited_roles():
+    legacy = "76f9213a411018547f4fd6a75f36feaa4d6bed58"
+    assert runtime_version(legacy) == "0.5.21.dev223+g76f9213a4"
+    for role in ("rope_attention", "split_qk_norm"):
+        validate_runtime_case(legacy, {"role": role})
+    with pytest.raises(ValueError, match="serving audit"):
+        validate_runtime_case(legacy, {"role": "cache_scatter"})
+    with pytest.raises(ValueError, match="Reaudit"):
+        runtime_version("unknown-commit")
+    with pytest.raises(ValueError, match="frozen vector plan"):
+        runtime_version("baa9befa381511cd4d56f83980951e5a45fffc6d", legacy)
+
+
+@pytest.mark.parametrize(
+    ("revision", "version"),
+    [
+        ("baa9befa381511cd4d56f83980951e5a45fffc6d", "0.5.22"),
+        ("76f9213a411018547f4fd6a75f36feaa4d6bed58", "0.5.21.dev223+g76f9213a4"),
+    ],
+)
+def test_vector_export_records_the_measured_framework_version(campaign, tmp_path, monkeypatch, revision, version):
+    from collector import provenance
+    from collector.sglang import ascend_vector_export
+
+    plan, observation, identity, record = campaign
+    declared = json.loads(plan.read_text())
+    for index, case in enumerate(declared["cases"]):
+        case.update(role="split_qk_norm", dimensions=[2048, 512, 64])
+        inputs, outputs, kernel = expected_invocation(case)
+        record["cases"][index].update(**case, input_signature=inputs, output_signature=outputs, kernel_source=kernel)
+    plan.write_text(json.dumps(declared))
+    record["plan_sha256"] = hashlib.sha256(plan.read_bytes()).hexdigest()
+    identity["framework_commit"] = record["runtime"]["framework_commit"] = revision
+    source = Path(ascend_vector_export.__file__).parent
+    identity["collector_source_sha256"] = {
+        name: hashlib.sha256((source / filename).read_bytes()).hexdigest()
+        for name, filename in {"collector": "ascend_vector.py", "kernels": "ascend_vector_kernels.py"}.items()
+    }
+    record["collector_source_sha256"] = identity["collector_source_sha256"]
+    observation.write_text(json.dumps(record))
+    identity_path = tmp_path / "identity.json"
+    identity_path.write_text(json.dumps(identity))
+    published = {}
+    monkeypatch.setattr(
+        provenance, "write_collection_meta", lambda directory, runtime, tables, **kwargs: published.update(runtime)
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "ascend_vector_export",
+            str(observation),
+            "--plan",
+            str(plan),
+            "--runtime-identity",
+            str(identity_path),
+            "--output-dir",
+            str(tmp_path / "published"),
+            "--collector-ref",
+            "test",
+        ],
+    )
+    ascend_vector_export.main()
+    assert published["version"] == version
+    assert published["source_commit"] == revision
 
 
 @pytest.fixture
