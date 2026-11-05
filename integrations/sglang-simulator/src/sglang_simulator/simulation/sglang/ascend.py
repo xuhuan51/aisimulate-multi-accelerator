@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 """CPU execution boundary for the dataclass-based Ascend SGLang runtime.
 
 Keep native scheduling, radix-cache, pool configuration and allocation. Only

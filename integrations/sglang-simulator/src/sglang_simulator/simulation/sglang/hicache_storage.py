@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 import os
 from typing import Any, List, Optional
 

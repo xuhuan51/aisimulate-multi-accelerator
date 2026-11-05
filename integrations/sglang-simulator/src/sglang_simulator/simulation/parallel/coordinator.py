@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 """A separate CPU process owns arrivals, logical clocks and profile output.
 
 The manager's RPC threads only exchange metadata. Native Gloo groups still

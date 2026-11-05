@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 """Opt-in wrappers around real SGLang methods, including spawned workers.
 
 No simulator/model hooks are installed. Patch after import but before manager

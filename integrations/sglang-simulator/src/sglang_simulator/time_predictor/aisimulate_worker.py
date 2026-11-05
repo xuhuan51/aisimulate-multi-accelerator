@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 """Private JSON-lines worker; run by filename in the AISimulate interpreter.
 
 Keep this module stdlib-only until initialization. It must not import SGLang,

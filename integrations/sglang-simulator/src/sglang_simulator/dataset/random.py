@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 from random import randint
 
 from sglang_simulator.dataset.base_dataset import BaseDataset, GenericRequest

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 """Oracle lookup predictor — replays real GPU iter_latency from a pre-built table.
 
 Replay is a diagnostic predictor for separating latency-prediction error from

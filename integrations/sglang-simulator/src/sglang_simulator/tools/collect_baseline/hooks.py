@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 """Hooks for collecting requests and synchronized steps from a real SGLang server."""
 
 from __future__ import annotations

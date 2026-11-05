@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 """AISimulate search adapter executing the native SGLang simulator in a child.
 
 AISimulate remains responsible for candidate generation and canonical timing /

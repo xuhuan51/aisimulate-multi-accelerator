@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 """AIConfigurator pricing for ordinary dense/MoE attention-DP forwards.
 
 Native SGLang supplies the actual per-group batch and padding decision. AIC

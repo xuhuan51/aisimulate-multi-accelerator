@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Modified for AISimulate multi-accelerator workload replay.
+# Upstream attribution is retained in LICENSE and source-manifest.json.
 from sglang_simulator.hook.base_hook import BaseHook
 from sglang_simulator.hook.class_hook_entry import (
     install_class_hooks,
