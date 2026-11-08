@@ -52,6 +52,9 @@ def get_ascend_vector_cases(model_path, case_root=None):
         ("cast_weights_bf16", [geometry["index_n_heads"]]),
         ("routed_scale", [hidden]),
         ("shared_add", [hidden]),
+        ("dp_buffer_zero", [hidden]),
+        ("dp_gather_copy", [hidden]),
+        ("dp_scatter_copy", [hidden]),
         ("rope_cache_gather", [geometry["max_position_embeddings"], rope]),
     ]
     for parallel in geometry["tensor_parallel_sizes"]:

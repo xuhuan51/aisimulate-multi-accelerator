@@ -1,0 +1,87 @@
+{
+  "status": "two_r0_pairs_completed",
+  "model": "GLM-5.2 ModelSlim W8A8",
+  "hardware": "Ascend910C, 16 logical devices",
+  "input_tokens": 8192,
+  "output_tokens": 1024,
+  "concurrency": 32,
+  "requests": 128,
+  "kv_tokens_per_dp": 32768,
+  "serving_source": "native76",
+  "cost_runtime": "SGLang0.5.22 baa9bef / DeepEP0234a271",
+  "communication_table_sha256": "809f4211657a4b30cc0540a81c6aff1a4c539020dbdeb6fa943b5f96b769819d",
+  "boundary": "Formal output-throughput validation against archived matched workload and topology. Cost-runtime and serving-source revisions remain distinct. Each topology has one new completed repeat. TTFT, TPOT and fixed-forward errors are separate metrics.",
+  "measurement_caveat": "Steady communication curve excluded first pair after observing its outlier. Raw all75 failed-CV report and all samples are retained. The first CPU wrapper selected an old package under Python -I and is retained only as baseline control.",
+  "results": [
+    {
+      "topology": "E4",
+      "attention_tp": 4,
+      "attention_dp": 4,
+      "moe_ep": 16,
+      "repeat": 0,
+      "completed": 128,
+      "old_prediction_token_s": 85.89889821941165,
+      "new_prediction_token_s": 121.43131521074501,
+      "measured_token_s": 143.94232999960875,
+      "old_throughput_error_percent": -40.324087973534176,
+      "new_throughput_error_percent": -15.638912326155152,
+      "throughput_target_passed": true,
+      "predicted_p50_ttft_ms": 200415.88752862823,
+      "measured_p50_ttft_ms": 171624.13718248717,
+      "predicted_p50_tpot_ms": 89.36577722597,
+      "measured_p50_tpot_ms": 70.29762793945027,
+      "tpot_error_percent": 27.124882937648742,
+      "ttft_error_percent": 16.776049580675778,
+      "corpus_sha256": "5a0f771784acd16eba81aff9de87c2ad764c0ec1d86264912ac535e8668f93d0",
+      "source_files": [
+        {
+          "name": "glm-E4-control-old-predictor-r0.json",
+          "sha256": "3f2bb361ddf1865d83827b65c971010e543b4f6caed5286291239e05548c6ed2"
+        },
+        {
+          "name": "glm-E4-formal-corrected-r0.json",
+          "sha256": "f070af36fb2050f0774aa50b9532a4fdbd317c7a55db370848a46289dce0e1d3"
+        },
+        {
+          "name": "glm-E4-real-r0.json",
+          "sha256": "1115a68ff98e4ea0616a4bf8f385d26757fbf0d732c8ab30182f36507ecc8640"
+        }
+      ]
+    },
+    {
+      "topology": "E2",
+      "attention_tp": 8,
+      "attention_dp": 2,
+      "moe_ep": 16,
+      "repeat": 0,
+      "completed": 128,
+      "old_prediction_token_s": 50.14646989230826,
+      "new_prediction_token_s": 76.56364827164364,
+      "measured_token_s": 81.47016921648445,
+      "old_throughput_error_percent": -38.44805973207459,
+      "new_throughput_error_percent": -6.0224754557746,
+      "throughput_target_passed": true,
+      "predicted_p50_ttft_ms": 320230.22438980726,
+      "measured_p50_ttft_ms": 304341.3945065113,
+      "predicted_p50_tpot_ms": 71.09970395948933,
+      "measured_p50_tpot_ms": 63.48424415397234,
+      "tpot_error_percent": 11.995826534607135,
+      "ttft_error_percent": 5.22072585921467,
+      "corpus_sha256": "5a0f771784acd16eba81aff9de87c2ad764c0ec1d86264912ac535e8668f93d0",
+      "source_files": [
+        {
+          "name": "glm-E2-control-old-predictor-r0.json",
+          "sha256": "68f432683ca370ce6af7ed7d5fbf86068c3abd3586f3578db552312996f52f37"
+        },
+        {
+          "name": "glm-E2-formal-corrected-r0.json",
+          "sha256": "078f6c486448ea6f530d389eee04beac1a4fec811131dff75cae6752714180b7"
+        },
+        {
+          "name": "glm-E2-real-r0.json",
+          "sha256": "94baa4c4fbd217fa28f8d45ac47753fdf9d08554bbd828ac740cc27ff8af3ac6"
+        }
+      ]
+    }
+  ]
+}

@@ -44,7 +44,7 @@ engine:
 | `workers.<role>.parallelism.decode_context` | Unset (1) | predict only | Decode context parallelism (vLLM `-dcp`, SGLang `--dcp-size`). Must divide `tensor`; adds no GPUs. |
 | `workers.<role>.scheduler.max_batched_tokens` | `8192` | Prefill and aggregated: `{choices: [8192, 16384, 32768]}`; decode: fixed | Positive. Token budget for one scheduler pass on one attention-DP rank. See [SGLang note](#batch-limits). |
 | `workers.<role>.scheduler.max_sequences` | `256`; `1` for `prefill` | Prefill: `{choices: [1, 2, 4, 8, 16, 32, 64, 128, 256]}`; others: `{choices: [256, 512, 1024]}` | Positive. Maximum running requests on one attention-DP rank. |
-| `workers.<role>.scheduler.chunked_prefill_size` | Unset (native default: `8192`) | fixed | SGLang only. Positive global chunk budget, divided by `attention_data` inside the scheduler. |
+| `workers.<role>.scheduler.chunked_prefill_size` | Unset (native default: `8192`) | Fixed, integer choices or range | SGLang only. Positive global chunk budget, divided by `attention_data` inside the scheduler. |
 | `workers.<role>.scheduler.max_prefill_tokens` | Unset (native default: `16384`) | fixed | SGLang only. Positive prefill admission token budget on each attention-DP rank. |
 | `workers.<role>.scheduler.ignore_eos` | Unset (native default: `false`) | fixed | SGLang only. Boolean; apply the pinned 0.5.22 fixed-output admission policy to every request on this role. Match the client's `ignore_eos` sampling setting. |
 | `workers.<role>.scheduler.prefill_schedule_interval` | `1` | predict only | vLLM only. See [vLLM prefill schedule interval](#vllm-prefill-schedule-interval). |
@@ -153,6 +153,14 @@ For SGLang `--chunked-prefill-size 16384 --max-prefill-tokens 32768
 `max_sequences: 32`. SGLang divides the global running-request limit by
 attention DP; AISimulate's `max_sequences` is already per rank and must not
 be divided again. The effective chunk is 8192 tokens per rank.
+
+Recommendation accepts `chunked_prefill_size: {choices: [4096, 8192, 16384]}`
+or an integer `range`, including a log-scale range. An omitted value retains
+the native default. A scalar pins the budget. Search evaluates each selected
+global value and saves that scalar in the candidate YAML. The rank constructor
+then divides it once by that candidate's `attention_data`. Keep the local chunk
+large enough for the configured KV page size and verify timing-data coverage
+for the resulting per-rank inputs.
 
 For a fixed-length benchmark that sends `ignore_eos=true`, set
 `scheduler.ignore_eos: true` on the participating roles. Running requests reserve

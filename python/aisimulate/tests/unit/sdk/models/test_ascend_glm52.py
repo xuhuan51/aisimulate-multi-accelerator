@@ -68,6 +68,35 @@ def test_resident_inventory_matches_loaded_united_parameters(model_path):
     assert context["context_logits_finalize"][1]["token_axis"] == "requests"
 
 
+@pytest.mark.parametrize("expert_ep,attention_tp,buffer_layers", [(1, 2, 78), (16, 2, 3), (1, 1, 78), (16, 1, 3)])
+def test_prefill_dp_buffer_costs_follow_the_gather_path(model_path, expert_ep, attention_tp, buffer_layers):
+    config = configuration()
+    config.tp_size, config.attention_dp_size = attention_tp, 16 // attention_tp
+    config.moe_ep_size, config.moe_tp_size = expert_ep, 16 // expert_ep
+    model = get_model(model_path, config, "sglang")
+    context = flattened(model.context_ops)
+    scatter_count = buffer_layers * (2 if attention_tp > 1 else 1)
+    expected = {
+        "context_dp_global_buffer_zero": ("dp_buffer_zero", buffer_layers),
+        "context_dp_local_buffer_zero": ("dp_buffer_zero", scatter_count),
+        "context_dp_gather_copy": ("dp_gather_copy", buffer_layers),
+        "context_dp_scatter_copy": ("dp_scatter_copy", scatter_count),
+    }
+    for name, (role, count) in expected.items():
+        kind, spec = context[name]
+        assert kind == "AscendVector"
+        assert spec["key"] == {"role": role, "dimensions": [6144], "execution_mode": "eager"}
+        assert spec["scale_factor"] == count
+    wrapped = [json.loads(op._spec_json()) for op in model.context_ops]
+    global_zero = next(
+        op["TokenScale"]
+        for op in wrapped
+        if op.get("TokenScale", {}).get("op", {}).get("AscendVector", {}).get("name") == "context_dp_global_buffer_zero"
+    )
+    assert global_zero["numerator"] == 16 // attention_tp and global_zero["denominator"] == 1
+    assert not any("_dp_gather_copy" in name or "_dp_buffer_zero" in name for name in flattened(model.generation_ops))
+
+
 @pytest.mark.parametrize("attention_tp,attention_dp,expert_ep", [(4, 4, 16), (1, 32, 32)])
 def test_observed_prefill_counts_change_compute_shape_without_adding_latency(
     model_path, attention_tp, attention_dp, expert_ep

@@ -1,0 +1,158 @@
+{
+  "status": "coverage_audited",
+  "attempts": [
+    {
+      "tp": 2,
+      "dp": 8,
+      "ep": 16,
+      "graph_custom_roles_missing_exact_tp": [
+        "add_rms_norm",
+        "gdn_conv",
+        "gdn_norm_gate",
+        "gdn_scan",
+        "rms_norm",
+        "router",
+        "shared_gate_merge",
+        "shared_swiglu"
+      ],
+      "required_linear_identities": 9,
+      "present_linear_identities": 4,
+      "missing_linear_identities": [
+        {
+          "quant_mode": "bfloat16",
+          "n": 64,
+          "k": 4096
+        },
+        {
+          "quant_mode": "bfloat16",
+          "n": 4096,
+          "k": 4096
+        },
+        {
+          "quant_mode": "bfloat16",
+          "n": 10240,
+          "k": 4096
+        },
+        {
+          "quant_mode": "bfloat16",
+          "n": 124160,
+          "k": 4096
+        },
+        {
+          "quant_mode": "w8a8_dynamic",
+          "n": 8704,
+          "k": 4096
+        }
+      ],
+      "missing_hccl_curves": [
+        {
+          "operation": "reduce_scatter",
+          "num_ranks": 2
+        },
+        {
+          "operation": "all_gather",
+          "num_ranks": 2
+        }
+      ],
+      "source_config": "/workspace/benchmarks/evidence/ascend910c-qwen35-graph-20261108/topology-coverage-20261108-r1/tp2-dp8-ep16.yaml",
+      "scope": "Identity coverage only. Present identities still require token/byte-axis and runtime-signature verification.",
+      "command": [
+        "/opt/aisimulate-venv/bin/aisimulate",
+        "predict",
+        "-c",
+        "/workspace/benchmarks/evidence/ascend910c-qwen35-graph-20261108/topology-coverage-20261108-r1/tp2-dp8-ep16.yaml",
+        "--output-dir",
+        "/workspace/benchmarks/evidence/ascend910c-qwen35-graph-20261108/topology-coverage-20261108-r1/tp2-dp8-ep16-prediction",
+        "--format",
+        "json"
+      ],
+      "exit_code": 1,
+      "status": "blocked_by_current_graph_contract",
+      "log": "tp2-dp8-ep16.log",
+      "prediction_metrics": null
+    },
+    {
+      "tp": 8,
+      "dp": 2,
+      "ep": 16,
+      "graph_custom_roles_missing_exact_tp": [
+        "add_rms_norm",
+        "gdn_conv",
+        "gdn_norm_gate",
+        "gdn_scan",
+        "rms_norm",
+        "router",
+        "shared_gate_merge",
+        "shared_swiglu"
+      ],
+      "required_linear_identities": 8,
+      "present_linear_identities": 4,
+      "missing_linear_identities": [
+        {
+          "quant_mode": "bfloat16",
+          "n": 16,
+          "k": 4096
+        },
+        {
+          "quant_mode": "bfloat16",
+          "n": 2560,
+          "k": 4096
+        },
+        {
+          "quant_mode": "bfloat16",
+          "n": 31040,
+          "k": 4096
+        },
+        {
+          "quant_mode": "w8a8_dynamic",
+          "n": 2560,
+          "k": 4096
+        }
+      ],
+      "missing_hccl_curves": [
+        {
+          "operation": "reduce_scatter",
+          "num_ranks": 8
+        },
+        {
+          "operation": "all_gather",
+          "num_ranks": 8
+        }
+      ],
+      "source_config": "/workspace/benchmarks/evidence/ascend910c-qwen35-graph-20261108/topology-coverage-20261108-r1/tp8-dp2-ep16.yaml",
+      "scope": "Identity coverage only. Present identities still require token/byte-axis and runtime-signature verification.",
+      "command": [
+        "/opt/aisimulate-venv/bin/aisimulate",
+        "predict",
+        "-c",
+        "/workspace/benchmarks/evidence/ascend910c-qwen35-graph-20261108/topology-coverage-20261108-r1/tp8-dp2-ep16.yaml",
+        "--output-dir",
+        "/workspace/benchmarks/evidence/ascend910c-qwen35-graph-20261108/topology-coverage-20261108-r1/tp8-dp2-ep16-prediction",
+        "--format",
+        "json"
+      ],
+      "exit_code": 1,
+      "status": "blocked_by_current_graph_contract",
+      "log": "tp8-dp2-ep16.log",
+      "prediction_metrics": null
+    }
+  ],
+  "table_sha256": {
+    "/opt/qwen-graph-systems/data/ascend910c/sglang/q397-graph-major-pilot-20261108/ascend_qwen_perf.parquet": "caa1bb634a04818a6912f7df3f726ab00265d34abf8ba5577b8f110db0c40347",
+    "/opt/qwen-graph-systems/data/ascend910c/sglang/q397-graph-major-pilot-20261108/ascend_linear_perf.parquet": "c2b097cbd0ea377e1c2a75f88dcec838b8042e1197f558048cba6c3e6cf69fdf",
+    "/opt/qwen-graph-systems/data/ascend910c/comm/hccl/q397-graph-major-pilot-20261108/hccl_perf.parquet": "6f6e4b9e60078106a9805ee0b286313ea2d60c34b6b0383c4db8cdffe2efe563"
+  },
+  "graph_custom_rows": 35,
+  "graph_linear_rows": 18,
+  "graph_hccl_rows": 3,
+  "expert_graph_tokens": [
+    1
+  ],
+  "limitations": [
+    "Both ordinary CLI attempts retain the production topology guard and deny fallback.",
+    "GDN TP2/TP8 Graph state/Conv/norm geometries need qualified data.",
+    "Shape-independent vector roles are reuse candidates pending physical signature and token-axis audit.",
+    "EP16 M1 expert and transport rows are potential reuse candidates. TP2 may also require M2. Current native token mapping is explicitly TP4-specific.",
+    "No target serving throughput or unmeasured Graph latency was inserted."
+  ]
+}

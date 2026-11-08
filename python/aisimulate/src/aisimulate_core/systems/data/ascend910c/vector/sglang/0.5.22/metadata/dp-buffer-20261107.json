@@ -1,0 +1,108 @@
+{
+  "selection": "Copy curves use the complete r1 role populations. The entire zero curve is replaced by r2 after two small-token r1 points failed CV qualification.",
+  "source_archive_sha256": "fdd64ee99621f7e6b83879497804e85cb5a7192d7816550d1133a69312b6b632",
+  "original_rows": 1418,
+  "added_rows": 57,
+  "campaigns": [
+    {
+      "plan": "plan-r1.json",
+      "observation": "dp-buffer-r1.json",
+      "published_roles": [
+        "dp_gather_copy",
+        "dp_scatter_copy"
+      ],
+      "published_rows": 38,
+      "report": {
+        "identity": {
+          "runtime": {
+            "image_digest": "quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443",
+            "framework_commit": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+            "driver_version_info": "Version=26.1.1\nascendhal_version=7.35.23\naicpu_version=1.0\ntdt_version=1.0\nlog_version=1.0\nprof_version=2.0\ndvppkernels_version=1.1\ntsfw_version=1.0\nInnerversion=V100R001C10SPC009B220\ncompatible_version=[V100R001C21],[V100R001C22],[V100R001C23],[V100R001C25],[V100R001C10]\ncompatible_version_fw=[7.0.0,9.9.9]\npackage_version=26.1.1\n",
+            "hardware": "Ascend910_9382",
+            "collector_source_sha256": {
+              "collector": "94f3357f09d46425f6caa619fc0d7bf7af32572e60c89242193ac9178a554922",
+              "kernels": "ec7acb3daae1e2037f0fe756a096b3338afa32ee396cc8c75dcc15e8810ca649"
+            },
+            "torch": "2.10.0+cpu",
+            "torch_npu": "2.10.0.post6"
+          },
+          "protocol": {
+            "iterations": 128,
+            "warmup": 10,
+            "repeats": 15
+          },
+          "serving_setup": {
+            "environment": {},
+            "worker_cpu_affinity": {
+              "0": [
+                0,
+                1,
+                2,
+                3
+              ]
+            }
+          },
+          "plan_sha256": "1144c22e81dcd33d8ed6fa1318b6762850d0b8b8b4df9e7e9b42fe882fddcc22"
+        },
+        "attempted": 57,
+        "qualified": 55,
+        "unqualified": [
+          {
+            "plan_index": 0,
+            "cv": 0.1328067658440461,
+            "reason": "CV exceeds10%"
+          },
+          {
+            "plan_index": 1,
+            "cv": 0.29790928380839027,
+            "reason": "CV exceeds10%"
+          }
+        ]
+      }
+    },
+    {
+      "plan": "plan-zero-r2.json",
+      "observation": "dp-zero-r2.json",
+      "published_roles": [
+        "dp_buffer_zero"
+      ],
+      "published_rows": 19,
+      "report": {
+        "identity": {
+          "runtime": {
+            "image_digest": "quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443",
+            "framework_commit": "baa9befa381511cd4d56f83980951e5a45fffc6d",
+            "driver_version_info": "Version=26.1.1\nascendhal_version=7.35.23\naicpu_version=1.0\ntdt_version=1.0\nlog_version=1.0\nprof_version=2.0\ndvppkernels_version=1.1\ntsfw_version=1.0\nInnerversion=V100R001C10SPC009B220\ncompatible_version=[V100R001C21],[V100R001C22],[V100R001C23],[V100R001C25],[V100R001C10]\ncompatible_version_fw=[7.0.0,9.9.9]\npackage_version=26.1.1\n",
+            "hardware": "Ascend910_9382",
+            "collector_source_sha256": {
+              "collector": "94f3357f09d46425f6caa619fc0d7bf7af32572e60c89242193ac9178a554922",
+              "kernels": "ec7acb3daae1e2037f0fe756a096b3338afa32ee396cc8c75dcc15e8810ca649"
+            },
+            "torch": "2.10.0+cpu",
+            "torch_npu": "2.10.0.post6"
+          },
+          "protocol": {
+            "iterations": 1024,
+            "warmup": 8,
+            "repeats": 15
+          },
+          "serving_setup": {
+            "environment": {},
+            "worker_cpu_affinity": {
+              "0": [
+                0,
+                1,
+                2,
+                3
+              ]
+            }
+          },
+          "plan_sha256": "ebe181fde1bb36048d0153e9c10fca5e160112c78b9c554cb8e0fc428995819b"
+        },
+        "attempted": 19,
+        "qualified": 19,
+        "unqualified": []
+      }
+    }
+  ]
+}

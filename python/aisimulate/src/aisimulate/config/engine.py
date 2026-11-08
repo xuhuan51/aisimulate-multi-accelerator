@@ -748,7 +748,7 @@ class ParallelismRecommendationConfig(StrictModel):
 class SchedulerRecommendationConfig(StrictModel):
     max_batched_tokens: PositiveInt | Choices[PositiveInt] | IntegerRange | None = None
     max_sequences: PositiveInt | Choices[PositiveInt] | IntegerRange | None = None
-    chunked_prefill_size: PositiveInt | None = None
+    chunked_prefill_size: PositiveInt | Choices[PositiveInt] | IntegerRange | None = None
     max_prefill_tokens: PositiveInt | None = None
     ignore_eos: StrictBool | None = None
     decode_reserved_tokens: NonNegativeInt = 0

@@ -160,11 +160,8 @@ def configure_ascend_glm52(model, raw_config):
             "Ascend DCP eager decode requires eager DCP profiles, which are unavailable"
         )
 
-
     routing_profile = settings.get("tensor_moe_routing_profile")
-    if routing_profile is not None and (
-        not tensor_moe or routing_profile["intermediate_size"] * global_tp != 2048
-    ):
+    if routing_profile is not None and (not tensor_moe or routing_profile["intermediate_size"] * global_tp != 2048):
         raise InvalidEngineConfigurationError("Tensor-MoE routing calibration requires matching EP1 geometry")
     if tensor_moe and settings["routing"] != "balanced":
         raise InvalidEngineConfigurationError("Ascend tensor-MoE currently requires measured balanced top8 routing")
@@ -426,6 +423,23 @@ def configure_ascend_glm52(model, raw_config):
             entries.append(collective("dense_global_sums", "all_reduce", global_tp, 6, global_tokens=True))
             if tensor_moe:
                 entries.append(collective("sparse_global_sums", "all_reduce", global_tp, 150, global_tokens=True))
+            if context and attention_dp > 1 and dcp == 1:
+                # SUM_LEN gathers partial hidden states before the MLP,
+                # scatters the residual when attention TP > 1, and scatters
+                # the MLP output afterwards. dp_attention.py at baa9befa:
+                # 617-664,1030-1059 zeros each destination before memcpy.
+                # HCCL curves exclude these local operations. DeepEP bypasses
+                # this path in the 75 sparse layers.
+                buffer_layers = 78 if tensor_moe else 3
+                scatter_count = buffer_layers * (2 if local_tp > 1 else 1)
+                entries.extend(
+                    [
+                        vector("dp_global_buffer_zero", "dp_buffer_zero", [6144], buffer_layers, global_tokens=True),
+                        vector("dp_local_buffer_zero", "dp_buffer_zero", [6144], scatter_count),
+                        vector("dp_gather_copy", "dp_gather_copy", [6144], buffer_layers),
+                        vector("dp_scatter_copy", "dp_scatter_copy", [6144], scatter_count),
+                    ]
+                )
         else:
             entries.extend(
                 [

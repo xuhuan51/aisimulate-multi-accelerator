@@ -26,6 +26,8 @@ def test_declared_vector_geometry_preserves_parallelism_and_precision_boundaries
     assert shapes("embedding") == {(vocabulary, 6144) for vocabulary in (154880, 77440, 38720, 19360, 9680)}
     assert shapes("cache_scatter") == {(53376, 64), (53376, 128), (53376, 512)}
     assert shapes("router_topk") == {(256, 8)}
+    for role in ("dp_buffer_zero", "dp_gather_copy", "dp_scatter_copy"):
+        assert shapes(role) == {(6144,)}
     assert shapes("logits_finalize") == {(parallel, 154880) for parallel in (1, 2, 4, 8, 16)}
     assert max(case["tokens"] for case in cases if case["role"] == "logits_finalize") == 32
     transfers = [case for case in cases if case["role"] == "seq_lens_h2d"]

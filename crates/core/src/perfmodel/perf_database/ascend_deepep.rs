@@ -162,7 +162,7 @@ fn load(path: &Path) -> Result<Grids, AicError> {
     let verification = reader.col("execution_verification")?;
     let provenance = reader.col("runtime_identity_sha256")?;
     let mut raw: BTreeMap<AscendDeepEpKey, BTreeMap<u32, f64>> = BTreeMap::new();
-    let mut identity: Option<String> = None;
+    let mut identities: BTreeMap<AscendDeepEpKey, String> = BTreeMap::new();
     for row in reader.rows()? {
         let row = row?;
         let key = AscendDeepEpKey {
@@ -212,15 +212,14 @@ fn load(path: &Path) -> Result<Grids, AicError> {
                 "unqualified Ascend DeepEP row: {key:?}"
             )));
         }
-        if identity
-            .as_ref()
-            .is_some_and(|expected| expected != runtime)
-        {
+        let expected = identities
+            .entry(key.clone())
+            .or_insert_with(|| runtime.to_owned());
+        if expected != runtime {
             return Err(AicError::InvalidPerfData(
-                "Ascend DeepEP mixes runtime identities".into(),
+                "Ascend DeepEP curve mixes runtime identities".into(),
             ));
         }
-        identity.get_or_insert_with(|| runtime.to_owned());
         if raw
             .entry(key)
             .or_default()
@@ -357,6 +356,33 @@ mod tests {
                 .unwrap_err()
                 .is_missing_perf_data()
         );
+    }
+
+    #[test]
+    fn runtime_identity_is_uniform_within_each_complete_curve() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join(BASENAME);
+        let mut values = columns();
+        values[20] = Col::Str(
+            "runtime_identity_sha256",
+            vec![
+                "1111111111111111111111111111111111111111111111111111111111111111",
+                "2222222222222222222222222222222222222222222222222222222222222222",
+            ],
+        );
+        write_parquet(&path, &values);
+        assert!(matches!(
+            AscendDeepEpTable::new(Some(path.clone())).ensure_key(&key()),
+            Err(AicError::InvalidPerfData(_))
+        ));
+
+        values[1] = Col::Str("operation", vec!["dispatch", "combine"]);
+        write_parquet(&path, &values);
+        let table = AscendDeepEpTable::new(Some(path));
+        assert_eq!(table.query(&key(), 1).unwrap(), 1.0);
+        let mut combine = key();
+        combine.operation = "combine".into();
+        assert_eq!(table.query(&combine, 4).unwrap(), 4.0);
     }
 
     #[test]

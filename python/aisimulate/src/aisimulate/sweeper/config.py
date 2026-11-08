@@ -36,7 +36,7 @@ from ..config.common import (
     is_active_engine_model_control,
     requested_backend_version,
 )
-from ..config.engine import NgramSpeculationConfig, TokenizationConfig
+from ..config.engine import NgramSpeculationConfig, PositiveInt, TokenizationConfig
 from ..config.traffic import ClientDispatchConfig
 
 
@@ -596,7 +596,7 @@ class SearchSpace(BaseModel):
     # prefill engine (disagg branch): scheduler batching capacity
     prefill_max_num_batched_tokens: list[int] = [8192, 16384, 32768]
     prefill_max_num_seqs: list[int] = [1, 2, 4, 8, 16, 32, 64, 128, 256]
-    prefill_chunked_prefill_size: int | None = Field(default=None, strict=True, gt=0)
+    prefill_chunked_prefill_size: PositiveInt | list[PositiveInt] | None = None
     prefill_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
     prefill_ignore_eos: bool | None = Field(default=None, strict=True)
     # pinned
@@ -615,7 +615,7 @@ class SearchSpace(BaseModel):
     # decode engine (disagg branch): scheduler batching capacity
     decode_max_num_batched_tokens: list[int] = [8192]
     decode_max_num_seqs: list[int] = [256, 512, 1024]
-    decode_chunked_prefill_size: int | None = Field(default=None, strict=True, gt=0)
+    decode_chunked_prefill_size: PositiveInt | list[PositiveInt] | None = None
     decode_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
     decode_ignore_eos: bool | None = Field(default=None, strict=True)
     decode_reserved_tokens: int = Field(default=0, strict=True, ge=0)
@@ -635,7 +635,7 @@ class SearchSpace(BaseModel):
     # agg engine (agg branch): scheduler batching capacity
     agg_max_num_batched_tokens: list[int] = [8192, 16384, 32768]
     agg_max_num_seqs: list[int] = [256, 512, 1024]
-    agg_chunked_prefill_size: int | None = Field(default=None, strict=True, gt=0)
+    agg_chunked_prefill_size: PositiveInt | list[PositiveInt] | None = None
     agg_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
     agg_ignore_eos: bool | None = Field(default=None, strict=True)
     # pinned
@@ -750,6 +750,9 @@ class SearchSpace(BaseModel):
             value = getattr(self, field_name)
             if value not in FORWARD_MODEL_CHOICES:
                 raise ValueError(f"{field_name} has invalid choice {value!r}; allowed: {list(FORWARD_MODEL_CHOICES)}")
+        for role in ("agg", "prefill", "decode"):
+            if getattr(self, f"{role}_chunked_prefill_size") == []:
+                raise ValueError(f"{role}_chunked_prefill_size must contain positive integers")
         if not self._uses_legacy_estimator_provider():
             for role in ("agg", "prefill", "decode"):
                 mode = self.role_estimator_controls.get(role, {}).get("estimation_mode", self.estimation_mode)

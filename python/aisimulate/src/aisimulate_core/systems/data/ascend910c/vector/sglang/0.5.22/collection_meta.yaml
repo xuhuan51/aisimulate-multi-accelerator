@@ -8,7 +8,7 @@ runtime:
   version: 0.5.22
   image_digest: quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443
   source_commit: baa9befa381511cd4d56f83980951e5a45fffc6d
-  abi:
+  abi: &id001
     torch: 2.10.0+cpu
     torch_npu: 2.10.0.post6
     driver_version_info: 'Version=26.1.1
@@ -38,7 +38,7 @@ runtime:
       '
 tables:
   ascend_vector_perf:
-    rows: 1418
+    rows: 1475
     status: complete
     collections:
     - collector_ref: bcc065a7
@@ -293,3 +293,33 @@ tables:
             package_version=26.1.1
 
             '
+    - collector_ref: worktree/f134fa6f+dp-buffers-20261107
+      collector_hash: sha256:1826ce64f8dc298fd0de332785e3e8fefc53aaef38981967ae8b390388addd05
+      case_plan_hash: sha256:61e229bf15568afa2215a26ff3f835448f1873663bb21e81efaf16d0b3bb1e58
+      collected_at: '2026-11-07T15:44:50.270328+00:00'
+      rows: 38
+      classified_failures: 2
+      status: complete
+      source_campaign_rows: 55
+      source_campaign_status: partial
+      runtime:
+        framework: sglang
+        version: 0.5.22
+        image_digest: quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443
+        source_commit: baa9befa381511cd4d56f83980951e5a45fffc6d
+        abi: *id001
+    - collector_ref: worktree/f134fa6f+dp-buffers-20261107
+      collector_hash: sha256:1826ce64f8dc298fd0de332785e3e8fefc53aaef38981967ae8b390388addd05
+      case_plan_hash: sha256:dcf34e7c9445b2390902b1ac717c90c54647db19f9a3b2bfe4fb0944b34c64a8
+      collected_at: '2026-11-07T15:44:50.340369+00:00'
+      rows: 19
+      classified_failures: 0
+      status: complete
+      source_campaign_rows: 19
+      source_campaign_status: complete
+      runtime:
+        framework: sglang
+        version: 0.5.22
+        image_digest: quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443
+        source_commit: baa9befa381511cd4d56f83980951e5a45fffc6d
+        abi: *id001

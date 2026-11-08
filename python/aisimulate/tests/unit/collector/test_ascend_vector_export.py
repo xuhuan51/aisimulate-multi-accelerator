@@ -4,21 +4,39 @@ import sys
 from pathlib import Path
 
 import pytest
-
-
 from collector.sglang.ascend_vector import runtime_version, validate_runtime_case
 from collector.sglang.ascend_vector_export import expected_invocation, matches_signature, validated_rows
 
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.parametrize("role", ["dp_buffer_zero", "dp_gather_copy", "dp_scatter_copy"])
+def test_dp_buffer_boundaries_have_distinct_measured_keys(role):
+    inputs, output, kernel = expected_invocation(
+        {"role": role, "dimensions": [6144], "tokens": 512, "execution_mode": "eager"}
+    )
+    if role == "dp_buffer_zero":
+        assert kernel == "torch.Tensor.fill_"
+        assert inputs["buffer"]["shape"] == output["shape"] == [512, 6144]
+    else:
+        assert kernel == "sglang.srt.layers.dp_attention.memcpy"
+        assert inputs["offset"]["dtype"] == inputs["size"]["dtype"] == "torch.int32"
+        assert inputs["offset"]["shape"] == inputs["size"]["shape"] == []
+        assert inputs["source"]["shape"] == ([1024, 6144] if role == "dp_scatter_copy" else [512, 6144])
+        assert output["shape"] == ([512, 6144] if role == "dp_scatter_copy" else [1024, 6144])
+
+
 def test_legacy_vector_runtime_is_limited_to_audited_roles():
     legacy = "76f9213a411018547f4fd6a75f36feaa4d6bed58"
     assert runtime_version(legacy) == "0.5.21.dev223+g76f9213a4"
-    for role in ("rope_attention", "split_qk_norm"):
+    for role in ("rope_attention", "split_qk_norm", "rms_bias", "add_rms_bias"):
         validate_runtime_case(legacy, {"role": role})
+    for width in (64, 128, 512):
+        validate_runtime_case(legacy, {"role": "cache_scatter", "dimensions": [53376, width]})
     with pytest.raises(ValueError, match="serving audit"):
-        validate_runtime_case(legacy, {"role": "cache_scatter"})
+        validate_runtime_case(legacy, {"role": "cache_scatter", "dimensions": [53376, 256]})
+    with pytest.raises(ValueError, match="serving audit"):
+        validate_runtime_case(legacy, {"role": "router_topk"})
     with pytest.raises(ValueError, match="Reaudit"):
         runtime_version("unknown-commit")
     with pytest.raises(ValueError, match="frozen vector plan"):

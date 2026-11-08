@@ -24,7 +24,60 @@ def prepare(case, torch, torch_npu):
     def reset():
         return None
 
-    if role == "seq_lens_h2d":
+    if role == "dp_buffer_zero":
+        if dimensions != [6144]:
+            raise ValueError("DP buffer zero requires BF16 hidden width 6144")
+        values = random((tokens, dimensions[0]))
+        inputs = {"buffer": values}
+        kernel = "torch.Tensor.fill_"
+
+        def invoke():
+            return values.fill_(0)
+
+        def reference():
+            return torch.zeros(len(rows), dimensions[0])
+
+        def perturb():
+            values.fill_(3)
+
+    elif role in {"dp_gather_copy", "dp_scatter_copy"}:
+        # SGLang baa9befa dp_attention.memcpy delegates to the installed
+        # memcpy_triton. Its grid is min(src.numel(), dst.numel()), and its
+        # device scalars select a contiguous row range. Use a nonzero offset
+        # in both directions and check the untouched destination rows too.
+        from sglang.srt.layers.dp_attention import memcpy, memcpy_func
+
+        if dimensions != [6144]:
+            raise ValueError("DP buffer copy requires BF16 hidden width 6144")
+        if memcpy_func.__module__ != "sglang.kernels.ops.memory.memcpy_triton":
+            raise ValueError("Expected SGLang's NPU Triton DP copy dispatch")
+        scatter = role == "dp_scatter_copy"
+        source = random((tokens * (2 if scatter else 1), dimensions[0]))
+        target = torch.full((tokens * (1 if scatter else 2), dimensions[0]), -7, device="npu", dtype=torch.bfloat16)
+        offset = torch.tensor(tokens, device="npu", dtype=torch.int32)
+        size = torch.tensor(tokens, device="npu", dtype=torch.int32)
+        inputs = {"source": source, "target": target, "offset": offset, "size": size}
+        kernel = "sglang.srt.layers.dp_attention.memcpy"
+
+        def invoke():
+            memcpy(target, source, 0, offset, size, scatter)
+            return target
+
+        def reference():
+            start = tokens if scatter else 0
+            return source[[start + row for row in rows]].cpu().float()
+
+        def sample_output(output):
+            if not scatter and not torch.all(output[:tokens] == -7):
+                raise ValueError("DP gather copy changed rows outside its destination range")
+            start = 0 if scatter else tokens
+            return output[[start + row for row in rows]].cpu().float()
+
+        def perturb():
+            source.neg_()
+            target.fill_(-7)
+
+    elif role == "seq_lens_h2d":
         if dimensions != [4] or case["execution_mode"] != "eager":
             raise ValueError("Sequence-length transfers require eager CPU INT32 metadata")
         values = torch.arange(tokens, dtype=torch.int32, device="cpu") + 16384
@@ -348,7 +401,7 @@ def prepare(case, torch, torch_npu):
     else:
         raise ValueError(f"Unknown vector role: {role}")
 
-    if role != "cache_scatter":
+    if role not in {"cache_scatter", "dp_gather_copy", "dp_scatter_copy"}:
         sample_output = cpu
 
     def check(observed, expected):

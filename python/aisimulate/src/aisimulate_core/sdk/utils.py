@@ -1921,9 +1921,9 @@ def _load_model_config_from_model_path(model_path: str) -> dict:
     # Check if it's a local path
     if os.path.isdir(model_path):
         config = _attach_llama4_processor_config(_load_local_config(model_path), model_path)
-        from aisimulate_core.modelslim import read_glm_modelslim
+        from aisimulate_core.modelslim import read_modelslim
 
-        modelslim = read_glm_modelslim(model_path, config)
+        modelslim = read_modelslim(model_path, config)
         if modelslim is not None:
             existing = (_get_language_quantization_config(config) or {}).get("quant_method")
             if existing not in {None, "modelslim"}:

@@ -30,15 +30,36 @@ def runtime_version(revision, expected_revision=None):
 
 def validate_runtime_case(revision, case):
     runtime_version(revision)
+    # The native76 MLA BF16 storage path at hardware_backend/npu/
+    # memory_pool_npu.py:904-915,951-957 scatters latent/rotary/indexer
+    # tensors through [slots, 1, width] views with the request's location
+    # dtype. The native76 GLM5.3 trace confirms INT64 in Prefill and INT32
+    # in Graph Decode for all three widths.
+    audited_dsa_cache = case["role"] == "cache_scatter" and case.get("dimensions") in (
+        [53376, 64],
+        [53376, 128],
+        [53376, 512],
+    )
     # The 2026-10-28 NPU25 vector-native76 probe verified these two call
     # boundaries against their shape/stride/dtype and numerical contracts.
     # Serving sites at 76f9213a: hardware_backend/npu/modules/
     # deepseek_v2_attention_mla_npu.py:219,439 and layers/rotary_embedding/
     # base.py:315-323. Both call the installed sgl_kernel_npu implementations.
-    if revision == "76f9213a411018547f4fd6a75f36feaa4d6bed58" and case["role"] not in {
-        "rope_attention",
-        "split_qk_norm",
-    }:
+    # ModelSlim at the same revision, layers/quantization/modelslim/
+    # modelslim.py:60-86, selects add_rmsnorm_bias with a residual and
+    # npu_rms_norm followed by bias addition without one. Both boundaries
+    # use the installed wrapper in ascend_vector_kernels.prepare.
+    if (
+        revision == "76f9213a411018547f4fd6a75f36feaa4d6bed58"
+        and case["role"]
+        not in {
+            "rope_attention",
+            "split_qk_norm",
+            "rms_bias",
+            "add_rms_bias",
+        }
+        and not audited_dsa_cache
+    ):
         raise ValueError(f"Vector role {case['role']} needs a serving audit for {revision}")
 
 

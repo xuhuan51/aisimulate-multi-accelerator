@@ -1,0 +1,1924 @@
+{
+  "schema": "aisimulate-qwen35-modelslim-metadata/v1",
+  "source": "/home/daizijian/daizijian_data/q397-megamoe-20261018/models/Qwen3.5-397B-A17B-w8a8-mtp/quant_model_description.json",
+  "source_sha256": "060a959a44c1fe326e5025a151352d2d004fa6dc74a77b7e9eb18e06fe0df635",
+  "declared_model_quant_type": "W8A8_DYNAMIC",
+  "primary_gemm_mode": "bfloat16",
+  "full_attention_qkv_mode": "w8a8_dynamic",
+  "precision_policy": "per_operation; primary_gemm_mode is only the unquantized default",
+  "moe_mode": "w8a8_dynamic",
+  "embedding": "FLOAT",
+  "lm_head": "FLOAT",
+  "checkpoint_float_dtype": "bfloat16",
+  "declared_mamba_ssm_dtype": "float32",
+  "floating_dtype_scope": "Checkpoint dtype only; serving overrides and tensor storage need independent validation.",
+  "execution_status": "ascend_operator_graph_pending",
+  "scope": "text_decoder_only; vision and MTP are not qualified",
+  "layers": [
+    {
+      "layer": 0,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 1,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 2,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 3,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 4,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 5,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 6,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 7,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 8,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 9,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 10,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 11,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 12,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 13,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 14,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 15,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 16,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 17,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 18,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 19,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 20,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 21,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 22,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 23,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 24,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 25,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 26,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 27,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 28,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 29,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 30,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 31,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 32,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 33,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 34,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 35,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 36,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 37,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 38,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 39,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 40,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 41,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 42,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 43,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 44,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 45,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 46,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 47,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 48,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 49,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 50,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 51,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 52,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 53,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 54,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 55,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 56,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 57,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 58,
+      "kind": "linear_attention",
+      "attention": {
+        "in_proj_qkv": "FLOAT",
+        "in_proj_z": "FLOAT",
+        "in_proj_b": "FLOAT",
+        "in_proj_a": "FLOAT",
+        "out_proj": "FLOAT",
+        "conv1d": "FLOAT",
+        "norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    },
+    {
+      "layer": 59,
+      "kind": "full_attention",
+      "attention": {
+        "q_proj": "W8A8_DYNAMIC",
+        "k_proj": "W8A8_DYNAMIC",
+        "v_proj": "W8A8_DYNAMIC",
+        "o_proj": "FLOAT",
+        "q_norm": "FLOAT",
+        "k_norm": "FLOAT"
+      },
+      "norms": {
+        "input_layernorm": "FLOAT",
+        "post_attention_layernorm": "FLOAT"
+      },
+      "mlp": {
+        "experts": 512,
+        "routed": {
+          "gate_proj": "W8A8_DYNAMIC",
+          "up_proj": "W8A8_DYNAMIC",
+          "down_proj": "W8A8_DYNAMIC"
+        },
+        "router": "FLOAT",
+        "shared": {
+          "gate_proj": "FLOAT",
+          "up_proj": "FLOAT",
+          "down_proj": "FLOAT"
+        },
+        "shared_gate": "FLOAT"
+      }
+    }
+  ]
+}

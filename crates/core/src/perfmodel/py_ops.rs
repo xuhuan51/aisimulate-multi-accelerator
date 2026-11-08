@@ -175,6 +175,7 @@ pub(crate) fn wrap_op(py: Python<'_>, op: Op) -> PyResult<Py<PyAny>> {
         | Op::AscendDecoderLayers(_)
         | Op::AscendBmm(_)
         | Op::AscendVector(_)
+        | Op::AscendQwen(_)
         | Op::AscendMoeChain(_)
         | Op::AscendMoeTensor(_)
         | Op::AscendDeepEp(_)

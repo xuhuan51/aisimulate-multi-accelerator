@@ -1,11 +1,11 @@
 schema_version: 2
 provenance: collected
-runtime:
+runtime: &id001
   framework: sglang
   version: 0.5.22
   image_digest: quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443
   source_commit: baa9befa381511cd4d56f83980951e5a45fffc6d
-  abi: &id001
+  abi: &id002
     torch: 2.10.0+cpu
     torch_npu: 2.10.0.post6
     deep_ep: 1.0.0+0234a271.cann.9.1.0.b243
@@ -43,7 +43,7 @@ tables:
       collector_hash: sha256:50f9c8298f74a12e670c7c3fefffd8ae92d1053b2051e49717ec1c3228eba11a
       case_plan_hash: sha256:60e85ecb9c4ffe768109d68cf3549de48a9ff28df03c3898428db5c2da41fd79
       collected_at: '2026-10-24T09:06:37.580293+00:00'
-      rows: 143
+      rows: 129
       classified_failures: 25
       status: complete
       source_campaign_rows: 143
@@ -125,6 +125,16 @@ tables:
             package_version=26.1.1
 
             '
+    - collector_ref: working-tree/benchmarks/evidence/ascend910c-operator-repair-20261107/probe_ep_pair_steady.py
+      collector_hash: sha256:79b13f37e2f9ee2364556efae0bfc5b0d3421a0d1377a6924d64da3a5ece3fae
+      case_plan_hash: sha256:9653099db3e075f8445cecf57265322c7be57693c68407e2e82ab94c374b351a
+      collected_at: '2026-11-07T19:11:17.348871+00:00'
+      rows: 14
+      classified_failures: 0
+      status: complete
+      source_campaign_rows: 14
+      source_campaign_status: complete
+      runtime: *id001
   ascend_moe_chain_perf:
     rows: 225
     status: complete
@@ -141,7 +151,7 @@ tables:
         version: 0.5.22
         image_digest: quay.io/ascend/sglang@sha256:5f384cab0e16a4951ed0bdc54e1280f2108aeda6b8ede90ee527d8f4b5146443
         source_commit: baa9befa381511cd4d56f83980951e5a45fffc6d
-        abi: *id001
+        abi: *id002
   ascend_moe_tensor_perf:
     rows: 126
     status: complete

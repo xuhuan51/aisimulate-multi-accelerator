@@ -1,0 +1,63 @@
+{
+  "model": "GLM-5.2 ModelSlim W8A8",
+  "topology": {
+    "attention_tp": 2,
+    "attention_dp": 8,
+    "moe_tp": 16,
+    "moe_ep": 1
+  },
+  "local_tokens": 1024,
+  "global_tokens": 8192,
+  "entries": [
+    {
+      "name": "memcpy",
+      "prediction_ms": 14.442784801125526,
+      "archived_kernel_ms": 15.359020000000001,
+      "archived_rounds_ms": [
+        15.3771,
+        15.34094
+      ],
+      "relative_component_error": -0.0596545351770148
+    },
+    {
+      "name": "Fill",
+      "prediction_ms": 3.5251428969204426,
+      "archived_kernel_ms": 5.2268799999999995,
+      "archived_rounds_ms": [
+        5.2939,
+        5.15986
+      ],
+      "relative_component_error": -0.32557416720482524
+    }
+  ],
+  "details": [
+    {
+      "role": "global_zero",
+      "count": 78,
+      "predicted_ms": 2.1721384562551975,
+      "archived_ms": 3.70239
+    },
+    {
+      "role": "local_zero",
+      "count": 156,
+      "predicted_ms": 1.353004440665245,
+      "archived_ms": 1.5244900000000001
+    },
+    {
+      "role": "gather",
+      "count": 78,
+      "predicted_ms": 5.174654200673103,
+      "archived_ms": 5.08193
+    },
+    {
+      "role": "scatter",
+      "count": 156,
+      "predicted_ms": 9.268130600452423,
+      "archived_ms": 10.27709
+    }
+  ],
+  "old_fpm_separate_dp_buffer_ops": 0,
+  "scope": "Independent Event-based component costs versus archived in-model kernel sums. No whole-forward or throughput accuracy claim.",
+  "correction": "Each layer gathers once and scatters twice. Both input and output shapes are checked against every target kernel in both archived rounds.",
+  "source_audit": "D:\\code\\学习\\实验\\sglang-npu-aisimulate-20261028\\formal-8k1k\\B-prefill-operator-audit.json"
+}

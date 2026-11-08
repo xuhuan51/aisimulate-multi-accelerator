@@ -125,7 +125,9 @@ pub const ENGINE_CONFIG_SCHEMA_VERSION: u32 = 1;
 //   a tail-appended `measured` generic composition priced in SILICON/HYBRID.
 //   The serde default covers JSON only; schema-27 bincode payloads are rejected.
 // Version 35 adds the optional Ascend tensor-MoE routing profile.
-pub const ENGINE_SPEC_SCHEMA_VERSION: u32 = 35;
+// Version 36 adds a Qwen operator execution-boundary contract to prevent eager
+// BF16-state measurements from answering FP32-state Graph queries.
+pub const ENGINE_SPEC_SCHEMA_VERSION: u32 = 36;
 
 /// Static engine identity and setup information carried by an
 /// [`crate::perfmodel::engine::spec::EngineSpec`].

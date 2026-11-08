@@ -464,7 +464,16 @@ def _role_search_space(
         sequences, sequences_log_range = _integer_domain(scheduler.get("max_sequences"), default=sequences_default)
         result[tokens_name] = tokens
         result[sequences_name] = sequences
-        for name in ("chunked_prefill_size", "max_prefill_tokens", "ignore_eos"):
+        chunk = scheduler.get("chunked_prefill_size")
+        chunk_name = f"{legacy_role}_chunked_prefill_size"
+        if isinstance(chunk, dict):
+            chunk_choices, chunk_log_range = _integer_domain(chunk, default=[])
+            result[chunk_name] = chunk_choices
+            if chunk_log_range is not None:
+                result["engine_integer_log_ranges"][chunk_name] = chunk_log_range
+        else:
+            result[chunk_name] = chunk
+        for name in ("max_prefill_tokens", "ignore_eos"):
             result[f"{legacy_role}_{name}"] = scheduler.get(name)
         if legacy_role == "decode":
             result["decode_reserved_tokens"] = scheduler.get("decode_reserved_tokens", 0)

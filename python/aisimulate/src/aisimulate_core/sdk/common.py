@@ -1347,6 +1347,7 @@ class PerfDataFilename(Enum):
     ascend_dcp_attention = "ascend_dcp_attention_perf.parquet"
     ascend_bmm = "ascend_bmm_perf.parquet"
     ascend_vector = "ascend_vector_perf.parquet"
+    ascend_qwen = "ascend_qwen_perf.parquet"
     ascend_moe_chain = "ascend_moe_chain_perf.parquet"
     ascend_moe_tensor = "ascend_moe_tensor_perf.parquet"
     ascend_deepep = "ascend_deepep_perf.parquet"

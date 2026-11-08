@@ -287,7 +287,7 @@ def test_canonical_constructor_rejects_moe_controls_on_dense_model():
 @pytest.mark.parametrize("slots", [0, -1, True, 1.5])
 def test_capacity_rejects_invalid_slots_before_delegate(slots, monkeypatch):
     from aisimulate.capacity import estimate_num_gpu_blocks
-    from aisimulate_core.sdk import memory
+    from aisimulate_core.sdk.memory import kv_cache as memory
 
     monkeypatch.setattr(memory, "estimate_num_gpu_blocks", lambda **kwargs: pytest.fail("must reject before sizing"))
     with pytest.raises(ValueError, match="wideep_num_slots"):

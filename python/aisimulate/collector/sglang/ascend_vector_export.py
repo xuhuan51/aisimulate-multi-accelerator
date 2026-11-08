@@ -27,6 +27,18 @@ def expected_invocation(case):
             "format": storage_format,
         }
 
+    if role == "dp_buffer_zero" and dimensions == [6144]:
+        values = tensor([tokens, 6144])
+        return {"buffer": values}, values, "torch.Tensor.fill_"
+    if role in {"dp_gather_copy", "dp_scatter_copy"} and dimensions == [6144]:
+        scatter = role == "dp_scatter_copy"
+        source = tensor([tokens * (2 if scatter else 1), 6144])
+        target = tensor([tokens * (1 if scatter else 2), 6144])
+        return (
+            {"source": source, "target": target, "offset": tensor([], "int32"), "size": tensor([], "int32")},
+            target,
+            "sglang.srt.layers.dp_attention.memcpy",
+        )
     if role == "seq_lens_h2d" and dimensions == [4] and case["execution_mode"] == "eager":
         return (
             {"lengths": {**tensor([tokens], "int32", storage_format=None), "device": "cpu", "pinned": False}},

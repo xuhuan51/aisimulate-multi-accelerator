@@ -24,7 +24,8 @@ impl AscendVectorKey {
     pub fn validate(&self) -> Result<(), AicError> {
         let valid = match (self.role.as_str(), self.dimensions.as_slice()) {
             (
-                "rms_bias" | "add_rms_bias" | "cast_hidden_fp32" | "routed_scale" | "shared_add",
+                "rms_bias" | "add_rms_bias" | "cast_hidden_fp32" | "routed_scale" | "shared_add"
+                | "dp_buffer_zero" | "dp_gather_copy" | "dp_scatter_copy",
                 [6144],
             )
             | ("split_qk_norm", [2048, 512, 64])
@@ -77,6 +78,8 @@ impl AscendVectorKey {
             "rope_cache_gather" => "torch.Tensor.index_select",
             "routed_scale" => "torch.Tensor.mul_",
             "shared_add" => "torch.Tensor.add_",
+            "dp_buffer_zero" => "torch.Tensor.fill_",
+            "dp_gather_copy" | "dp_scatter_copy" => "sglang.srt.layers.dp_attention.memcpy",
             _ => "unsupported",
         }
     }

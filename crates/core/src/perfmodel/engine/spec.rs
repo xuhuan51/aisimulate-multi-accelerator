@@ -887,6 +887,16 @@ mod tests {
                 token_multiple: 8,
                 resident_copies: Some(156),
             }),
+            OpSpec::AscendQwen(crate::operators::AscendQwenOp {
+                name: "qwen_scan".into(),
+                scale_factor: 45.0,
+                boundary_contract: crate::perf_database::ascend_qwen::CONTRACT.into(),
+                key: crate::perf_database::ascend_qwen::AscendQwenKey {
+                    role: "gdn_scan".into(),
+                    tp: 8,
+                    phase: "decode".into(),
+                },
+            }),
             OpSpec::AscendVector(crate::operators::AscendVectorOp {
                 name: "ascend_add_norm".into(),
                 scale_factor: 78.0,
@@ -1010,6 +1020,7 @@ mod tests {
                 | OpSpec::AscendDcpAttention(_)
                 | OpSpec::AscendBmm(_)
                 | OpSpec::AscendVector(_)
+                | OpSpec::AscendQwen(_)
                 | OpSpec::AscendMoeChain(_)
                 | OpSpec::AscendMoeTensor(_)
                 | OpSpec::AscendDeepEp(_)

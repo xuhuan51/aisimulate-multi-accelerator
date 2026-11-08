@@ -1,6 +1,6 @@
 # 当前版本使用：910C + GLM-5.2 W8A8 离线预测与PD搜索
 
-更新日期：2026-11-04。本文对应当前代码和本机镜像；新用户从本文开始，完整字段解释见[详细使用说明](910c-glm52-w8a8-usage.md)。
+更新日期为2026-11-08。历史命令对应11月4日镜像，第6节新增当前源码的PD与chunk验证入口。完整字段解释见[详细使用说明](910c-glm52-w8a8-usage.md)。
 
 ## 1. 先明确预测模式
 
@@ -151,6 +151,14 @@ aisim910c recommend --stack engine \
 每节点16个运行时device，字段名中的`gpus`在910C下按NPU device计数。上下限都设64表示恰好4节点；只设置`max_candidate_gpus=64`表示最多4节点，可能推荐使用更少节点。两节点预算将上下限都改为32；该实例布局下仅有1P1D。
 
 该搜索只改变PD副本配比和并发。若要搜索更多并行策略，使用下一节的K模式候选搜索；L的层数据目前没有覆盖所有拓扑。
+
+### 当前源码的 PD 校准与 chunk 搜索
+
+11月8日按当前算子口径重算独立Eager forward残差，四节点23条归档观测的吞吐MAPE为2.63%、最差6.54%，TPOT MAPE为1.85%。TTFT MAPE为14.18%，低并发最大低估约54%。采用独立forward校准，历史PD吞吐仅用于验证。
+
+新增[普通D搜索配置](../benchmarks/evidence/ascend910c-pd-chunk-20261108/configs/pd-chunk-search.yaml)和[跨节点D搜索配置](../benchmarks/evidence/ascend910c-pd-chunk-20261108/configs/pd-chunk-search-wide-decode.yaml)，联合搜索PD配比、global chunk4096/8192/16384和并发4/8/16/32/64。两组共60个候选完成，两组第一名经普通predict复算一致。
+
+这些配置需包含当前Python搜索代码、schema36原生引擎和匹配性能表的环境。上文11月4日镜像保留历史固定chunk入口。当前本机运行方法、校准参数及证据见[PD与chunk报告](../benchmarks/evidence/ascend910c-pd-chunk-20261108/README.md)。历史Serving只验证chunk16384，其他chunk的整机排序待实测。
 
 ## 7. 独立算子模式搜索并行策略
 

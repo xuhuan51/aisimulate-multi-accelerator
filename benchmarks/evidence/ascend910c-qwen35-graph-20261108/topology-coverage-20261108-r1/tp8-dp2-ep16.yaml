@@ -1,0 +1,53 @@
+traffic:
+  source:
+    type: synthetic
+    input_tokens: 8192
+    output_tokens: 1024
+  load:
+    type: concurrency
+    concurrency: 32
+  stop:
+    requests: 128
+engine:
+  model: /runtime/qwen-model
+  hardware: ascend910c
+  backend: sglang
+  backend_version: q397-graph-major-pilot-20261108
+  systems_paths:
+  - /opt/qwen-graph-systems
+  mode: aggregated
+  gemm_quant_mode: bfloat16
+  moe_quant_mode: w8a8_dynamic
+  fmha_quant_mode: bfloat16
+  kvcache_quant_mode: bfloat16
+  comm_quant_mode: half
+  estimation_mode: op_level
+  fallback_policy: deny
+  estimator_config:
+    op_level:
+      ascend:
+        routing: balanced
+        shared_expert_overlap: false
+        shape_policy: measured
+        decode_execution_mode: graph
+  workers:
+    aggregated:
+      parallelism:
+        tensor: 8
+        attention_data: 2
+        moe_tensor: 1
+        moe_expert: 16
+        replicas: 1
+      scheduler:
+        max_batched_tokens: 8192
+        max_sequences: 16
+        chunked_prefill_size: 8192
+        max_prefill_tokens: 16384
+        ignore_eos: true
+      kv_cache:
+        block_size: 128
+        prefix_caching: false
+        capacity:
+          type: fixed
+          blocks: 256
+  context_length: 10240

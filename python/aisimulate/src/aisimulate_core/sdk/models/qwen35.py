@@ -132,8 +132,21 @@ class Qwen35Model(BaseModel):
         allow_checkpoint_split: bool = True,
         backend_name: str,
     ) -> None:
+        if not args and isinstance((raw_config or {}).get("modelslim_metadata"), dict):
+            raise ValueError(
+                "Qwen ModelSlim precision metadata is available, but its Ascend physical "
+                "operator graph and timing coverage are not yet implemented; the generic "
+                "Qwen graph cannot represent its mixed GDN/GQA projection precision."
+            )
         super().__init__(*args)
         self._backend_name = backend_name
+        if getattr(self.config, "system", None) == "ascend910c":
+            from aisimulate_core.sdk.models.ascend_qwen35 import configure_ascend_qwen35
+
+            configure_ascend_qwen35(self, raw_config or {})
+            return
+        if isinstance((raw_config or {}).get("modelslim_metadata"), dict):
+            raise ValueError("Qwen ModelSlim requires the Ascend physical operator graph")
         cfg: common.Qwen35Config = self.extra_params
         assert isinstance(cfg, common.Qwen35Config), "Qwen35Model requires Qwen35Config extra_params"
 

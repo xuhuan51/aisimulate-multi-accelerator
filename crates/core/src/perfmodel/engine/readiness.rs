@@ -610,6 +610,7 @@ impl Availability<'_> {
             AscendDcpAttention(attention) => attention.ensure_ready(self.db),
             AscendBmm(bmm) => bmm.ensure_ready(self.db),
             AscendVector(vector) => vector.ensure_ready(self.db),
+            AscendQwen(qwen) => qwen.ensure_ready(self.db),
             AscendMoeChain(moe) => moe.ensure_ready(self.db),
             AscendMoeTensor(moe) => moe.ensure_ready(self.db),
             AscendDeepEp(transport) => transport.ensure_ready(self.db),

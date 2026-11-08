@@ -1,0 +1,46 @@
+{
+  "status": "published_pilot",
+  "runtime": {
+    "image": "sha256:ed48c44e8da49820e3f935d38a8cdb623e184b27361afdf2d1e6e3ecd4e741e0",
+    "framework_commit": "a6b542813ff46de8ba3856e0236f1af35f4fca54",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "deep_ep": "1.0.0+d9261669.cann.9.0.0.b250",
+    "model": "Qwen3.5-397B-A17B",
+    "tp": 4,
+    "dp": 4,
+    "ep": 16,
+    "ssm_dtype": "float32",
+    "capacity": 16
+  },
+  "runtime_identity_sha256": "b08cf4b00fda74cd14d1e514988419850c5a7d9ed81770bb8031c808a835667f",
+  "counts": {
+    "qwen": {
+      "retained": 1163,
+      "added": 35,
+      "sha256": "caa1bb634a04818a6912f7df3f726ab00265d34abf8ba5577b8f110db0c40347"
+    },
+    "linear": {
+      "retained": 317,
+      "added": 18,
+      "sha256": "c2b097cbd0ea377e1c2a75f88dcec838b8042e1197f558048cba6c3e6cf69fdf"
+    },
+    "hccl": {
+      "retained": 83,
+      "added": 3,
+      "sha256": "6f6e4b9e60078106a9805ee0b286313ea2d60c34b6b0383c4db8cdffe2efe563"
+    }
+  },
+  "sources": {
+    "gdn-graph-ascend-r1/rows.json": "8a58ddd89c69f05333f8690837e28a4b1e9b5c1ceeee6999d4d1a243ae2f8cf2",
+    "conv-graph-ascend-r1/rows.json": "2c959a513fbfa8a52ba0e3de5eaa11be6acd876160e8d5428cbde32597bd8722",
+    "conv-norm-graph-independent-r0/rows.json": "bea5bcd05e337c20fe3324729856749091df7d5834748f3e2b127b186804e57e",
+    "vector-graph-independent-r1/rows.json": "0cffae3e948fe55785d5847d1aa49debfb5ee88e4fc88e07f4145d501499c1e3",
+    "expert-graph-independent-r0.json": "0a3558fcf3bc03d488afb56ec91944b9f8c9f7114e7fa8b4bff4fc184503fd96",
+    "ep-graph-qualified-rows-10.json": "afb2dd4e45934d08f0b5eeeb3f4e89c917c5e6e5670e35e08dfd7af8178eef51",
+    "qwen-pair-m1-r4/results.json": "1acd03de662a7c9f6ee48818f6fe881482fabe0dc84131f258ed1f7171e137a5",
+    "linear-graph-independent-r0/rows.json": "4433d522c4e414c267107eee3d9a44c3970cd3cec1bd7bfb478f92f0edd1800b",
+    "hccl-graph-independent-r0/rows.json": "b3946a84b5495ba97bfe2cce98982a2570bcf3a076ef5f38e8c833c0e2a01d7b"
+  },
+  "scope": "TP4/DP4/EP16,1..4 requests/DP. Major Decode kernels calibrated on current Graph runtime. Small GQA/embedding/logits roles retain historical Eager proxies. Prefill retains BF16-state proxy. Whole-model accuracy is pending formal replay, independent operator qualification does not certify it."
+}

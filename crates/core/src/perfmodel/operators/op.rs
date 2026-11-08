@@ -202,6 +202,7 @@ pub enum Op {
     AscendLogits(crate::operators::ascend_logits::AscendLogitsOp),
     AscendEagerOverhead(crate::operators::ascend_eager_overhead::AscendEagerOverheadOp),
     AscendDecoderLayers(crate::operators::ascend_layer::AscendDecoderLayersOp),
+    AscendQwen(crate::operators::AscendQwenOp),
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -309,6 +310,7 @@ impl Op {
             Op::AscendDecoderLayers(o) => o.weight_bytes(),
             Op::AscendBmm(o) => o.weight_bytes(),
             Op::AscendVector(o) => o.weight_bytes(),
+            Op::AscendQwen(o) => o.weight_bytes(),
             Op::AscendMoeChain(o) => o.weight_bytes(),
             Op::AscendMoeTensor(o) => o.weight_bytes(),
             Op::AscendDeepEp(_) => 0.0,
@@ -403,6 +405,7 @@ impl Op {
             Op::AscendDcpAttention(operation) => &operation.name,
             Op::AscendBmm(o) => &o.name,
             Op::AscendVector(o) => &o.name,
+            Op::AscendQwen(o) => &o.name,
             Op::AscendMoeChain(o) => &o.name,
             Op::AscendMoeTensor(o) => &o.name,
             Op::AscendDeepEp(transport) => &transport.name,
@@ -469,6 +472,7 @@ impl Op {
             Op::AscendDcpAttention(operation) => operation.name = name,
             Op::AscendBmm(o) => o.name = name,
             Op::AscendVector(o) => o.name = name,
+            Op::AscendQwen(o) => o.name = name,
             Op::AscendMoeChain(o) => o.name = name,
             Op::AscendMoeTensor(o) => o.name = name,
             Op::AscendDeepEp(transport) => transport.name = name,
@@ -523,6 +527,7 @@ impl Op {
             Op::AscendDcpAttention(operation) => operation.scale_factor = scale_factor,
             Op::AscendBmm(o) => o.scale_factor = scale_factor,
             Op::AscendVector(o) => o.scale_factor = scale_factor,
+            Op::AscendQwen(o) => o.scale_factor = scale_factor,
             Op::AscendMoeChain(o) => o.scale_factor = scale_factor,
             Op::AscendMoeTensor(o) => o.scale_factor = scale_factor,
             Op::AscendDeepEp(transport) => transport.scale_factor = scale_factor,
@@ -576,6 +581,7 @@ impl Op {
             Op::Hccl(o) => o.token_split,
             Op::AscendLinear(o) => o.token_split,
             Op::AscendVector(o) => o.token_split,
+            Op::AscendQwen(_) => 1,
             Op::AscendDeepEp(transport) => transport.token_split,
             Op::P2P(o) => o.seq_split,
             Op::Mhc(o) => o.seq_split,
@@ -702,6 +708,7 @@ impl Op {
             }
             Op::AscendBmm(op) => op.query(db, ctx.num_tokens),
             Op::AscendVector(op) => op.query(db, ctx.num_tokens, ctx.batch_size),
+            Op::AscendQwen(op) => op.query(db, ctx),
             Op::AscendMoeChain(op) => op.query(db, ctx.num_tokens),
             Op::AscendMoeTensor(op) => op.query(db, ctx.num_tokens),
             Op::AscendDeepEp(op) => op.query(db, ctx.num_tokens),

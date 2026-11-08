@@ -13,6 +13,7 @@ from aisimulate.sweeper import model_hw
 from aisimulate.sweeper.deploy import _engine_args_payload
 from aisimulate.sweeper.parallel_enum import DisaggParallelConfig, ParallelShape, ReplicaParallelConfig
 from aisimulate.sweeper.sample import unroll_sample
+from aisimulate.sweeper.search_space import branch_knob_choices
 
 pytestmark = pytest.mark.unit
 
@@ -145,7 +146,9 @@ def test_role_context_limits_work_without_shared_model_context(monkeypatch):
     monkeypatch.setattr(
         model_hw,
         "resolve_model_hardware",
-        lambda *args, **kwargs: SimpleNamespace(max_context=None, is_moe=False, enable_wideep=False),
+        lambda *args, **kwargs: SimpleNamespace(
+            max_context=None, is_moe=False, enable_wideep=False, parallel_shape_candidates=None
+        ),
     )
     monkeypatch.setattr(model_hw, "enumerate_disagg_configs", lambda **kwargs: [parallel])
 
@@ -166,3 +169,65 @@ def test_role_context_limits_work_without_shared_model_context(monkeypatch):
 
     assert result == [parallel]
     assert seen == {64_000: True, 128_000: True}
+
+
+@pytest.mark.parametrize("role", ["aggregated", "prefill", "decode"])
+@pytest.mark.parametrize(
+    "domain,expected,selected",
+    [
+        (None, None, None),
+        (8192, 8192, 8192),
+        ({"choices": [4096, 8192]}, [4096, 8192], 8192),
+        ({"range": {"min": 4096, "max": 8192, "step": 4096}}, [4096, 8192], 8192),
+        ({"range": {"min": 4096, "max": 16384, "scale": "log"}}, [4096], 8192),
+    ],
+)
+def test_chunk_search_survives_schema_lowering_selection_and_runner_payload(role, domain, expected, selected):
+    raw = _recommendation_config().model_dump(mode="json")
+    raw["engine"]["backend"] = "sglang"
+    mode = "agg" if role == "aggregated" else "disagg"
+    if mode == "agg":
+        raw["engine"]["mode"] = "aggregated"
+        raw["engine"]["workers"] = {"aggregated": {}}
+    raw["engine"]["workers"][role].setdefault("scheduler", {})["chunked_prefill_size"] = domain
+    config = CoreRecommendationConfig.model_validate(raw)
+    reloaded = CoreRecommendationConfig.model_validate(config.model_dump(mode="json"))
+    search = recommendation_to_sweeper(reloaded).search_space
+    legacy_role = "agg" if role == "aggregated" else role
+    name = f"{legacy_role}_chunked_prefill_size"
+    assert getattr(search, name) == expected
+    choices = branch_knob_choices(search, mode)
+    if isinstance(expected, list):
+        assert choices[name] == expected
+    else:
+        assert name not in choices
+    if isinstance(domain, dict) and domain.get("range", {}).get("scale") == "log":
+        assert search.engine_integer_log_ranges[name] == [4096, 16384]
+    shape = ParallelShape(tp=1, pp=1, dp=2, moe_tp=1, moe_ep=1)
+    replica = ReplicaParallelConfig(shape=shape, replicas=1)
+    parallel = replica if mode == "agg" else DisaggParallelConfig(prefill=replica, decode=replica)
+    roles = ("agg",) if mode == "agg" else ("prefill", "decode")
+    selection = {"deployment_mode": mode, "backend": "sglang"}
+    for active_role in roles:
+        selection[f"{active_role}_max_num_batched_tokens"] = 8192
+        selection[f"{active_role}_max_num_seqs"] = 32
+    if selected is not None:
+        selection[name] = selected
+    sample = unroll_sample(search_space=search, selection=selection, parallel_config=parallel)
+    assert sample[name] == selected
+    payload = _engine_args_payload(sample, legacy_role, backend_version="0.5.22")
+    if selected is None:
+        assert "chunked_prefill_size" not in payload.get("sglang", {})
+    else:
+        # Global chunk passes through intact. The native rank constructor owns
+        # the single division by attention DP2.
+        assert payload["sglang"]["chunked_prefill_size"] == selected
+
+
+@pytest.mark.parametrize("backend", ["vllm", "trtllm"])
+def test_chunk_search_requires_sglang(backend):
+    raw = _recommendation_config().model_dump(mode="json")
+    raw["engine"]["backend"] = backend
+    raw["engine"]["workers"]["prefill"]["scheduler"] = {"chunked_prefill_size": {"choices": [4096, 8192]}}
+    with pytest.raises(ValueError, match="chunked_prefill_size requires backend=sglang"):
+        CoreRecommendationConfig.model_validate(raw)

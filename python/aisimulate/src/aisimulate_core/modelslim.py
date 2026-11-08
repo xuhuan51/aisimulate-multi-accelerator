@@ -91,3 +91,12 @@ def read_glm_modelslim(model_path: str, config: dict) -> dict | None:
         "floating_dtype_scope": "FLOAT means unquantized; storage/runtime dtype must be resolved separately.",
         "layers": plan,
     }
+
+
+def read_modelslim(model_path: str, config: dict) -> dict | None:
+    """Dispatch structural metadata; estimator support is validated separately."""
+    if config.get("architectures") == ["Qwen3_5MoeForConditionalGeneration"]:
+        from aisimulate_core.qwen_modelslim import read_qwen35_modelslim
+
+        return read_qwen35_modelslim(model_path, config)
+    return read_glm_modelslim(model_path, config)

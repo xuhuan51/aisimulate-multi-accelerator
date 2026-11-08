@@ -174,7 +174,7 @@ fn load(path: &std::path::Path) -> Result<BTreeMap<HcclKey, HcclCurve>, AicError
     let checks = reader.col("correctness_checks")?;
     let provenance = reader.col("runtime_identity_sha256")?;
     let kernel = reader.col("kernel_source")?;
-    let mut runtime_identity = None;
+    let mut runtime_identities: BTreeMap<HcclKey, String> = BTreeMap::new();
     let mut rows: BTreeMap<HcclKey, BTreeMap<u64, LeafValue>> = BTreeMap::new();
     for row in reader.rows()? {
         let row = row?;
@@ -217,14 +217,13 @@ fn load(path: &std::path::Path) -> Result<BTreeMap<HcclKey, HcclCurve>, AicError
                 "unqualified HCCL row for {key:?}"
             )));
         }
-        if let Some(expected) = &runtime_identity {
-            if expected != &identity {
-                return Err(AicError::InvalidPerfData(
-                    "HCCL file mixes runtime/hardware identities".into(),
-                ));
-            }
-        } else {
-            runtime_identity = Some(identity);
+        let expected = runtime_identities
+            .entry(key.clone())
+            .or_insert(identity.clone());
+        if expected != &identity {
+            return Err(AicError::InvalidPerfData(
+                "HCCL lookup curve mixes runtime/hardware identities".into(),
+            ));
         }
         if rows
             .entry(key)
@@ -363,6 +362,27 @@ mod tests {
             table.query(&key(), 1024),
             Err(AicError::InvalidPerfData(_))
         ));
+    }
+
+    #[test]
+    fn separate_complete_curves_keep_their_runtime_identities() {
+        let root = tempfile::tempdir().unwrap();
+        let mut values = columns();
+        values[1] = Col::Str("operation", vec!["all_gather", "reduce_scatter"]);
+        values[11] = Col::Str(
+            "runtime_identity_sha256",
+            vec![
+                "1111111111111111111111111111111111111111111111111111111111111111",
+                "2222222222222222222222222222222222222222222222222222222222222222",
+            ],
+        );
+        write_parquet(&root.path().join(BASENAME), &values);
+        let table = HcclTable::new(Some(root.path().to_owned()));
+        // The fixture defines independent exact points of0.010 and0.030ms.
+        assert_eq!(table.query(&key(), 1024).unwrap().latency, 0.010);
+        let mut scatter = key();
+        scatter.operation = "reduce_scatter".into();
+        assert_eq!(table.query(&scatter, 3072).unwrap().latency, 0.030);
     }
 
     fn key() -> HcclKey {
