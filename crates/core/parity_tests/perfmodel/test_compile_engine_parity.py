@@ -700,6 +700,95 @@ def _handle_from_spec_json(spec_json: str) -> engine.EngineHandle:
     return engine.EngineHandle(bytes(aisimulate_core.engine_spec_bincode_from_json(spec_json)))
 
 
+def _normal_transport_reference() -> float:
+    """Hand-counted receive-core workload through the JSON/bincode public wire."""
+    import tempfile
+    from pathlib import Path
+
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        (root / "ascend910c.yaml").write_text(
+            "data_dir: data\ngpu:\n  mem_bw: 1000000000000\n"
+            "node:\n  num_gpus_per_node: 16\n"
+            "  inter_node_bw: 100000000000\n  intra_node_bw: 900000000000\n",
+            encoding="utf-8",
+        )
+        data = root / "data/sglang/parity"
+        data.mkdir(parents=True)
+        points = [(1024, 256, 2.0), (1024, 1024, 5.0), (2048, 512, 4.0), (2048, 2048, 10.0)]
+        rows = [
+            dict(
+                role="normal_combine",
+                tp=16,
+                phase="prefill",
+                tokens=tokens,
+                history=work,
+                latency_ms=latency,
+                cv=0.01,
+                sample_count=32,
+                numerical_checks=2,
+                boundary_contract="sglang_a6b5428_910c_bf16_h4096_ep16_top10_aiv48_normal_ready/v1",
+                runtime_identity_sha256="a" * 64,
+                signature_sha256="b" * 64,
+                execution_verification="eager_invocation",
+            )
+            for tokens, work, latency in points
+        ]
+        pq.write_table(pa.Table.from_pylist(rows), data / "ascend_qwen_perf.parquet")
+        # Total81920 assignments preserves8192*top10. Core0 receives11 blocks
+        # of expert0, so peak numerator=11*640=7040 and ratio=7040/8192=.859375.
+        # The supplied curves give4.4375ms at1024 and8.875ms at2048. At1536 the
+        # independent interpolation oracle is6.65625ms.
+        counts = [640] + [160] * 31 + [159] * 480
+        spec = dict(
+            schema_version=engine.ENGINE_SPEC_SCHEMA_VERSION,
+            engine=dict(
+                schema_version=1,
+                model_name="normal-transport-parity",
+                system_name="ascend910c",
+                systems_path=str(root),
+                backend="sglang",
+                backend_version="parity",
+                kv_block_size=128,
+                tp_size=16,
+                pp_size=1,
+                attention_dp_size=1,
+                moe_tp_size=1,
+                moe_ep_size=16,
+                weight_dtype="bfloat16",
+                activation_dtype="bfloat16",
+                kv_cache_dtype="bfloat16",
+                moe_dtype="int8",
+                extra={},
+                enable_shared_layer=False,
+            ),
+            context_ops=[
+                dict(
+                    AscendNormalTransport=dict(
+                        name="normal_combine",
+                        scale_factor=1.0,
+                        key=dict(role="normal_combine", tp=16, phase="prefill"),
+                        reference_tokens=8192,
+                        expert_counts=counts,
+                    )
+                )
+            ],
+            generation_ops=[],
+        )
+        handle = _handle_from_spec_json(json.dumps(spec))
+        result = float(handle.mixed_step_latency(1536, 0, 1536, 2, 0))
+        assert result == pytest.approx(6.65625, rel=1e-12)
+        return result
+
+
+def test_ascend_normal_transport_wire_parity() -> None:
+    actual = _normal_transport_reference()
+    _assert_within("normal_transport", _golden_reference("ascend_normal_transport::context"), actual, backend="sglang")
+
+
 class TestWideEpDeepEpParity:
     """H200 SGLang DeepEP HT/LL end-to-end numerical parity.
 

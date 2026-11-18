@@ -2,9 +2,26 @@ import json
 from pathlib import Path
 
 import pytest
+from collector.sglang.ascend_linear import validate_runtime
 from collector.sglang.ascend_linear_cases import PHYSICAL_FIELDS, get_ascend_linear_cases
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize(
+    "revision",
+    [
+        "baa9befa381511cd4d56f83980951e5a45fffc6d",
+        "76f9213a411018547f4fd6a75f36feaa4d6bed58",
+    ],
+)
+def test_linear_runtime_must_match_an_audited_frozen_plan(revision):
+    validate_runtime(revision)
+    validate_runtime(revision, revision)
+    with pytest.raises(ValueError, match="Reaudit linear dispatch"):
+        validate_runtime(revision, "different-planned-revision")
+    with pytest.raises(ValueError, match="Reaudit linear dispatch"):
+        validate_runtime("unknown-runtime")
 
 
 @pytest.fixture

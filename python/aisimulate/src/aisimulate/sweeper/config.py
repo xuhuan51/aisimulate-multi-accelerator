@@ -599,6 +599,7 @@ class SearchSpace(BaseModel):
     prefill_chunked_prefill_size: PositiveInt | list[PositiveInt] | None = None
     prefill_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
     prefill_ignore_eos: bool | None = Field(default=None, strict=True)
+    prefill_scheduler_select_time_ms: float | None = Field(default=None, strict=True, ge=0, allow_inf_nan=False)
     # pinned
     prefill_block_size: int | list[int] | None = 64
     prefill_gpu_memory_utilization: float | list[float] | None = 0.9
@@ -618,6 +619,7 @@ class SearchSpace(BaseModel):
     decode_chunked_prefill_size: PositiveInt | list[PositiveInt] | None = None
     decode_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
     decode_ignore_eos: bool | None = Field(default=None, strict=True)
+    decode_scheduler_select_time_ms: float | None = Field(default=None, strict=True, ge=0, allow_inf_nan=False)
     decode_reserved_tokens: int = Field(default=0, strict=True, ge=0)
     # pinned
     decode_block_size: int | list[int] | None = 64
@@ -638,6 +640,7 @@ class SearchSpace(BaseModel):
     agg_chunked_prefill_size: PositiveInt | list[PositiveInt] | None = None
     agg_max_prefill_tokens: int | None = Field(default=None, strict=True, gt=0)
     agg_ignore_eos: bool | None = Field(default=None, strict=True)
+    agg_scheduler_select_time_ms: float | None = Field(default=None, strict=True, ge=0, allow_inf_nan=False)
     # pinned
     agg_block_size: int | list[int] | None = 64
     agg_gpu_memory_utilization: float | list[float] | None = 0.9
@@ -1003,6 +1006,8 @@ class SearchSpace(BaseModel):
             for field in ("chunked_prefill_size", "max_prefill_tokens", "ignore_eos"):
                 if getattr(self, f"{role}_{field}") is not None and set(self.backend) != {"sglang"}:
                     raise ValueError(f"{role}_{field} requires backend=sglang")
+            if getattr(self, f"{role}_scheduler_select_time_ms") and set(self.backend) != {"sglang"}:
+                raise ValueError(f"{role}_scheduler_select_time_ms requires backend=sglang")
         if self.enable_chunked_prefill is not None and any(
             mode not in {"agg", "disagg"} for mode in self.deployment_mode
         ):

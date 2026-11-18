@@ -6,7 +6,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{Result, bail, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -780,6 +780,17 @@ pub trait TimingModel: Send + Sync {
         mean_prefix: usize,
     ) -> Result<f64>;
 
+    /// Predict actual (new tokens, cached prefix) pairs. Aggregate-aware
+    /// providers override this to retain exact token totals. Existing providers
+    /// keep their mean-based contract, including cache-only batch members.
+    fn predict_prefill_batch_ms(&self, requests: &[(usize, usize)]) -> Result<f64> {
+        if requests.is_empty() {
+            return Ok(0.0);
+        }
+        let (batch_size, mean_input, mean_prefix) = mean_prefill_geometry(requests)?;
+        self.predict_prefill_ms(batch_size, mean_input, mean_prefix)
+    }
+
     /// Predict one decode batch's latency in milliseconds.
     fn predict_decode_ms(
         &self,
@@ -816,6 +827,28 @@ pub trait TimingModel: Send + Sync {
         );
         Ok(())
     }
+}
+
+pub(crate) fn mean_prefill_geometry(requests: &[(usize, usize)]) -> Result<(usize, usize, usize)> {
+    let (total_input, total_prefix) = requests.iter().try_fold(
+        (0usize, 0usize),
+        |(input, prefix), &(new_tokens, cached)| -> Result<_> {
+            Ok((
+                input
+                    .checked_add(new_tokens)
+                    .and_then(|n| n.checked_add(cached))
+                    .context("prefill input token total overflow")?,
+                prefix
+                    .checked_add(cached)
+                    .context("prefill prefix token total overflow")?,
+            ))
+        },
+    )?;
+    Ok((
+        requests.len(),
+        total_input.checked_div(requests.len()).unwrap_or(0),
+        total_prefix.checked_div(requests.len()).unwrap_or(0),
+    ))
 }
 
 struct PolynomialTimingModel;

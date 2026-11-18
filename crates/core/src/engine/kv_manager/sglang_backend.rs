@@ -24,6 +24,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 #[must_use = "an active KV lease must be finished, aborted, or retracted"]
 pub(crate) struct RadixRequestLease {
     pages: Vec<KvPageId>,
+    state_reserved: bool,
     materialized_tokens: usize,
     cached_tokens: usize,
     /// Radix-cache prefix matched when the request was admitted from the waiting queue. Unlike
@@ -37,6 +38,7 @@ pub(crate) struct RadixRequestLease {
 /// Metadata used only with the matching KV-manager admission checkpoint.
 pub(crate) struct RadixLeaseCheckpoint {
     pages_len: usize,
+    state_reserved: bool,
     materialized_tokens: usize,
     cached_tokens: usize,
     admission_reused_tokens: usize,
@@ -48,6 +50,7 @@ impl RadixRequestLease {
     pub(crate) fn admission_checkpoint(&self) -> RadixLeaseCheckpoint {
         RadixLeaseCheckpoint {
             pages_len: self.pages.len(),
+            state_reserved: self.state_reserved,
             materialized_tokens: self.materialized_tokens,
             cached_tokens: self.cached_tokens,
             admission_reused_tokens: self.admission_reused_tokens,
@@ -62,6 +65,7 @@ impl RadixRequestLease {
     pub(crate) fn restore_admission(&mut self, checkpoint: RadixLeaseCheckpoint) {
         debug_assert!(self.pages.len() >= checkpoint.pages_len);
         self.pages.truncate(checkpoint.pages_len);
+        self.state_reserved = checkpoint.state_reserved;
         self.materialized_tokens = checkpoint.materialized_tokens;
         self.cached_tokens = checkpoint.cached_tokens;
         self.admission_reused_tokens = checkpoint.admission_reused_tokens;
@@ -140,6 +144,7 @@ impl RadixRequestLease {
     ) -> Self {
         Self {
             pages,
+            state_reserved: false,
             materialized_tokens,
             cached_tokens,
             admission_reused_tokens: cached_tokens,
@@ -178,6 +183,8 @@ pub struct SglangKvManager {
     live_hashes: FxHashSet<SequenceHash>,
     extra_hash_refs: FxHashMap<SequenceHash, usize>,
     pending_admission: Option<PendingAdmission>,
+    state_capacity: Option<usize>,
+    state_requests: usize,
 }
 
 #[must_use = "admission must be committed or rolled back"]
@@ -190,6 +197,7 @@ struct PendingAdmission {
 
 struct SglangAdmissionCheckpoint {
     cache: RadixCache,
+    state_requests: usize,
     next_event_id: u64,
     event_undo: Vec<KvEventUndo>,
 }
@@ -209,6 +217,7 @@ pub struct DecodeTokenReservation {
 }
 
 pub struct SglangDestinationReservation {
+    state_reserved: bool,
     pub(crate) prefix_len: usize,
     prefix_pages: Vec<KvPageId>,
     last_node: NodeId,
@@ -303,6 +312,8 @@ impl SglangKvManager {
             live_hashes: FxHashSet::default(),
             extra_hash_refs: FxHashMap::default(),
             pending_admission: None,
+            state_capacity: None,
+            state_requests: 0,
         }
     }
 
@@ -391,6 +402,38 @@ impl SglangKvManager {
         &self.cache
     }
 
+    pub(crate) fn configure_recurrent_state(&mut self, capacity: usize) {
+        assert!(capacity > 0 && self.state_requests == 0);
+        self.state_capacity = Some(capacity);
+    }
+
+    fn has_state_capacity(&self) -> bool {
+        self.state_capacity
+            .is_none_or(|capacity| self.state_requests < capacity)
+    }
+
+    fn reserve_state(&mut self) -> bool {
+        if self.state_capacity.is_some() {
+            assert!(self.has_state_capacity());
+            self.state_requests += 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn release_state(&mut self, reserved: &mut bool) -> bool {
+        if std::mem::take(reserved) {
+            self.state_requests = self
+                .state_requests
+                .checked_sub(1)
+                .expect("owned recurrent state slot");
+            true
+        } else {
+            false
+        }
+    }
+
     pub(crate) fn enable_deferred_page_reuse(&mut self) {
         self.cache.page_pool.enable_deferred_reuse();
     }
@@ -423,6 +466,7 @@ impl SglangKvManager {
         }
         admission.checkpoint = Some(SglangAdmissionCheckpoint {
             cache: self.cache.admission_checkpoint(),
+            state_requests: self.state_requests,
             next_event_id: self.next_event_id,
             event_undo: Vec::new(),
         });
@@ -465,6 +509,7 @@ impl SglangKvManager {
         let admission = self.pending_admission.take().expect("active KV admission");
         if let Some(checkpoint) = admission.checkpoint {
             self.cache = checkpoint.cache;
+            self.state_requests = checkpoint.state_requests;
             self.next_event_id = checkpoint.next_event_id;
             for undo in checkpoint.event_undo.into_iter().rev() {
                 self.set_page_hash(undo.page_slot, undo.previous_page_hash);
@@ -518,6 +563,10 @@ impl SglangKvManager {
     ) -> Option<usize> {
         assert!(!lease.is_active(), "request KV lease is already active");
         debug_assert!(lease.pages.is_empty(), "inactive KV lease retains pages");
+        debug_assert!(!lease.state_reserved);
+        if !self.has_state_capacity() {
+            return None;
+        }
         let page_size = self.cache.page_size();
         lease.ensure_page_hashes(token_ids, page_size);
         let materialized_hashes = lease.page_hashes_through(token_ids.len(), page_size);
@@ -569,6 +618,7 @@ impl SglangKvManager {
 
         self.log_trace("allocation", allocated_tokens);
 
+        lease.state_reserved = self.reserve_state();
         lease.pages = pages;
         lease.materialized_tokens = token_ids.len();
         lease.cached_tokens = prefix_len;
@@ -693,6 +743,7 @@ impl SglangKvManager {
     }
 
     pub(crate) fn finish(&mut self, token_ids: &[u32], mut lease: RadixRequestLease) {
+        self.release_state(&mut lease.state_reserved);
         let Some(last_node) = lease.last_node.take() else {
             debug_assert!(lease.pages.is_empty());
             debug_assert_eq!(lease.materialized_tokens, 0);
@@ -839,6 +890,9 @@ impl SglangKvManager {
         token_count: usize,
         headroom: &SglangDestinationHeadroom,
     ) -> Option<SglangDestinationReservation> {
+        if !self.has_state_capacity() {
+            return None;
+        }
         let (prefix_len, last_node) = self.match_prefix_hashes_and_lock(page_hashes);
         let prefix_pages = self.collect_path_pages_through(last_node, prefix_len);
 
@@ -867,6 +921,7 @@ impl SglangKvManager {
         };
         self.log_trace("reserve_destination", fresh_tokens);
         Some(SglangDestinationReservation {
+            state_reserved: self.reserve_state(),
             prefix_len,
             prefix_pages,
             last_node,
@@ -885,6 +940,7 @@ impl SglangKvManager {
     ) -> usize {
         let token_count = token_ids.len();
         let SglangDestinationReservation {
+            state_reserved,
             prefix_len,
             mut prefix_pages,
             last_node,
@@ -910,6 +966,8 @@ impl SglangKvManager {
             (last_node, 0)
         };
         self.log_trace("activate_destination", missing_tokens);
+        debug_assert!(!lease.state_reserved);
+        lease.state_reserved = state_reserved;
         lease.pages = prefix_pages;
         lease.materialized_tokens = token_count;
         lease.cached_tokens = cached_tokens;
@@ -917,7 +975,8 @@ impl SglangKvManager {
         prefix_len
     }
 
-    pub(crate) fn cancel_destination(&mut self, reservation: SglangDestinationReservation) {
+    pub(crate) fn cancel_destination(&mut self, mut reservation: SglangDestinationReservation) {
+        self.release_state(&mut reservation.state_reserved);
         self.cache.dec_lock_ref(reservation.last_node);
         self.release_unpublished_pages(reservation.unpublished_pages);
     }
@@ -940,6 +999,7 @@ impl SglangKvManager {
     }
 
     fn release_active_lease(&mut self, lease: &mut RadixRequestLease) -> bool {
+        let state_released = self.release_state(&mut lease.state_reserved);
         let Some(last_node) = lease.last_node.take() else {
             debug_assert!(lease.pages.is_empty());
             debug_assert_eq!(lease.materialized_tokens, 0);
@@ -954,7 +1014,8 @@ impl SglangKvManager {
         );
         let first_owned_page = lease.cached_tokens / self.cache.page_size();
         let owned_suffix = &lease.pages[first_owned_page..];
-        let capacity_improved = !owned_suffix.is_empty() || last_node != self.cache.root();
+        let capacity_improved =
+            state_released || !owned_suffix.is_empty() || last_node != self.cache.root();
         self.free_pages(owned_suffix);
         self.cache.dec_lock_ref(last_node);
         lease.pages.clear();
@@ -2309,5 +2370,116 @@ mod tests {
             alloc2.prefix_len, chunk1_len,
             "second chunk should reuse the cached partial prefix"
         );
+    }
+
+    fn recurrent_manager() -> SglangKvManager {
+        let mut manager = SglangKvManager::new_with_prefix_caching(
+            64,
+            4,
+            KvEventPublishers::default(),
+            0,
+            false,
+            false,
+        );
+        manager.configure_recurrent_state(1);
+        manager
+    }
+
+    #[test]
+    fn recurrent_slots_are_independent_of_token_pages() {
+        let mut manager = recurrent_manager();
+        let mut first = RadixRequestLease::default();
+        let mut second = RadixRequestLease::default();
+        assert_eq!(
+            manager.allocate_for_request_lease(&[1, 2, 3, 4], &mut first),
+            Some(0)
+        );
+        let available = manager.cache.available_tokens();
+        assert_eq!(available, 60);
+        assert_eq!(
+            manager.allocate_for_request_lease(&[5, 6, 7, 8], &mut second),
+            None
+        );
+        assert_eq!(manager.cache.available_tokens(), available);
+        assert!(manager.abort(first));
+        assert_eq!(manager.state_requests, 0);
+        assert_eq!(
+            manager.allocate_for_request_lease(&[5, 6, 7, 8], &mut second),
+            Some(0)
+        );
+        manager.finish(&[5, 6, 7, 8], second);
+        assert_eq!(manager.state_requests, 0);
+        assert_eq!(manager.cache.available_tokens(), 64);
+    }
+
+    #[test]
+    fn recurrent_admission_rollback_restores_slot_and_lease() {
+        let mut manager = recurrent_manager();
+        let mut lease = RadixRequestLease::default();
+        let checkpoint = lease.admission_checkpoint();
+        let admission = manager.begin_admission();
+        assert!(
+            manager
+                .allocate_for_request_lease(&[1, 2, 3, 4], &mut lease)
+                .is_some()
+        );
+        assert_eq!(manager.state_requests, 1);
+        manager.rollback_admission(admission);
+        lease.restore_admission(checkpoint);
+        assert_eq!(manager.state_requests, 0);
+        assert!(!lease.state_reserved);
+        assert_eq!(manager.cache.available_tokens(), 64);
+        assert!(
+            manager
+                .allocate_for_request_lease(&[1, 2, 3, 4], &mut lease)
+                .is_some()
+        );
+        assert!(manager.retract_in_place(&mut lease));
+        assert!(!lease.state_reserved);
+        assert!(
+            manager
+                .allocate_for_request_lease(&[1, 2, 3, 4], &mut lease)
+                .is_some()
+        );
+        manager.abort(lease);
+    }
+
+    #[test]
+    fn recurrent_destination_reserves_cancels_and_transfers_ownership() {
+        let mut manager = recurrent_manager();
+        let tokens = [1, 2, 3, 4];
+        let hashes = compute_block_hash_for_seq(&tokens, 4);
+        let reservation = manager.reserve_destination_lease(&hashes, 4).unwrap();
+        assert_eq!(manager.state_requests, 1);
+        assert!(manager.reserve_destination_lease(&hashes, 4).is_none());
+        manager.cancel_destination(reservation);
+        assert_eq!(manager.state_requests, 0);
+        let reservation = manager.reserve_destination_lease(&hashes, 4).unwrap();
+        let mut lease = RadixRequestLease::default();
+        lease.ensure_page_hashes(&tokens, 4);
+        manager.activate_destination_lease(reservation, &tokens, &mut lease);
+        assert_eq!(manager.state_requests, 1);
+        assert!(lease.state_reserved);
+        manager.abort(lease);
+        assert_eq!(manager.state_requests, 0);
+        assert_eq!(manager.cache.available_tokens(), 64);
+    }
+
+    #[test]
+    fn recurrent_kv_capacity_failure_does_not_consume_slot() {
+        let mut manager = recurrent_manager();
+        let mut lease = RadixRequestLease::default();
+        assert!(
+            manager
+                .allocate_for_request_lease(&[1; 65], &mut lease)
+                .is_none()
+        );
+        assert_eq!(manager.state_requests, 0);
+        assert!(
+            manager
+                .allocate_for_request_lease(&[1, 2, 3, 4], &mut lease)
+                .is_some()
+        );
+        manager.abort(lease);
     }
 }

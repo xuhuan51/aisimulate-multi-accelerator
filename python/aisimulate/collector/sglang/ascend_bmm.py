@@ -14,6 +14,15 @@ import traceback
 from pathlib import Path
 
 
+def validate_runtime(revision, expected_revision=None):
+    audited = {
+        "baa9befa381511cd4d56f83980951e5a45fffc6d",
+        "76f9213a411018547f4fd6a75f36feaa4d6bed58",
+    }
+    if revision not in audited or (expected_revision is not None and revision != expected_revision):
+        raise ValueError("Reaudit BMM dispatch for the installed framework")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--plan", type=Path, required=True)
@@ -49,11 +58,14 @@ def main():
     from sglang.srt.hardware_backend.npu.utils import init_npu_backend
 
     revision = subprocess.check_output(["git", "-C", "/sgl-workspace/sglang", "rev-parse", "HEAD"], text=True).strip()
-    if revision != "baa9befa381511cd4d56f83980951e5a45fffc6d":
-        raise ValueError("Reaudit BMM dispatch for the installed framework")
+    # native76 MLA source uses transpose_batchmatmul at line466 for Q-nope,
+    # line551 for Prefill output, and batch_matmul_transpose at line565 for
+    # Decode output. Same operand strides and APIs as the original audit.
+    validate_runtime(revision, plan.get("framework_commit"))
     init_npu_backend()
     torch.npu.set_device(args.device)
-    torch.set_num_threads(8)
+    # Same NPU worker setting as ModelRunner.load_model, native76:1191-1195.
+    torch.set_num_threads(1)
     selected = [
         (index, case)
         for index, case in enumerate(plan["cases"])
@@ -84,6 +96,7 @@ def main():
             "driver_version_info": Path("/usr/local/Ascend/driver/version.info").read_text(),
             "serving_setup": setup,
             "cpu_affinity": sorted(os.sched_getaffinity(0)),
+            "torch_num_threads": torch.get_num_threads(),
             "dispatch_source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
         },
     }

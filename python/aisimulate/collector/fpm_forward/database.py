@@ -222,6 +222,7 @@ def aggregate_cell(
         cell_dir / "raw",
         expected_plan_sha256=plan.sha256,
         expected_attempt_id=expected_attempt_id,
+        expected_backend=plan.backend,
     )
     runtime_version = getattr(plan, "runtime_backend_version", None)
     if runtime_version is not None and collection.backend_version != runtime_version:

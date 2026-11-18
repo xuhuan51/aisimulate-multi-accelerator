@@ -887,16 +887,6 @@ mod tests {
                 token_multiple: 8,
                 resident_copies: Some(156),
             }),
-            OpSpec::AscendQwen(crate::operators::AscendQwenOp {
-                name: "qwen_scan".into(),
-                scale_factor: 45.0,
-                boundary_contract: crate::perf_database::ascend_qwen::CONTRACT.into(),
-                key: crate::perf_database::ascend_qwen::AscendQwenKey {
-                    role: "gdn_scan".into(),
-                    tp: 8,
-                    phase: "decode".into(),
-                },
-            }),
             OpSpec::AscendVector(crate::operators::AscendVectorOp {
                 name: "ascend_add_norm".into(),
                 scale_factor: 78.0,
@@ -918,10 +908,13 @@ mod tests {
                     local_experts: 16,
                     distribution: "balanced".into(),
                     execution_mode: "graph".into(),
+                    active_experts: None,
                 },
                 token_numerator: 16,
                 token_denominator: 16,
                 input_token_multiple: 8,
+                decode_workload: None,
+                profile_request_counts: None,
             }),
             OpSpec::AscendDeepEp(crate::operators::AscendDeepEpOp {
                 name: "ascend_deepep".into(),
@@ -993,6 +986,27 @@ mod tests {
                 covered_ops: vec![],
                 quantization_sha256: "1".repeat(64),
             }),
+            OpSpec::AscendQwen(crate::operators::AscendQwenOp {
+                name: "qwen_scan".into(),
+                scale_factor: 45.0,
+                boundary_contract: crate::perf_database::ascend_qwen::CONTRACT.into(),
+                key: crate::perf_database::ascend_qwen::AscendQwenKey {
+                    role: "gdn_scan".into(),
+                    tp: 8,
+                    phase: "decode".into(),
+                },
+            }),
+            OpSpec::AscendNormalTransport(crate::operators::AscendNormalTransportOp {
+                name: "normal_combine".into(),
+                scale_factor: 1.0,
+                key: crate::perf_database::ascend_qwen::AscendQwenKey {
+                    role: "normal_combine".into(),
+                    tp: 16,
+                    phase: "prefill".into(),
+                },
+                reference_tokens: 8192,
+                expert_counts: vec![160; 512],
+            }),
         ];
 
         // Exhaustiveness guard: if a variant is added to `Op`, this match
@@ -1021,6 +1035,7 @@ mod tests {
                 | OpSpec::AscendBmm(_)
                 | OpSpec::AscendVector(_)
                 | OpSpec::AscendQwen(_)
+                | OpSpec::AscendNormalTransport(_)
                 | OpSpec::AscendMoeChain(_)
                 | OpSpec::AscendMoeTensor(_)
                 | OpSpec::AscendDeepEp(_)
@@ -1241,7 +1256,12 @@ mod tests {
             "Ascend decoder layers appended index moved"
         );
         assert_eq!(
+            index_of(&all_op_variants()[58]),
             58,
+            "Ascend Qwen appended index moved"
+        );
+        assert_eq!(
+            59,
             all_op_variants().len(),
             "all_op_variants() must cover exactly the pinned variant count"
         );
@@ -1497,7 +1517,7 @@ mod tests {
             Err(AicError::UnsupportedSchemaVersion {
                 kind: "EngineSpec",
                 got: 34,
-                expected: 35,
+                expected: ENGINE_SPEC_SCHEMA_VERSION,
             })
         ));
     }

@@ -31,6 +31,28 @@ def configuration():
     )
 
 
+def test_default_expert_dependencies_follow_observed_single_stream(model_path):
+    model = get_model(model_path, configuration(), "sglang")
+    # All 16 captured ranks serialize the shared gate-up and routed GMMs.
+    for operations in (model.context_ops, model.generation_ops):
+        assert all("Overlap" not in json.loads(operation._spec_json()) for operation in operations)
+
+
+@pytest.mark.parametrize(
+    "setting",
+    [
+        {"qwen_graph_small_ops": True},
+        {"qwen_runtime_contract": "modelslim_fp32_tp_scatter"},
+        {"qwen_prefill_current_roles": ["gdn_scan"]},
+    ],
+)
+def test_qwen_graph_scope_is_not_silently_ignored_by_glm(model_path, setting):
+    config = configuration()
+    config.op_level_config = OpLevelCompileConfig({"ascend": setting}, system="ascend910c", backend="sglang")
+    with pytest.raises(InvalidEngineConfigurationError, match="only supported by the Qwen composition"):
+        get_model(model_path, config, "sglang")
+
+
 def flattened(operations):
     output = {}
 
@@ -152,6 +174,22 @@ def test_observed_prefill_workload_rejects_another_quantization(model_path):
         get_model(model_path, config, "sglang")
 
 
+def test_observed_prefill_workload_rejects_qwen_geometry(model_path):
+    config = configuration()
+    baseline = get_model(model_path, config, "sglang")
+    workload = dict(
+        observation_id="qwen-geometry-on-glm",
+        input_tokens=32,
+        quantization_sha256=baseline.raw_config["modelslim_metadata"]["source_sha256"],
+        layer_expert_counts=[[32] * 10 + [0] * 502 for _ in range(60)],
+    )
+    config.op_level_config = OpLevelCompileConfig(
+        {"ascend": {"prefill_expert_workload": workload}}, system="ascend910c", backend="sglang"
+    )
+    with pytest.raises(InvalidEngineConfigurationError, match="GLM75-layer256-expert"):
+        get_model(model_path, config, "sglang")
+
+
 @pytest.mark.parametrize("attention_tp,attention_dp,expert_ep", [(4, 4, 16), (1, 32, 32)])
 def test_runtime_layers_replace_timing_and_preserve_resident_weights(model_path, attention_tp, attention_dp, expert_ep):
     config = configuration()
@@ -181,7 +219,12 @@ def test_runtime_layers_replace_timing_and_preserve_resident_weights(model_path,
 def test_runtime_layer_profile_cannot_migrate_to_unmeasured_topology(model_path):
     config = configuration()
     config.op_level_config = OpLevelCompileConfig(
-        {"ascend": {"decode_execution_mode": "eager", "decode_timing_scope": "runtime_layers"}},
+        {
+            "ascend": {
+                "decode_execution_mode": "eager",
+                "decode_timing_scope": "runtime_layers",
+            }
+        },
         system="ascend910c",
         backend="sglang",
     )
@@ -238,7 +281,7 @@ def test_tensor_moe_matches_loaded_weights_and_observed_all_reduce_boundaries(mo
     assert model.execution_assumptions["moe_a2a_backend"] == "none"
     assert model.execution_assumptions["prefill_shared_expert_overlap"] is False
     assert all("Overlap" not in json.loads(operation._spec_json()) for operation in model.context_ops)
-    assert any("Overlap" in json.loads(operation._spec_json()) for operation in model.generation_ops)
+    assert all("Overlap" not in json.loads(operation._spec_json()) for operation in model.generation_ops)
     for phase, operations in (("context", model.context_ops), ("generation", model.generation_ops)):
         ops = flattened(operations)
         assert ops[phase + "_routed_experts"][0] == "AscendMoeTensor"
@@ -360,6 +403,12 @@ def test_explicit_serial_shared_experts_survive_saved_engine_identity(model_path
     assert saved["op_level"]["ascend"] == {
         "shared_expert_overlap": False,
         "decode_execution_mode": "graph",
+        "qwen_runtime_contract": "historical",
+        "qwen_graph_small_ops": False,
+        "qwen_eager_ep_pair": False,
+        "qwen_eager_host_cpu_bound": False,
+        "qwen_eager_host_cpu_transfer": False,
+        "qwen_prefill_current_roles": [],
         "decode_timing_scope": "isolated_kernels",
         "enable_dp_lm_head": True,
         "enable_tp_lm_head_all_to_all": False,
@@ -563,6 +612,69 @@ def transfer_model(model_path, role, **overrides):
             **overrides,
         }
     )
+
+
+def test_decode_expert_workload_reaches_canonical_estimator_and_preserves_unmatched_shapes(model_path):
+    import hashlib
+
+    config = configuration()
+    config.tp_size, config.attention_dp_size = 4, 4
+    raw = get_model(model_path, config, "sglang").raw_config
+    ranks = [{"received_tokens": 16, "active_experts": 1} for _ in range(16)]
+    ranks[1]["active_experts"] = 6
+    samples = [{"request_counts": [3] * 4, "sequence_length": 8194, "layers": [ranks] * 75}]
+    workload = {
+        "observation_id": "synthetic-count-workload",
+        "quantization_sha256": raw["modelslim_metadata"]["source_sha256"],
+        "framework_commit": "1" * 40,
+        "samples_sha256": hashlib.sha256(json.dumps(samples, separators=(",", ":")).encode()).hexdigest(),
+        "input_tokens": 8192,
+        "graph_bucket": 8,
+        "history_policy": "hold_boundary",
+        "samples": samples,
+    }
+    settings = {"shape_policy": "anchored", "decode_execution_mode": "graph"}
+    baseline = transfer_model(
+        model_path, "decode", tp=4, attention_dp=4, estimator_config={"op_level": {"ascend": settings}}
+    )
+    options = {**settings, "decode_expert_workload": workload}
+    calibrated = transfer_model(
+        model_path, "decode", tp=4, attention_dp=4, estimator_config={"op_level": {"ascend": options}}
+    )
+
+    def metrics(count):
+        return {"scheduled_requests": {"num_decode_requests": count, "sum_decode_kv_tokens": count * 8194}}
+
+    assert calibrated.estimate_forward_pass_time_ms([metrics(3)] * 4) < baseline.estimate_forward_pass_time_ms(
+        [metrics(3)] * 4
+    )
+    assert calibrated.estimate_forward_pass_time_ms([metrics(3)] * 4) == pytest.approx(
+        calibrated.estimate_forward_pass_time_ms(metrics(3))
+    )
+    assert calibrated.estimate_forward_pass_time_ms([{"scheduled_requests": {}}] * 4) == 0
+    for counts in ([2] * 4, [3, 3, 2, 0]):
+        values = [metrics(n) for n in counts]
+        assert calibrated.estimate_forward_pass_time_ms(values) == pytest.approx(
+            baseline.estimate_forward_pass_time_ms(values)
+        )
+    with pytest.raises(ValueError, match="matching GLM ModelSlim"):
+        transfer_model(
+            model_path,
+            "decode",
+            tp=4,
+            attention_dp=4,
+            estimator_config={
+                "op_level": {
+                    "ascend": {
+                        **settings,
+                        "decode_expert_workload": {
+                            **workload,
+                            "quantization_sha256": "0" * 64,
+                        },
+                    }
+                }
+            },
+        )
 
 
 @pytest.mark.parametrize("execution_mode", ["eager", "graph"])

@@ -28,6 +28,8 @@ pub enum FpmQueryResolution {
     CrossBatchInterpolation,
     /// Prefill fallback that interpolates KV at each supported token count first.
     KvFirstInterpolation,
+    /// Explicit same-batch interpolation inside a measured prefill triangle.
+    SimplexInterpolation,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -125,6 +127,11 @@ mod tests {
                 FpmQueryResolution::KvFirstInterpolation,
                 "kv_first_interpolation",
                 4,
+            ),
+            (
+                FpmQueryResolution::SimplexInterpolation,
+                "simplex_interpolation",
+                5,
             ),
         ] {
             let json = serde_json::to_string(&resolution).unwrap();

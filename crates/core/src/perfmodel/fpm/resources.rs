@@ -313,14 +313,17 @@ impl ForwardPassPerfModelConfig {
         request: &FpmCacheBudgetRequest,
     ) -> Result<FpmCacheBudget, AicError> {
         let resolved = self.clone().resolve()?;
-        if resolved.backend == BackendKind::Sglang {
+        let resources = resolved
+            .fpm_resources()?
+            .ok_or_else(|| invalid("cache budget requires fpm_profile resources"))?;
+        if resolved.backend == BackendKind::Sglang
+            && (resources.runtime_memory.is_none()
+                || resources.cache_layout != FpmCacheLayout::Linear)
+        {
             return Err(invalid(
                 "SGLang FPM timing requires native fixed cache capacity; automatic profile cache budgeting is unsupported",
             ));
         }
-        let resources = resolved
-            .fpm_resources()?
-            .ok_or_else(|| invalid("cache budget requires fpm_profile resources"))?;
         let context = resolved
             .fpm_profile
             .as_ref()

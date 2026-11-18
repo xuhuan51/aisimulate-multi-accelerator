@@ -133,3 +133,40 @@ def test_runtime_source_must_match_observation(tmp_path):
     path.write_text(json.dumps(value))
     with pytest.raises(ValueError, match="source differs"):
         validated_rows([path], runtime())
+
+
+def test_unset_runtime_option_is_preserved_in_pinned_identity(tmp_path):
+    path = campaign(tmp_path, "unset.json")
+    _, explicit = validated_rows([path], runtime())
+    value = json.loads(path.read_text())
+    value["runtime_environment"]["TASK_QUEUE_ENABLE"] = None
+    value["serving_setup"]["environment"]["TASK_QUEUE_ENABLE"] = None
+    path.write_text(json.dumps(value))
+    rows, unset = validated_rows([path], runtime())
+    assert rows[0]["latency_ms"] == 2.0
+    assert unset["identity"]["measurement_protocol"]["runtime_environment"]["TASK_QUEUE_ENABLE"] is None
+    assert unset["runtime_identity_sha256"] != explicit["runtime_identity_sha256"]
+
+    value["serving_setup"]["environment"]["TASK_QUEUE_ENABLE"] = "1"
+    path.write_text(json.dumps(value))
+    with pytest.raises(ValueError, match="environment differs"):
+        validated_rows([path], runtime())
+
+
+@pytest.mark.parametrize("option", ["2", "", False, 0])
+def test_invalid_runtime_option_cannot_be_published(tmp_path, option):
+    path = campaign(tmp_path, "invalid.json")
+    value = json.loads(path.read_text())
+    value["runtime_environment"]["TASK_QUEUE_ENABLE"] = option
+    path.write_text(json.dumps(value))
+    with pytest.raises(ValueError, match="task-queue policy"):
+        validated_rows([path], runtime())
+
+
+def test_missing_runtime_option_cannot_be_published(tmp_path):
+    path = campaign(tmp_path, "missing.json")
+    value = json.loads(path.read_text())
+    del value["runtime_environment"]["TASK_QUEUE_ENABLE"]
+    path.write_text(json.dumps(value))
+    with pytest.raises(ValueError, match="task-queue policy"):
+        validated_rows([path], runtime())

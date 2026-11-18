@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import psutil
 import pytest
@@ -14,6 +16,30 @@ import yaml
 from aisimulate.config.common import ResourceConfig
 from aisimulate.resources import GB, MIB
 from aisimulate.supervision import run_process
+
+
+@pytest.mark.parametrize("pss,expected,basis", [(12, 12, "pss"), (None, 50, "rss")])
+def test_supervisor_and_child_use_the_same_shared_memory_charge(pss, expected, basis):
+    from aisimulate.supervision import _accounted_process_memory
+
+    process = SimpleNamespace(memory_full_info=lambda: SimpleNamespace(pss=pss))
+    assert _accounted_process_memory(process, 50) == (expected, basis)
+
+
+def test_accounted_memory_falls_back_when_proportional_memory_is_unavailable():
+    from aisimulate.supervision import _accounted_process_memory
+
+    def unavailable():
+        raise psutil.AccessDenied(pid=os.getpid())
+
+    assert _accounted_process_memory(SimpleNamespace(memory_full_info=unavailable), 50) == (50, "rss")
+
+
+def test_supervisor_reports_its_memory_accounting_basis(tmp_path):
+    report = _run_script(tmp_path, "import time; time.sleep(0.2)\n")
+    assert report["status"] == "completed"
+    expected = "pss" if hasattr(psutil.Process().memory_full_info(), "pss") else "rss"
+    assert report["supervisor_memory_accounting"] == expected
 
 
 def _policy(extra_mib=64, **kwargs):
@@ -33,19 +59,20 @@ def _run_script(tmp_path, source, *, policy=None, timeout=5):
     return run_process([sys.executable, str(script)], policy=policy or _policy(), timeout=timeout)
 
 
-def test_large_calibration_checkpoint_survives_supervised_export(tmp_path):
+@pytest.mark.parametrize("payload_mib", [2, 12])
+def test_large_calibration_checkpoint_survives_supervised_export(tmp_path, payload_mib):
     output = tmp_path / "events.jsonl"
     script = tmp_path / "worker.py"
     script.write_text(
         "from aisimulate.supervision import checkpoint\n"
-        "checkpoint('candidate_completed', {'calibration': 'x' * (2 * 1024 * 1024)})\n"
+        f"checkpoint('candidate_completed', {{'calibration': 'x' * ({payload_mib} * 1024 * 1024)}})\n"
     )
     report = run_process(
         [sys.executable, str(script)], policy=_policy(extra_mib=160), timeout=10, events_output=str(output)
     )
     assert report["status"] == "completed"
     records = [json.loads(line) for line in output.read_text().splitlines()]
-    assert records == [{"event": "candidate_completed", "value": {"calibration": "x" * (2 * 1024 * 1024)}}]
+    assert records == [{"event": "candidate_completed", "value": {"calibration": "x" * (payload_mib * 1024 * 1024)}}]
 
 
 def test_calibration_checkpoint_keeps_record_and_total_bounds(tmp_path, monkeypatch):
@@ -83,6 +110,27 @@ for _ in range(32):
     assert result["peak_observed_rss_bytes"] > result["budget"]["memory_limit_bytes"]
     assert result["termination_complete"] is True
     assert not psutil.pid_exists(int(pidfile.read_text()))
+
+
+@pytest.mark.skipif(not hasattr(os, "fork") or not hasattr(psutil.Process().memory_full_info(), "pss"), reason="requires fork and proportional memory accounting")
+def test_shared_resident_pages_are_charged_once(tmp_path):
+    result = _run_script(
+        tmp_path,
+        """
+import os, time
+shared = bytearray(64 * 1024 * 1024)
+child = os.fork()
+if child == 0:
+    time.sleep(0.8)
+    os._exit(0)
+os.waitpid(child, 0)
+""",
+        policy=_policy(extra_mib=100),
+    )
+    assert result["status"] == "completed"
+    assert result["process_tree_memory_accounting"] == "pss"
+    assert result["peak_observed_rss_bytes"] > result["budget"]["memory_limit_bytes"]
+    assert result["peak_accounted_memory_bytes"] < result["budget"]["memory_limit_bytes"]
 
 
 def test_timeout_kills_term_resistant_descendant(tmp_path):
@@ -295,6 +343,8 @@ def test_early_resource_failure_keeps_a_complete_runtime_envelope(tmp_path, monk
         "exit_code",
         "budget",
         "peak_observed_rss_bytes",
+        "peak_accounted_memory_bytes",
+        "process_tree_memory_accounting",
         "wall_seconds",
         "thread_limit_per_runtime",
         "termination_complete",

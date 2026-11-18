@@ -29,11 +29,143 @@ use crate::operators::{FpmForwardOp, FpmPhase, Op};
 use crate::perf_database::PerfDatabase;
 use crate::perfmodel::engine::spec::EngineSpec;
 use crate::session::{
-    ContextOpFilter, OpListPlan, QueryMemo, get_mix_step_ops, query_context_op,
-    query_generation_op, run_context_ops, run_context_ops_planned, run_context_ops_with,
-    run_generation_ops_step, run_generation_ops_step_beamed_with, run_generation_ops_step_planned,
+    ContextOpFilter, OpListPlan, QueryMemo, get_mix_step_ops, get_mix_step_ops_with,
+    query_context_op, query_generation_op, run_context_ops, run_context_ops_planned,
+    run_context_ops_with, run_generation_ops_step, run_generation_ops_step_beamed_with,
+    run_generation_ops_step_planned,
 };
 use crate::{ForwardPassMetrics, validate_forward_pass_metrics};
+
+fn bind_qwen_host_cpu_ranks(
+    ops: &[Op],
+    tp: u32,
+    dp: u32,
+) -> Result<Option<Vec<Vec<Op>>>, AicError> {
+    fn contains_host(op: &Op) -> bool {
+        match op {
+            Op::AscendQwen(cpu) => cpu.key.is_host_cpu(),
+            Op::Overlap(group) => group
+                .group_a
+                .iter()
+                .chain(&group.group_b)
+                .any(contains_host),
+            _ => false,
+        }
+    }
+    fn retain_rank(op: &mut Op, dp_rank: u32, attention_tp: u32) {
+        match op {
+            Op::AscendQwen(cpu) if cpu.key.is_host_cpu() => {
+                let rank = cpu
+                    .key
+                    .role
+                    .rsplit_once("_rank")
+                    .unwrap()
+                    .1
+                    .parse::<u32>()
+                    .unwrap();
+                if rank / attention_tp != dp_rank {
+                    cpu.scale_factor = 0.0;
+                }
+            }
+            Op::Overlap(group) => {
+                for child in group.group_a.iter_mut().chain(&mut group.group_b) {
+                    retain_rank(child, dp_rank, attention_tp);
+                }
+            }
+            _ => {}
+        }
+    }
+    if !ops.iter().any(contains_host) {
+        return Ok(None);
+    }
+    if !matches!((tp, dp), (2, 8) | (4, 4) | (8, 2)) {
+        return Err(AicError::InvalidEngineConfig(
+            "Qwen host CPU paths require a supported16-rank attention layout".into(),
+        ));
+    }
+    Ok(Some(
+        (0..dp)
+            .map(|rank| {
+                let mut bound = ops.to_vec();
+                for op in &mut bound {
+                    retain_rank(op, rank, tp);
+                }
+                bound
+            })
+            .collect(),
+    ))
+}
+
+/// Bind Normal EP workload to the complete SUM_LEN buffer used by a Prefill
+/// forward. Static per-DP multipliers overstate traffic when peers are idle.
+fn bind_qwen_normal_group(
+    operations: &[Op],
+    metrics: &ForwardPassMetrics,
+    group: &[ForwardPassMetrics],
+    attention_tp: u32,
+    attention_dp: u32,
+) -> Result<Vec<Op>, AicError> {
+    if attention_tp == 0 || attention_dp == 0 || group.len() != attention_dp as usize {
+        return Err(AicError::InvalidForwardPassMetrics(
+            "Qwen Normal transport requires the complete attention-DP metric vector".into(),
+        ));
+    }
+    let global_tokens = group.iter().try_fold(0_u64, |sum, rank| {
+        let scheduled = &rank.scheduled_requests;
+        let local =
+            u64::from(scheduled.sum_prefill_tokens) + u64::from(scheduled.num_decode_requests);
+        sum.checked_add(local.div_ceil(u64::from(attention_tp)) * u64::from(attention_tp))
+            .ok_or_else(|| AicError::InvalidForwardPassMetrics("Qwen global token overflow".into()))
+    })?;
+    let local_tokens = u64::from(metrics.scheduled_requests.sum_prefill_tokens)
+        + u64::from(metrics.scheduled_requests.num_decode_requests);
+    if local_tokens == 0 || global_tokens > u64::from(u32::MAX) {
+        return Err(AicError::InvalidForwardPassMetrics(
+            "Qwen global token shape is invalid".into(),
+        ));
+    }
+    operations
+        .iter()
+        .map(|operation| {
+            let Op::TokenScale(scale) = operation else {
+                return Ok(operation.clone());
+            };
+            let (mut numerator, mut denominator) = match scale.op.as_ref() {
+                Op::AscendNormalTransport(_) => (global_tokens, local_tokens),
+                Op::AscendQwen(qwen)
+                    if qwen.key.phase == "prefill" && qwen.key.role == "routed_experts" =>
+                {
+                    let invalid =
+                        || AicError::InvalidForwardPassMetrics("Qwen token ratio overflow".into());
+                    (
+                        u64::from(scale.numerator)
+                            .checked_mul(global_tokens)
+                            .ok_or_else(invalid)?,
+                        u64::from(scale.denominator)
+                            .checked_mul(local_tokens)
+                            .and_then(|v| v.checked_mul(u64::from(attention_dp)))
+                            .ok_or_else(invalid)?,
+                    )
+                }
+                _ => return Ok(operation.clone()),
+            };
+            let (mut a, mut b) = (numerator, denominator);
+            while b != 0 {
+                (a, b) = (b, a % b);
+            }
+            numerator /= a;
+            denominator /= a;
+            let mut bound = scale.clone();
+            bound.numerator = u32::try_from(numerator).map_err(|_| {
+                AicError::InvalidForwardPassMetrics("Qwen token ratio overflow".into())
+            })?;
+            bound.denominator = u32::try_from(denominator).map_err(|_| {
+                AicError::InvalidForwardPassMetrics("Qwen token ratio overflow".into())
+            })?;
+            Ok(Op::TokenScale(bound))
+        })
+        .collect()
+}
 
 /// Per-call runtime inputs. Field-for-field mirror of the Python
 /// `sdk/config.RuntimeConfig`.
@@ -345,6 +477,9 @@ pub struct Engine {
     /// (`batch_size = batch_size * (model._nextn + 1)`). 0 disables scaling.
     nextn: u32,
     ascend_dp_layout: Option<(u32, u32)>,
+    qwen_normal_layout: Option<(u32, u32)>,
+    /// Rank-owned CPU paths for telemetry with nonuniform DP request counts.
+    qwen_host_generation_ops: Option<Vec<Vec<Op>>>,
 }
 
 impl std::fmt::Debug for Engine {
@@ -414,6 +549,22 @@ impl Engine {
             spec.context_ops.iter().chain(&spec.generation_ops),
         )?;
         Ok(Engine {
+            qwen_host_generation_ops: bind_qwen_host_cpu_ranks(
+                &spec.generation_ops,
+                spec.engine.parallel.tp_size,
+                spec.engine.parallel.attention_dp_size.unwrap_or(1),
+            )?,
+            qwen_normal_layout: spec
+                .context_ops
+                .iter()
+                .any(|op| {
+                    matches!(op,
+                Op::TokenScale(scale) if matches!(scale.op.as_ref(), Op::AscendNormalTransport(_)))
+                })
+                .then_some((
+                    spec.engine.parallel.tp_size,
+                    spec.engine.parallel.attention_dp_size.unwrap_or(1),
+                )),
             ascend_dp_layout: (spec.engine.system_name == "ascend910c"
                 && spec.engine.parallel.attention_dp_size.unwrap_or(1) > 1
                 && spec.engine.parallel.dcp_size.unwrap_or(1) == 1
@@ -2261,6 +2412,7 @@ impl Engine {
             };
             let rank_latency = self.rank_latency_ms(
                 metrics,
+                metrics_by_rank,
                 capture.then_some(&mut evidence),
                 coverage.as_deref_mut(),
             )?;
@@ -2284,6 +2436,8 @@ impl Engine {
 
     pub fn supports_ascend_dp_timing(&self) -> bool {
         self.ascend_dp_layout.is_some()
+            || self.qwen_normal_layout.is_some()
+            || self.qwen_host_generation_ops.is_some()
     }
 
     pub(crate) fn ascend_dp_estimate(
@@ -2291,6 +2445,13 @@ impl Engine {
         metrics: &[ForwardPassMetrics],
         capture: bool,
     ) -> Result<(f64, Option<usize>, Vec<PerOpValue>), AicError> {
+        if let Some((tp, dp)) = self.qwen_normal_layout {
+            return self.qwen_normal_group_estimate(metrics, tp, dp, capture);
+        }
+        if let Some(ranks) = &self.qwen_host_generation_ops {
+            let dp = ranks.len() as u32;
+            return self.qwen_normal_group_estimate(metrics, 16 / dp, dp, capture);
+        }
         let (attention_tp, attention_dp) = self.ascend_dp_layout.ok_or_else(|| {
             AicError::InvalidForwardPassMetrics(
                 "Ascend synchronized DP timing is not configured".into(),
@@ -2374,6 +2535,152 @@ impl Engine {
         Ok((maximum, max_rank, critical_operations))
     }
 
+    fn qwen_normal_group_estimate(
+        &self,
+        metrics: &[ForwardPassMetrics],
+        tp: u32,
+        dp: u32,
+        capture: bool,
+    ) -> Result<(f64, Option<usize>, Vec<PerOpValue>), AicError> {
+        if metrics.len() != dp as usize {
+            return Err(AicError::InvalidForwardPassMetrics(
+                "Qwen Normal timing requires every attention-DP rank, including idle ranks".into(),
+            ));
+        }
+        for rank in metrics {
+            validate_forward_pass_metrics(rank)?;
+        }
+        let has_prefill = metrics
+            .iter()
+            .any(|rank| rank.scheduled_requests.sum_prefill_tokens > 0);
+        let request_counts: Vec<_> = if has_prefill {
+            Vec::new()
+        } else {
+            metrics
+                .iter()
+                .map(|rank| rank.scheduled_requests.num_decode_requests)
+                .collect()
+        };
+        let mut maximum = 0.0;
+        let mut maximum_rank = None;
+        let mut critical_operations = Vec::new();
+        let mut queried_shapes = std::collections::BTreeSet::new();
+        for (rank, metric) in metrics.iter().enumerate() {
+            let scheduled = &metric.scheduled_requests;
+            let prefill = scheduled.sum_prefill_tokens > 0;
+            let decode = scheduled.num_decode_requests > 0;
+            if prefill && decode && self.qwen_host_generation_ops.is_some() {
+                return Err(AicError::InvalidForwardPassMetrics(
+                    "Qwen measured host CPU paths do not cover same-rank mixed Prefill/Decode"
+                        .into(),
+                ));
+            }
+            if !prefill && !decode {
+                continue;
+            }
+            // The global Normal buffer and captured routing descriptor are
+            // shared by this call. Identical local scheduled shapes therefore
+            // have identical operator queries, including the request-count
+            // vector used by Decode experts. CPU paths belong to physical ranks
+            // and must still evaluate every DP owner. Preserve other first ties.
+            if (prefill || self.qwen_host_generation_ops.is_none())
+                && !queried_shapes.insert((
+                    scheduled.num_prefill_requests,
+                    scheduled.sum_prefill_tokens,
+                    scheduled.sum_prefill_kv_tokens,
+                    scheduled.var_prefill_length.to_bits(),
+                    scheduled.num_decode_requests,
+                    scheduled.sum_decode_kv_tokens,
+                    scheduled.var_decode_kv_tokens.to_bits(),
+                ))
+            {
+                continue;
+            }
+            let mut fold = PerOpFold::new(if prefill { "context" } else { "generation" });
+            let mut on_op = |op: &Op, result: PerformanceResult| {
+                if capture {
+                    fold.add(op, result);
+                }
+            };
+            let latency = if prefill {
+                let operations =
+                    bind_qwen_normal_group(&self.context_ops, metric, metrics, tp, dp)?;
+                let batch = scheduled.num_prefill_requests.max(1);
+                let new_tokens = scheduled.sum_prefill_tokens / batch;
+                let prefix = scheduled.sum_prefill_kv_tokens / batch;
+                if decode {
+                    get_mix_step_ops_with(
+                        &operations,
+                        &self.generation_ops,
+                        &self.db,
+                        scheduled.sum_prefill_tokens,
+                        scheduled.num_decode_requests,
+                        new_tokens.max(1),
+                        prefix,
+                        scheduled.sum_prefill_kv_tokens,
+                        scheduled.sum_decode_kv_tokens / scheduled.num_decode_requests,
+                        scheduled.num_decode_requests,
+                        &mut on_op,
+                    )?
+                } else {
+                    run_context_ops_with(
+                        &operations,
+                        &self.db,
+                        batch,
+                        new_tokens,
+                        prefix,
+                        1.0,
+                        ContextOpFilter::All,
+                        &mut on_op,
+                    )?
+                }
+            } else {
+                let generation_ops = self
+                    .qwen_host_generation_ops
+                    .as_ref()
+                    .map_or(self.generation_ops.as_slice(), |ranks| {
+                        ranks[rank].as_slice()
+                    });
+                let requests = scheduled.num_decode_requests;
+                let kv = scheduled.sum_decode_kv_tokens / requests;
+                let context = RuntimeContext {
+                    batch_size: requests,
+                    num_tokens: requests,
+                    s: kv,
+                    ..Default::default()
+                };
+                let mut total = 0.0;
+                let mut memo = QueryMemo::new(Some(&self.generation_plan), generation_ops);
+                for (index, op) in generation_ops.iter().enumerate() {
+                    let result = memo.query(index, || match op {
+                        Op::AscendMoeChain(experts)
+                            if experts.key.local_experts == 32
+                                && experts.decode_workload.is_some() =>
+                        {
+                            experts.query_runtime_with_request_counts(
+                                &self.db,
+                                &context,
+                                Some(&request_counts),
+                            )
+                        }
+                        _ => query_generation_op(op, &self.db, requests, 1, kv, 1.0, 0, None),
+                    })?;
+                    total += result.latency_ms;
+                    on_op(op, result);
+                }
+                total
+            };
+            if latency > maximum {
+                maximum = latency;
+                maximum_rank = Some(rank);
+                if capture {
+                    critical_operations = strip_per_op_metadata(fold.into_values());
+                }
+            }
+        }
+        Ok((maximum, maximum_rank, critical_operations))
+    }
+
     /// Dispatch one rank's FPM on its scheduled workload. Literal port of
     /// `SessionEstimator::rank_latency_ms` (520dcfff `session.rs:308`):
     /// prefill+decode -> mix step ([`get_mix_step_ops`]); prefill-only ->
@@ -2383,6 +2690,7 @@ impl Engine {
     fn rank_latency_ms(
         &self,
         metrics: &ForwardPassMetrics,
+        all_rank_metrics: &[ForwardPassMetrics],
         mut evidence: Option<&mut crate::FpmRankEstimate>,
         mut coverage: Option<&mut FpmQueryCoverage>,
     ) -> Result<f64, AicError> {
@@ -2395,6 +2703,32 @@ impl Engine {
         // and price decode as marginal work riding a pass that does not exist.
         let has_prefill = sched.sum_prefill_tokens > 0;
         let has_decode = sched.num_decode_requests > 0 || sched.sum_decode_kv_tokens > 0;
+        if has_prefill && has_decode && self.qwen_host_generation_ops.is_some() {
+            return Err(AicError::InvalidForwardPassMetrics(
+                "Qwen measured host CPU paths do not cover same-rank mixed Prefill/Decode".into(),
+            ));
+        }
+        let bound_qwen_ops = if has_prefill {
+            self.qwen_normal_layout
+                .map(|(tp, dp)| {
+                    bind_qwen_normal_group(&self.context_ops, metrics, all_rank_metrics, tp, dp)
+                })
+                .transpose()?
+        } else {
+            None
+        };
+        let context_ops = bound_qwen_ops.as_deref().unwrap_or(&self.context_ops);
+        let generation_ops = match &self.qwen_host_generation_ops {
+            Some(ranks) => ranks
+                .get(metrics.dp_rank as usize)
+                .ok_or_else(|| {
+                    AicError::InvalidForwardPassMetrics(
+                        "Qwen host CPU rank is outside the selected attention-DP layout".into(),
+                    )
+                })?
+                .as_slice(),
+            None => self.generation_ops.as_slice(),
+        };
 
         // The whole-forward rewrite retains the original stage graph in
         // sol_ops. Apply the same replay restriction before its table lookup
@@ -2560,8 +2894,8 @@ impl Engine {
             let ctx_tokens = sched.sum_prefill_tokens;
             let gen_tokens = sched.num_decode_requests;
             return get_mix_step_ops(
-                &self.context_ops,
-                &self.generation_ops,
+                context_ops,
+                generation_ops,
                 &self.db,
                 ctx_tokens,
                 gen_tokens,
@@ -2580,7 +2914,7 @@ impl Engine {
             let new_tokens_per_req = sched.sum_prefill_tokens / n_prefill;
             let prefix_per_req = sched.sum_prefill_kv_tokens / n_prefill;
             total += run_context_ops(
-                &self.context_ops,
+                context_ops,
                 &self.db,
                 n_prefill,
                 new_tokens_per_req,
@@ -2593,8 +2927,47 @@ impl Engine {
         if has_decode {
             let n_decode = sched.num_decode_requests.max(1);
             let kv_per_req = sched.sum_decode_kv_tokens / n_decode;
+            if self.generation_ops.iter().any(|op| {
+                matches!(op, Op::AscendMoeChain(experts)
+                    if experts.key.local_experts == 32 && experts.decode_workload.is_some())
+            }) {
+                // Independent-rank Qwen timing still needs the actual complete
+                // DP request vector before applying a captured routing sample.
+                // An empty vector deliberately selects the balanced fallback
+                // for cross-rank mixed work. No sample is relabeled uniform.
+                let requests: Vec<u32> = if all_rank_metrics
+                    .iter()
+                    .any(|rank| rank.scheduled_requests.sum_prefill_tokens > 0)
+                {
+                    Vec::new()
+                } else {
+                    all_rank_metrics
+                        .iter()
+                        .map(|rank| rank.scheduled_requests.num_decode_requests)
+                        .collect()
+                };
+                let request_counts = (all_rank_metrics.len() > 1).then_some(requests.as_slice());
+                let context = RuntimeContext {
+                    batch_size: n_decode,
+                    num_tokens: n_decode,
+                    s: kv_per_req,
+                    ..Default::default()
+                };
+                let mut memo = QueryMemo::new(Some(&self.generation_plan), &self.generation_ops);
+                for (index, op) in self.generation_ops.iter().enumerate() {
+                    let result = memo.query(index, || match op {
+                        Op::AscendMoeChain(experts) if experts.key.local_experts == 32 => experts
+                            .query_runtime_with_request_counts(&self.db, &context, request_counts),
+                        _ => {
+                            query_generation_op(op, &self.db, n_decode, 1, kv_per_req, 1.0, 0, None)
+                        }
+                    })?;
+                    total += result.latency_ms;
+                }
+                return Ok(total);
+            }
             total += run_generation_ops_step(
-                &self.generation_ops,
+                generation_ops,
                 &self.db,
                 n_decode,
                 kv_per_req,
@@ -2613,6 +2986,49 @@ mod tests {
     use std::collections::BTreeMap;
     use std::path::PathBuf;
 
+    #[test]
+    fn host_cpu_paths_bind_only_their_physical_attention_dp_owner() {
+        let ops = vec![Op::Overlap(crate::operators::op::OverlapOp::new(
+            "cpu",
+            vec![Op::AscendQwen(crate::operators::AscendQwenOp {
+                name: "rank0".into(),
+                scale_factor: 45.0,
+                key: crate::perf_database::ascend_qwen::AscendQwenKey {
+                    role: "host_cpu_linear_attention_rank0".into(),
+                    tp: 4,
+                    phase: "decode".into(),
+                },
+                boundary_contract: crate::perf_database::ascend_qwen::HOST_CPU_CONTRACT.into(),
+            })],
+            vec![Op::AscendQwen(crate::operators::AscendQwenOp {
+                name: "rank13".into(),
+                scale_factor: 60.0,
+                key: crate::perf_database::ascend_qwen::AscendQwenKey {
+                    role: "host_cpu_moe_rank13".into(),
+                    tp: 4,
+                    phase: "decode".into(),
+                },
+                boundary_contract: crate::perf_database::ascend_qwen::HOST_CPU_CONTRACT.into(),
+            })],
+        ))];
+        let ranks = bind_qwen_host_cpu_ranks(&ops, 4, 4).unwrap().unwrap();
+        for (rank, bound) in ranks.iter().enumerate() {
+            let Op::Overlap(group) = &bound[0] else {
+                panic!("expected CPU group")
+            };
+            let Op::AscendQwen(first) = &group.group_a[0] else {
+                panic!("expected rank0")
+            };
+            let Op::AscendQwen(last) = &group.group_b[0] else {
+                panic!("expected rank13")
+            };
+            assert_eq!(first.scale_factor, if rank == 0 { 45.0 } else { 0.0 });
+            assert_eq!(last.scale_factor, if rank == 3 { 60.0 } else { 0.0 });
+        }
+        assert!(bind_qwen_host_cpu_ranks(&ops, 3, 4).is_err());
+        assert!(bind_qwen_host_cpu_ranks(&[], 8, 2).unwrap().is_none());
+    }
+
     use crate::common::enums::{FmhaQuantMode, GemmQuantMode, KvCacheQuantMode};
     use crate::operators::op::Op;
     use crate::operators::{
@@ -2621,6 +3037,88 @@ mod tests {
     use crate::perfmodel::EngineConfig;
     use crate::perfmodel::engine::spec::EngineSpec;
     use crate::{BackendKind, ParallelMapping, QuantizationConfig};
+
+    #[test]
+    fn qwen_normal_group_uses_actual_padded_traffic_with_idle_and_mixed_peers() {
+        let transport: Op = serde_json::from_value(serde_json::json!({"TokenScale": {
+            "numerator":4,"denominator":1,"op":{"AscendNormalTransport":{
+                "name":"dispatch","scale_factor":1.0,
+                "key":{"role":"normal_dispatch_ready","tp":16,"phase":"prefill"},
+                "reference_tokens":8192,"expert_counts":vec![160;512]
+            }}
+        }}))
+        .unwrap();
+        let experts: Op = serde_json::from_value(serde_json::json!({"TokenScale": {
+            "numerator":9,"denominator":2,"op":{"AscendQwen":{
+                "name":"experts","scale_factor":1.0,
+                "key":{"role":"routed_experts","tp":16,"phase":"prefill"}
+            }}
+        }}))
+        .unwrap();
+        for (prefill, decode, expected) in [
+            ([2048, 0, 0, 0], [0, 0, 0, 0], 2048),
+            ([2048; 4], [0; 4], 8192),
+            ([2048, 1024, 0, 0], [0, 0, 3, 1], 3080),
+            ([2048, 0, 0, 0], [3, 0, 0, 0], 2052),
+        ] {
+            let group: Vec<_> = (0..4)
+                .map(|rank| {
+                    let mut metrics = ForwardPassMetrics::default();
+                    metrics.scheduled_requests.sum_prefill_tokens = prefill[rank];
+                    metrics.scheduled_requests.num_prefill_requests = u32::from(prefill[rank] > 0);
+                    metrics.scheduled_requests.num_decode_requests = decode[rank];
+                    metrics
+                })
+                .collect();
+            let original = vec![transport.clone(), experts.clone()];
+            let bound = bind_qwen_normal_group(&original, &group[0], &group, 4, 4).unwrap();
+            let local = prefill[0] + decode[0];
+            let Op::TokenScale(communication) = &bound[0] else {
+                unreachable!()
+            };
+            let Op::TokenScale(compute) = &bound[1] else {
+                unreachable!()
+            };
+            assert_eq!(communication.scale_tokens(local).unwrap(), expected);
+            // Original9/2 includes DP4. The retained expert receive ratio is9/8.
+            assert_eq!(compute.scale_tokens(local).unwrap(), expected * 9 / 8);
+            assert_eq!(original, vec![transport.clone(), experts.clone()]);
+        }
+    }
+
+    #[test]
+    fn qwen_normal_group_evidence_covers_prefill_decode_mixed_and_idle_phases() {
+        let mut engine = build_engine(None);
+        for (prefill, decode) in [
+            ([2048, 0, 0, 0], [0; 4]),
+            ([2048; 4], [0; 4]),
+            ([0; 4], [3; 4]),
+            ([2048, 0, 0, 0], [0, 3, 2, 1]),
+            ([2048, 0, 0, 0], [3, 0, 0, 0]),
+            ([0; 4], [0; 4]),
+        ] {
+            let metrics: Vec<_> = (0..4)
+                .map(|rank| {
+                    let mut metric = ForwardPassMetrics::default();
+                    metric.scheduled_requests.num_prefill_requests = u32::from(prefill[rank] > 0);
+                    metric.scheduled_requests.sum_prefill_tokens = prefill[rank];
+                    metric.scheduled_requests.num_decode_requests = decode[rank];
+                    metric.scheduled_requests.sum_decode_kv_tokens = 8193 * decode[rank];
+                    metric
+                })
+                .collect();
+            engine.qwen_normal_layout = None;
+            let expected = engine.forward_pass_time_ms(&metrics).unwrap();
+            engine.qwen_normal_layout = Some((4, 4));
+            assert!(engine.supports_ascend_dp_timing());
+            let scalar = engine.forward_pass_time_ms(&metrics).unwrap();
+            let (captured, _, operations) = engine.ascend_dp_estimate(&metrics, true).unwrap();
+            let sum: f64 = operations.iter().map(|operation| operation.1).sum();
+            assert!((scalar - expected).abs() < 1e-10);
+            assert!((captured - scalar).abs() < 1e-10);
+            assert!((sum - scalar).abs() < 1e-10);
+        }
+    }
 
     fn systems_root() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -2766,6 +3264,131 @@ mod tests {
             osl,
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn qwen_observed_experts_use_complete_dp_shape_before_selecting_samples() {
+        use crate::operators::ascend_moe_chain::{
+            AscendMoeChainOp, DecodeExpertRank, DecodeExpertSample, DecodeExpertWorkload,
+        };
+        use crate::perf_database::ascend_moe_chain::{
+            AscendMoeChainKey, AscendMoeChainTable, BASENAME, tests::qwen_columns,
+        };
+        use crate::perf_database::energy_test_fixtures::{Col, write_parquet};
+        use sha2::{Digest, Sha256};
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join(BASENAME);
+        let mut columns = qwen_columns();
+        for column in &mut columns {
+            match column {
+                Col::I64("received_tokens", values) => *values = vec![10, 20],
+                Col::F64("latency_ms", values) => *values = vec![1.0, 2.0],
+                Col::Str("expert_counts", values) => {
+                    *values = vec![
+                        "[1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+                        "[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0]",
+                    ];
+                }
+                _ => {}
+            }
+        }
+        write_parquet(&path, &columns);
+        let mut db = PerfDatabase::load_resolved(
+            &systems_root(),
+            "b200_sxm",
+            "vllm",
+            "0.24.0",
+            true,
+            false,
+            false,
+        )
+        .unwrap();
+        db.tables_mut().backend = "sglang".into();
+        db.tables_mut().ascend_moe_chain = AscendMoeChainTable::new(Some(path));
+        let mut ranks = vec![
+            DecodeExpertRank {
+                received_tokens: 10,
+                active_experts: 10
+            };
+            16
+        ];
+        ranks[0] = DecodeExpertRank {
+            received_tokens: 20,
+            active_experts: 20,
+        };
+        ranks[15] = DecodeExpertRank {
+            received_tokens: 0,
+            active_experts: 0,
+        };
+        let samples = vec![DecodeExpertSample {
+            request_counts: vec![3; 4],
+            sequence_length: 8194,
+            layers: vec![ranks; 60],
+        }];
+        let workload = DecodeExpertWorkload {
+            observation_id: "qwen-dp-shape-regression".into(),
+            quantization_sha256: "1".repeat(64),
+            framework_commit: "2".repeat(40),
+            samples_sha256: format!(
+                "{:x}",
+                Sha256::digest(serde_json::to_vec(&samples).unwrap())
+            ),
+            input_tokens: 8192,
+            graph_bucket: 4,
+            history_policy: "hold_boundary".into(),
+            samples,
+        };
+        let experts = Op::AscendMoeChain(AscendMoeChainOp {
+            name: "decode_experts".into(),
+            scale_factor: 60.0,
+            key: AscendMoeChainKey {
+                phase: "decode".into(),
+                local_experts: 32,
+                distribution: "balanced".into(),
+                execution_mode: "graph".into(),
+                active_experts: None,
+            },
+            token_numerator: 40,
+            token_denominator: 16,
+            input_token_multiple: 4,
+            decode_workload: Some(workload),
+            profile_request_counts: None,
+        });
+        let engine = Engine::build(
+            EngineSpec::new(
+                fixture_engine_config(None),
+                vec![context_ops()[0].clone()],
+                vec![experts],
+            ),
+            Arc::new(db),
+        )
+        .unwrap();
+        let metrics = |counts: &[u32]| -> Vec<ForwardPassMetrics> {
+            counts
+                .iter()
+                .map(|count| {
+                    let mut metric = ForwardPassMetrics::default();
+                    metric.scheduled_requests.num_decode_requests = *count;
+                    metric.scheduled_requests.sum_decode_kv_tokens = *count * 8194;
+                    metric
+                })
+                .collect()
+        };
+        // The captured rank0 endpoint is2ms per layer. Balanced sentM1 is1ms.
+        assert_eq!(
+            engine.forward_pass_time_ms(&metrics(&[3; 4])).unwrap(),
+            120.0
+        );
+        for counts in [[3, 2, 0, 0], [3, 3, 3, 0], [2; 4]] {
+            assert_eq!(
+                engine.forward_pass_time_ms(&metrics(&counts)).unwrap(),
+                60.0
+            );
+        }
+        let mut mixed = metrics(&[0, 3, 3, 3]);
+        mixed[0].scheduled_requests.num_prefill_requests = 1;
+        mixed[0].scheduled_requests.sum_prefill_tokens = 10;
+        assert_eq!(engine.forward_pass_time_ms(&mixed).unwrap(), 60.0);
     }
 
     /// GLM-5.3-Flash-shaped op list: per-layer names over repeated geometry,
@@ -3866,6 +4489,71 @@ mod tests {
             vec![fpm_op(FpmPhase::Prefill)],
             vec![fpm_op(FpmPhase::Decode)],
         )
+    }
+
+    #[test]
+    fn static_prefill_batch_preserves_exact_totals_and_uncorrected_policy() {
+        use crate::perf_database::fpm_forward::tests::{RowSpec, write_pair};
+        let tmp = tempfile::tempdir().unwrap();
+        let spec = build_fpm_spec(tmp.path(), None);
+        // Literal synthetic fixture rows distinguish exact batch geometry
+        // from the floor-divided mean coordinate. They are test inputs.
+        write_pair(
+            tmp.path(),
+            &[
+                RowSpec {
+                    workload_kind: "prefill",
+                    batch_size: 3,
+                    total_prefill_tokens: 8192,
+                    total_kv_read_tokens: 256,
+                    latency_ms: 47.0,
+                    ..Default::default()
+                },
+                RowSpec {
+                    workload_kind: "prefill",
+                    batch_size: 3,
+                    total_prefill_tokens: 8193,
+                    total_kv_read_tokens: 255,
+                    latency_ms: 99.0,
+                    ..Default::default()
+                },
+            ],
+        );
+        let engine = Engine::from_spec_bytes(&spec.to_bincode().unwrap(), tmp.path()).unwrap();
+        let mut model =
+            crate::ForwardPassPerfModel::from_engine(Arc::new(engine), Default::default());
+        let metrics = crate::ForwardPassMetrics {
+            scheduled_requests: crate::ScheduledRequestMetrics {
+                num_prefill_requests: 3,
+                sum_prefill_tokens: 8192,
+                sum_prefill_kv_tokens: 256,
+                ..Default::default()
+            },
+            wall_time: 0.094,
+            ..Default::default()
+        };
+        assert_eq!(
+            model
+                .static_prefill_batch_detailed(&metrics)
+                .unwrap()
+                .latency_ms,
+            Some(47.0)
+        );
+        assert_eq!(model.predict_prefill_latency(3, 2816, 85).unwrap(), 99.0);
+        // Sufficient repeated observations enable a 2x online correction.
+        for _ in 0..64 {
+            model.tune_with_fpms(&[vec![metrics.clone()]]).unwrap();
+        }
+        assert_eq!(
+            model
+                .estimate_forward_pass_time_ms(&[metrics.clone()])
+                .unwrap(),
+            Some(94.0)
+        );
+        let estimate = model.static_prefill_batch_detailed(&metrics).unwrap();
+        assert_eq!(estimate.latency_ms, Some(47.0));
+        assert_eq!(estimate.native_latency_ms, Some(47.0));
+        assert_eq!(estimate.correction_factor, Some(1.0));
     }
 
     #[test]

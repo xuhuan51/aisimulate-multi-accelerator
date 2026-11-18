@@ -8,6 +8,8 @@ import statistics
 from datetime import UTC, datetime
 from pathlib import Path
 
+from collector.sglang.ascend_vector import runtime_version
+
 
 def validated_rows(plan_path, observations, runtime_identity):
     plan_bytes = plan_path.read_bytes()
@@ -243,7 +245,7 @@ def main():
         args.output_dir,
         {
             "framework": "sglang",
-            "version": "0.5.22",
+            "version": runtime_version(identity["framework_commit"]),
             "image_digest": identity["image_digest"],
             "source_commit": identity["framework_commit"],
             "abi": {name: identity[name] for name in ("torch", "torch_npu", "deep_ep", "driver_version_info")},

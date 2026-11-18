@@ -45,6 +45,7 @@ pub struct SchedulerRank {
     group_timing: Option<Arc<dyn TimingModel>>,
     dp_size: u32,
     group_speedup_ratio: f64,
+    scheduler_select_time_ms: f64,
 }
 
 struct DeferredGroupTiming(Arc<dyn TimingModel>);
@@ -160,6 +161,7 @@ impl SchedulerRank {
             handoff_requests: HashMap::new(),
             group_timing,
             dp_size: identity.dp_size.get(),
+            scheduler_select_time_ms: config.sglang.scheduler_select_time_ms,
             group_speedup_ratio: config.speedup_ratio
                 * if config.worker_type == WorkerType::Decode {
                     config.decode_speedup_ratio
@@ -316,7 +318,14 @@ impl RankEngine for SchedulerRank {
         &mut self,
         now_ms: f64,
     ) -> Result<RankPass<Self::PassStartEffects, Self::PendingPass>> {
-        let pass = self.core.try_execute_hidden_pass(now_ms)?;
+        // Selection commits the currently queued work. The GPU forward starts
+        // after this serial host API, while later arrivals wait for another pass.
+        let forward_start_ms = now_ms + self.scheduler_select_time_ms;
+        ensure!(
+            forward_start_ms.is_finite(),
+            "scheduler selection time overflowed"
+        );
+        let pass = self.core.try_execute_hidden_pass(forward_start_ms)?;
         let end_ms = pass.end_ms;
         let (same_timestamp_retry, start_effects, completion_effects) = split_pass(pass)?;
         for output in &start_effects.outputs {
@@ -330,7 +339,7 @@ impl RankEngine for SchedulerRank {
             same_timestamp_retry,
             start_effects,
             pending: PendingPass {
-                started_at_ms: now_ms,
+                started_at_ms: forward_start_ms,
                 effects: completion_effects,
             },
         })
@@ -397,11 +406,13 @@ impl RankEngine for SchedulerRank {
                 ..Default::default()
             };
         }
-        crate::engine::modeled_duration_ms(
+        let forward_ms = crate::engine::modeled_duration_ms(
             timing.predict_group_ms(&metrics)?,
             self.group_speedup_ratio,
-        )
-        .map(Some)
+        )?;
+        let total_ms = forward_ms + self.scheduler_select_time_ms;
+        ensure!(total_ms.is_finite(), "scheduler group duration overflowed");
+        Ok(Some(total_ms))
     }
 
     fn complete_idle_group_pass(
@@ -422,7 +433,7 @@ impl RankEngine for SchedulerRank {
             kv_events,
             metrics: self.metrics(),
             forward_pass_metrics: ForwardPassMetrics {
-                duration_ms: (end_ms - started_at_ms).max(0.0),
+                duration_ms: (end_ms - started_at_ms - self.scheduler_select_time_ms).max(0.0),
                 ..Default::default()
             },
             ..PassCompletionEffects::default()
@@ -551,6 +562,7 @@ fn core_args(config: &EngineConfig, timing: Arc<dyn TimingModel>) -> MockEngineA
                 }
                 .to_string(),
             ),
+            recurrent_state: config.sglang.recurrent_state,
             page_size: Some(config.block_size),
             max_prefill_tokens: Some(config.sglang.max_prefill_tokens),
             chunked_prefill_size: Some(config.sglang.chunked_prefill_size),
@@ -892,6 +904,63 @@ mod tests {
                 assert!(engine.execute_pass(0.0).is_err());
                 assert_eq!(probe.seen.lock().unwrap().len(), 1);
             }
+        }
+    }
+
+    #[test]
+    fn scheduler_select_time_is_serial_once_per_group_and_outside_forward() {
+        use crate::engine::generalized::{
+            EngineIdentity, GeneralizedMockerEngine, SchedulerCommand,
+        };
+        for dp_size in [1, 4] {
+            let mut config = EngineConfig::for_backend(Backend::Sglang);
+            config.num_gpu_blocks = 1024;
+            config.block_size = 4;
+            config.speedup_ratio = 2.0;
+            config.sglang.scheduler_select_time_ms = 2.0;
+            config.timing_model = TimingModelConfig::Fixed {
+                prefill_ms: 25.0,
+                decode_ms: 10.0,
+            };
+            let timing: Arc<dyn TimingModel> = if dp_size == 1 {
+                config.built_in_timing_model().unwrap()
+            } else {
+                Arc::new(GroupProbe {
+                    seen: Mutex::default(),
+                    duration: 25.0,
+                })
+            };
+            let mut engine = GeneralizedMockerEngine::new_with_rank_factory(
+                EngineIdentity::new(43),
+                NonZeroU32::new(dp_size).unwrap(),
+                |identity| {
+                    SchedulerRank::new_with_timing_model(identity, &config, timing.clone(), 0)
+                },
+            )
+            .unwrap();
+            engine
+                .apply_command_effects(
+                    SchedulerCommand::new(
+                        0,
+                        Command::Submit(Request {
+                            request_id: Uuid::from_u128(43),
+                            tokens: vec![1; 5],
+                            max_output_tokens: 1,
+                            output_token_ids: None,
+                            session_id: None,
+                        }),
+                    ),
+                    0.0,
+                )
+                .unwrap();
+            let pass = engine.execute_pass(0.0).unwrap().unwrap();
+            // Hand-derived oracle: 25ms GPU / speedup2 + 2ms serial host API.
+            assert_eq!(pass.end_ms, 14.5);
+            let completed = engine.complete_pass(pass.pass_id, pass.end_ms).unwrap();
+            for rank in completed.effects.by_rank {
+                assert_eq!(rank.effects.forward_pass_metrics.duration_ms, 12.5);
+            }
+            assert!(engine.execute_pass(14.5).unwrap().is_none());
         }
     }
 

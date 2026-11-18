@@ -2,9 +2,20 @@ import json
 from pathlib import Path
 
 import pytest
+from collector.sglang.ascend_deepep import LEGACY_REVISION, NATIVE_REVISION, validate_runtime
 from collector.sglang.ascend_deepep_cases import get_ascend_deepep_cases
 
 pytestmark = pytest.mark.unit
+
+
+def test_dispatcher_runtime_guards_preserve_audited_phase_contracts():
+    validate_runtime(LEGACY_REVISION, "normal")
+    validate_runtime(LEGACY_REVISION, "low_latency")
+    validate_runtime(NATIVE_REVISION, "low_latency")
+    with pytest.raises(ValueError, match="payload-precision audit"):
+        validate_runtime(NATIVE_REVISION, "normal")
+    with pytest.raises(ValueError, match="Reaudit DeepEP"):
+        validate_runtime("unknown-runtime", "low_latency")
 
 
 def test_transport_plan_preserves_placement_and_serving_branches(tmp_path):

@@ -208,6 +208,9 @@ impl SglangCore {
             args.enable_prefix_caching,
             args.emit_kv_token_ids,
         );
+        if let Some(state) = config.recurrent_state {
+            kv_manager.configure_recurrent_state(state.max_requests);
+        }
         if matches!(args.worker_type, WorkerType::Prefill | WorkerType::Decode) {
             kv_manager.enable_deferred_page_reuse();
         }
@@ -660,7 +663,9 @@ impl SglangCore {
             request.prompt_len(),
             self.config.kv_transfer_bandwidth,
             self.config.kv_transfer_bytes_per_token,
-            0,
+            self.config
+                .recurrent_state
+                .map_or(0, |state| state.bytes_per_request),
             self.config.kv_transfer_timing_mode,
         );
         let payload = HeldSglangPrefill { request };
@@ -1043,17 +1048,16 @@ impl SglangCore {
         };
 
         let batch_size = admit.can_run.len();
-        let mean_isl = admit.total_isl.checked_div(batch_size).unwrap_or(0);
-        let mean_prefix = admit.total_prefix.checked_div(batch_size).unwrap_or(0);
+        let prefill_geometry = admit
+            .prefill_fpm
+            .iter()
+            .map(|item| (item.tokens_computed, item.prefix_tokens))
+            .collect::<Vec<_>>();
         let prefill_time = (|| {
-            self.config.perf_model.validate_prefill_batch(
-                &admit
-                    .prefill_fpm
-                    .iter()
-                    .map(|item| (item.tokens_computed, item.prefix_tokens))
-                    .collect::<Vec<_>>(),
-            )?;
-            simulate_prefill_duration(batch_size, mean_isl, mean_prefix, &self.config, true)
+            self.config
+                .perf_model
+                .validate_prefill_batch(&prefill_geometry)?;
+            simulate_prefill_duration(&prefill_geometry, &self.config, true)
         })();
         let prefill_time = match prefill_time {
             Ok(duration) => {
@@ -1151,7 +1155,9 @@ impl SglangCore {
                                 req.prompt_len(),
                                 self.config.kv_transfer_bandwidth,
                                 self.config.kv_transfer_bytes_per_token,
-                                0,
+                                self.config
+                                    .recurrent_state
+                                    .map_or(0, |state| state.bytes_per_request),
                                 self.config.kv_transfer_timing_mode,
                             ),
                         });
@@ -1457,19 +1463,15 @@ impl SglangCore {
 }
 
 fn simulate_prefill_duration(
-    batch_size: usize,
-    mean_isl: usize,
-    mean_prefix: usize,
+    requests: &[(usize, usize)],
     config: &SglangConfig,
     apply_speedup: bool,
 ) -> anyhow::Result<Duration> {
-    if batch_size == 0 || config.worker_type == WorkerType::Decode {
+    if requests.is_empty() || config.worker_type == WorkerType::Decode {
         return Ok(Duration::ZERO);
     }
 
-    let prefill_time = config
-        .perf_model
-        .predict_prefill_time(batch_size, mean_isl, mean_prefix)?;
+    let prefill_time = config.perf_model.predict_prefill_batch_time(requests)?;
     let speedup_ratio = if apply_speedup {
         config.speedup_ratio
     } else {

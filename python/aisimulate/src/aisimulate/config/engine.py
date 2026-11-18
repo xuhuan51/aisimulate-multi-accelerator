@@ -114,6 +114,7 @@ class SchedulerPredictionConfig(StrictModel):
     max_prefill_tokens: PositiveInt | None = None
     ignore_eos: StrictBool | None = None
     decode_reserved_tokens: NonNegativeInt = 0
+    scheduler_select_time_ms: NonNegativeFloat = 0.0
     prefill_schedule_interval: PositiveInt = Field(
         default=1, description="vLLM only: admit prefill once every N attention-DP group passes."
     )
@@ -234,6 +235,19 @@ class StateCachePredictionConfig(StrictModel):
         return StateCacheConfig(bytes_per_request=self.bytes_per_request).state_blocks(block_size, bytes_per_token)
 
 
+class RecurrentStateConfig(StrictModel):
+    """Rank-local bytes and usable request slots in SGLang's separate HBM pool."""
+
+    bytes_per_request: PositiveU64
+    max_requests: PositiveU64
+
+    @model_validator(mode="after")
+    def _validate_pool(self):
+        if self.bytes_per_request * self.max_requests > (1 << 64) - 1:
+            raise ValueError("recurrent state pool byte size overflows u64")
+        return self
+
+
 class KvCachePredictionConfig(StrictModel):
     block_size: PositiveInt | None = None
     prefix_match_unit: PositiveU64 | None = None
@@ -243,6 +257,7 @@ class KvCachePredictionConfig(StrictModel):
     host_offload: HostOffloadConfig | None = None
     g3_offload: G3OffloadConfig | None = None
     state_cache: StateCachePredictionConfig | None = None
+    recurrent_state: RecurrentStateConfig | None = None
 
     @field_validator("state_cache", mode="before")
     @classmethod
@@ -752,6 +767,7 @@ class SchedulerRecommendationConfig(StrictModel):
     max_prefill_tokens: PositiveInt | None = None
     ignore_eos: StrictBool | None = None
     decode_reserved_tokens: NonNegativeInt = 0
+    scheduler_select_time_ms: NonNegativeFloat = 0.0
 
 
 class KvCapacityRecommendationConfig(StrictModel):
@@ -906,6 +922,8 @@ class EngineRecommendationConfig(EstimatorPolicyConfig):
             for field in ("chunked_prefill_size", "max_prefill_tokens", "ignore_eos"):
                 if getattr(worker.scheduler, field) is not None and backends != {"sglang"}:
                     raise ValueError(f"workers.{role}.scheduler.{field} requires backend=sglang")
+            if worker.scheduler.scheduler_select_time_ms and backends != {"sglang"}:
+                raise ValueError(f"workers.{role}.scheduler.scheduler_select_time_ms requires backend=sglang")
         _validate_speculation(self, modes=modes, backends=backends)
         _validate_backend_block_sizes(backends=backends, modes=modes, workers=self.workers)
         return self
@@ -917,18 +935,27 @@ def _validate_fpm_profile(engine, modes: set[str], backends: set[str]) -> None:
         return
     if engine.model != profile.model:
         raise ValueError("engine.model must match engine.fpm_profile.model")
-    if backends != {"vllm"} or "afd" in modes or engine.workers.encoder is not None:
-        raise ValueError("FPM profiles support vLLM aggregated/disaggregated decoder workers without AFD or encoders")
-    backend_version = requested_backend_version(engine.backend_version, "vllm")
+    backend = engine.backend if isinstance(engine, EnginePredictionConfig) else "vllm"
+    if (
+        backends != {backend}
+        or backend not in {"vllm", "sglang"}
+        or "afd" in modes
+        or engine.workers.encoder is not None
+    ):
+        raise ValueError(
+            "FPM profiles require aggregated/disaggregated decoder workers without AFD or encoders; "
+            "prediction supports vLLM/SGLang and recommendation supports vLLM"
+        )
+    backend_version = requested_backend_version(engine.backend_version, backend)
     if (
         backend_version is None
         or not backend_version.strip()
         or backend_version.strip() in {"current", "previous", "next"}
     ):
-        raise ValueError("engine.fpm_profile requires a literal engine.backend_version for vllm")
+        raise ValueError(f"engine.fpm_profile requires a literal engine.backend_version for {backend}")
     backend_version = backend_version.strip()
     if isinstance(engine.backend_version, dict):
-        engine.backend_version = {**engine.backend_version, "vllm": backend_version}
+        engine.backend_version = {**engine.backend_version, backend: backend_version}
     else:
         engine.backend_version = backend_version
     if not any(deployment.backend_version == backend_version for deployment in profile.deployments):
@@ -960,7 +987,7 @@ def _validate_fpm_profile(engine, modes: set[str], backends: set[str]) -> None:
                 max_batch_size=worker.scheduler.max_sequences,
             )
             if deployment.resources.cache_layout == "grouped":
-                if role != "aggregated" or engine.nextn or engine.speculation is not None:
+                if backend != "vllm" or role != "aggregated" or engine.nextn or engine.speculation is not None:
                     raise ValueError("grouped FPM cache supports only aggregated vLLM without speculative decoding")
                 cache = worker.kv_cache
                 if cache.prefix_caching:
@@ -1034,6 +1061,7 @@ def _validate_prediction_scheduler_backend(engine: EnginePredictionConfig) -> No
             ("prefill_schedule_interval", "vllm", 1),
             ("prefill_decode_interval", "sglang", 0),
             ("decode_reserved_tokens", "sglang", 0),
+            ("scheduler_select_time_ms", "sglang", 0.0),
             ("chunked_prefill_size", "sglang", None),
             ("max_prefill_tokens", "sglang", None),
             ("ignore_eos", "sglang", None),
@@ -1105,6 +1133,30 @@ def _validate_prediction_host_offload(engine: EnginePredictionConfig) -> None:
 
 
 def _validate_prediction_state_cache(engine: EnginePredictionConfig) -> None:
+    recurrent_roles = []
+    for role in ("aggregated", "prefill", "decode"):
+        worker = getattr(engine.workers, role)
+        if worker is None or worker.kv_cache.recurrent_state is None:
+            continue
+        recurrent_roles.append(role)
+        cache = worker.kv_cache
+        if engine.backend != "sglang" or engine.mode not in ("aggregated", "disaggregated"):
+            raise ValueError("recurrent_state requires SGLang aggregated or disaggregated prediction")
+        if cache.prefix_caching or engine.speculation is not None or engine.nextn > 0:
+            raise ValueError("recurrent_state prefix snapshots and speculative state copies are not implemented")
+        if cache.state_cache is not None or cache.host_offload is not None or cache.g3_offload is not None:
+            raise ValueError("recurrent_state requires a dedicated HBM pool")
+        if cache.capacity.type != "fixed":
+            raise ValueError("recurrent_state requires explicit fixed token KV capacity, excluding its separate pool")
+    if engine.mode == "disaggregated" and recurrent_roles and recurrent_roles != ["prefill", "decode"]:
+        raise ValueError("recurrent_state must be set on both prefill and decode workers")
+    if recurrent_roles == ["prefill", "decode"]:
+        prefill, decode = engine.workers.prefill, engine.workers.decode
+        if (
+            prefill.parallelism.tensor != decode.parallelism.tensor
+            or prefill.kv_cache.recurrent_state.bytes_per_request != decode.kv_cache.recurrent_state.bytes_per_request
+        ):
+            raise ValueError("recurrent_state handoff requires equal attention TP and matching rank-local state bytes")
     roles = []
     for role in ("aggregated", "prefill", "decode"):
         worker = getattr(engine.workers, role)

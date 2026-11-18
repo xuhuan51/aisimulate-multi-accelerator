@@ -190,14 +190,14 @@ nested paths. The supported namespaces are:
 - `correction`: `enabled` (true), independent `sampling`, `min_observations`
   (5), `factor_bounds` (min 0.5, max 2.0), and the existing `max_num_tokens`
   (8192), `max_batch_size` (512), and `max_kv_tokens` (2000000) ranges.
-- `fpm_interpolation.method`: `auto` (default), `sol`, or `direct`. Rust selects
+- `fpm_interpolation.method`: `auto` (default), `sol`, `direct`, or `direct_simplex`. Rust selects
   SOL for a registered architecture, or direct interpolation for a verified
   architecture without a registered class when a profile is supplied. Without
   a profile, auto retains SOL. Explicit SOL requires a registered analytical
-  model; direct requires a profile and also supports registered architectures.
+  model. Both direct methods require a profile and support registered architectures.
 - `fpm_interpolation.collect_coverage`: `false` (default). Opt in to bounded
   evidence from actual direct-FPM lookups, as described below. It requires
-  explicit `estimation_mode: fpm_interpolation`, resolved `method: direct`, and
+  explicit `estimation_mode: fpm_interpolation`, a resolved direct method, and
   `fallback_policy: deny`. It is omitted from normalized serialization when false.
 
 For `system="ascend910c"` with SGLang, Rust resolves these defaults and retains
@@ -207,11 +207,18 @@ explicit Ascend controls.
 | Field under `estimator_config.op_level.ascend` | Default | Behavior |
 | --- | --- | --- |
 | `routing` | `balanced` | Uses the measured synthetic balanced expert-count profile. Other distributions are not yet supported by the complete model composition. |
-| `prefill_expert_workload` | omitted | Optional observed expert assignment counts for DeepEP prefill compute. Requires `shape_policy: anchored`, an `observation_id`, matching `quantization_sha256`, positive `input_tokens`, and 75 `layer_expert_counts` vectors of 256 nonnegative counts. Each vector sums to eight times `input_tokens`, with no expert count exceeding `input_tokens`. Changes the critical-rank compute shape; does not replace transport measurements or add a latency residual. |
+| `prefill_expert_workload` | omitted | Observed expert assignment counts for DeepEP Prefill compute, with an `observation_id`, matching `quantization_sha256` and positive global `input_tokens`. GLM uses `shape_policy: anchored` and75layer vectors of256counts, each conserving8times `input_tokens`. Qwen uses `shape_policy: measured` and60layer vectors of512counts, each conserving10times `input_tokens`, on TP2/DP8/EP16, TP4/DP4/EP16 or TP8/DP2/EP16. Counts are nonnegative and each expert count is at most `input_tokens`. The selected model checks its own geometry and descriptor. Native operators price the resulting per-layer critical-rank compute shapes. |
+| `decode_expert_workload` | omitted | Optional observed TP4/DP4/EP16 Graph Decode routing workload. GLM uses bucket8 and75layers, Qwen uses bucket4 and60layers. Qwen Prefill may use historical costs or the explicitly selected current FP32 path. Requires matching ModelSlim SHA256, framework commit, sample SHA256, input length, history policy and16-rank received-token/active-expert samples per layer. Rust prices rank costs from measured expert endpoints, selects each layer's critical rank and interpolates sequence positions. Unmatched request vectors retain balanced costs. |
 | `tensor_moe_routing_profile` | unset | Explicit GLM tensor-MoE Decode calibration with a model/backend identity, evidence hash, 75 per-layer expert probabilities and padding IDs, and a measured `(physical_tokens, active_experts, latency_ms)` grid. Requires Graph execution and matching EP1 geometry. Rust counts real and padding tokens separately, interpolates within the grid, and rejects uncovered queries. Prefill retains its existing measured path. |
-| `shared_expert_overlap` | `true` | Overlaps the shared expert with routed work where the pinned runtime permits it. Tensor-MoE prefill stays serial; its decode and the DeepEP path may overlap. `false` adds the streams serially. |
+| `shared_expert_overlap` | `false` | Adds shared-expert and routed-expert costs serially, matching the observed single-stream GLM eager and Graph paths on the pinned 910C runtime. Explicit `true` models parallel branches using `max(sum(routed), sum(shared))`; Tensor-MoE prefill retains serial composition. |
 | `decode_execution_mode` | `graph` | `graph` selects captured decode profiles and padding buckets; `eager` selects eager profiles with attention-TP token alignment. Missing eager identities fail explicitly. Prefill remains eager. This does not control scheduler overlap or CPU launch overhead. |
-| `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations, including eager host dispatch, stream management and communication boundaries. Requires exact-topology profiles for eager TP16/ADP4/EP16/DCP1 or TP32/ADP32/EP32/DCP1, shared-expert multistream execution and measured request-count brackets. Idle DP populations need their own curves; padding does not count as a real request. With `shape_policy: anchored`, unequal counts within one TP padding bucket reuse each rank's homogeneous-population curve; MAX_LEN populations crossing buckets use the maximum active request count as their physical-population anchor. KV context transfers use the attention-only delta described below. All transfers are `estimated`. SUM_LEN cross-bucket populations, request-count extrapolation, other topologies, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
+| `qwen_graph_small_ops` | `false` | Qwen-only Graph Decode coverage switch. `true` also requires measured Graph contracts for embedding, GQA prepare/cache/attention/gate, and logits finalization. Missing or historical eager rows fail contract validation; there is no proxy fallback. `false` preserves the earlier partial Graph composition and its explicitly reported small-role proxies. Prefill is unchanged. |
+| `qwen_eager_ep_pair` | `false` | Select one measured `expert_transport_pair` boundary per Qwen FP32 TP-scatter eager Decode layer. Requires serial expert execution. The cost is an unprofiled dispatch-followed-by-combine measurement at EP16/cap16, with expert compute charged separately. This compound observation provides total communication timing while per-stage attribution and the effect of intervening expert work remain unverified. It replaces both stage timing nodes without synthetic zero-cost rows or a total-forward residual. Prefill and Graph retain their own selected boundaries. |
+| `qwen_eager_host_cpu_bound` | `false` | Apply independently measured exclusive CPU API component means to Qwen FP32 eager Decode at TP4/DP4/EP16. Six source-defined components are multiplied by architectural call counts for each measured rank. Existing `Overlap` composition takes the maximum of the rank CPU paths and the device path. Telemetry binds CPU samples to their physical attention-DP owner, including unequal request counts and idle DP ranks. Same-rank mixed Prefill/Decode is outside the measured CPU contract and fails explicitly. Requires serial isolated-kernel timing and zero residual overhead. Host curves use logical requests per DP, strict measured bounds, and relative standard error of the mean at most 10% with at least ten samples. The initial contract is specific to the pinned Node20 host/runtime and requests 1 through 3. This is a CPU/device lower bound. Per-operation launch dependencies and final device tail remain validation gaps. |
+| `qwen_eager_host_cpu_transfer` | `false` | Explicitly allow the TP4 CPU reference to price TP2/DP8 or TP8/DP2 on the same 16-rank Qwen runtime. Requires `qwen_eager_host_cpu_bound`. CPU lookup identities retain the source TP4 contract. Device operators retain target-topology costs, and physical CPU ranks are grouped by the target attention TP. The assumption is that the measured CPU API costs transfer across these layouts. Target-topology validation is required and the assumption is recorded in execution metadata. |
+| `qwen_prefill_current_roles` | `[]` | Explicitly select current eager Prefill costs for `gdn_conv`, `gdn_scan`, `gdn_state_io`, `gqa_attention`, `expert_dispatch`, `routed_experts`, and/or `normal_transport` at TP2/DP8/EP16, TP4/DP4/EP16 and TP8/DP2/EP16. Unselected Prefill roles retain their historical cost contracts. With `qwen_runtime_contract: historical`, a nonempty selection requires Graph Decode. With `modelslim_fp32_tp_scatter`, it supports eager or Graph Decode and requires all four of `gdn_conv`, `gdn_scan`, `gdn_state_io`, `gqa_attention` so the recurrent state and GQA kernels use current costs. Decode retains the requested runtime contract. Current Prefill convolution uses history0 for the first chunk and history1 for initialized state, selected from the request prefix. Selecting `routed_experts` uses a distinct measured INT8-input/BF16-output expert-chain reference contract. Its global-proxy token axis represents `ceil(tokens / EP16) * top10` received rows. BF16 Normal input quantization remains unpriced and is reported explicitly. Selecting `normal_transport` requires the complete `prefill_expert_workload`. It replaces dispatch/count-metadata and combine with separate BF16 H4096 top10 EP16 ready-input measurements indexed by sent tokens and critical receive-core work. The native mapping preserves expert order across48 AIV cores and assumes equal source-rank fractions within each captured expert total. Full-rank Prefill telemetry supplies the actual TP-padded SUM_LEN buffer, including idle peers. Static queries retain their declared uniform DP geometry. Both send-size and concentration must lie inside qualified measured slices. Heldout layout and source-skew validation remains necessary. Other current Prefill operators retain their existing axes. Qualified coordinates are required. The selected set and remaining historical costs are reported in execution assumptions. |
+| `qwen_runtime_contract` | `historical` | `modelslim_fp32_tp_scatter` selects the audited Qwen ModelSlim runtime with FP32 recurrent state, TP-padded attention, TP-scattered MoE, 60 attention reduce-scatter calls and 61 all-gather calls in each Prefill or Decode forward, and dispatch capacity16. Decode execution mode selects eager or Graph costs. Prefill uses eager collectives and requires FP32 eager operator costs. Supported topologies are TP2/DP8/EP16, TP4/DP4/EP16 and TP8/DP2/EP16. EP16 expert-compute and transport measurements can be reused across these attention topologies at identical sent-token coordinates within the same eager or Graph execution mode. Attention operators retain their topology-specific contracts and missing token coordinates fail. The historical setting selects the original BF16 eager data contract. Each role requires matching measured data. |
+| `decode_timing_scope` | `isolated_kernels` | `runtime_layers` replaces decoder-layer kernel sums with measured, numerically checked real layer invocations, including eager host dispatch, stream management and communication boundaries. Requires exact-topology profiles for eager TP16/ADP4/EP16/DCP1 or TP32/ADP32/EP32/DCP1 and measured request-count brackets. Layer profiles retain their measured internal execution dependencies. Idle DP populations need their own curves; padding does not count as a real request. With `shape_policy: anchored`, unequal counts within one TP padding bucket reuse each rank's homogeneous-population curve; MAX_LEN populations crossing buckets use the maximum active request count as their physical-population anchor. KV context transfers use the attention-only delta described below. All transfers are `estimated`. SUM_LEN cross-bucket populations, request-count extrapolation, other topologies, graph execution and additive residual calibration are rejected. Prefill and embedding/final output operations retain their existing timing. |
 | `enable_dp_lm_head` | `true` | Matches SGLang's output-layer grouping. `true` retains attention-local TP; `false` uses global TP, sums actual output-request counts across attention DP, and includes DP hidden-state reduction and TP logits exchange. Set separately for each worker role to match its launch flags. |
 | `enable_tp_lm_head_all_to_all` | `false` | With global LM head, uses measured all-to-all only for equal nonzero row counts with attention DP equal to global TP; other batches use all-gather. Local logits cast is measured; additional reordering/scatter and CPU synchronization remain unqualified. This path is reported as estimated composition. |
 | `eager_runtime_overhead` | omitted | Optional additive per-forward residual calibrated from unprofiled forward telemetry. Requires `calibration_id`, `operator_contract`, `attention_tp`, `attention_dp`, `moe_ep_size`, `prefill_ms`, and `decode_ms`. Timings must be finite and nonnegative. The topology must match the canonical identity; currently restricted to SGLang 0.5.22 and eager execution. |
@@ -219,6 +226,14 @@ explicit Ascend controls.
 | `eager_runtime_overhead.decode_per_extra_active_rank_ms` | `0` | Optional finite nonnegative decode residual per additional attention-DP rank with real requests. Uses the actual synchronized rank vector before padding, not batch size or total configured DP. Fit separately from the base `decode_ms` and retain independent validation. |
 | `kv_transfer_page_layout` | `contiguous` | Selects the measured PD page pattern: `contiguous` or `fragmented`. Both role models must agree; applies when `engine.kv_transfer.type: measured`. |
 | `shape_policy` | `measured` | `measured` requires measured interpolation brackets. `anchored` preserves covered queries and estimates missing numeric coordinates using same-identity boundary measurements and analytical work ratios. It never substitutes hardware, precision, kernel, topology or graph capture buckets. Both PD roles must agree. |
+
+Qwen measurement tables can declare `latency_statistic` as `mean` or `median`.
+Legacy device rows use `median` and retain the raw-CV limit of 10%.
+An explicit arithmetic mean uses relative standard error `cv / sqrt(sample_count)`
+with the same 10% limit and at least ten observations. Raw CV and sample counts
+remain unchanged. Mean uncertainty describes the recorded sampling run. A separate
+launch or workload comparison is still needed to assess systematic error.
+The exclusive-host-CPU contract always stores means.
 
 `runtime_layers` is a coarser operator boundary, not an additive correction to
 whole-forward measurements. Its table contains the isolated invocation of each
@@ -283,8 +298,8 @@ captured_model_selected_top8` in execution assumptions. The `routing` option
 continues to describe the independent kernel tables used by prefill; these
 layer observations are not labeled as synthetic balanced expert routing.
 
-`prefill_expert_workload` represents the input distribution, not a timing
-calibration. For each MoE layer, contiguous expert placement partitions its
+`prefill_expert_workload` represents the observed input distribution.
+For each MoE layer, contiguous expert placement partitions its
 observed assignments according to the requested EP16 or EP32 topology. The
 largest rank's assignment fraction determines the routed compute token count
 from the actual global padded token volume. Native operators still perform
@@ -292,6 +307,16 @@ all timing interpolation and extrapolation. Each layer keeps its own shared
 expert overlap boundary, and weight accounting remains unchanged. The complete
 observed counts and their identity survive canonical configuration serialization.
 Tensor-MoE rejects this option; runtime-layer decode is unchanged.
+
+Qwen's historical expert table uses a global-token coordinate whose balanced
+rank-local receive count is `ceil(global_tokens / EP) * 10`. Its observed
+workload maps the actual attention-DP token volume through each layer's largest
+rank receive fraction to that coordinate. Dispatch and Combine retain their
+own measured coordinates. Shared-expert and Decode compute keep their existing
+workload mappings. The Qwen historical expert table measures INT8 input with
+precomputed scales. Normal BF16 input quantization remains a separate uncovered
+cost. Complete count vectors and their observation identity remain in the
+canonical configuration for independent workload validation.
 
 This option models only the critical rank's compute volume. The existing
 balanced within-rank compute kernel profiles and maximum-sender communication
@@ -302,6 +327,38 @@ descriptor alone does not establish matching weights. Exclude validation prompts
 and seeds when producing the workload observations. A new prompt distribution,
 expert placement or transport bottleneck requires separate validation; this
 option alone does not establish a serving accuracy bound.
+
+`decode_expert_workload` binds recorded routing work to the GLM or Qwen Graph expert
+chain through the canonical performance-model configuration. Each sample records
+`request_counts`, `sequence_length`, and `layers` of 16 rank records with
+`received_tokens` and `active_experts`. GLM records75layers and conserves256
+assignments from four eight-token Graph buffers with top8 routing. Qwen
+records60layers and conserves160assignments from sixteen single-token
+EP sources with top10 routing, including the TP padding observed in the capture.
+`samples_sha256` hashes
+the compact JSON sample array in the declared field order. The model checks
+`quantization_sha256` against its ModelSlim descriptor and requires
+TP4/DP4/EP16/DCP1 with isolated-kernel Graph Decode. Qwen's receive-volume
+curves require H4096/I1024,32local experts and2560physical buffer rows.
+The Qwen option supports both historical Prefill costs and the explicit
+`qwen_runtime_contract: modelslim_fp32_tp_scatter` Prefill path with matching
+`qwen_prefill_current_roles`. The observed workload applies only to Graph Decode.
+Changing the Prefill runtime contract preserves the Graph Decode operator specs
+when `qwen_graph_small_ops: true` and all workload identity guards match.
+Its independent-rank
+telemetry path passes the complete request vector into expert pricing so skewed
+and cross-rank mixed work does not select a uniform captured routing sample.
+
+Rust computes each rank's expert-chain cost from the single-expert and balanced
+curves at fixed receive volume, takes the maximum within each layer, and sums
+the model's layer costs. Repeated samples at one sequence coordinate are averaged.
+Sequence coordinates interpolate within each exact request-count vector.
+`history_policy: deny` rejects positions outside the sampled range.
+`history_policy: hold_boundary` explicitly retains the boundary cost there.
+Unmatched request vectors use the existing balanced expert cost. Prefill and
+mixed-mode work retain their existing paths. Workload-derived costs report an
+estimated source. Preserve the routing source and prompt-distribution identity
+alongside these inputs and validate the resulting throughput and latency.
 
 `eager_runtime_overhead` preserves the raw operator estimates and adds a separately
 named, `estimated` runtime contribution once per nonempty forward, including
@@ -386,9 +443,10 @@ For a graph-disabled reference run, set
 `estimator_config.op_level.ascend.decode_execution_mode: eager` and run SGLang
 with `--cuda-graph-backend-prefill disabled --cuda-graph-backend-decode disabled`
 and `--disable-overlap-schedule`. The latter matches the
-blocking native scheduler model; it does not disable shared-expert device
-stream overlap. Set `shared_expert_overlap: false` only when that device
-execution is also serialized in the reference deployment. Model execution
+blocking native scheduler model. Shared-expert device execution is controlled
+separately by `shared_expert_overlap`, whose default serial composition matches
+the pinned GLM traces. An explicit parallel setting uses the corresponding
+branch composition. Model execution
 mode selection alone does not qualify end-to-end accuracy or include unmeasured
 host launch overhead.
 
@@ -446,7 +504,11 @@ coordinates this way. Graph buckets remain categorical and must be measured.
 
 Linear/BMM/MoE extensions use compute and weight/activation traffic;
 vector work scales with token count. HCCL uses the same measured collective
-identity and its topology's latency/bandwidth calibration. PD keeps page
+identity and its topology's latency/bandwidth calibration. HCCL identities
+support `bfloat16`, `float16`, `float32`, `int32` and `int64`, with the payload
+axis expressed as input bytes per rank. Eight `int64` metadata fields occupy
+64bytes per rank. Their measured dtype and payload range are preserved through
+lookup, independently of floating-point model-activation collectives. PD keeps page
 rounding and scales page work within the same sender mapping and page layout.
 DeepEP's measured dispatch bounds remain enforced: its observed runtime
 tiling failures are not made executable by enabling extrapolation.
@@ -475,12 +537,13 @@ rejected; measured DCP profiles without `fpm_profile` retain their existing rout
 Profile/schema and precision conflicts fail before estimator fallback. Omitted precision fields are filled
 from the profile and preserved in the resolved canonical configuration.
 
-The canonical SDK also accepts SGLang PP1 profiles for measured forward timing.
-The SGLang scheduler integration supplies its independently verified native KV
-capacity. Automatic profile cache budgeting remains unsupported for SGLang and
-raises explicitly, because the existing budget arithmetic describes vLLM's
-total-memory fraction. The self-service collector and profile-based Sweeper
-enumeration retain their vLLM backend restriction.
+The canonical SDK and `predict` accept SGLang PP1 profiles for measured forward
+timing. SGLang prediction requires a linear cache and recorded `runtime_memory`
+from the matching native worker. Its fixed cache allocation is reused only with
+the exact recorded scheduler envelope and memory fraction. Automatic SGLang
+cache budgeting from component byte estimates remains unsupported. The
+self-service collector and profile-based Sweeper enumeration retain their vLLM
+backend restriction.
 
 Each deployment may declare `worker_type: prefill`, `decode`, or `aggregated`.
 The canonical construction request selects only the matching role's precision,
@@ -517,6 +580,17 @@ coverage still needs an exact point or supported interpolation. Cross-KV prefill
 uses the nearest same-batch lower and upper KV curves that both cover the
 requested token count, without a KV distance limit. SOL's site-distance guard
 does not apply to this direct bracket. See the [self-service coverage rules](fpm-self-service/implementation.md#choose-the-model-execution-route).
+
+Explicit `method: direct_simplex` first resolves the direct measured curves.
+For a prefill query those curves cannot bracket, it uses barycentric weights
+inside a same-batch Delaunay triangle of genuine measurements. The mesh scales
+each coordinate axis to its measured range and sorts sites for deterministic
+construction. Every weight must lie in `[0, 1]`. Queries outside the measured
+convex hull fail. Decode uses the direct capture-regime curves. The executed
+evidence reports `simplex_interpolation` and its original measured vertices,
+latencies and weights. This method requires a profile and `SILICON` data mode,
+and supports strict query coverage with fallback denied. Its interpolation
+accuracy requires independent measurements for the intended shapes.
 
 The returned provenance pins both the selected estimation mode and interpolation
 method, alongside the complete normalized profile. Reusing its `config` keeps

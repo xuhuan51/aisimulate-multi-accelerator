@@ -1,11 +1,9 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 """Integrate the coordinator at native launcher, routing and batch boundaries."""
 
 import atexit
 import functools
 import multiprocessing
+import os
 import time
 
 from sglang_simulator.hook import BaseHook
@@ -38,7 +36,14 @@ class C_EngineParallelHook(BaseHook):
         def launch(
             engine_cls, server_args, port_args, run_scheduler_process_func, **kwargs
         ):
-            from sglang_simulator.simulation.sglang.runtime_adapter import get_parallel
+            from sglang_simulator.simulation.sglang.runtime_adapter import (
+                configure_cpu_multiprocessing,
+                get_parallel,
+            )
+
+            # Upstream selects spawn during engine initialization. Configure
+            # the CPU worker context at the scheduler launch boundary.
+            configure_cpu_multiprocessing()
 
             from sglang_simulator.simulation.manager import ConfigManager, Envs
             from sglang_simulator.simulation.parallel.coordinator import (
@@ -51,7 +56,7 @@ class C_EngineParallelHook(BaseHook):
                 from sglang_simulator.compat import validate_parallel_features
 
                 validate_parallel_features(server_args)
-                manager = CoordinatorManager(ctx=multiprocessing.get_context("spawn"))
+                manager = CoordinatorManager(ctx=multiprocessing.get_context())
                 manager.start()
                 _MANAGERS.append(manager)
                 coordinator = manager.Coordinator(
@@ -59,12 +64,19 @@ class C_EngineParallelHook(BaseHook):
                     parallel.attn_dp_size,
                     Envs.output_dir(),
                     timing_config=timing_config,
+                    fleet_clock=getattr(ConfigManager, "_native_pd_clock", None),
+                    worker_id=(getattr(ConfigManager, "_native_pd_context", None) or {}).get("worker_id"),
+                    pd_context=getattr(ConfigManager, "_native_pd_context", None),
+                    simulation_config=ConfigManager._get_raw_config(),
                 )
                 # Keep the creator's proxy alive until every spawned child has
                 # unpickled its callback (the native launcher returns early).
                 manager._simulator_coordinator = coordinator
                 run_scheduler_process_func = functools.partial(
-                    run_scheduler_process_func, simulator_coordinator=coordinator
+                    run_scheduler_process_func, simulator_coordinator=coordinator,
+                    simulator_environment={name: os.environ[name] for name in (
+                        "SGLANG_SIMULATOR_CONFIG_PATH", "SGLANG_SIMULATOR_OUTPUT_DIR",
+                    ) if name in os.environ},
                 )
             elif ConfigManager._get_raw_config().get("request_timing"):
                 raise ValueError(
@@ -114,6 +126,9 @@ class C_DPControllerHook(BaseHook):
         original_loop = target.event_loop
 
         def init(self, *args, **kwargs):
+            from sglang_simulator.simulation.sglang.runtime_adapter import configure_cpu_multiprocessing
+
+            configure_cpu_multiprocessing()
             original_init(self, *args, **kwargs)
             callback = self.run_scheduler_process_func
             self.simulator_coordinator = getattr(callback, "keywords", {}).get(
@@ -169,16 +184,25 @@ class C_DPControllerHook(BaseHook):
 
 
 def install_scheduler_boundaries(target):
-    original_next = target.get_next_batch_to_run
+    def wrap(original_next):
+        @functools.wraps(original_next)
+        def get_next(self, *args, **kwargs):
+            plan = original_next(self, *args, **kwargs)
+            client = get_client()
+            if client is not None:
+                client.step(getattr(plan, "batch_to_run", plan))
+            return plan
 
-    def get_next(self, *args, **kwargs):
-        plan = original_next(self, *args, **kwargs)
-        client = get_client()
-        if client is not None:
-            client.step(getattr(plan, "batch_to_run", plan))
-        return plan
+        return get_next
 
-    target.get_next_batch_to_run = get_next
+    for name in (
+        "get_next_batch_to_run",
+        "get_next_disagg_prefill_batch_to_run",
+        "get_next_disagg_decode_batch_to_run",
+    ):
+        original = getattr(target, name, None)
+        if original is not None:
+            setattr(target, name, wrap(original))
 
 
 def install_receiver_boundary(target):

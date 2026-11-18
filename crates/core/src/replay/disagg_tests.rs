@@ -2033,6 +2033,63 @@ fn sglang_gateway_response_policy_rejects_other_backends() {
 }
 
 #[test]
+fn sglang_gateway_two_by_two_kv_pressure_keeps_live_request_state() {
+    for batch_reporting in [false, true] {
+        let mut config = sglang_disagg_config();
+        config.prefill_dp_size = 4;
+        config.decode_dp_size = 4;
+        for args in [&mut config.prefill_args, &mut config.decode_args] {
+            args.speedup_ratio = 1.0;
+            args.decode_speedup_ratio = 1.0;
+            args.block_size = 128;
+            args.num_gpu_blocks = 256;
+            args.max_num_batched_tokens = 2048;
+            args.max_num_seqs = 8;
+            args.enable_prefix_caching = false;
+            args.timing_model = crate::engine::TimingModelConfig::Fixed {
+                prefill_ms: 800.0,
+                decode_ms: 70.0,
+            };
+        }
+        config.prefill_args.kv_transfer_bytes_per_token = Some(109_824);
+        config.prefill_args.kv_transfer_bandwidth = Some(100.0);
+        let pending = (1..=64).map(|id| request(id, 8192, 4, 0.0)).collect();
+        let mut runtime = DisaggRuntime::from_requests(
+            &config,
+            None,
+            None,
+            pending,
+            ReplayMode::Concurrency { max_in_flight: 32 },
+        )
+        .unwrap()
+        .with_prefill_response_gate(true)
+        .unwrap()
+        .with_per_request_records(true);
+        if batch_reporting {
+            runtime.collector.begin_batch_reporting();
+        }
+        let (collector, _) = runtime.run().unwrap_or_else(|error| panic!("{error:?}"));
+        let report = collector.finish();
+        assert!(report.request_counts.rejected_requests > 0);
+        assert_eq!(
+            report.request_counts.completed_requests + report.request_counts.rejected_requests,
+            64
+        );
+        assert_eq!(
+            report.request_counts.total_output_tokens,
+            report.request_counts.completed_requests * 4
+        );
+        assert!(
+            report
+                .per_request
+                .iter()
+                .filter(|row| row.terminal_status == ReplayTerminalStatus::Rejected)
+                .all(|row| row.output_length == 0)
+        );
+    }
+}
+
+#[test]
 fn sglang_dp_reservation_waits_for_source_registration_at_prefill_boundary() {
     for prefill_dp in [1, 2] {
         let mut config = sglang_disagg_config();
@@ -2230,6 +2287,21 @@ fn sglang_chunk_transfers_overlap_later_prefill_without_releasing_partial_kv() {
         assert_eq!(record.destination_activated_ms, Some(expected_first));
         assert_eq!(record.first_token_ms, Some(expected_first));
         assert_eq!(record.terminal_time_ms, expected_first + 10.0);
+        assert_eq!(record.kv_transfers.len(), 3);
+        // Each 128-token payload takes 128 / bandwidth milliseconds. A chunk
+        // starts after both its prefill and the preceding transfer complete.
+        let transfer_ms = 128.0 / bandwidth;
+        let mut previous_end: f64 = 0.0;
+        for (index, transfer) in record.kv_transfers.iter().enumerate() {
+            let start = (index as f64 + 1.0).max(previous_end);
+            let end = start + transfer_ms;
+            assert_eq!(transfer.chunk_index, index);
+            assert_eq!(transfer.started_at_ms, start);
+            assert_eq!(transfer.scheduled_end_at_ms, end);
+            assert_eq!(transfer.completed_at_ms, Some(end));
+            previous_end = end;
+        }
+        assert_eq!(previous_end, expected_first);
         let uuid = Uuid::from_u128(1);
         assert_eq!(
             stats
@@ -2289,6 +2361,10 @@ fn sglang_prebuilt_terminal_output_is_not_delayed_by_another_dp_rank() {
         .unwrap();
     assert_eq!(short.first_token_ms, Some(1.0));
     assert_eq!(short.terminal_time_ms, 1.0);
+    assert_eq!(short.kv_transfers.len(), 1);
+    assert_eq!(short.kv_transfers[0].started_at_ms, 1.0);
+    assert_eq!(short.kv_transfers[0].scheduled_end_at_ms, 1.0);
+    assert_eq!(short.kv_transfers[0].completed_at_ms, Some(1.0));
     assert_eq!(long.first_token_ms, Some(1.0));
     assert_eq!(long.terminal_time_ms, 21.0);
     assert_eq!(report.request_counts.completed_requests, 2);
@@ -2350,6 +2426,12 @@ fn sglang_cancel_during_chunk_transfer_drains_busy_prefill_and_stale_events() {
             runtime.collector.per_request_records()[0].terminal_status,
             ReplayTerminalStatus::Canceled
         );
+        let records = runtime.collector.per_request_records();
+        assert_eq!(records[0].kv_transfers.len(), 1);
+        assert_eq!(records[0].kv_transfers[0].chunk_index, 0);
+        assert_eq!(records[0].kv_transfers[0].started_at_ms, 1.0);
+        assert!(records[0].kv_transfers[0].scheduled_end_at_ms > 1.0);
+        assert_eq!(records[0].kv_transfers[0].completed_at_ms, None);
     }
 }
 
@@ -4456,4 +4538,34 @@ fn prefill_placement_receives_replay_hashes_in_both_handoff_orders(
     .run()
     .unwrap();
     assert_eq!(*seen.borrow(), expected);
+}
+
+#[test]
+fn sglang_recurrent_state_handoff_charges_one_copy_after_chunked_prefill() {
+    for prompt_tokens in [128, 256] {
+        let handoff_ms = |state: bool| {
+            let mut config =
+                transfer_timing_config(EngineType::Sglang, KvTransferTimingMode::FullPrompt, 1);
+            config.prefill_args.max_num_batched_tokens = 64;
+            config.prefill_args.sglang.chunked_prefill_size = 64;
+            config.prefill_args.sglang.max_prefill_tokens = 64;
+            for args in [&mut config.prefill_args, &mut config.decode_args] {
+                args.enable_prefix_caching = false;
+                if state {
+                    args.sglang.recurrent_state = Some(crate::engine::SglangRecurrentStateConfig {
+                        bytes_per_request: 8_000_000,
+                        max_requests: 1,
+                    });
+                }
+            }
+            let (_, stats) =
+                run_trace_collect(&config, vec![request(1, prompt_tokens, 2, 0.0)], None, 1.0);
+            stats.handoff_ms[&Uuid::from_u128(1)]
+        };
+        let delta = handoff_ms(true) - handoff_ms(false);
+        assert!(
+            (delta - 8.0).abs() < 1e-6,
+            "prompt={prompt_tokens}, delta={delta}"
+        );
+    }
 }

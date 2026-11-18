@@ -1,6 +1,3 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 """Early compatibility checks for the SGLang surfaces used by the simulator."""
 
 import inspect
@@ -113,6 +110,9 @@ def validate_parallel_cli(parser, raw_args, argv):
 
 def validate_parallel_features(server_args):
     values = server_arg_values(server_args)
+    from sglang_simulator.simulation.manager import ConfigManager
+
+    pd_context = getattr(ConfigManager, "_native_pd_context", None)
     if values["tp_size"] == 1 and runtime_flavor() != "ascend":
         return
     required = {
@@ -122,7 +122,7 @@ def validate_parallel_features(server_args):
         "pp_size": 1,
         "attn_cp_size": 1,
         "dcp_size": 1,
-        "disaggregation_mode": "null",
+        "disaggregation_mode": pd_context["role"] if pd_context else "null",
     }
     if runtime_flavor() == "ascend":
         required.pop("dcp_size")

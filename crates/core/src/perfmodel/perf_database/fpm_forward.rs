@@ -53,6 +53,8 @@ use super::parquet_loader::PerfReader;
 use super::perf_interp::{Node, SiteIndex};
 use crate::common::error::AicError;
 
+mod simplex;
+
 pub const FPM_FORWARD_BASENAME: &str = "fpm_forward_perf.parquet";
 pub const FPM_FORWARD_SCHEMA_NAME: &str = "aic_fpm_forward_perf";
 pub const FPM_FORWARD_SCHEMA_VERSION: u64 = 7;
@@ -211,6 +213,8 @@ pub struct FpmForwardCell {
     /// Token-major view of `direct_prefill`: `(batch, prefill tokens) ->
     /// (KV -> latency)`. Built once, on the first KV-first fallback query.
     direct_prefill_by_tokens: OnceLock<BTreeMap<(u32, u32), BTreeMap<u32, f64>>>,
+    /// Lazy meshes for explicit measured-simplex interpolation, separated by batch.
+    direct_prefill_simplexes: OnceLock<BTreeMap<u32, simplex::Mesh>>,
     /// Direct decode curves contain genuine measurements only; their bounds
     /// do not inherit the fabricated rows' extrapolated KV ceilings.
     pub direct_decode: BTreeMap<u32, BTreeMap<u32, f64>>,
@@ -220,6 +224,46 @@ pub struct FpmForwardCell {
 }
 
 impl FpmForwardCell {
+    pub(crate) fn direct_prefill_simplex_support(
+        &self,
+        batch: u32,
+        tokens: f64,
+        kv: f64,
+    ) -> Option<Vec<crate::FpmMeasurementSupport>> {
+        let meshes = self.direct_prefill_simplexes.get_or_init(|| {
+            let mut sites: BTreeMap<u32, Vec<simplex::Vertex>> = BTreeMap::new();
+            for (&(batch, kv), curve) in &self.direct_prefill {
+                for (&tokens, &latency_ms) in curve {
+                    sites.entry(batch).or_default().push(simplex::Vertex {
+                        tokens,
+                        kv,
+                        latency_ms,
+                    });
+                }
+            }
+            sites
+                .into_iter()
+                .filter_map(|(batch, sites)| simplex::Mesh::new(sites).map(|mesh| (batch, mesh)))
+                .collect()
+        });
+        Some(
+            meshes
+                .get(&batch)?
+                .support(tokens, kv)?
+                .into_iter()
+                .map(|(vertex, weight)| crate::FpmMeasurementSupport {
+                    coordinates: crate::FpmCoordinates {
+                        batch_size: batch as f64,
+                        total_prefill_tokens: Some(vertex.tokens as f64),
+                        total_kv_read_tokens: vertex.kv as f64,
+                    },
+                    latency_ms: vertex.latency_ms,
+                    weight,
+                })
+                .collect(),
+        )
+    }
+
     pub(crate) fn fmha_selector_warning(&self, original: &str) -> Option<String> {
         let mut warned = self
             .warned_fmha_model_modes
@@ -1193,6 +1237,7 @@ fn load_pair(
                 decode_curve_bounds: BTreeMap::new(),
                 direct_prefill: BTreeMap::new(),
                 direct_prefill_by_tokens: OnceLock::new(),
+                direct_prefill_simplexes: OnceLock::new(),
                 direct_decode: BTreeMap::new(),
                 direct_decode_rungs: Vec::new(),
                 warned_fmha_model_modes: Mutex::new(BTreeSet::new()),

@@ -1,6 +1,3 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 import typing
 
 from sglang_simulator.simulation.types import SchedulerConfig
@@ -55,7 +52,10 @@ def resolve_scheduler_config(
         model_config = _resolve_model_config(server_args, model_config)
         dtype = str(model_config.dtype).strip("torch.")
     data_type = DataType.from_torch_dtype(dtype)
-    from sglang_simulator.simulation.sglang.runtime_adapter import runtime_flavor
+    from sglang_simulator.simulation.sglang.runtime_adapter import (
+        canonical_worker_type,
+        runtime_flavor,
+    )
 
     if runtime_flavor() == "ascend":
         attention_dp = get_arg("dp_size", 1) if get_arg("enable_dp_attention", False) else 1
@@ -80,6 +80,7 @@ def resolve_scheduler_config(
         enable_hierarchical_cache=get_arg("enable_hierarchical_cache"),
         backend_name="sglang",
         backend_version=__version__,
+        worker_type=canonical_worker_type(get_arg("disaggregation_mode", "null")),
     )
 
 

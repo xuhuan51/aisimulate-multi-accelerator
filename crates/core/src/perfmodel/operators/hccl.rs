@@ -39,10 +39,10 @@ impl HcclOp {
                 "invalid HCCL token geometry or scale".into(),
             ));
         }
-        let element_bytes = if matches!(self.key.dtype.as_str(), "bfloat16" | "float16") {
-            2
-        } else {
-            4
+        let element_bytes = match self.key.dtype.as_str() {
+            "bfloat16" | "float16" => 2,
+            "int64" => 8,
+            _ => 4,
         };
         u64::from(num_tokens.div_ceil(self.token_split))
             .checked_mul(u64::from(self.elements_per_token))
@@ -123,6 +123,8 @@ mod tests {
         assert_eq!(op.payload_bytes(0).unwrap(), 0);
         op.key.dtype = "int32".into();
         assert_eq!(op.payload_bytes(9).unwrap(), 49152);
+        op.key.dtype = "int64".into();
+        assert_eq!(op.payload_bytes(9).unwrap(), 98304);
         op.token_split = 0;
         assert!(op.payload_bytes(9).is_err());
     }

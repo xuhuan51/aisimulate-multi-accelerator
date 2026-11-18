@@ -78,8 +78,12 @@ lower bound, and the host budget. These are different quantities: a zero lower
 bound does not mean the estimate that triggered rejection was zero.
 
 Execution runs inside an owned subprocess tree. The supervisor fixes the memory
-budget at startup, then samples total owned RSS and live host headroom every
-50 ms, including initialization and output serialization. Runtime thread pools
+budget at startup, then samples owned resident memory and live host headroom every
+50 ms, including initialization and output serialization. Process-tree accounting
+uses proportional set size (PSS) where the OS exposes it, so shared library and
+fork-shared pages contribute once across their mappings. RSS is the conservative
+fallback. The supervisor uses the same PSS-or-RSS rule when contributing its
+own memory to the execution charge. Runtime thread pools
 are limited to one thread per worker. During recommendation evaluation, memory
 pressure triggers worker cleanup and retries unfinished candidates at lower
 parallelism, at most twice. Completed candidates are retained. Workers must be
@@ -87,8 +91,9 @@ reaped before another batch can start. Persistent pressure produces an explicit
 `resource_limited` candidate and the sweep continues with other candidates.
 A sudden jump past the supervisor limit stops the entire execution tree.
 
-`resource-runtime.json` records observed peak RSS, effective budgets and the
-termination outcome. Fields that could not be observed because resource discovery
+`resource-runtime.json` records observed peak RSS, peak accounted memory,
+process-tree and supervisor accounting modes, effective budgets and the termination outcome.
+Fields that could not be observed because resource discovery
 failed are null. Errors loading configuration, applying overrides, or validating
 the core schema preserve existing artifacts, including with `--overwrite`.
 `execution-events.jsonl` checkpoints

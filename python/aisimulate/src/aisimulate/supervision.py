@@ -47,9 +47,10 @@ _THREAD_VARIABLES = (
 _POLL_SECONDS = 0.05
 _GRACE_SECONDS = 2.0
 # A candidate retains the complete calibrated estimator identity in several
-# public fields. Layer-wise routing profiles can exceed 1 MiB per candidate.
-_CHECKPOINT_RECORD_BYTES = 8 * 1024 * 1024
-_CHECKPOINT_TOTAL_BYTES = 64 * 1024 * 1024
+# public fields. Agentic lane preparation and lifecycle evidence can exceed
+# 8 MiB per candidate, so allow those records while bounding the complete log.
+_CHECKPOINT_RECORD_BYTES = 32 * 1024 * 1024
+_CHECKPOINT_TOTAL_BYTES = 512 * 1024 * 1024
 
 
 def in_supervised_process() -> bool:
@@ -172,11 +173,21 @@ def close_pool(pool) -> None:
         terminate_pool(pool, workers=workers)
 
 
+def _accounted_process_memory(process: psutil.Process, rss: int) -> tuple[int, str]:
+    try:
+        pss = getattr(process.memory_full_info(), "pss", None)
+    except (psutil.AccessDenied, OSError):
+        pss = None
+    return (rss, "rss") if pss is None else (pss, "pss")
+
+
 class OwnedTree:
     def __init__(self, process: subprocess.Popen):
         self.process = process
         self.root = psutil.Process(process.pid)
         self.known: dict[tuple[int, float], psutil.Process] = {}
+        self.accounted_bytes = 0
+        self.memory_accounting = "rss"
 
     def sample(self) -> int:
         try:
@@ -189,14 +200,23 @@ class OwnedTree:
             except psutil.NoSuchProcess:
                 pass
         rss = 0
+        accounted = 0
+        accounting_modes = set()
         for identity, process in list(self.known.items()):
             try:
                 if not _live(process):
                     self.known.pop(identity)
                     continue
-                rss += process.memory_info().rss
+                usage = process.memory_info().rss
+                rss += usage
+                memory, mode = _accounted_process_memory(process, usage)
+                accounted += memory
+                accounting_modes.add(mode)
             except psutil.NoSuchProcess:
                 self.known.pop(identity, None)
+        self.accounted_bytes = accounted
+        if accounting_modes:
+            self.memory_accounting = "+".join(sorted(accounting_modes))
         return rss
 
     def close(self) -> None:
@@ -248,7 +268,8 @@ def _run_process(
 ) -> dict[str, Any]:
     """Run an owned process tree under one fixed budget and live host headroom.
 
-    RSS polling is best effort on macOS. Preallocation guards remain mandatory.
+    Shared resident pages are charged proportionally where the OS exposes PSS.
+    RSS remains the conservative fallback and is also retained in diagnostics.
     stdout/stderr are inherited rather than accumulated in parent memory.
     """
     host = budget = None
@@ -272,6 +293,8 @@ def _run_process(
     process = subprocess.Popen(list(command), env=env, start_new_session=os.name == "posix")
     tree = OwnedTree(process)
     peak = 0
+    peak_accounted = 0
+    supervisor_memory_accounting = "rss"
     reason = ""
     status = "completed"
     shutdown_started: float | None = None
@@ -280,7 +303,12 @@ def _run_process(
             current = discover_host()
             rss = current.process_memory_bytes + tree.sample()
             peak = max(peak, rss)
-            if rss > budget["memory_limit_bytes"]:
+            supervisor_memory, supervisor_memory_accounting = _accounted_process_memory(
+                psutil.Process(), current.process_memory_bytes
+            )
+            accounted = supervisor_memory + tree.accounted_bytes
+            peak_accounted = max(peak_accounted, accounted)
+            if accounted > budget["memory_limit_bytes"]:
                 reason, status = "owned process tree exceeded the memory budget", "resource_limited"
                 break
             if current.available_memory_bytes < budget["reserved_host_memory_bytes"]:
@@ -330,6 +358,9 @@ def _run_process(
         "budget": budget,
         "requested_resources": policy.model_dump(mode="json"),
         "peak_observed_rss_bytes": peak,
+        "peak_accounted_memory_bytes": peak_accounted,
+        "process_tree_memory_accounting": tree.memory_accounting,
+        "supervisor_memory_accounting": supervisor_memory_accounting,
         "wall_seconds": time.monotonic() - started,
         "thread_limit_per_runtime": 1,
         "termination_complete": True,
@@ -477,6 +508,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             "budget": None,
             "requested_resources": policy.model_dump(mode="json"),
             "peak_observed_rss_bytes": None,
+            "peak_accounted_memory_bytes": None,
+            "process_tree_memory_accounting": None,
+            "supervisor_memory_accounting": None,
             "wall_seconds": None,
             "thread_limit_per_runtime": None,
             "termination_complete": None,

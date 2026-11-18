@@ -127,7 +127,9 @@ pub const ENGINE_CONFIG_SCHEMA_VERSION: u32 = 1;
 // Version 35 adds the optional Ascend tensor-MoE routing profile.
 // Version 36 adds a Qwen operator execution-boundary contract to prevent eager
 // BF16-state measurements from answering FP32-state Graph queries.
-pub const ENGINE_SPEC_SCHEMA_VERSION: u32 = 36;
+// Version 37 adds the optional active-expert axis to Ascend MoE chain identities.
+// Version 38 carries an optional observed Graph Decode routing workload.
+pub const ENGINE_SPEC_SCHEMA_VERSION: u32 = 38;
 
 /// Static engine identity and setup information carried by an
 /// [`crate::perfmodel::engine::spec::EngineSpec`].

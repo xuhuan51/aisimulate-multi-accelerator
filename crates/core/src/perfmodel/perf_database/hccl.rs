@@ -25,7 +25,7 @@ impl HcclKey {
     pub fn validate(&self) -> Result<(), AicError> {
         if !matches!(
             self.dtype.as_str(),
-            "bfloat16" | "float16" | "float32" | "int32"
+            "bfloat16" | "float16" | "float32" | "int32" | "int64"
         ) || !matches!(
             self.operation.as_str(),
             "all_reduce" | "all_gather" | "reduce_scatter" | "all_to_all"
@@ -349,6 +349,60 @@ mod tests {
                 Err(AicError::InvalidPerfData(_))
             ));
         }
+    }
+
+    #[test]
+    fn int64_metadata_selects_its_own_measured_dtype_and_byte_axis() {
+        let root = tempfile::tempdir().unwrap();
+        let directory = root.path().join("data/npu/comm/hccl/metadata-runtime");
+        std::fs::create_dir_all(&directory).unwrap();
+        std::fs::create_dir_all(root.path().join("data/npu/sglang/0.5.22")).unwrap();
+        std::fs::write(
+            root.path().join("npu.yaml"),
+            "data_dir: data/npu\ngpu:\n  mem_bw: 1000000\nnode:\n  num_gpus_per_node: 16\n  intra_node_bw: 1000000\n  inter_node_bw: 100000\nmisc:\n  hccl_version: metadata-runtime\n",
+        )
+        .unwrap();
+        let mut values = columns();
+        values[0] = Col::Str("dtype", vec!["int64"; 2]);
+        values[2] = Col::I64("num_ranks", vec![16; 2]);
+        values[3] = Col::I64("ranks_per_node", vec![16; 2]);
+        values[5] = Col::Str("execution_mode", vec!["eager"; 2]);
+        values[6] = Col::I64("input_bytes_per_rank", vec![64, 128]);
+        values[10] = Col::I64("correctness_checks", vec![32; 2]);
+        values[13] = Col::Str("execution_verification", vec!["eager_invocation"; 2]);
+        write_parquet(&directory.join(BASENAME), &values);
+        let database =
+            crate::perf_database::PerfDatabase::load(root.path(), "npu", "sglang", "0.5.22")
+                .unwrap();
+        let op = crate::operators::HcclOp {
+            name: "dp_metadata".into(),
+            scale_factor: 1.0,
+            key: HcclKey {
+                dtype: "int64".into(),
+                num_ranks: 16,
+                ranks_per_node: 16,
+                execution_mode: "eager".into(),
+                ..key()
+            },
+            elements_per_token: 8,
+            token_split: 1,
+            token_axis: crate::operators::ascend_linear::AscendLinearTokens::Requests,
+            dp_padding_mode: None,
+        };
+        // Eight int64 fields occupy64bytes. The synthetic fixture pins64B to
+        //0.010ms and128B to0.030ms independently of the payload calculation.
+        assert_eq!(op.payload_bytes(1).unwrap(), 64);
+        assert_eq!(op.query(&database, 1).unwrap().latency_ms, 0.010);
+        assert_eq!(op.query(&database, 2).unwrap().latency_ms, 0.030);
+        assert!(op.query(&database, 3).unwrap_err().is_missing_perf_data());
+        let mut wrong_dtype = op;
+        wrong_dtype.key.dtype = "int32".into();
+        assert!(
+            wrong_dtype
+                .query(&database, 1)
+                .unwrap_err()
+                .is_missing_perf_data()
+        );
     }
 
     #[test]

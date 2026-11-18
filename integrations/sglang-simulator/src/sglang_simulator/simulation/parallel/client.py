@@ -1,11 +1,29 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 """Rank-side adapters. All collective phases include idle ranks."""
 
 from dataclasses import asdict
 
 CLIENT = None
+
+
+def disaggregation_requests(scheduler):
+    """Include native requests holding capacity during bootstrap and transfer."""
+    requests = {}
+    prefill_bootstrap = getattr(scheduler, "disagg_prefill_bootstrap_queue", None)
+    decode_prealloc = getattr(scheduler, "disagg_decode_prealloc_queue", None)
+    decode_transfer = getattr(scheduler, "disagg_decode_transfer_queue", None)
+    queues = [
+        getattr(prefill_bootstrap, "queue", []),
+        getattr(scheduler, "disagg_prefill_inflight_queue", []),
+        getattr(decode_prealloc, "pending_reqs", []),
+        getattr(decode_prealloc, "queue", []),
+        getattr(decode_prealloc, "retracted_queue", []),
+        getattr(decode_transfer, "queue", []),
+    ]
+    for queue in queues:
+        for item in queue or ():
+            req = getattr(item, "req", item)
+            requests[req.rid] = req
+    return requests
 
 
 class RankClient:
@@ -15,6 +33,8 @@ class RankClient:
         self.steps = {}
         self.scheduler = None
         self.outputs = []
+        self.output_counts = {}
+        self.finished_outputs = set()
 
     def exchange(self, phase, payload):
         step = self.steps.get(phase, 0)
@@ -31,6 +51,7 @@ class RankClient:
         waiting = list(scheduler.waiting_queue)
         chunked = scheduler.chunked_req
         requests = {req.rid: req for req in [*running, *waiting] if not req.finished()}
+        requests.update(disaggregation_requests(scheduler))
         if chunked is not None:
             requests[chunked.rid] = chunked
         pending = getattr(scheduler, "_simulator_pending_requests", [])
@@ -83,6 +104,8 @@ class RankClient:
             padding_mode = mode.name
             if mode.is_max_len():
                 padded_tokens = [max(padded_tokens)] * len(padded_tokens)
+        from sglang_simulator.simulation.sglang.runtime_adapter import recurrent_state_pool_info
+        state_pool = recurrent_state_pool_info(getattr(self.scheduler, "req_to_token_pool", None))
         reply = self.exchange(
             "step",
             {
@@ -93,6 +116,7 @@ class RankClient:
                 "global_num_tokens": getattr(batch, "global_num_tokens", None),
                 "padded_tokens": padded_tokens,
                 "padding_mode": padding_mode,
+                "recurrent_state_pool": state_pool,
             },
         )
         StateManager.set_global_clock(reply["clock"])
@@ -100,21 +124,40 @@ class RankClient:
         if work.reqs:
             StateManager.inc_iteration()
 
+    def pd_queues_ready(self):
+        from sglang_simulator.simulation.manager import StateManager
+
+        result = self.exchange("pd_queues", {})
+        StateManager.set_global_clock(result["clock"])
+        return result.get("refresh_admissions", False)
+
     def profile(self, stats):
+        from sglang_simulator.simulation.sglang.runtime_adapter import recurrent_state_pool_info
+        request_pool = getattr(self.scheduler, "req_to_token_pool", None)
+        state_pool = recurrent_state_pool_info(request_pool)
         result = self.exchange(
-            "profile", {"stats": [asdict(s) for s in stats], "outputs": self.outputs}
+            "profile", {"stats": [asdict(s) for s in stats], "outputs": self.outputs,
+                        "recurrent_state_pool": state_pool}
         )
+        if state_pool is not None:
+            request_pool._simulator_peak_state_slots = state_pool["slots"] - state_pool["available_slots"]
         self.outputs = []
+        self.output_counts.clear()
+        self.finished_outputs.clear()
         return result
 
     def record_output(self, rid, previous_count, output_count, finished):
         from sglang_simulator.simulation.manager import StateManager
 
-        count = output_count - previous_count
-        if count < 0:
+        if output_count < previous_count:
             raise RuntimeError(
                 "Generated token count decreased during result processing"
             )
+        count = max(output_count - max(previous_count, self.output_counts.get(rid, 0)), 0)
+        self.output_counts[rid] = max(output_count, self.output_counts.get(rid, 0))
+        finished = finished and rid not in self.finished_outputs
+        if finished:
+            self.finished_outputs.add(rid)
         if count or finished:
             self.outputs.append(
                 {

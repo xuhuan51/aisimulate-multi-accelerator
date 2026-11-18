@@ -76,6 +76,13 @@ pub enum FpmInterpolation {
     #[default]
     Sol,
     Direct,
+    DirectSimplex,
+}
+
+impl FpmInterpolation {
+    pub(crate) fn is_direct(self) -> bool {
+        matches!(self, Self::Direct | Self::DirectSimplex)
+    }
 }
 
 /// One whole-model forward pass for a single phase.
@@ -274,7 +281,7 @@ impl FpmForwardOp {
             )));
         }
         let cell = self.select_cell(db)?;
-        if self.interpolation == FpmInterpolation::Direct {
+        if self.interpolation.is_direct() {
             return Ok(cell
                 .direct_decode
                 .values()
@@ -331,7 +338,7 @@ impl FpmForwardOp {
             );
         }
         let cell = self.select_cell(db)?;
-        if self.interpolation == FpmInterpolation::Direct {
+        if self.interpolation.is_direct() {
             return self
                 .resolve_direct_decode(cell, &[batch_size as f64, total_kv], true)
                 .map(|(result, _)| result);
@@ -415,7 +422,7 @@ impl FpmForwardOp {
         cell: &FpmForwardCell,
         coords: &[f64],
     ) -> Result<PerformanceResult, AicError> {
-        if self.interpolation == FpmInterpolation::Direct {
+        if self.interpolation.is_direct() {
             return match self.phase {
                 FpmPhase::Prefill => self.resolve_direct_prefill(cell, coords),
                 FpmPhase::Decode => self.resolve_direct_decode(cell, coords, false),
@@ -562,7 +569,7 @@ impl FpmForwardOp {
     ) -> Result<PerformanceResult, AicError> {
         let mut cell_ids = &[][..];
         let result = (|| {
-            if self.interpolation != FpmInterpolation::Direct {
+            if !self.interpolation.is_direct() {
                 return Err(AicError::InvalidEngineConfig(
                     "query coverage requires direct FPM interpolation".into(),
                 ));
@@ -632,7 +639,31 @@ impl FpmForwardOp {
             .find(|&&(site_kv, _)| (site_kv as f64) < kv);
         let upper = covered.iter().find(|&&(site_kv, _)| (site_kv as f64) > kv);
         let Some((&(lo, lo_ms), &(hi, hi_ms))) = lower.zip(upper) else {
-            return self.resolve_direct_prefill_kv_first(cell, coords);
+            let curve_result = self.resolve_direct_prefill_kv_first(cell, coords);
+            if curve_result.is_ok() || self.interpolation != FpmInterpolation::DirectSimplex {
+                return curve_result;
+            }
+            let support = cell
+                .direct_prefill_simplex_support(batch as u32, tokens, kv)
+                .ok_or_else(|| {
+                    self.direct_coverage_err(
+                        cell,
+                        coords,
+                        "no same-batch two-sided measured curves or enclosing measured simplex",
+                    )
+                })?;
+            let latency = support
+                .iter()
+                .map(|point| point.latency_ms * point.weight)
+                .sum();
+            return self.direct_result(
+                cell,
+                coords,
+                latency,
+                FpmQueryResolution::SimplexInterpolation,
+                support,
+                false,
+            );
         };
         let weight = (kv - lo as f64) / (hi as f64 - lo as f64);
         let latency = lo_ms + (hi_ms - lo_ms) * weight;
@@ -1373,6 +1404,92 @@ mod tests {
             vec![(4.0, 0.5), (8.0, 0.5)]
         );
         assert!(decode.query_totals(&db, &[3.0, 30.0]).is_err());
+    }
+
+    #[test]
+    fn explicit_simplex_prefill_resolves_only_enclosed_genuine_measurements() {
+        use crate::perf_database::fpm_forward::tests::RowSpec;
+        let mut rows = [(64, 32640, 10.0), (8128, 24576, 50.0), (2048, 24576, 30.0)]
+            .into_iter()
+            .map(|(tokens, kv, latency_ms)| RowSpec {
+                workload_kind: "prefill",
+                batch_size: 1,
+                total_prefill_tokens: tokens,
+                total_kv_read_tokens: kv,
+                latency_ms,
+                ..Default::default()
+            })
+            .collect::<Vec<_>>();
+        rows.push(RowSpec {
+            workload_kind: "prefill",
+            batch_size: 1,
+            total_prefill_tokens: 4928,
+            total_kv_read_tokens: 27777,
+            latency_ms: 1.0,
+            kv_seed_regime: Some("fake_fallback"),
+            ..Default::default()
+        });
+        for (batch_size, model_path, cell_id) in [
+            (2, "org/model-a", "other-batch"),
+            (1, "org/model-b", "other-model"),
+        ] {
+            rows.push(RowSpec {
+                workload_kind: "prefill",
+                batch_size,
+                total_prefill_tokens: 4928,
+                total_kv_read_tokens: 27777,
+                latency_ms: 1.0,
+                model_path,
+                cell_id: Some(cell_id),
+                ..Default::default()
+            });
+        }
+        let tmp = tempfile::tempdir().unwrap();
+        write_pair(tmp.path(), &rows);
+        let db = db_with_pair(tmp.path());
+        let mut direct = op(FpmPhase::Prefill);
+        direct.interpolation = FpmInterpolation::Direct;
+        assert!(direct.query_totals(&db, &[1.0, 4928.0, 27648.0]).is_err());
+        let mut simplex = direct.clone();
+        simplex.interpolation = FpmInterpolation::DirectSimplex;
+        let result = simplex.query_totals(&db, &[1.0, 4928.0, 27648.0]).unwrap();
+        // Solving the three affine coordinate equations gives weights
+        // A=760/1995, B=1193/1995, C=42/1995 and latency13702/399ms.
+        assert!((result.latency_ms - 13702.0 / 399.0).abs() < 1e-10);
+        let evidence = &result.fpm_queries.as_ref().unwrap()[0];
+        assert_eq!(
+            evidence.resolution,
+            FpmQueryResolution::SimplexInterpolation
+        );
+        assert_eq!(evidence.support.len(), 3);
+        assert!((evidence.support.iter().map(|s| s.weight).sum::<f64>() - 1.0).abs() < 1e-12);
+        assert!(
+            evidence
+                .support
+                .iter()
+                .all(|s| (0.0..=1.0).contains(&s.weight))
+        );
+        for coords in [
+            [1.0, 4928.0, 27777.0],
+            [3.0, 4928.0, 27648.0],
+            [1.0, 0.0, 32640.0],
+            [1.0, 4928.0, f64::NAN],
+        ] {
+            assert!(simplex.query_totals(&db, &coords).is_err(), "{coords:?}");
+        }
+        for coords in [[1.0, 64.0, 32640.0], [1.0, 5000.0, 24576.0]] {
+            assert_eq!(
+                simplex.query_totals(&db, &coords).unwrap(),
+                direct.query_totals(&db, &coords).unwrap()
+            );
+        }
+        for (method, index) in [
+            (FpmInterpolation::Sol, 0u32),
+            (FpmInterpolation::Direct, 1),
+            (FpmInterpolation::DirectSimplex, 2),
+        ] {
+            assert_eq!(bincode::serialize(&method).unwrap(), index.to_le_bytes());
+        }
     }
 
     #[test]

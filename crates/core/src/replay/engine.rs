@@ -218,6 +218,28 @@ impl ReplayEngineConfig {
                         "g3_offload supports only aggregated replay".to_string(),
                     ));
                 }
+                if prefill.sglang.recurrent_state.is_some()
+                    != decode.sglang.recurrent_state.is_some()
+                {
+                    return Err(ReplayError::InvalidSpec(
+                        "sglang.recurrent_state must be set on both prefill and decode roles"
+                            .to_string(),
+                    ));
+                }
+                if let (Some(source), Some(destination)) = (
+                    prefill.sglang.recurrent_state,
+                    decode.sglang.recurrent_state,
+                ) {
+                    let source_tp = self.role(WorkerStage::Prefill).tensor_parallel_size;
+                    let destination_tp = self.role(WorkerStage::Decode).tensor_parallel_size;
+                    if source_tp != destination_tp
+                        || source.bytes_per_request != destination.bytes_per_request
+                    {
+                        return Err(ReplayError::InvalidSpec(
+                            "SGLang recurrent-state handoff requires equal attention TP and matching rank-local state bytes; cross-TP slicing is not implemented".into(),
+                        ));
+                    }
+                }
                 // Decode resumes from the transferred state, so both roles model it.
                 if prefill.state_cache.is_some() != decode.state_cache.is_some() {
                     return Err(ReplayError::InvalidSpec(
@@ -417,6 +439,11 @@ impl ReplayEngineFactory {
             ));
         }
         let mut role = config.role(stage);
+        if measured && role.rank.sglang.recurrent_state.is_some() {
+            return Err(ReplayError::InvalidSpec(
+                "measured KV transfer curve does not include SGLang recurrent states".into(),
+            ));
+        }
         config.validate_eviction_geometry(&role.rank)?;
         role.rank.emit_kv_events = emit_kv_events;
         let dp_size = NonZeroU32::new(role.dp_size).ok_or_else(|| {
@@ -634,6 +661,49 @@ mod disaggregated_tests {
                 .to_string()
                 .contains("overflows")
         );
+    }
+
+    #[test]
+    fn sglang_recurrent_handoff_validates_state_geometry_before_replay() {
+        let mut role = ReplayRoleConfig::default();
+        role.rank.backend = Backend::Sglang;
+        role.rank.enable_prefix_caching = false;
+        role.rank.sglang.recurrent_state = Some(crate::engine::SglangRecurrentStateConfig {
+            bytes_per_request: 48_015_360,
+            max_requests: 32,
+        });
+        role.tensor_parallel_size = 4;
+        let topology: ReplayTopology = serde_json::from_value(serde_json::json!({
+            "kind": "disaggregated", "prefill": {"initial_workers": 1},
+            "decode": {"initial_workers": 1}
+        }))
+        .unwrap();
+        let mut config = ReplayEngineConfig {
+            prefill: Some(role.clone()),
+            decode: Some(role),
+            ..Default::default()
+        };
+        config.validate_topology(&topology).unwrap();
+        config.decode.as_mut().unwrap().tensor_parallel_size = 8;
+        assert!(
+            config
+                .validate_topology(&topology)
+                .unwrap_err()
+                .to_string()
+                .contains("equal attention TP")
+        );
+        config.decode.as_mut().unwrap().tensor_parallel_size = 4;
+        config
+            .decode
+            .as_mut()
+            .unwrap()
+            .rank
+            .sglang
+            .recurrent_state
+            .as_mut()
+            .unwrap()
+            .bytes_per_request = 24_007_680;
+        assert!(config.validate_topology(&topology).is_err());
     }
 
     #[test]

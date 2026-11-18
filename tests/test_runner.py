@@ -1553,6 +1553,7 @@ def test_public_sglang_scheduler_limits_reach_native_execution_rank(pd_response)
                     "parallelism": {"attention_data": 2},
                     "scheduler": {
                         "decode_reserved_tokens": 512 if role == "decode" else 0,
+                        "scheduler_select_time_ms": 2.0,
                         "chunked_prefill_size": 16384,
                         "max_prefill_tokens": 32768,
                         "max_sequences": 32,
@@ -1577,6 +1578,7 @@ def test_public_sglang_scheduler_limits_reach_native_execution_rank(pd_response)
         rank = runtime.execution_spec["spec"]["engine"][role]["rank"]
         assert rank["sglang"]["chunked_prefill_size"] == 16384
         assert rank["sglang"]["max_prefill_tokens"] == 32768
+        assert rank["sglang"]["scheduler_select_time_ms"] == 2.0
         assert rank["max_num_seqs"] == 32
         assert rank["sglang"]["ignore_eos"] is True
 
@@ -2166,7 +2168,7 @@ def test_replay_policy_alias_requires_a_boolean(field):
 
 
 def test_memory_detail_reuses_capacity_calculation_without_changing_execution(monkeypatch):
-    from aisimulate_core.sdk import memory
+    from aisimulate_core.sdk.memory import kv_cache
 
     calls = []
     estimate = {
@@ -2184,7 +2186,8 @@ def test_memory_detail_reuses_capacity_calculation_without_changing_execution(mo
         calls.append((args, kwargs))
         return dict(estimate)
 
-    monkeypatch.setattr(memory, "estimate_kv_cache", estimate_kv)
+    # Patch the owning module so teardown restores the lazy package export.
+    monkeypatch.setattr(kv_cache, "estimate_kv_cache", estimate_kv)
     args = _engine_args()
     args.pop("num_gpu_blocks")
     args["aic_backend_version"] = "test"

@@ -326,6 +326,7 @@ def _compile_reference_population() -> dict[str, object]:
         population[compile_parity._chunked_prefill_key(ctx_tokens, gen_tokens, isl, osl, prefix)] = ("scenario", None)
     for key in _SCENARIO_KEYS:
         population[key] = ("scenario", None)
+    population["ascend_normal_transport::context"] = ("normal_transport", None)
     return population
 
 
@@ -414,6 +415,8 @@ def main(argv: list[str] | None = None) -> int:
                 if values is None:
                     values = case_cache[case_id] = _compile_case_references(case)
                 references[key] = _require_finite(values[metric], key)
+            elif kind == "normal_transport":
+                references[key] = _require_finite(compile_parity._normal_transport_reference(), key)
             else:
                 if scenario_refs is None:
                     scenario_refs = _compile_scenario_references()

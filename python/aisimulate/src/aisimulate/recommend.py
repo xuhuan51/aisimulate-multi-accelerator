@@ -475,6 +475,8 @@ def _role_search_space(
             result[chunk_name] = chunk
         for name in ("max_prefill_tokens", "ignore_eos"):
             result[f"{legacy_role}_{name}"] = scheduler.get(name)
+        if scheduler.get("scheduler_select_time_ms", 0.0):
+            result[f"{legacy_role}_scheduler_select_time_ms"] = scheduler["scheduler_select_time_ms"]
         if legacy_role == "decode":
             result["decode_reserved_tokens"] = scheduler.get("decode_reserved_tokens", 0)
         elif scheduler.get("decode_reserved_tokens", 0):
@@ -1050,7 +1052,7 @@ def _candidate_prediction(
                 "max_sequences": sample[f"{role}_max_num_seqs"],
                 **{
                     name: sample[f"{role}_{name}"]
-                    for name in ("chunked_prefill_size", "max_prefill_tokens", "ignore_eos")
+                    for name in ("chunked_prefill_size", "max_prefill_tokens", "ignore_eos", "scheduler_select_time_ms")
                     if sample.get(f"{role}_{name}") is not None
                 },
                 "decode_reserved_tokens": sample.get("decode_reserved_tokens", 0) if role == "decode" else 0,

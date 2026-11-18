@@ -1,6 +1,3 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 """Install SGLang Simulator hooks in the parent and spawned SGLang worker processes."""
 
 import os
@@ -21,6 +18,7 @@ from sglang_simulator.simulation.sglang import (
     hicache_storage,
     mem_cache_allocator,
     mem_pool_host,
+    model_config,
     model_runner,
     parallel_hooks,
     scheduler,
@@ -66,6 +64,8 @@ def install_simulator_hooks() -> None:
 
     sglang_simulator_hook.install_class_hooks(
         [
+            model_config.C_ModelConfigHook,
+            model_config.C_MambaPoolHook,
             parallel_hooks.C_EngineParallelHook,
             parallel_hooks.C_DPControllerHook,
             scheduler.C_SchedulerHook,
@@ -90,6 +90,10 @@ def install_simulator_hooks() -> None:
 
 def run_simulator_scheduler_process(*args, **kwargs):
     """Spawn-safe scheduler entry point which installs SGLang Simulator before SGLang imports."""
+    os.environ.update(kwargs.pop("simulator_environment", {}))
+    from sglang_simulator.simulation.manager import ConfigManager
+
+    ConfigManager.reset_config_cache()
     install_simulator_hooks()
     from sglang_simulator.simulation.sglang.distributed import (
         install_distributed_adapter,
@@ -103,6 +107,7 @@ def run_simulator_scheduler_process(*args, **kwargs):
         from sglang_simulator.simulation.parallel.client import bind_client
 
         bind_client(coordinator, kwargs.get("tp_rank", args[3] if len(args) > 3 else 0))
+        ConfigManager._native_pd_context = coordinator.native_pd_config()
 
     # Spawned workers do not inherit parent-process monkey patches, so import
     # the scheduler only after installing hooks in this process.

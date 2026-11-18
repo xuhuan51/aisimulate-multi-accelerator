@@ -165,11 +165,57 @@ concrete prefill rank to one concrete decode rank. A trace request's
 `prefill_dp_rank` chooses the prefill rank; if omitted, its `dp_rank` is used
 for both roles.
 
+## Transfer timing records
+
+Run the engine stack with `--capture-per-request` to include `kv_transfers` in
+each request that starts a replay-owned KV transfer. Each entry contains
+`chunk_index`, `started_at_ms`, `scheduled_end_at_ms` and `completed_at_ms`.
+These timestamps use the request's virtual-time origin, including rebasing at
+an agentic profile boundary. A zero-delay transfer has equal start and end
+timestamps. `completed_at_ms` stays `null` when cancellation or another terminal
+condition retires the transfer before Replay applies its completion.
+
+Use the final `completed_at_ms` and `destination_activated_ms` to measure
+destination activation wait. The individual intervals show transfer overlap
+with subsequent prefill chunks and transfers from other requests. Summing their
+durations gives transfer work across requests. Compute elapsed transfer time
+from the union of intervals when transfers overlap. These records describe the
+configured virtual transfer model. Real transport measurements provide the
+comparison for contention, bootstrap and stream-dependency calibration.
+
 ## Limitations
 
-- The transfer is a single request-level event. Per-layer streaming, KV
-  layout conversion between different TP shapes, and network contention
-  between concurrent transfers are not modeled.
+- SGLang transfers follow completed prefill chunks. Per-layer streaming, KV
+  layout conversion between different TP shapes and shared-network contention
+  require additional transport models.
 - Bandwidth applies to each transfer independently.
 - vLLM P/D can be combined with G2 host offload; see
   [KV cache](kv-cache.md#host-offload-g2). G3 offload is aggregated-only.
+
+
+## SGLang recurrent state slots
+
+For SGLang hybrid models, `engine.workers.<role>.kv_cache.recurrent_state`
+accepts `bytes_per_request` and `max_requests`. Both are positive rank-local
+integers. `max_requests` counts usable slots in the separately reserved HBM
+state pool. Fixed token KV capacity excludes that pool. The state-pool configuration is
+documented under [SGLang recurrent state](kv-cache.md#sglang-recurrent-state).
+
+A slot is acquired atomically with the first token allocation or destination
+reservation, retained across prompt chunks and source-transfer holds, moved
+into the destination request on activation, and released on completion,
+cancellation, or retraction. Admission rollback restores slot ownership.
+Prefix snapshot caching and speculative state copies are currently unsupported.
+
+`estimate_state_cache(model, backend="sglang", tp_size=...)` resolves Qwen3.5
+GQA KV, convolution and temporal-state bytes without loading weights. The
+result records the pinned framework revision, precision and physical shapes.
+Use its `bytes_per_request` in `recurrent_state` and its `kv_bytes_per_token`
+for token KV and equal-TP transfer geometry. Disaggregated prediction currently requires equal P/D attention TP and
+matching rank-local state bytes. Different layouts require a transport adapter. Runtime dtype overrides must match the
+metadata supplied to the estimator.
+
+Bandwidth timing transfers one state copy on the final prompt chunk. The
+existing measured Ascend GLM transfer curve excludes recurrent states and
+rejects this configuration. A bandwidth assumption permits functional replay,
+while measured Qwen transfer timing remains a separate qualification step.

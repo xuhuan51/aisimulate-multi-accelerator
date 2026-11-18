@@ -1,6 +1,3 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 """A separate CPU process owns arrivals, logical clocks and profile output.
 
 The manager's RPC threads only exchange metadata. Native Gloo groups still
@@ -16,6 +13,9 @@ from dataclasses import asdict
 from multiprocessing.managers import BaseManager
 from pathlib import Path
 
+from sglang_simulator.simulation.parallel.pd_clock import NativePDClock
+from sglang_simulator.simulation.parallel.pd_transfer import NativePDTransfer
+
 from sglang_simulator.simulation.parallel.timing import (
     RequestTimeline,
     RequestTimingConfig,
@@ -30,8 +30,16 @@ def simulation_params(req):
 
 class Coordinator:
     def __init__(
-        self, world_size, dp_size, output_dir, timeout=120, timing_config=None
+        self, world_size, dp_size, output_dir, timeout=120, timing_config=None,
+        fleet_clock=None, worker_id=None, pd_context=None, simulation_config=None,
     ):
+        if (fleet_clock is None) != (worker_id is None):
+            raise ValueError("Native PD coordination requires both fleet clock and worker ID")
+        self.fleet_clock = fleet_clock
+        self.worker_id = worker_id
+        self.pd_context = pd_context
+        self.simulation_config = simulation_config
+        self.next_wakeup = None
         self.world_size = world_size
         self.dp_size = dp_size
         self.attn_tp = world_size // dp_size
@@ -54,13 +62,17 @@ class Coordinator:
         self.route_pending = False
         self.loads = [(0, 0)] * dp_size
         self.predictor = None
-        self.iterations = []
+        self.iteration_count = 0
+        self.iteration_stream = None
         self.rank_info = {}
         self.started = time.monotonic()
         self.timing_config = RequestTimingConfig.parse(timing_config)
         self.timeline = RequestTimeline(self.timing_config)
         self.workload_started = False
         self.requests = {}
+        self.shared_pd_admission = bool(pd_context and pd_context.get("shared_admission"))
+        self.pd_admitted_count = 0
+        self.pd_admission_epoch = 0
 
     def register(self, rank, info, model, hardware, config):
         with self.condition:
@@ -75,15 +87,46 @@ class Coordinator:
             if self.predictor is None:
                 from sglang_simulator.simulation.manager import ConfigManager
 
+                if self.simulation_config is not None:
+                    ConfigManager.reset_config_cache()
+                    ConfigManager._raw_config = self.simulation_config
+
                 self.predictor = ConfigManager.get_inference_time_predictor(
                     model, hardware, config
                 )
                 self.config = config
             return True
 
+    def native_pd_config(self):
+        return self.pd_context
+
+    def describe(self):
+        return {"clock": list(self.clock), "received": len(self.received),
+                "expected": self.expected, "failure": self.failure,
+                "exchanges": [{"phase": key[0], "step": key[1], "ranks": len(entry["inputs"])}
+                              for key, entry in list(self.exchanges.items())]}
+
     def close(self):
-        if self.predictor is not None:
-            self.predictor.close()
+        with self.condition:
+            self._close_iteration_stream()
+            if self.predictor is not None:
+                self.predictor.close()
+            if self.fleet_clock is not None:
+                self.fleet_clock.stop(self.worker_id)
+
+    def _close_iteration_stream(self):
+        if self.iteration_stream is not None:
+            self.iteration_stream.close()
+            self.iteration_stream = None
+
+    def _record_iteration(self, row):
+        from sglang_simulator.utils.json import CustomJsonEncoder
+
+        if self.iteration_stream is None:
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+            self.iteration_stream = (self.output_dir / "iteration.jsonl").open("w", buffering=1)
+        self.iteration_stream.write(json.dumps(row, cls=CustomJsonEncoder) + "\n")
+        self.iteration_count += 1
 
     def _add(self, req):
         # A batch envelope is unpacked before routing individual requests.
@@ -122,6 +165,8 @@ class Coordinator:
             )
         self.received.add(rid)
         self.requests[rid] = req
+        if self.shared_pd_admission and self.pd_context.get("request_dp_ranks") is not None:
+            req.routed_dp_rank = self.pd_context["request_dp_ranks"][rid]
         arrival = (
             params["created_time_ms"] / 1000.0
             if "created_time_ms" in params
@@ -153,6 +198,10 @@ class Coordinator:
 
     def _client_complete(self, timestamp, rid):
         self.in_flight.remove(rid)
+        if self.shared_pd_admission:
+            if self.pd_context["role"] == "decode":
+                self.fleet_clock.request_completed(self.worker_id, rid, timestamp)
+            return
         if self.max_concurrency is not None:
             self.timeline.schedule(
                 timestamp + self.timing_config.client_think_ms / 1000, "launch", None
@@ -165,6 +214,16 @@ class Coordinator:
 
     def _advance_timeline(self, until):
         self.timeline.advance(until, self._launch_request, self._client_complete)
+
+    def _receive_pd_admissions(self):
+        admission = self.fleet_clock.request_admissions(self.pd_admitted_count, self.worker_id)
+        for item in admission["requests"]:
+            _, _, req = heapq.heappop(self.future)
+            if req.rid != item["rid"]:
+                raise ValueError("Native P/D request order differs from shared admission")
+            self.timeline.schedule(item["time"], "launch", req)
+        self.pd_admitted_count = admission["next_index"]
+        self.pd_admission_epoch = admission["epoch"]
 
     def enqueue(self, req):
         with self.condition:
@@ -188,6 +247,8 @@ class Coordinator:
     def fail(self, message):
         with self.condition:
             self.failure = str(message)
+            if self.fleet_clock is not None:
+                self.fleet_clock.fail(message)
             self.condition.notify_all()
 
     def _wait(self, predicate):
@@ -217,6 +278,8 @@ class Coordinator:
                     entry["result"] = getattr(self, "_" + phase)(values)
                 except Exception as error:
                     self.failure = f"Simulator {phase} failed: {error}"
+                    if self.fleet_clock is not None:
+                        self.fleet_clock.fail(self.failure)
                     self.condition.notify_all()
                     raise
                 self.condition.notify_all()
@@ -228,6 +291,9 @@ class Coordinator:
             return result
 
     def _receive(self, inputs):
+        self.next_wakeup = None
+        if self.fleet_clock is not None:
+            self.clock = [self.fleet_clock.current_time()] * self.world_size
         self._collect_outputs(inputs)
         for rank in range(0, self.world_size, self.attn_tp):
             for req in inputs[rank]["incoming"]:
@@ -237,8 +303,12 @@ class Coordinator:
         ready = self.expected is not None and len(self.received) == self.expected
         due, self.immediate = self.immediate, []
         if ready and not self.workload_started:
+            if self.fleet_clock is not None:
+                self.fleet_clock.arrivals_ready(self.worker_id)
             self.workload_started = True
-            if self.max_concurrency is None:
+            if self.shared_pd_admission:
+                self._receive_pd_admissions()
+            elif self.max_concurrency is None:
                 while self.future:
                     arrival, _, req = heapq.heappop(self.future)
                     self.timeline.schedule(arrival, "launch", req)
@@ -246,7 +316,14 @@ class Coordinator:
                 for _ in range(min(self.max_concurrency, len(self.future))):
                     self.timeline.schedule(self.future[0][0], "launch", None)
         if self.workload_started:
+            if self.shared_pd_admission:
+                self._receive_pd_admissions()
             self._advance_timeline(now)
+            if self.shared_pd_admission:
+                # Decode output delivery can release the next global request
+                # at this timestamp. Both roles use its shared client time.
+                self._receive_pd_admissions()
+                self._advance_timeline(now)
             # Idle workers can jump to input/output/client events. In particular,
             # a delayed final response must not deadlock a full concurrency cap.
             while (
@@ -255,6 +332,9 @@ class Coordinator:
                 and self.timeline.events
                 and all(item["idle"] for item in inputs)
             ):
+                if self.fleet_clock is not None:
+                    self.next_wakeup = self.timeline.events[0][0]
+                    break
                 now = max(now, self.timeline.events[0][0])
                 self._advance_timeline(now)
             due.extend(self.requests[rid] for rid in self.timeline.ready)
@@ -269,6 +349,8 @@ class Coordinator:
             self.route_pending = True
             self.condition.notify_all()
             self._wait(lambda: not self.route_pending)
+        if self.shared_pd_admission and self.workload_started:
+            self.fleet_clock.admissions_received(self.worker_id, self.pd_admission_epoch)
         if not due and all(item["idle"] for item in inputs):
             self.condition.wait(0.002)
         result = [
@@ -288,6 +370,11 @@ class Coordinator:
 
         batches = [inputs[r]["batch"] for r in range(0, self.world_size, self.attn_tp)]
         if not any(b.reqs for b in batches):
+            if self.fleet_clock is not None:
+                event = self.fleet_clock.step(
+                    self.worker_id, max(self.clock), wake_at=self.next_wakeup
+                )
+                self.clock = [event["end"]] * self.world_size
             return [{"clock": t, "duration": 0.0} for t in self.clock]
         for leader in range(0, self.world_size, self.attn_tp):
             for rank in range(leader + 1, leader + self.attn_tp):
@@ -313,14 +400,23 @@ class Coordinator:
         start = max(
             self.clock[r] + pre[r // self.attn_tp] for r in range(self.world_size)
         )
-        for rank in range(0, self.world_size, self.attn_tp):
-            self.timeline.mark_forward(inputs[rank].get("request_ids", []), start)
         for rank in range(self.world_size):
             dp = rank // self.attn_tp
             self.clock[rank] = start + estimate["durations"][dp] + post[dp]
-        self.iterations.append(
+        if self.fleet_clock is not None:
+            event = self.fleet_clock.step(
+                self.worker_id, iteration_start,
+                duration=max(self.clock) - iteration_start,
+            )
+            shift = event["start"] - iteration_start
+            iteration_start += shift
+            start += shift
+            self.clock = [event["end"]] * self.world_size
+        for rank in range(0, self.world_size, self.attn_tp):
+            self.timeline.mark_forward(inputs[rank].get("request_ids", []), start)
+        self._record_iteration(
             dict(
-                step=len(self.iterations),
+                step=self.iteration_count,
                 start=start,
                 end=start + max(estimate["durations"]),
                 iteration_start=iteration_start,
@@ -338,6 +434,15 @@ class Coordinator:
             }
             for r in range(self.world_size)
         ]
+
+    def _pd_queues(self, inputs):
+        timestamp = (self.fleet_clock.queues_ready(self.worker_id, self.pd_admission_epoch if self.shared_pd_admission else None)
+                     if self.fleet_clock.workload_started() else self.fleet_clock.current_time())
+        self.clock = [timestamp] * self.world_size
+        refresh = self.shared_pd_admission and self.workload_started and (
+            self.fleet_clock.request_admissions(self.pd_admitted_count)["epoch"] != self.pd_admission_epoch
+        )
+        return [{"clock": timestamp, "refresh_admissions": refresh}] * self.world_size
 
     def _profile(self, inputs):
         from sglang_simulator.simulation.types import RequestStats
@@ -365,6 +470,7 @@ class Coordinator:
         if len({s.rid for s in stats}) != len(stats):
             raise ValueError("A logical request was reported by multiple DP groups")
         stats.sort(key=lambda s: (s.created_time, s.rid))
+        self._close_iteration_stream()
         self.output_dir.mkdir(parents=True, exist_ok=True)
         if stats:
             origin = min(s.created_time for s in stats)
@@ -390,6 +496,7 @@ class Coordinator:
                     item.last_event_time = item.timeline["client_finished"]
             metrics = calc_metrics(stats)
             metrics.update(
+                request_time_origin_seconds=origin,
                 time_cost=time.monotonic() - self.started,
                 simulation_world_size=self.world_size,
                 attention_dp_size=self.dp_size,
@@ -404,18 +511,17 @@ class Coordinator:
                 request_timing=self.timeline.describe(),
                 latency_boundary="client",
                 rank_info=self.rank_info,
+                recurrent_state_pools={str(rank): entry["recurrent_state_pool"]
+                                       for rank, entry in enumerate(inputs)
+                                       if entry.get("recurrent_state_pool") is not None},
                 load_max_concurrency=self.max_concurrency,
                 peak_in_flight=self.peak_in_flight,
             )
             if self.predictor is not None:
                 metrics.update(self.predictor.get_metrics())
-            for name, rows in (
-                ("request", [asdict(s) for s in stats]),
-                ("iteration", self.iterations),
-            ):
-                with (self.output_dir / f"{name}.jsonl").open("w") as f:
-                    for row in rows:
-                        f.write(json.dumps(row, cls=CustomJsonEncoder) + "\n")
+            with (self.output_dir / "request.jsonl").open("w") as f:
+                for item in stats:
+                    f.write(json.dumps(asdict(item), cls=CustomJsonEncoder) + "\n")
             (self.output_dir / "metrics.json").write_text(
                 json.dumps(metrics, cls=CustomJsonEncoder) + "\n"
             )
@@ -427,7 +533,7 @@ class Coordinator:
         self.max_concurrency = None
         self.in_flight.clear()
         self.peak_in_flight = 0
-        self.iterations.clear()
+        self.iteration_count = 0
         self.requests.clear()
         self.sequence = 0
         self.workload_started = False
@@ -443,3 +549,6 @@ class CoordinatorManager(BaseManager):
 
 
 CoordinatorManager.register("Coordinator", Coordinator)
+
+CoordinatorManager.register("NativePDClock", NativePDClock)
+CoordinatorManager.register("NativePDTransfer", NativePDTransfer)

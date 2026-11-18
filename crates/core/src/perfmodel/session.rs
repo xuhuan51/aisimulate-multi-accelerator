@@ -498,6 +498,35 @@ pub(crate) fn get_mix_step_ops(
     kv_per_decode_req: u32,
     decode_batch: u32,
 ) -> Result<f64, AicError> {
+    get_mix_step_ops_with(
+        context_ops,
+        generation_ops,
+        db,
+        ctx_tokens,
+        gen_tokens,
+        new_tokens_per_prefill_req,
+        prefix_per_req,
+        combined_prefix,
+        kv_per_decode_req,
+        decode_batch,
+        |_, _| {},
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn get_mix_step_ops_with(
+    context_ops: &[Op],
+    generation_ops: &[Op],
+    db: &PerfDatabase,
+    ctx_tokens: u32,
+    gen_tokens: u32,
+    new_tokens_per_prefill_req: u32,
+    prefix_per_req: u32,
+    combined_prefix: u32,
+    kv_per_decode_req: u32,
+    decode_batch: u32,
+    mut on_op: impl FnMut(&Op, PerformanceResult),
+) -> Result<f64, AicError> {
     // ---- Pass 1: combined non-attention work (batch=1, isl=ctx+gen) ----
     // Python: `run_static` is called with `isl = num_tokens_combined`
     // and `prefix = prefix * floor(ctx_tokens / isl)`, which makes
@@ -536,7 +565,9 @@ pub(crate) fn get_mix_step_ops(
             gen_seq_imbalance_correction_scale: 1.0,
             num_image_tokens: 0,
         };
-        total += op.query(db, &ctx)?.latency_ms;
+        let result = op.query(db, &ctx)?;
+        total += result.latency_ms;
+        on_op(op, result);
     }
 
     // ---- Pass 2: context attention with prefill batch ----
@@ -568,7 +599,9 @@ pub(crate) fn get_mix_step_ops(
             gen_seq_imbalance_correction_scale: 1.0,
             num_image_tokens: 0,
         };
-        total += op.query(db, &ctx)?.latency_ms / scale_factor;
+        let result = op.query(db, &ctx)?.scaled(1.0 / scale_factor);
+        total += result.latency_ms;
+        on_op(op, result);
     }
 
     // ---- Pass 3: generation attention with decode batch ----
@@ -593,7 +626,9 @@ pub(crate) fn get_mix_step_ops(
                 gen_seq_imbalance_correction_scale: 1.0,
                 num_image_tokens: 0,
             };
-            total += op.query(db, &ctx)?.latency_ms;
+            let result = op.query(db, &ctx)?;
+            total += result.latency_ms;
+            on_op(op, result);
         }
     }
 

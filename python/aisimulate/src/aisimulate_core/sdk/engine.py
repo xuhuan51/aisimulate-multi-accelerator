@@ -533,9 +533,11 @@ def compile_engine(
     except (ValueError, TypeError, KeyError) as exc:
         raise InvalidEngineConfigurationError(str(exc)) from exc
     profile = load_fpm_profile(fpm_profile) if fpm_profile is not None else None
-    if fpm_interpolation not in (None, "sol", "direct") or (profile is not None and fpm_interpolation is None):
+    if fpm_interpolation not in (None, "sol", "direct", "direct_simplex") or (
+        profile is not None and fpm_interpolation is None
+    ):
         raise InvalidEngineConfigurationError("FPM compilation requires a resolved method from best_available(config)")
-    if fpm_interpolation == "direct" and profile is None:
+    if fpm_interpolation in ("direct", "direct_simplex") and profile is None:
         raise InvalidEngineConfigurationError("direct FPM interpolation requires an fpm_profile")
     if (
         fpm_interpolation is not None
@@ -588,7 +590,7 @@ def compile_engine(
             )
         except (ValueError, TypeError, KeyError) as exc:
             raise InvalidEngineConfigurationError(str(exc)) from exc
-        if forward_model == "fpm" and interpolation == "direct":
+        if forward_model == "fpm" and interpolation in ("direct", "direct_simplex"):
             spec_json = _direct_fpm_spec_json(
                 profile,
                 deployment,
@@ -602,6 +604,7 @@ def compile_engine(
                 fpm_fmha_quant_mode=fpm_fmha_quant_mode,
                 worker_type=worker_type,
                 fpm_options=fpm_config.options,
+                interpolation=interpolation,
             )
             return bytes(aisimulate_core.engine_spec_bincode_from_json(spec_json))
         gemm_quant_mode = deployment.gemm_quant_mode
@@ -744,6 +747,7 @@ def _direct_fpm_spec_json(
     fpm_fmha_quant_mode: str | None = None,
     worker_type: str = "aggregated",
     fpm_options: dict | None = None,
+    interpolation: str = "direct",
 ) -> str:
     """Build whole-forward timing operations from metadata, without a graph."""
     if _database_mode_name(None, database_mode) != "SILICON":
@@ -753,7 +757,7 @@ def _direct_fpm_spec_json(
         if fpm_fmha_quant_mode not in {"bfloat16", "fp8", "fp8_block"}:
             raise ValueError("fpm_fmha_quant_mode must be bfloat16, fp8, or fp8_block")
         identity[2] = fpm_fmha_quant_mode
-    controls = {**(fpm_options or {}), "method": "direct"}
+    controls = {**(fpm_options or {}), "method": interpolation}
     if fpm_parquet_path is not None:
         controls["fpm_parquet_path"] = fpm_parquet_path
     engine = {
@@ -801,7 +805,7 @@ def _direct_fpm_spec_json(
                 "weight_bytes": deployment.resources.weights_bytes or 0,
                 "verify_width": 1,
                 "sol_ops": [],
-                "interpolation": "direct",
+                "interpolation": interpolation,
             }
         }
 

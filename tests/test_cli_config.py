@@ -93,6 +93,31 @@ def test_prediction_uses_reviewed_default_traffic() -> None:
     assert config.traffic.stop.requests == 100
 
 
+@pytest.mark.parametrize("value", [0.0, 2.0])
+def test_scheduler_select_time_survives_prediction_json(value):
+    engine = {**_engine(), "backend": "sglang"}
+    engine["workers"]["aggregated"] = {"scheduler": {"scheduler_select_time_ms": value}}
+    config = CorePredictionConfig.model_validate({"engine": engine})
+    restored = CorePredictionConfig.model_validate_json(config.model_dump_json())
+    assert restored.engine.workers.aggregated.scheduler.scheduler_select_time_ms == value
+
+
+@pytest.mark.parametrize("value", [-1.0, float("inf"), float("nan"), True, "2.0"])
+def test_scheduler_select_time_rejects_invalid_values(value):
+    engine = {**_engine(), "backend": "sglang"}
+    engine["workers"]["aggregated"] = {"scheduler": {"scheduler_select_time_ms": value}}
+    with pytest.raises(ValidationError, match="scheduler_select_time_ms"):
+        CorePredictionConfig.model_validate({"engine": engine})
+
+
+@pytest.mark.parametrize("backend", ["vllm", "trtllm"])
+def test_scheduler_select_time_rejects_other_backends(backend):
+    engine = {**_engine(), "backend": backend}
+    engine["workers"]["aggregated"] = {"scheduler": {"scheduler_select_time_ms": 2.0}}
+    with pytest.raises(ValidationError, match="scheduler_select_time_ms"):
+        CorePredictionConfig.model_validate({"engine": engine})
+
+
 def test_prediction_scheduler_defaults_are_role_aware() -> None:
     aggregated = CorePredictionConfig.model_validate({"engine": _engine()})
     assert aggregated.engine.workers.aggregated is not None
@@ -1228,12 +1253,14 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_ro
         "chunked_prefill_size": 16384,
         "max_prefill_tokens": 32768,
         "ignore_eos": True,
+        "scheduler_select_time_ms": 2.0,
     }
     raw["engine"]["workers"]["decode"]["scheduler"] = {
         "decode_reserved_tokens": 512,
         "chunked_prefill_size": 4096,
         "max_prefill_tokens": 8192,
         "ignore_eos": False,
+        "scheduler_select_time_ms": 3.0,
     }
     source = CoreRecommendationConfig.model_validate(raw)
     space = recommendation_to_sweeper(source).search_space
@@ -1242,6 +1269,8 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_ro
     assert space.prefill_max_prefill_tokens == 32768
     assert space.prefill_ignore_eos is True
     assert space.decode_ignore_eos is False
+    assert space.prefill_scheduler_select_time_ms == 2.0
+    assert space.decode_scheduler_select_time_ms == 3.0
     parallel = ReplicaParallelConfig(ParallelShape(tp=1, dp=1, moe_tp=1, moe_ep=1), replicas=1)
     sample = unroll_sample(
         search_space=space,
@@ -1264,6 +1293,7 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_ro
         "chunked_prefill_size": 4096,
         "max_prefill_tokens": 8192,
         "ignore_eos": False,
+        "scheduler_select_time_ms": 3.0,
     }
     saved = _candidate_prediction(
         source, sample, ReplaySpec(backend_deployment=deployment, workload={}, goal={}), adapter_sections={}
@@ -1278,6 +1308,7 @@ def test_sglang_scheduler_limits_survive_search_candidate_yaml_and_predict(pd_ro
         "chunked_prefill_size": 16384,
         "max_prefill_tokens": 32768,
         "ignore_eos": True,
+        "scheduler_select_time_ms": 2.0,
     }
 
 

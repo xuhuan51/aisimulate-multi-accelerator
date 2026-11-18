@@ -163,12 +163,13 @@ pub use replayer::{ReplayComposition, Replayer, RoundRobinComposition};
 #[doc(hidden)]
 pub use report::TraceCollector;
 pub use report::{
-    G2DomainStats, POWER_DATA_COVERAGE_THRESHOLD, PerRequestAdmissionRecord, PerRequestRecord,
-    PerRequestRoutingRecord, ReplayOperationPowerDiagnostics, ReplayPhasePowerDiagnostics,
-    ReplayPowerDiagnostics, ReplayReport, ReplayRequestPool, ReplayRoutingOutcome,
-    ReplayTerminalStatus, ReplayTerminalStatus as RequestTerminalStatus, SlaThresholds,
-    TraceDistributionStats, TraceGoodputStats, TraceInterTokenLatencyStats, TraceLatencyStats,
-    TracePowerStats, TraceRequestCounts, TraceThroughputStats, TraceTrajectoryStats,
+    G2DomainStats, POWER_DATA_COVERAGE_THRESHOLD, PerRequestAdmissionRecord,
+    PerRequestKvTransferRecord, PerRequestRecord, PerRequestRoutingRecord,
+    ReplayOperationPowerDiagnostics, ReplayPhasePowerDiagnostics, ReplayPowerDiagnostics,
+    ReplayReport, ReplayRequestPool, ReplayRoutingOutcome, ReplayTerminalStatus,
+    ReplayTerminalStatus as RequestTerminalStatus, SlaThresholds, TraceDistributionStats,
+    TraceGoodputStats, TraceInterTokenLatencyStats, TraceLatencyStats, TracePowerStats,
+    TraceRequestCounts, TraceThroughputStats, TraceTrajectoryStats,
 };
 pub use scaling::{NoScaling, ReplayScalingDecision, ReplayScalingPolicy, ReplayScalingSnapshot};
 #[cfg(test)]

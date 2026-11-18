@@ -3,6 +3,7 @@
 
 //! Typed estimator-specific controls. Defaults preserve the existing algorithms.
 
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -32,6 +33,12 @@ pub struct OpLevelConfig {
 pub struct AscendOpLevelConfig {
     pub shared_expert_overlap: bool,
     pub decode_execution_mode: AscendExecutionMode,
+    pub qwen_runtime_contract: AscendQwenRuntimeContract,
+    pub qwen_graph_small_ops: bool,
+    pub qwen_eager_ep_pair: bool,
+    pub qwen_eager_host_cpu_bound: bool,
+    pub qwen_eager_host_cpu_transfer: bool,
+    pub qwen_prefill_current_roles: BTreeSet<AscendQwenPrefillRole>,
     pub decode_timing_scope: AscendDecodeTimingScope,
     pub enable_dp_lm_head: bool,
     pub enable_tp_lm_head_all_to_all: bool,
@@ -40,6 +47,8 @@ pub struct AscendOpLevelConfig {
     pub routing: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefill_expert_workload: Option<AscendExpertWorkload>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decode_expert_workload: Option<crate::operators::ascend_moe_chain::DecodeExpertWorkload>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tensor_moe_routing_profile:
         Option<crate::operators::ascend_moe_routing::TensorMoeRoutingProfile>,
@@ -53,14 +62,22 @@ pub struct AscendOpLevelConfig {
 impl Default for AscendOpLevelConfig {
     fn default() -> Self {
         Self {
-            shared_expert_overlap: true,
+            // The pinned 910C traces place shared and routed GEMMs on one stream.
+            shared_expert_overlap: false,
             decode_execution_mode: AscendExecutionMode::Graph,
+            qwen_runtime_contract: AscendQwenRuntimeContract::Historical,
+            qwen_graph_small_ops: false,
+            qwen_eager_ep_pair: false,
+            qwen_eager_host_cpu_bound: false,
+            qwen_eager_host_cpu_transfer: false,
+            qwen_prefill_current_roles: BTreeSet::new(),
             decode_timing_scope: AscendDecodeTimingScope::IsolatedKernels,
             enable_dp_lm_head: true,
             enable_tp_lm_head_all_to_all: false,
             eager_runtime_overhead: None,
             routing: "balanced".into(),
             prefill_expert_workload: None,
+            decode_expert_workload: None,
             tensor_moe_routing_profile: None,
             kv_transfer_page_layout: "contiguous".into(),
             shape_policy: Default::default(),
@@ -79,6 +96,16 @@ pub struct AscendExpertWorkload {
 
 impl AscendExpertWorkload {
     fn validate(&self) -> Result<(), AicError> {
+        let invalid = || {
+            AicError::InvalidEngineConfig(
+            "Ascend prefill expert workload requires observation identity, quantization SHA256 and complete GLM75-layer256-expert top8 or Qwen60-layer512-expert top10 count vectors conserving positive input_tokens".into(),
+        )
+        };
+        let (experts, topk) = match self.layer_expert_counts.len() {
+            75 => (256, 8),
+            60 => (512, 10),
+            _ => return Err(invalid()),
+        };
         if self.observation_id.trim().is_empty()
             || self.quantization_sha256.len() != 64
             || !self
@@ -86,17 +113,14 @@ impl AscendExpertWorkload {
                 .bytes()
                 .all(|value| value.is_ascii_hexdigit())
             || self.input_tokens == 0
-            || self.layer_expert_counts.len() != 75
             || self.layer_expert_counts.iter().any(|counts| {
-                counts.len() != 256
+                counts.len() != experts
                     || counts.iter().map(|count| u64::from(*count)).sum::<u64>()
-                        != u64::from(self.input_tokens) * 8
+                        != u64::from(self.input_tokens) * topk
                     || counts.iter().any(|count| *count > self.input_tokens)
             })
         {
-            return Err(AicError::InvalidEngineConfig(
-                "Ascend prefill expert workload requires observation identity, quantization SHA256 and75 complete256-expert top8 count vectors conserving positive input_tokens".into(),
-            ));
+            return Err(invalid());
         }
         Ok(())
     }
@@ -126,6 +150,25 @@ pub enum AscendExecutionMode {
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+pub enum AscendQwenRuntimeContract {
+    Historical,
+    ModelslimFp32TpScatter,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AscendQwenPrefillRole {
+    GdnScan,
+    GdnStateIo,
+    GqaAttention,
+    ExpertDispatch,
+    GdnConv,
+    RoutedExperts,
+    NormalTransport,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum AscendDecodeTimingScope {
     IsolatedKernels,
     RuntimeLayers,
@@ -134,21 +177,106 @@ pub enum AscendDecodeTimingScope {
 impl OpLevelConfig {
     pub(crate) fn validate_for(&self, system: &str, backend: &str) -> Result<(), AicError> {
         if let Some(options) = &self.ascend {
+            if options.qwen_eager_host_cpu_transfer && !options.qwen_eager_host_cpu_bound {
+                return Err(AicError::InvalidEngineConfig(
+                    "Qwen host CPU transfer requires an explicitly selected CPU bound".into(),
+                ));
+            }
+            if options.qwen_eager_host_cpu_bound
+                && (options.decode_execution_mode != AscendExecutionMode::Eager
+                    || options.qwen_runtime_contract
+                        != AscendQwenRuntimeContract::ModelslimFp32TpScatter
+                    || options.shared_expert_overlap
+                    || options.eager_runtime_overhead.is_some()
+                    || options.decode_timing_scope != AscendDecodeTimingScope::IsolatedKernels)
+            {
+                return Err(AicError::InvalidEngineConfig(
+                    "Qwen host CPU bound requires serial FP32 eager isolated-kernel timing without residual overhead".into(),
+                ));
+            }
+            if options.qwen_eager_ep_pair
+                && (options.decode_execution_mode != AscendExecutionMode::Eager
+                    || options.qwen_runtime_contract
+                        != AscendQwenRuntimeContract::ModelslimFp32TpScatter
+                    || options.shared_expert_overlap)
+            {
+                return Err(AicError::InvalidEngineConfig(
+                    "Qwen paired eager EP timing requires FP32 TP-scatter eager Decode with serial expert execution".into(),
+                ));
+            }
+            if !options.qwen_prefill_current_roles.is_empty() {
+                if options
+                    .qwen_prefill_current_roles
+                    .contains(&AscendQwenPrefillRole::NormalTransport)
+                    && options
+                        .prefill_expert_workload
+                        .as_ref()
+                        .is_none_or(|workload| workload.layer_expert_counts.len() != 60)
+                {
+                    return Err(AicError::InvalidEngineConfig(
+                        "Qwen Normal transport requires a complete60-layer expert workload reference".into(),
+                    ));
+                }
+                match options.qwen_runtime_contract {
+                    AscendQwenRuntimeContract::Historical
+                        if options.decode_execution_mode != AscendExecutionMode::Graph =>
+                    {
+                        return Err(AicError::InvalidEngineConfig(
+                            "Historical Qwen runtime with selected current Prefill costs requires Graph Decode".into(),
+                        ));
+                    }
+                    AscendQwenRuntimeContract::ModelslimFp32TpScatter => {
+                        for role in [
+                            AscendQwenPrefillRole::GdnConv,
+                            AscendQwenPrefillRole::GdnScan,
+                            AscendQwenPrefillRole::GdnStateIo,
+                            AscendQwenPrefillRole::GqaAttention,
+                        ] {
+                            if !options.qwen_prefill_current_roles.contains(&role) {
+                                return Err(AicError::InvalidEngineConfig(
+                                    "FP32 Qwen runtime with mixed Prefill costs requires current gdn_conv, gdn_scan, gdn_state_io and gqa_attention".into(),
+                                ));
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            if let Some(workload) = &options.decode_expert_workload {
+                workload.validate()?;
+                if options.decode_execution_mode != AscendExecutionMode::Graph
+                    || options.decode_timing_scope != AscendDecodeTimingScope::IsolatedKernels
+                {
+                    return Err(AicError::InvalidEngineConfig(
+                        "Observed Decode expert workload requires isolated-kernel Graph timing"
+                            .into(),
+                    ));
+                }
+            }
+            if options.qwen_graph_small_ops
+                && options.decode_execution_mode != AscendExecutionMode::Graph
+            {
+                return Err(AicError::InvalidEngineConfig(
+                    "qwen_graph_small_ops requires Graph Decode and qualified Qwen profiles".into(),
+                ));
+            }
             if let Some(workload) = &options.prefill_expert_workload {
                 workload.validate()?;
-                if options.shape_policy.is_measured() {
+                let requires_measured = workload.layer_expert_counts.len() == 60;
+                if options.shape_policy.is_measured() != requires_measured {
                     return Err(AicError::InvalidEngineConfig(
-                        "Ascend observed prefill expert workload requires shape_policy=anchored"
+                        "Observed prefill expert workload requires shape_policy=anchored for GLM or shape_policy=measured for Qwen"
                             .into(),
                     ));
                 }
             }
             if options.decode_timing_scope == AscendDecodeTimingScope::RuntimeLayers
                 && (options.decode_execution_mode != AscendExecutionMode::Eager
-                    || !options.shared_expert_overlap
                     || options.eager_runtime_overhead.is_some())
             {
-                return Err(AicError::InvalidEngineConfig("Ascend runtime_layers requires eager decode, shared-expert overlap and no residual timing".into()));
+                return Err(AicError::InvalidEngineConfig(
+                    "Ascend runtime_layers requires eager decode and no residual timing".into(),
+                ));
             }
             if let Some(overhead) = &options.eager_runtime_overhead {
                 if overhead.operator_contract != "glm52_eager_metadata/v2" {
@@ -222,6 +350,190 @@ mod ascend_tests {
     use super::*;
 
     #[test]
+    fn normal_transport_requires_its_workload_and_survives_config_roundtrip() {
+        let mut config: OpLevelConfig = serde_json::from_str(
+            r#"{"ascend":{"qwen_prefill_current_roles":["normal_transport"]}}"#,
+        )
+        .unwrap();
+        assert!(config.validate_for("ascend910c", "sglang").is_err());
+        config.ascend.as_mut().unwrap().prefill_expert_workload = Some(AscendExpertWorkload {
+            observation_id: "synthetic-balanced".into(),
+            quantization_sha256: "b".repeat(64),
+            input_tokens: 8192,
+            layer_expert_counts: vec![vec![160; 512]; 60],
+        });
+        config.validate_for("ascend910c", "sglang").unwrap();
+        let restored: OpLevelConfig =
+            serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+        assert_eq!(config, restored);
+    }
+
+    #[test]
+    fn qwen_prefill_components_are_typed_canonical_and_round_trip() {
+        let config: OpLevelConfig = serde_json::from_str(
+            r#"{"ascend":{"qwen_prefill_current_roles":["gqa_attention","gdn_scan","gdn_scan","expert_dispatch"]}}"#,
+        ).unwrap();
+        config.validate_for("ascend910c", "sglang").unwrap();
+        let json = serde_json::to_string(&config).unwrap();
+        let restored: OpLevelConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(config, restored);
+        assert_eq!(
+            config
+                .ascend
+                .as_ref()
+                .unwrap()
+                .qwen_prefill_current_roles
+                .len(),
+            3
+        );
+        assert!(
+            serde_json::from_str::<OpLevelConfig>(
+                r#"{"ascend":{"qwen_prefill_current_roles":["unqualified_role"]}}"#,
+            )
+            .is_err()
+        );
+        let mut full = config;
+        full.ascend.as_mut().unwrap().qwen_runtime_contract =
+            AscendQwenRuntimeContract::ModelslimFp32TpScatter;
+        assert!(full.validate_for("ascend910c", "sglang").is_err());
+        full.ascend.as_mut().unwrap().qwen_runtime_contract = AscendQwenRuntimeContract::Historical;
+        full.ascend.as_mut().unwrap().decode_execution_mode = AscendExecutionMode::Eager;
+        assert!(full.validate_for("ascend910c", "sglang").is_err());
+        assert!(
+            AscendOpLevelConfig::default()
+                .qwen_prefill_current_roles
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn qwen_runtime_contract_is_explicit_and_round_trips() {
+        let mut historical = OpLevelConfig::default();
+        historical.resolve_for("ascend910c", "sglang").unwrap();
+        assert_eq!(
+            historical.ascend.unwrap().qwen_runtime_contract,
+            AscendQwenRuntimeContract::Historical
+        );
+        let config: OpLevelConfig = serde_json::from_str(
+            r#"{"ascend":{"decode_execution_mode":"eager","qwen_runtime_contract":"modelslim_fp32_tp_scatter"}}"#,
+        ).unwrap();
+        config.validate_for("ascend910c", "sglang").unwrap();
+        let restored: OpLevelConfig =
+            serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+        assert_eq!(restored, config);
+        assert_eq!(
+            config.ascend.unwrap().qwen_runtime_contract,
+            AscendQwenRuntimeContract::ModelslimFp32TpScatter
+        );
+        assert!(
+            serde_json::from_str::<OpLevelConfig>(
+                r#"{"ascend":{"qwen_runtime_contract":"unverified"}}"#
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn fp32_eager_mixed_prefill_preserves_required_state_boundaries() {
+        let mut config: OpLevelConfig = serde_json::from_str(
+            r#"{"ascend":{"decode_execution_mode":"eager","qwen_runtime_contract":"modelslim_fp32_tp_scatter","qwen_prefill_current_roles":["gdn_conv","gdn_scan","gdn_state_io","gqa_attention","expert_dispatch"]}}"#,
+        ).unwrap();
+        config.validate_for("ascend910c", "sglang").unwrap();
+        let restored: OpLevelConfig =
+            serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+        assert_eq!(config, restored);
+        for role in [
+            AscendQwenPrefillRole::GdnConv,
+            AscendQwenPrefillRole::GdnScan,
+            AscendQwenPrefillRole::GdnStateIo,
+            AscendQwenPrefillRole::GqaAttention,
+        ] {
+            config
+                .ascend
+                .as_mut()
+                .unwrap()
+                .qwen_prefill_current_roles
+                .remove(&role);
+            assert!(config.validate_for("ascend910c", "sglang").is_err());
+            config
+                .ascend
+                .as_mut()
+                .unwrap()
+                .qwen_prefill_current_roles
+                .insert(role);
+        }
+    }
+
+    #[test]
+    fn paired_qwen_eager_transport_roundtrips_and_requires_serial_current_runtime() {
+        let config: OpLevelConfig = serde_json::from_str(
+            r#"{"ascend":{"decode_execution_mode":"eager","qwen_runtime_contract":"modelslim_fp32_tp_scatter","qwen_eager_ep_pair":true}}"#,
+        ).unwrap();
+        config.validate_for("ascend910c", "sglang").unwrap();
+        let restored: OpLevelConfig =
+            serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+        assert_eq!(restored, config);
+        let mut invalid = config.clone();
+        invalid.ascend.as_mut().unwrap().shared_expert_overlap = true;
+        assert!(invalid.validate_for("ascend910c", "sglang").is_err());
+        invalid = config.clone();
+        invalid.ascend.as_mut().unwrap().decode_execution_mode = AscendExecutionMode::Graph;
+        assert!(invalid.validate_for("ascend910c", "sglang").is_err());
+        invalid = config;
+        invalid.ascend.as_mut().unwrap().qwen_runtime_contract =
+            AscendQwenRuntimeContract::Historical;
+        assert!(invalid.validate_for("ascend910c", "sglang").is_err());
+    }
+
+    #[test]
+    fn qwen_host_cpu_bound_requires_explicit_eager_scope_and_roundtrips() {
+        assert!(!AscendOpLevelConfig::default().qwen_eager_host_cpu_bound);
+        let config: OpLevelConfig = serde_json::from_str(
+            r#"{"ascend":{"decode_execution_mode":"eager","qwen_runtime_contract":"modelslim_fp32_tp_scatter","qwen_eager_host_cpu_bound":true}}"#,
+        ).unwrap();
+        config.validate_for("ascend910c", "sglang").unwrap();
+        let restored: OpLevelConfig =
+            serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+        assert_eq!(config, restored);
+        let mut transfer = config.clone();
+        transfer
+            .ascend
+            .as_mut()
+            .unwrap()
+            .qwen_eager_host_cpu_transfer = true;
+        transfer.validate_for("ascend910c", "sglang").unwrap();
+        let restored: OpLevelConfig =
+            serde_json::from_str(&serde_json::to_string(&transfer).unwrap()).unwrap();
+        assert_eq!(transfer, restored);
+        transfer.ascend.as_mut().unwrap().qwen_eager_host_cpu_bound = false;
+        assert!(transfer.validate_for("ascend910c", "sglang").is_err());
+        let mut invalid = config.clone();
+        invalid.ascend.as_mut().unwrap().decode_execution_mode = AscendExecutionMode::Graph;
+        assert!(invalid.validate_for("ascend910c", "sglang").is_err());
+        invalid = config;
+        invalid.ascend.as_mut().unwrap().shared_expert_overlap = true;
+        assert!(invalid.validate_for("ascend910c", "sglang").is_err());
+    }
+
+    #[test]
+    fn qwen_small_graph_scope_is_explicit_and_round_trips() {
+        let default = AscendOpLevelConfig::default();
+        assert!(!default.qwen_graph_small_ops);
+        let mut config = OpLevelConfig {
+            ascend: Some(AscendOpLevelConfig {
+                qwen_graph_small_ops: true,
+                ..Default::default()
+            }),
+        };
+        config.validate_for("ascend910c", "sglang").unwrap();
+        let restored: OpLevelConfig =
+            serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+        assert_eq!(restored, config);
+        config.ascend.as_mut().unwrap().decode_execution_mode = AscendExecutionMode::Eager;
+        assert!(config.validate_for("ascend910c", "sglang").is_err());
+    }
+
+    #[test]
     fn observed_expert_counts_conserve_top8_and_round_trip() {
         let mut counts = vec![0; 256];
         counts[..8].fill(32);
@@ -258,6 +570,49 @@ mod ascend_tests {
     }
 
     #[test]
+    fn qwen_prefill_counts_conserve_top10_with_measured_shapes() {
+        //32 tokens each choose ten distinct experts. Concentrating all tokens
+        //on the same ten experts conserves320 assignments in each of60 layers.
+        let mut counts = vec![0; 512];
+        counts[..10].fill(32);
+        let workload = AscendExpertWorkload {
+            observation_id: "synthetic-qwen-top10-shape-oracle".into(),
+            quantization_sha256: "b".repeat(64),
+            input_tokens: 32,
+            layer_expert_counts: vec![counts; 60],
+        };
+        let mut config = OpLevelConfig {
+            ascend: Some(AscendOpLevelConfig {
+                prefill_expert_workload: Some(workload.clone()),
+                ..Default::default()
+            }),
+        };
+        config.resolve_for("ascend910c", "sglang").unwrap();
+        let restored: OpLevelConfig =
+            serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+        assert_eq!(config, restored);
+        let mut invalid = workload.clone();
+        invalid.layer_expert_counts[0][0] += 1;
+        assert!(invalid.validate().is_err());
+        invalid = workload.clone();
+        invalid.layer_expert_counts[0].pop();
+        assert!(invalid.validate().is_err());
+        invalid = workload.clone();
+        invalid.layer_expert_counts.pop();
+        assert!(invalid.validate().is_err());
+        invalid = workload.clone();
+        invalid.layer_expert_counts[0][0] = 33;
+        invalid.layer_expert_counts[0][1] = 31;
+        assert!(invalid.validate().is_err());
+        invalid = workload;
+        invalid.layer_expert_counts[0][8..10].fill(0);
+        assert!(invalid.validate().is_err());
+        config.ascend.as_mut().unwrap().shape_policy =
+            crate::perf_database::ascend_shape::AscendShapePolicy::Anchored;
+        assert!(config.resolve_for("ascend910c", "sglang").is_err());
+    }
+
+    #[test]
     fn eager_residual_requires_the_current_operator_composition() {
         let legacy = serde_json::json!({"ascend": {
             "decode_execution_mode": "eager",
@@ -290,8 +645,8 @@ mod ascend_tests {
         let mut options = OpLevelConfig::default();
         assert_eq!(serde_json::to_string(&options).unwrap(), "{}");
         options.resolve_for("ascend910c", "sglang").unwrap();
-        assert!(options.ascend.as_ref().unwrap().shared_expert_overlap);
-        options.ascend.as_mut().unwrap().shared_expert_overlap = false;
+        assert!(!options.ascend.as_ref().unwrap().shared_expert_overlap);
+        options.ascend.as_mut().unwrap().shared_expert_overlap = true;
         assert!(options.ascend.as_ref().unwrap().enable_dp_lm_head);
         options.ascend.as_mut().unwrap().enable_dp_lm_head = false;
         options
@@ -427,6 +782,7 @@ pub enum FpmInterpolationMethod {
     Auto,
     Sol,
     Direct,
+    DirectSimplex,
 }
 
 impl FpmInterpolationMethod {
@@ -435,20 +791,26 @@ impl FpmInterpolationMethod {
             Self::Auto => "auto",
             Self::Sol => "sol",
             Self::Direct => "direct",
+            Self::DirectSimplex => "direct_simplex",
         }
     }
 
     pub(crate) fn resolve(self, registered: Option<bool>) -> Result<Self, AicError> {
         match (self, registered) {
-            (Self::Direct, None) => Err(AicError::InvalidEngineConfig(
+            (Self::Direct | Self::DirectSimplex, None) => Err(AicError::InvalidEngineConfig(
                 "direct FPM interpolation requires an fpm_profile with identity and resource metadata".into(),
             )),
             (Self::Sol, Some(false)) => Err(AicError::InvalidEngineConfig(
                 "SOL interpolation requires a registered analytical model class; use estimator_config.fpm_interpolation.method='direct' with the supplied profile".into(),
             )),
             (Self::Auto, Some(false)) | (Self::Direct, Some(_)) => Ok(Self::Direct),
+            (Self::DirectSimplex, Some(_)) => Ok(Self::DirectSimplex),
             _ => Ok(Self::Sol),
         }
+    }
+
+    pub(crate) fn is_direct(self) -> bool {
+        matches!(self, Self::Direct | Self::DirectSimplex)
     }
 }
 

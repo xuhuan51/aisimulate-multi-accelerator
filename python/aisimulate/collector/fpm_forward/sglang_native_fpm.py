@@ -202,19 +202,28 @@ def plan_rounds(point: dict, pool: list[int]) -> dict:
     count = WARMUP_ROUNDS + MEASURED_ROUNDS + MAX_REJECTED_ROUNDS
     if point["phase"] == "prefill":
         prefixes, news = point["prefix_tokens"], point["new_tokens"]
-        offsets = [(131 * index + 17 * bid) % size for index in range(len(prefixes))]
-        warm = [rotation(pool, o, k) if k else None for o, k in zip(offsets, prefixes, strict=True)]
+        groups = point.get("prefix_groups", len(prefixes))
+        if type(groups) is not int or not 1 <= groups <= len(prefixes):
+            raise ValueError("prefix_groups must be an integer between one and the batch size")
+        if groups < len(prefixes) and len(set(prefixes)) != 1:
+            raise ValueError("Shared prefix groups require uniform prefix lengths")
+        offsets = [(131 * (index % groups) + 17 * bid) % size for index in range(len(prefixes))]
+        warm = [
+            rotation(pool, o, k) if k and index < groups else None
+            for index, (o, k) in enumerate(zip(offsets, prefixes, strict=True))
+        ]
         rounds, specs = [], []
-        used = [set() for _ in prefixes]
+        used = [set() for _ in range(groups)]
         for r in range(count):
             prompts, spec = [], []
             for index, (o, k, t) in enumerate(zip(offsets, prefixes, news, strict=True)):
                 if k:
-                    shift = 1 + 97 * r
-                    while pool[(o + k + shift) % size] in used[index]:
+                    group = index % groups
+                    shift = 1 + 97 * r + index // groups
+                    while pool[(o + k + shift) % size] in used[group]:
                         shift += 1
-                    used[index].add(pool[(o + k + shift) % size])
-                    prompts.append(warm[index] + rotation(pool, o + k + shift, t))
+                    used[group].add(pool[(o + k + shift) % size])
+                    prompts.append(rotation(pool, o, k) + rotation(pool, o + k + shift, t))
                     spec.append([[o, k], [o + k + shift, t]])
                 else:
                     prompts.append(rotation(pool, o + 7 * r + 1, t))
@@ -224,25 +233,50 @@ def plan_rounds(point: dict, pool: list[int]) -> dict:
         return {
             "offsets": offsets,
             "warm": warm,
-            "warm_specs": [[[o, k]] if k else None for o, k in zip(offsets, prefixes, strict=True)],
+            "warm_specs": [
+                [[o, k]] if warm[index] else None for index, (o, k) in enumerate(zip(offsets, prefixes, strict=True))
+            ],
             "rounds": rounds,
             "round_specs": specs,
             "expected_cached": list(prefixes),
             "max_tokens": 1,
         }
     contexts = point["contexts"]
+    lead = decode_lead_tokens(point)
+    if any(context <= lead for context in contexts):
+        raise ValueError("Decode contexts must exceed decode_lead_tokens")
+    _, _, output_tokens = decode_neighbor_window(point)
     offsets = [(131 * index + 17 * bid) % size for index in range(len(contexts))]
-    prompts = [rotation(pool, o, c - DECODE_LEAD) for o, c in zip(offsets, contexts, strict=True)]
-    hits = [((c - DECODE_LEAD - 1) // HIT_UNIT) * HIT_UNIT for c in contexts]
+    prompts = [rotation(pool, o, c - lead) for o, c in zip(offsets, contexts, strict=True)]
+    hits = [((c - lead - 1) // HIT_UNIT) * HIT_UNIT for c in contexts]
     return {
         "offsets": offsets,
         "warm": [p[:h] if h else None for p, h in zip(prompts, hits, strict=True)],
         "warm_specs": [[[o, h]] if h else None for o, h in zip(offsets, hits, strict=True)],
         "rounds": [prompts] * count,
-        "round_specs": [[[[o, c - DECODE_LEAD]] for o, c in zip(offsets, contexts, strict=True)]] * count,
+        "round_specs": [[[[o, c - lead]] for o, c in zip(offsets, contexts, strict=True)]] * count,
         "expected_cached": hits,
-        "max_tokens": DECODE_LEAD + 3,
+        "max_tokens": output_tokens,
     }
+
+
+def decode_lead_tokens(point: dict) -> int:
+    """Reach a target context by ordinary generated tokens before measuring."""
+    lead = point.get("decode_lead_tokens", DECODE_LEAD)
+    if type(lead) is not int or lead < DECODE_LEAD:
+        raise ValueError("decode_lead_tokens must be an integer of at least three")
+    return lead
+
+
+def decode_neighbor_window(point: dict) -> tuple[tuple[int, int, int], int, int]:
+    """Keep three independent decode intervals at a terminal context boundary."""
+    window = point.get("decode_neighbor_window", "centered")
+    lead = decode_lead_tokens(point)
+    if window == "centered":
+        return (-1, 0, 1), 1, lead + 3
+    if window == "preceding":
+        return (-2, -1, 0), 2, lead + 2
+    raise ValueError(f"Unknown decode_neighbor_window: {window!r}")
 
 
 def flush_cache(base: str) -> None:
@@ -303,21 +337,23 @@ def select_measured(point: dict, messages: list[dict]) -> tuple[dict | None, str
         for m in messages
         if m["scheduled_requests"]["num_decode_requests"] > 0 and m["scheduled_requests"]["num_prefill_requests"] == 0
     ]
-    kv, step = point["total_kv_read_tokens"], MEASURED_DECODE_STEP
+    kv = point["total_kv_read_tokens"]
     # Native decode metrics sum seq_lens (prior tokens + the decoded token):
     # decode step j of this round has sum K - (step - j) * B + B. The native
     # publisher skips an emission whose DeviceTimer interval has not completed
-    # yet and folds it into the next one, so require the measured step and both
-    # neighbours as separate all-B messages, and a measured wall time that is
-    # not a merged double interval (neighbours bound it).
-    expected = [kv + batch * (j - step + 1) for j in (step - 1, step, step + 1)]
+    # yet and folds it into the next one. Require three separate all-B
+    # intervals. A terminal step uses its two predecessors because another
+    # output would exceed the context boundary. Both modes measure step four.
+    offsets, measured_index, _ = decode_neighbor_window(point)
+    expected = [kv + batch * (offset + 1) for offset in offsets]
     sums = [m["scheduled_requests"]["sum_decode_kv_tokens"] for m in decodes]
     starts = [i for i in range(len(decodes) - 2) if sums[i : i + 3] == expected]
     run = decodes[starts[0] : starts[0] + 3] if len(starts) == 1 else []
     if not run or any(m["scheduled_requests"]["num_decode_requests"] != batch for m in run):
         return None, f"no unique all-B decode run {expected} around the measured step in {sums}"
-    before, measured, after = run
-    bound = MERGED_INTERVAL_RATIO * min(before["wall_time"], after["wall_time"])
+    measured = run[measured_index]
+    reference_times = [m["wall_time"] for index, m in enumerate(run) if index != measured_index]
+    bound = MERGED_INTERVAL_RATIO * min(reference_times)
     if measured["wall_time"] > bound:
         return None, f"measured decode message looks merged: {[m['wall_time'] for m in run]}"
     return measured, None
@@ -334,6 +370,12 @@ def run_point(args, base: str, stream: FpmStream, point: dict, pool: list[int]) 
         "rounds": [],
         "rejected_rounds": [],
     }
+    if point["phase"] == "decode":
+        record["decode_neighbor_window"] = point.get("decode_neighbor_window", "centered")
+        if "decode_lead_tokens" in point:
+            record["decode_lead_tokens"] = decode_lead_tokens(point)
+    if "prefix_groups" in point:
+        record["prefix_groups"] = point["prefix_groups"]
     started = time.monotonic()
     # As the ground truth: an empty radix cache per point (and per round when no
     # prefix is planned), so only the planned prefix can be hit. Untimed.
@@ -362,7 +404,7 @@ def run_point(args, base: str, stream: FpmStream, point: dict, pool: list[int]) 
             flush_cache(base)
         stray = stream.drain()
         responses = generate(base, prompts, plan["max_tokens"])
-        expected = 1 if point["phase"] == "prefill" else MEASURED_DECODE_STEP + 1
+        expected = 1 if point["phase"] == "prefill" else decode_lead_tokens(point) + 2
 
         def done(messages, expected=expected):
             return sum(1 for m in messages if any(m["scheduled_requests"].values())) >= expected
@@ -500,7 +542,11 @@ def artifact(args, points, records, provenance, started_at, elapsed) -> dict:
         "coverage": {"expected_points": len(points), "completed_points": len(results), "skipped_points": 0},
         "config": {"mode": args.phase},
         "measurement_policy": {
-            "decode": f"native_fpm_decode_step_{MEASURED_DECODE_STEP}_median_of_{MEASURED_ROUNDS}",
+            "decode": (
+                f"native_fpm_decode_context_target_median_of_{MEASURED_ROUNDS}"
+                if any(point.get("decode_lead_tokens", DECODE_LEAD) != DECODE_LEAD for point in points)
+                else f"native_fpm_decode_step_{MEASURED_DECODE_STEP}_median_of_{MEASURED_ROUNDS}"
+            ),
             "prefill": f"native_fpm_single_forward_median_of_{MEASURED_ROUNDS}",
         },
         "results": results,

@@ -49,6 +49,7 @@ engine:
 | `workers.<role>.scheduler.ignore_eos` | Unset (native default: `false`) | fixed | SGLang only. Boolean; apply the pinned 0.5.22 fixed-output admission policy to every request on this role. Match the client's `ignore_eos` sampling setting. |
 | `workers.<role>.scheduler.prefill_schedule_interval` | `1` | predict only | vLLM only. See [vLLM prefill schedule interval](#vllm-prefill-schedule-interval). |
 | `workers.<role>.scheduler.prefill_decode_interval` | `0` | predict only | SGLang only. See [SGLang prefill/decode interval](#sglang-prefilldecode-interval). |
+| `workers.<role>.scheduler.scheduler_select_time_ms` | `0.0` | fixed | SGLang only. Measured serial `get_next_batch_to_run` API wall time per scheduler pass, in milliseconds. See [Serial scheduling time](#serial-scheduling-time). |
 | `workers.decode.scheduler.decode_reserved_tokens` | `0` | fixed | SGLang PD only. Logical growth reserve per active decode request; set `512` for the qualified 0.5.22 Ascend runtime. Zero preserves the prior prompt-only admission behavior. |
 | `engine.enable_chunked_prefill` | Backend default (on) | fixed | Boolean. Applies to aggregated and prefill roles; `false` is rejected for SGLang and for AFD. |
 
@@ -129,6 +130,18 @@ that rank. Worker counts are fixed for the whole run. The
 worker counts with the Planner; `startup_seconds` then delays each added worker.
 
 ## Scheduler
+
+### Serial scheduling time
+
+`scheduler_select_time_ms` prices the serial host selection interval before a
+forward pass. Use direct API-span measurements with matched CPU resources,
+framework, topology and scheduling policy. The worker pass clock includes the
+host interval and forward interval. Forward metrics report the forward interval,
+and GPU speedup applies to that interval. Attention-DP ranks execute selection
+concurrently, so the synchronized worker pays the configured interval once.
+Use this field for runtimes with overlap scheduling disabled. Its measured
+scope includes batch construction and DP metadata synchronization.
+Recommendation carries the fixed value into saved candidate YAML and replay.
 
 <a id="batch-limits"></a>
 

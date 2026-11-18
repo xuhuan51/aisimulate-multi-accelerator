@@ -93,6 +93,9 @@ All paths below are under `engine.workers.<role>.kv_cache`.
 | `host_offload` | Unset (off) | fixed | G2 block; see [host offload](#host-offload-g2). |
 | `g3_offload` | Unset (off) | Rejected | G3 block; see [G3 offload](#g3-offload). |
 | `state_cache` | Unset (off) | Rejected | Recurrent-state block; see [state cache](#state-cache). |
+| `recurrent_state` | Unset (off) | Rejected | SGLang rank-local request-state pool; see [SGLang recurrent state](#sglang-recurrent-state). |
+| `recurrent_state.bytes_per_request` | Required in block | Rejected | Positive bytes in one complete rank-local state copy. |
+| `recurrent_state.max_requests` | Required in block | Rejected | Positive usable request slots in each rank-local state pool. |
 | `prefix_match_unit` | Unset | Rejected | Prefix-matching granularity with `state_cache`. |
 
 For the audited GLM ModelSlim path on `ascend910c`, physical NPU KV pages hold
@@ -393,3 +396,61 @@ aisimulate predict --stack engine --config examples/cli/agentx-g2-shared-pd.yaml
 In both, a child request evicts its parent's prefix from a three-block GPU
 cache, and the parent later restores it from host memory. Change
 `host_offload.scope`, `h2d_bandwidth_gbps` or `num_host_blocks` to compare.
+
+
+## SGLang recurrent state
+
+For Qwen3.5 with SGLang, `recurrent_state` describes a separate HBM pool of
+convolution and temporal states. Supply fixed token KV capacity with prefix
+caching disabled. `bytes_per_request` and `max_requests` describe each rank's
+state payload and usable request slots. The native pool also has one padding
+slot. Reserve the entire state pool separately when choosing token KV capacity.
+
+```yaml
+engine:
+  workers:
+    aggregated:
+      kv_cache:
+        block_size: 128
+        prefix_caching: false
+        capacity: {type: fixed, blocks: 256}
+        recurrent_state:
+          bytes_per_request: 48015360
+          max_requests: 32
+```
+
+The example state size applies to Qwen3.5-397B-A17B with attention TP4,
+45 linear-attention layers, BF16 convolution state and FP32 temporal state.
+Resolve other shapes and precisions with
+`estimate_state_cache(model, backend="sglang", tp_size=...)`. The result
+includes the pinned source revision, state shapes, dtypes and token KV bytes.
+The example KV capacity is an explicit experiment input.
+
+The `engine` stack retains a slot across prompt chunks and pending transfers,
+then releases it on completion, cancellation or retraction. Destination
+reservation also owns a slot. Disaggregated prediction requires state config
+on both roles, matching rank-local state bytes and equal attention TP.
+[KV transfer](kv-transfer.md#sglang-recurrent-state-slots) describes the final
+state-copy timing and its current measurement scope.
+
+The `sglang-simulator` stack supports this state pool in aggregated replay
+and native Prefill/Decode replay.
+It passes the resolved capacity and temporal dtype to the native allocator,
+records per-rank shape and slot usage, and verifies that completed requests
+release all slots. Where the native runtime exposes PD state descriptors,
+rank metadata also includes per-buffer item bytes, global layer IDs, TP slice
+dimensions and convolution shard groups. Their summed item bytes must match
+one request's state payload. Payload tensors stay on the meta device. Paired PD
+uses explicit bandwidth, matching attention TP and page size, offline arrivals
+at zero and disabled prefix caching. It couples native reservations to chunk
+transfer completion and copies the CPU auxiliary row carrying the first token.
+Decode client completion releases global request concurrency. Per-role cost
+identities, capacities and runtime hashes are retained in the replay evidence.
+Role-specific `parallelism.replicas` creates separate native cohorts, using
+`pd_routing: replica_round_robin` to rotate each replica's DP ranks. The cohorts
+share global client admission and one virtual event clock. Decode-only completion
+releases client credits, and combined metrics preserve global request-time origins.
+Single-pair request-level validation is complete; multi-cohort execution is under
+CPU validation. Cross-TP state repartition remains pending.
+Prefix snapshots, speculative state copies and
+automatic state-pool memory-budget sizing remain outside this configuration.

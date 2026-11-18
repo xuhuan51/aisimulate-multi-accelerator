@@ -35,8 +35,8 @@ pub use common::running_mean::RunningMean;
 pub use common::speculative::normalize_conditional_accept_rates;
 pub use config::{
     Backend, EngineConfig, G2Scope, G3OffloadConfig, G3Scope, NativeHostOffloadConfig,
-    PreemptionMode, SglangConfig, SglangSchedulePolicy, StateCacheConfig, TrtllmCapacityPolicy,
-    TrtllmConfig, WorkerType,
+    PreemptionMode, SglangConfig, SglangRecurrentStateConfig, SglangSchedulePolicy,
+    StateCacheConfig, TrtllmCapacityPolicy, TrtllmConfig, WorkerType,
 };
 pub use g3_offload::{G3IoStats, G3Stats};
 pub use handoff::{HandoffId, HandoffTransferTiming, TransferTimingMode, prefill_handoff_delay_ms};
@@ -49,7 +49,7 @@ pub use protocol::{
 pub use runtime::{Engine, EngineFactory};
 pub use scheduler::SchedulerRank;
 #[cfg(feature = "python")]
-pub(crate) use timing::{TimingEvidenceAccumulator, ValidatedTimingPhase};
+pub(crate) use timing::{TimingEvidenceAccumulator, ValidatedTimingPhase, mean_prefill_geometry};
 pub use timing::{
     TimingEvidenceSource, TimingEvidenceSummary, TimingModel, TimingModelConfig,
     TimingOperationEvidence, TimingPhaseEvidence,

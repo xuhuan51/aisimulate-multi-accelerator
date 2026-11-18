@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """CPU checks of the SGLang native-FPM client: request plans and measured-step attribution."""
 
+from types import SimpleNamespace
+
 import pytest
 from collector.fpm_forward import sglang_native_fpm as drv
 
@@ -45,6 +47,90 @@ def test_decode_attribution_rejects_out_of_lockstep_batches():
     assert drv.select_measured(point, messages)[0] is None
 
 
+def test_terminal_decode_window_retains_geometry_and_merged_interval_checks():
+    point = {
+        "phase": "decode",
+        "benchmark_id": 1,
+        "batch_size": 2,
+        "contexts": [32764, 32764],
+        "total_kv_read_tokens": 65528,
+        "decode_neighbor_window": "preceding",
+    }
+    plan = drv.plan_rounds(point, list(range(100000)))
+    assert len(plan["rounds"][0][0]) == 32761 and plan["max_tokens"] == 5
+    # Prior lengths32762,32763,32764 emit native prior-plus-current sums.
+    messages = [message(i, decode=(2, 2 * length)) for i, length in enumerate((32763, 32764, 32765))]
+    measured, reason = drv.select_measured(point, messages)
+    assert reason is None and measured["sequence"] == 2
+    assert drv.select_measured(point, messages[1:])[0] is None
+    merged = [dict(row) for row in messages]
+    merged[-1]["wall_time"] = 0.02
+    assert "merged" in drv.select_measured(point, merged)[1]
+    wrong_batch = [dict(row) for row in messages]
+    wrong_batch[-1] = message(2, decode=(1, 65530))
+    assert drv.select_measured(point, wrong_batch)[0] is None
+
+
+def test_decode_neighbor_window_rejects_unknown_modes():
+    point = {"phase": "decode", "benchmark_id": 1, "contexts": [64], "decode_neighbor_window": "unknown"}
+    with pytest.raises(ValueError, match="Unknown decode_neighbor_window"):
+        drv.plan_rounds(point, list(range(100000)))
+
+
+@pytest.mark.parametrize("window,outputs", [("centered", 1027), ("preceding", 1026)])
+def test_long_decode_lead_reaches_the_same_target_geometry(window, outputs):
+    point = {
+        "phase": "decode", "benchmark_id": 1, "batch_size": 2,
+        "contexts": [29692, 29564], "total_kv_read_tokens": 59256,
+        "decode_lead_tokens": 1024, "decode_neighbor_window": window,
+    }
+    plan = drv.plan_rounds(point, list(range(100000)))
+    assert [len(prompt) for prompt in plan["rounds"][0]] == [28668, 28540]
+    assert plan["expected_cached"] == [28608, 28480]
+    assert plan["max_tokens"] == outputs
+    offsets = (-1, 0, 1) if window == "centered" else (-2, -1, 0)
+    messages = [message(index, decode=(2, 59256 + 2 * (offset + 1)))
+                for index, offset in enumerate(offsets)]
+    measured, reason = drv.select_measured(point, messages)
+    assert reason is None
+    assert measured["scheduled_requests"]["sum_decode_kv_tokens"] == 59258
+    assert drv.select_measured(point, messages[1:])[0] is None
+
+
+@pytest.mark.parametrize("lead", [0, 2, -1, True, 1.5, "1024"])
+def test_decode_lead_rejects_invalid_inputs(lead):
+    point = {"phase": "decode", "benchmark_id": 1, "contexts": [32704], "decode_lead_tokens": lead}
+    with pytest.raises(ValueError, match="decode_lead_tokens"):
+        drv.plan_rounds(point, list(range(100000)))
+
+
+def test_decode_lead_requires_a_positive_prompt():
+    point = {"phase": "decode", "benchmark_id": 1, "contexts": [1024], "decode_lead_tokens": 1024}
+    with pytest.raises(ValueError, match="contexts must exceed"):
+        drv.plan_rounds(point, list(range(100000)))
+
+
+@pytest.mark.parametrize("lead,policy", [(None, "native_fpm_decode_step_4_median_of_10"),
+                                        (1024, "native_fpm_decode_context_target_median_of_10")])
+def test_decode_artifact_records_the_selected_measurement_policy(lead, policy):
+    point = {"phase": "decode", "benchmark_id": 1, "batch_size": 2,
+             "contexts": [8192, 8192], "total_kv_read_tokens": 16384}
+    if lead is not None:
+        point["decode_lead_tokens"] = lead
+    rounds = [
+        {"role": role, "wall_time": 0.01,
+         "scheduled_requests": message(1, decode=(2, 16386))["scheduled_requests"]}
+        for role in ["warmup"] * 5 + ["measurement"] * 10
+    ]
+    record = {"rounds": rounds}
+    result = drv.artifact(SimpleNamespace(phase="decode"), [point], [(point, record, "test-digest")],
+                          {"worker_id": "test-worker", "run_id": "test-run", "artifact": {}},
+                          "2026-11-18T00:00:00Z", 1.0)
+    assert result["measurement_policy"]["decode"] == policy
+    assert result["results"][0]["fpms"][0]["wall_time"] == 0.01
+    assert result["results"][0]["fpms"][0]["scheduled_requests"]["sum_decode_kv_tokens"] == 16384
+
+
 def test_prefill_attribution_requires_one_exact_batched_forward():
     point = {"phase": "prefill", "batch_size": 4, "total_prefill_tokens": 128, "total_kv_read_tokens": 512}
     ok = [message(1, prefill=(4, 128, 512))]
@@ -66,6 +152,53 @@ def test_request_plans_match_the_clean_truth_construction():
     plan = drv.plan_rounds(decode, pool)
     assert [len(p) for p in plan["rounds"][0]] == [197, 196]
     assert plan["expected_cached"] == [192, 192] and plan["max_tokens"] == 6
+
+
+def test_shared_prefix_groups_warm_once_and_keep_suffixes_unique():
+    point = {
+        "phase": "prefill",
+        "benchmark_id": 7,
+        "prefix_tokens": [128] * 6,
+        "new_tokens": [32] * 6,
+        "prefix_groups": 2,
+    }
+    plan = drv.plan_rounds(point, list(range(10000)))
+    assert sum(prompt is not None for prompt in plan["warm"]) == 2
+    assert sum(spec is not None for spec in plan["warm_specs"]) == 2
+    assert plan["expected_cached"] == [128] * 6
+    first_suffixes = [set(), set()]
+    for prompts in plan["rounds"]:
+        assert all(len(prompt) == 160 for prompt in prompts)
+        for index, prompt in enumerate(prompts):
+            group = index % 2
+            assert prompt[:128] == plan["warm"][group]
+            assert prompt[128] not in first_suffixes[group]
+            first_suffixes[group].add(prompt[128])
+
+
+@pytest.mark.parametrize("groups", [0, 3, True, 1.5])
+def test_prefill_prefix_groups_reject_invalid_counts(groups):
+    point = {
+        "phase": "prefill",
+        "benchmark_id": 1,
+        "prefix_tokens": [128, 128],
+        "new_tokens": [1, 1],
+        "prefix_groups": groups,
+    }
+    with pytest.raises(ValueError, match="prefix_groups"):
+        drv.plan_rounds(point, list(range(10000)))
+
+
+def test_shared_prefix_groups_require_equal_prefix_lengths():
+    point = {
+        "phase": "prefill",
+        "benchmark_id": 1,
+        "prefix_tokens": [128, 256],
+        "new_tokens": [1, 1],
+        "prefix_groups": 1,
+    }
+    with pytest.raises(ValueError, match="uniform prefix lengths"):
+        drv.plan_rounds(point, list(range(10000)))
 
 
 class _Tokenizer:

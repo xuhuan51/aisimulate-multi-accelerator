@@ -61,6 +61,8 @@ pub use ascend_linear::AscendLinearOp;
 pub use ascend_moe_chain::AscendMoeChainOp;
 pub use ascend_moe_tensor::AscendMoeTensorOp;
 pub use ascend_qwen::AscendQwenOp;
+pub mod ascend_normal_transport;
+pub use ascend_normal_transport::AscendNormalTransportOp;
 pub use ascend_vector::AscendVectorOp;
 pub use attention::{ContextAttentionOp, EncoderAttentionOp, GenerationAttentionOp};
 pub use base::{PerformanceResult, Source};

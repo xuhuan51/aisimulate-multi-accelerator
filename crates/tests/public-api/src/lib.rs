@@ -760,6 +760,7 @@ pub fn rebuild_replay_report_literals(
             power: report.power,
             power_diagnostics: report.power_diagnostics,
             per_request: report.per_request,
+            forward_pass_batches: report.forward_pass_batches,
             runtime_evidence: report.runtime_evidence,
         },
         PerRequestRecord {
@@ -795,6 +796,7 @@ pub fn rebuild_replay_report_literals(
             source_held_ms: record.source_held_ms,
             destination_reserved_ms: record.destination_reserved_ms,
             destination_activated_ms: record.destination_activated_ms,
+            kv_transfers: record.kv_transfers,
             decode_admit_ms: record.decode_admit_ms,
             source_released_ms: record.source_released_ms,
             decode_reused_input_tokens: record.decode_reused_input_tokens,

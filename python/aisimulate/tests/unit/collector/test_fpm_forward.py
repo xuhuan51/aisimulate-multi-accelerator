@@ -1546,6 +1546,24 @@ def test_native_aggregation_preserves_iteration_totals(tmp_path):
     assert "prefix_length" not in rows[0]
 
 
+@pytest.mark.parametrize("planned_backend", ["vllm", "sglang"])
+@pytest.mark.parametrize("observed_backend", ["vllm", "sglang"])
+def test_native_aggregation_requires_the_planned_backend(tmp_path, planned_backend, observed_backend):
+    plan, cell, cell_dir = _synthetic_plan_and_cell(tmp_path)
+    plan.backend = planned_backend
+    for path in (cell_dir / "raw").glob("*/collector-provenance.json"):
+        payload = json.loads(path.read_text())
+        payload["runtime"]["backend"] = observed_backend
+        path.write_text(json.dumps(payload))
+    if planned_backend != observed_backend:
+        with pytest.raises(ValueError, match="invalid runtime identity"):
+            aggregate_cell(plan, cell, cell_dir, expected_attempt_id="attempt")
+        return
+    rows = aggregate_cell(plan, cell, cell_dir, expected_attempt_id="attempt")
+    assert rows[0]["backend"] == planned_backend
+    assert rows[0]["latency_ms"] == pytest.approx(6.0)
+
+
 def test_native_aggregation_rejects_rank_grid_drift(tmp_path):
     plan, cell, cell_dir = _synthetic_plan_and_cell(tmp_path)
     second_rank = next((cell_dir / "raw" / "pod-1").glob("benchmark*.json"))

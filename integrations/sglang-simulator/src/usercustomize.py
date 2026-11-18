@@ -4,10 +4,17 @@
 """Early CPU-simulation compatibility for spawned SGLang workers."""
 
 import os
+import sys
+
+_resource_tracker = sys.argv == ["-c"] and any(
+    argument.startswith("from multiprocessing.resource_tracker import main;")
+    for argument in getattr(sys, "orig_argv", [])
+)
 
 if (
     os.environ.get("SGLANG_SIMULATOR_BOOTSTRAP") == "1"
     and os.environ.get("SGLANG_USE_CPU_ENGINE") == "1"
+    and not _resource_tracker
 ):
     import torch
 

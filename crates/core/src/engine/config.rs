@@ -162,12 +162,22 @@ pub enum SglangSchedulePolicy {
     Lpm,
 }
 
+/// Rank-local recurrent state in SGLang's separately reserved request-slot pool.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SglangRecurrentStateConfig {
+    pub bytes_per_request: usize,
+    pub max_requests: usize,
+}
+
 /// Serializable SGLang scheduler controls.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SglangConfig {
     /// Waiting-queue policy.
     pub schedule_policy: SglangSchedulePolicy,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recurrent_state: Option<SglangRecurrentStateConfig>,
     /// Page-aware prefill-token budget per pass.
     #[serde(default = "default_max_prefill_tokens")]
     pub max_prefill_tokens: usize,
@@ -179,6 +189,9 @@ pub struct SglangConfig {
     pub clip_max_new_tokens: usize,
     pub decode_reserved_tokens: usize,
     pub ignore_eos: bool,
+    /// Measured serial get_next_batch_to_run wall time, outside forward timing.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub scheduler_select_time_ms: f64,
     /// Multiplier applied to SGLang's adaptive output-reservation ratio.
     #[serde(default = "default_schedule_conservativeness")]
     pub schedule_conservativeness: f64,
@@ -188,11 +201,13 @@ impl Default for SglangConfig {
     fn default() -> Self {
         Self {
             schedule_policy: SglangSchedulePolicy::Fifo,
+            recurrent_state: None,
             max_prefill_tokens: default_max_prefill_tokens(),
             chunked_prefill_size: default_chunked_prefill_size(),
             clip_max_new_tokens: default_clip_max_new_tokens(),
             decode_reserved_tokens: 0,
             ignore_eos: false,
+            scheduler_select_time_ms: 0.0,
             schedule_conservativeness: default_schedule_conservativeness(),
         }
     }
@@ -212,6 +227,27 @@ impl SglangConfig {
             self.schedule_conservativeness.is_finite() && self.schedule_conservativeness >= 0.0,
             "sglang.schedule_conservativeness must be finite and non-negative"
         );
+        ensure!(
+            self.scheduler_select_time_ms.is_finite() && self.scheduler_select_time_ms >= 0.0,
+            "sglang.scheduler_select_time_ms must be finite and non-negative"
+        );
+        if let Some(state) = self.recurrent_state {
+            ensure!(
+                state.bytes_per_request > 0,
+                "sglang.recurrent_state.bytes_per_request must be positive"
+            );
+            ensure!(
+                state.max_requests > 0,
+                "sglang.recurrent_state.max_requests must be positive"
+            );
+            ensure!(
+                state
+                    .bytes_per_request
+                    .checked_mul(state.max_requests)
+                    .is_some(),
+                "sglang recurrent state pool byte size overflowed"
+            );
+        }
         Ok(())
     }
 }
@@ -829,6 +865,30 @@ impl EngineConfig {
     /// Validate rank configuration without constructing a scheduler or timing provider.
     pub fn validate(&self) -> Result<()> {
         self.validate_state_cache()?;
+        ensure!(
+            self.sglang.scheduler_select_time_ms == 0.0 || self.backend == Backend::Sglang,
+            "sglang.scheduler_select_time_ms requires backend=sglang"
+        );
+        if self.sglang.recurrent_state.is_some() {
+            ensure!(
+                self.backend == Backend::Sglang,
+                "sglang.recurrent_state requires backend=sglang"
+            );
+            ensure!(
+                !self.enable_prefix_caching,
+                "sglang.recurrent_state prefix snapshot caching is not implemented"
+            );
+            ensure!(
+                self.aic_nextn.is_none(),
+                "sglang.recurrent_state speculative state copies are not implemented"
+            );
+            ensure!(
+                self.state_cache.is_none()
+                    && self.native_host_offload.is_none()
+                    && self.g3_offload.is_none(),
+                "sglang.recurrent_state requires a dedicated HBM pool"
+            );
+        }
         ensure!(self.num_gpu_blocks > 0, "num_gpu_blocks must be positive");
         ensure!(self.block_size > 0, "block_size must be positive");
         if matches!(self.backend, Backend::Vllm | Backend::Trtllm) {
@@ -1949,6 +2009,60 @@ mod tests {
             },
             ..EngineConfig::default()
         };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn scheduler_select_time_validates_and_round_trips() {
+        let mut config = EngineConfig::for_backend(Backend::Sglang);
+        let legacy = serde_json::to_value(&config).unwrap();
+        assert!(legacy["sglang"].get("scheduler_select_time_ms").is_none());
+        config.sglang.scheduler_select_time_ms = 2.0;
+        config.validate().unwrap();
+        let decoded: EngineConfig =
+            serde_json::from_value(serde_json::to_value(&config).unwrap()).unwrap();
+        assert_eq!(decoded.sglang.scheduler_select_time_ms, 2.0);
+        for value in [-1.0, f64::INFINITY, f64::NAN] {
+            config.sglang.scheduler_select_time_ms = value;
+            assert!(config.validate().is_err());
+        }
+        config.sglang.scheduler_select_time_ms = 2.0;
+        config.backend = Backend::Vllm;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn sglang_recurrent_state_requires_valid_dedicated_pool_geometry() {
+        let mut config = EngineConfig {
+            backend: Backend::Sglang,
+            enable_prefix_caching: false,
+            ..EngineConfig::default()
+        };
+        config.sglang.recurrent_state = Some(SglangRecurrentStateConfig {
+            bytes_per_request: 48_015_360,
+            max_requests: 32,
+        });
+        config.validate().unwrap();
+        let encoded = serde_json::to_value(&config).unwrap();
+        let decoded: EngineConfig = serde_json::from_value(encoded.clone()).unwrap();
+        assert_eq!(
+            decoded.sglang.recurrent_state,
+            config.sglang.recurrent_state
+        );
+        for invalid in [
+            serde_json::json!({"bytes_per_request": 0, "max_requests": 1}),
+            serde_json::json!({"bytes_per_request": 1, "max_requests": 0}),
+            serde_json::json!({"bytes_per_request": usize::MAX, "max_requests": 2}),
+        ] {
+            let mut value = encoded.clone();
+            value["sglang"]["recurrent_state"] = invalid;
+            let invalid: EngineConfig = serde_json::from_value(value).unwrap();
+            assert!(invalid.validate().is_err());
+        }
+        config.enable_prefix_caching = true;
+        assert!(config.validate().is_err());
+        config.enable_prefix_caching = false;
+        config.backend = Backend::Vllm;
         assert!(config.validate().is_err());
     }
 }

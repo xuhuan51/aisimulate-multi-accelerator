@@ -341,6 +341,7 @@ def _validate_collector_provenance(
     *,
     expected_plan_sha256: str | None,
     expected_attempt_id: str | None,
+    expected_backend: str,
 ) -> tuple[str, str]:
     pod_names = set()
     for path, _payload in rank_payloads:
@@ -380,7 +381,7 @@ def _validate_collector_provenance(
         runtime = payload.get("runtime")
         if (
             not isinstance(runtime, dict)
-            or runtime.get("backend") != "vllm"
+            or runtime.get("backend") != expected_backend
             or not isinstance(runtime.get("backend_version"), str)
             or not runtime["backend_version"]
         ):
@@ -494,9 +495,12 @@ def validate_native_collection(
     *,
     expected_plan_sha256: str | None = None,
     expected_attempt_id: str | None = None,
+    expected_backend: str = "vllm",
 ) -> NativeCollection:
     """Validate a complete native rank set and return synchronized measurements."""
 
+    if expected_backend not in {"vllm", "sglang"}:
+        raise ValueError(f"unsupported native FPM backend: {expected_backend!r}")
     rank_payloads = _rank_artifacts(raw_root)
     if not rank_payloads:
         raise ValueError(f"integrated runtime emitted no benchmark results for {cell.cell_id}")
@@ -506,6 +510,7 @@ def validate_native_collection(
         rank_payloads,
         expected_plan_sha256=expected_plan_sha256,
         expected_attempt_id=expected_attempt_id,
+        expected_backend=expected_backend,
     )
     expected_ranks = list(range(cell.topology.dp))
     seen_ranks: set[int] = set()

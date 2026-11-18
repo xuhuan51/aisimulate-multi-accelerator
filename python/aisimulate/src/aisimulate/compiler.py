@@ -641,6 +641,10 @@ def _worker_engine_args(
     }
     if worker.scheduler.decode_reserved_tokens:
         sglang["decode_reserved_tokens"] = worker.scheduler.decode_reserved_tokens
+    if worker.scheduler.scheduler_select_time_ms:
+        sglang["scheduler_select_time_ms"] = worker.scheduler.scheduler_select_time_ms
+    if cache.recurrent_state is not None:
+        sglang["recurrent_state"] = cache.recurrent_state.model_dump(mode="json")
     if sglang:
         payload["sglang"] = sglang
     if engine.speculation is not None:

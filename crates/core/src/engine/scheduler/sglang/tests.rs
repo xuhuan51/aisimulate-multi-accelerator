@@ -3353,6 +3353,45 @@ mod forward_pass_metrics {
 }
 
 #[test]
+fn prefill_provider_prediction_receives_exact_page_128_geometry() {
+    use std::sync::{Arc, Mutex};
+    struct ExactTiming(Arc<Mutex<Vec<Vec<(usize, usize)>>>>);
+    impl crate::engine::TimingModel for ExactTiming {
+        fn predict_prefill_ms(&self, _: usize, _: usize, _: usize) -> anyhow::Result<f64> {
+            panic!("exact-batch provider must receive actual per-request geometry")
+        }
+        fn predict_prefill_batch_ms(&self, requests: &[(usize, usize)]) -> anyhow::Result<f64> {
+            self.0.lock().unwrap().push(requests.to_vec());
+            Ok(1.0)
+        }
+        fn predict_decode_ms(&self, _: usize, _: usize, _: usize, _: usize) -> anyhow::Result<f64> {
+            Ok(1.0)
+        }
+    }
+    let observed = Arc::new(Mutex::new(Vec::new()));
+    let mut args = test_args(512, 128, 8192);
+    args.perf_model = crate::engine::common::perf_model::PerfModel::External {
+        timing: Arc::new(ExactTiming(Arc::clone(&observed))),
+    }
+    .into();
+    let mut core = SglangCore::new(args);
+    core.receive(direct_request((0..256).collect(), 0));
+    core.try_execute_pass_internal(None, 0.0).unwrap();
+    core.receive(direct_request((0..384).collect(), 1));
+    core.receive(direct_request((1000..1128).collect(), 1));
+    core.receive(direct_request((2000..9936).collect(), 1));
+    let pass = core.try_execute_pass_internal(None, 1.0).unwrap();
+    assert_eq!(
+        *observed.lock().unwrap(),
+        vec![vec![(256, 0)], vec![(128, 256), (128, 0), (7936, 0)]]
+    );
+    let fpm = pass.fpm.unwrap();
+    assert_eq!(fpm.num_prefill_requests, 3);
+    assert_eq!(fpm.sum_prefill_tokens, 8192);
+    assert_eq!(fpm.sum_prefill_kv_tokens, 256);
+}
+
+#[test]
 fn prefill_provider_validation_receives_actual_chunk_geometry() {
     use std::sync::{Arc, Mutex};
     struct GeometryTiming(Arc<Mutex<Vec<Vec<(usize, usize)>>>>);

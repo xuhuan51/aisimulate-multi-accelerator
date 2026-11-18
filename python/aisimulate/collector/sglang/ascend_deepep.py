@@ -15,6 +15,19 @@ import time
 import traceback
 from pathlib import Path
 
+LEGACY_REVISION = "baa9befa381511cd4d56f83980951e5a45fffc6d"
+NATIVE_REVISION = "76f9213a411018547f4fd6a75f36feaa4d6bed58"
+
+
+def validate_runtime(revision, phase=None):
+    if revision not in {LEGACY_REVISION, NATIVE_REVISION}:
+        raise ValueError("Reaudit DeepEP source for another framework revision")
+    # Native76 deepep.py:700-935 retains the INT8 low-latency entry,
+    # receive-hook completion and BF16 combine contracts used below. Its Normal
+    # path needs an independent payload-precision audit before this INT8 oracle.
+    if revision == NATIVE_REVISION and phase not in {None, "low_latency"}:
+        raise ValueError("Native76 Normal dispatch requires a separate payload-precision audit")
+
 
 def checked_dispatch_precision(output):
     precision = {
@@ -77,11 +90,12 @@ def main():
 
     init_npu_backend()
     torch.npu.set_device(local_rank)
-    torch.set_num_threads(4)
+    # Native76 model_executor/model_runner.py:1191-1195 configures one CPU
+    # thread for each model worker, matching the observed16-rank service.
+    torch.set_num_threads(1)
     torch.set_grad_enabled(False)
     revision = subprocess.check_output(["git", "-C", "/sgl-workspace/sglang", "rev-parse", "HEAD"], text=True).strip()
-    if revision != "baa9befa381511cd4d56f83980951e5a45fffc6d":
-        raise ValueError("Reaudit DeepEP source for another framework revision")
+    validate_runtime(revision)
     distributed.init_process_group(
         "hccl", timeout=datetime.timedelta(seconds=300), pg_options=get_torch_distributed_pg_options()
     )
@@ -147,6 +161,7 @@ def main():
             "deep_ep": importlib.metadata.version("deep_ep"),
             "driver_version_info": Path("/usr/local/Ascend/driver/version.info").read_text(),
             "cpu_affinity": sorted(os.sched_getaffinity(0)),
+            "torch_num_threads": torch.get_num_threads(),
         },
         group=control,
     )
@@ -175,6 +190,8 @@ def main():
         distributed.barrier(group=control)
 
     def collect(index, case):
+        collection_started = time.monotonic()
+        validate_runtime(revision, case["phase"])
         if rank == 0:
             print(json.dumps({"plan_index": index, "stage": "initial_dispatch"}), flush=True)
         tokens = case["tokens_per_rank"]
@@ -287,6 +304,7 @@ def main():
         del combined
         measured = []
         for operation, invoke in (("dispatch", dispatch), ("combine", combine)):
+            operation_started = time.monotonic()
             if rank == 0:
                 print(json.dumps({"plan_index": index, "operation": operation, "stage": "warmup"}), flush=True)
             barrier()
@@ -297,6 +315,7 @@ def main():
             torch.npu.synchronize()
             barrier()
             graph, outputs = None, None
+            capture_wall_seconds = 0.0
 
             def batch():
                 return [invoke()]
@@ -306,6 +325,7 @@ def main():
                     print(json.dumps({"plan_index": index, "operation": operation, "stage": "capture"}), flush=True)
                 if case["phase"] != "low_latency":
                     raise ValueError("Normal dispatch graph execution is not a serving branch")
+                capture_started = time.monotonic()
                 graph = torch.npu.NPUGraph()
                 captured_graphs.append(graph)
                 with torch.npu.graph(graph):
@@ -316,6 +336,7 @@ def main():
                     torch.npu.synchronize()
                     barrier()
                 torch.npu.synchronize()
+                capture_wall_seconds = time.monotonic() - capture_started
 
             def execute():
                 if graph is None:
@@ -352,6 +373,7 @@ def main():
             if rank == 0:
                 print(json.dumps({"plan_index": index, "operation": operation, "stage": "timing"}), flush=True)
             samples, wall = [], []
+            sampling_started = time.monotonic()
             for _ in range(protocol["repeats"]):
                 elapsed, wall_elapsed = 0.0, 0.0
                 for _ in range(protocol["iterations"]):
@@ -367,6 +389,7 @@ def main():
                     del actual
                 samples.append(elapsed / protocol["iterations"])
                 wall.append(wall_elapsed / protocol["iterations"])
+            sampling_wall_seconds = time.monotonic() - sampling_started
             checks.append(verify())
             rank_results = [None] * world
             distributed.all_gather_object(
@@ -377,6 +400,9 @@ def main():
                     "wall_samples_ms": wall,
                     "checks": checks,
                     "expected_counts": expected_counts,
+                    "collection_wall_seconds": time.monotonic() - operation_started,
+                    "capture_and_replay_warmup_wall_seconds": capture_wall_seconds,
+                    "sampling_wall_seconds": sampling_wall_seconds,
                     "received_shape": list(first.hidden_states.shape),
                     **dispatch_precision,
                     **combine_precision,
@@ -399,6 +425,7 @@ def main():
             {
                 **case,
                 "plan_index": index,
+                "collection_wall_seconds": time.monotonic() - collection_started,
                 "measurements": measured,
                 "kernel_source": type(dispatcher).__module__ + "." + type(dispatcher).__name__,
             }

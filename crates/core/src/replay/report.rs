@@ -751,6 +751,7 @@ struct PerRequestDetail {
     source_held_ms: Option<f64>,
     destination_reserved_ms: Option<f64>,
     destination_activated_ms: Option<f64>,
+    kv_transfers: Vec<PerRequestKvTransferRecord>,
     decode_admit_ms: Option<f64>,
     source_released_ms: Option<f64>,
     decode_reused_input_tokens: Option<usize>,
@@ -816,6 +817,16 @@ pub struct PerRequestAdmissionRecord {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub host_reused_input_tokens: Option<usize>,
     pub is_readmission: bool,
+}
+
+/// One replay-owned KV chunk transfer on the same virtual clock as request timestamps.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct PerRequestKvTransferRecord {
+    pub chunk_index: usize,
+    pub started_at_ms: f64,
+    pub scheduled_end_at_ms: f64,
+    /// Absent when the request terminates before the transfer completion is applied.
+    pub completed_at_ms: Option<f64>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize)]
@@ -889,6 +900,8 @@ pub struct PerRequestRecord {
     pub source_held_ms: Option<f64>,
     pub destination_reserved_ms: Option<f64>,
     pub destination_activated_ms: Option<f64>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub kv_transfers: Vec<PerRequestKvTransferRecord>,
     pub decode_admit_ms: Option<f64>,
     pub source_released_ms: Option<f64>,
     pub decode_reused_input_tokens: Option<usize>,
@@ -1543,6 +1556,35 @@ impl TraceCollector {
         }
     }
 
+    pub(crate) fn on_kv_transfer_started(
+        &mut self,
+        uuid: Uuid,
+        chunk_index: usize,
+        at_ms: f64,
+        delay_ms: f64,
+    ) {
+        if let Some(detail) = self.detail_mut(uuid) {
+            detail.kv_transfers.push(PerRequestKvTransferRecord {
+                chunk_index,
+                started_at_ms: at_ms,
+                scheduled_end_at_ms: at_ms + delay_ms,
+                completed_at_ms: None,
+            });
+        }
+    }
+
+    pub(crate) fn on_kv_transfer_completed(&mut self, uuid: Uuid, chunk_index: usize, at_ms: f64) {
+        if let Some(detail) = self.detail_mut(uuid)
+            && let Some(transfer) = detail
+                .kv_transfers
+                .iter_mut()
+                .rev()
+                .find(|transfer| transfer.chunk_index == chunk_index)
+        {
+            transfer.completed_at_ms.get_or_insert(at_ms);
+        }
+    }
+
     pub(crate) fn on_source_released(&mut self, uuid: Uuid, at_ms: f64) {
         if let Some(detail) = self.detail_mut(uuid) {
             detail.source_released_ms.get_or_insert(at_ms);
@@ -2136,6 +2178,7 @@ impl TraceCollector {
                 source_held_ms: detail.source_held_ms,
                 destination_reserved_ms: detail.destination_reserved_ms,
                 destination_activated_ms: detail.destination_activated_ms,
+                kv_transfers: detail.kv_transfers.clone(),
                 decode_admit_ms: detail.decode_admit_ms,
                 source_released_ms: detail.source_released_ms,
                 decode_reused_input_tokens: detail.decode_reused_input_tokens,
@@ -2190,6 +2233,13 @@ impl TraceCollector {
                 }
                 for admission in &mut record.admission_history {
                     admission.at_ms -= origin;
+                }
+                for transfer in &mut record.kv_transfers {
+                    transfer.started_at_ms -= origin;
+                    transfer.scheduled_end_at_ms -= origin;
+                    if let Some(time) = &mut transfer.completed_at_ms {
+                        *time -= origin;
+                    }
                 }
             }
         }
@@ -2399,6 +2449,8 @@ mod tests {
         collector.on_prefill_admit(profile, 115.0, 64, None);
         collector.on_source_held(profile, 120.0);
         collector.on_destination_reserved(profile, 122.0);
+        collector.on_kv_transfer_started(profile, 0, 122.0, 2.0);
+        collector.on_kv_transfer_completed(profile, 0, 124.0);
         collector.on_destination_activated(profile, 125.0);
         collector.on_decode_admit(profile, 126.0, 64, None);
         collector.on_source_released(profile, 127.0);
@@ -2438,6 +2490,15 @@ mod tests {
         assert_eq!(record.last_token_ms, Some(40.0));
         assert_eq!(record.source_held_ms, Some(20.0));
         assert_eq!(record.destination_reserved_ms, Some(22.0));
+        assert_eq!(
+            record.kv_transfers,
+            vec![PerRequestKvTransferRecord {
+                chunk_index: 0,
+                started_at_ms: 22.0,
+                scheduled_end_at_ms: 24.0,
+                completed_at_ms: Some(24.0),
+            }]
+        );
         assert_eq!(record.destination_activated_ms, Some(25.0));
         assert_eq!(record.decode_admit_ms, Some(26.0));
         assert_eq!(record.source_released_ms, Some(27.0));
@@ -3004,6 +3065,10 @@ mod tests {
         collector.on_prefill_admit(uuid, 5.0, 30, None);
         collector.on_source_held(uuid, 10.0);
         collector.on_destination_reserved(uuid, 12.0);
+        collector.on_kv_transfer_started(uuid, 0, 12.0, 6.0);
+        collector.on_kv_transfer_completed(uuid, 0, 18.0);
+        collector.on_kv_transfer_started(uuid, 1, 18.0, 0.0);
+        collector.on_kv_transfer_completed(uuid, 1, 18.0);
         collector.on_destination_activated(uuid, 20.0);
         collector.on_source_released(uuid, 21.0);
         collector.on_decode_route_overlap(uuid, 32);
@@ -3038,6 +3103,12 @@ mod tests {
         assert_eq!(rec.prefill_admit_ms, Some(5.0));
         assert_eq!(rec.source_held_ms, Some(10.0));
         assert_eq!(rec.destination_reserved_ms, Some(12.0));
+        assert_eq!(rec.kv_transfers.len(), 2);
+        assert_eq!(rec.kv_transfers[0].started_at_ms, 12.0);
+        assert_eq!(rec.kv_transfers[0].scheduled_end_at_ms, 18.0);
+        assert_eq!(rec.kv_transfers[0].completed_at_ms, Some(18.0));
+        assert_eq!(rec.kv_transfers[1].started_at_ms, 18.0);
+        assert_eq!(rec.kv_transfers[1].completed_at_ms, Some(18.0));
         assert_eq!(rec.destination_activated_ms, Some(20.0));
         assert_eq!(rec.source_released_ms, Some(21.0));
         assert_eq!(rec.decode_admit_ms, Some(25.0));
@@ -3121,6 +3192,8 @@ mod tests {
             }),
         );
         collector.on_decode_assigned(uuid, 0);
+        collector.on_kv_transfer_started(uuid, 0, 6.0, 4.0);
+        collector.on_kv_transfer_completed(uuid, 0, 10.0);
         collector.on_token(uuid, 50.0);
         collector.on_token(uuid, 60.0);
         collector.on_terminal(uuid, 60.0, ReplayTerminalStatus::Completed);

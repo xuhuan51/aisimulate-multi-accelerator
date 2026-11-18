@@ -19,6 +19,22 @@ def install_load_utils_stub() -> None:
     module._preload_cuda_library = lambda *args, **kwargs: None
 
     if os.environ.get("SGLANG_USE_CPU_ENGINE") == "1":
+        import torch
+
+        # Qwen3.5 binds these optional ops while importing its model class.
+        # Forward execution is replaced by the predictor in CPU simulation.
+        for name in (
+            "fused_sigmoid_mul_cpu",
+            "fused_qk_gemma_rmsnorm_cpu",
+            "fused_qk_gemma_rmsnorm_with_gate_cpu",
+            "fused_qkvzba_split_reshape_cat_contiguous_cpu",
+        ):
+            if not hasattr(torch.ops.sgl_kernel, name):
+                def unavailable_model_kernel(*args, _name=name, **kwargs):
+                    raise RuntimeError(f"{_name} execution is outside simulation scope")
+
+                setattr(torch.ops.sgl_kernel, name, unavailable_model_kernel)
+
         # NPU wheels omit CUDA sgl-kernel. A supplied Python interface can be
         # older than the serving source and lack this optional CPU HiCache
         # transfer export. HiCache is disabled in this simulation scope.

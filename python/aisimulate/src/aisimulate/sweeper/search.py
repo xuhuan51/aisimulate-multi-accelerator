@@ -1822,7 +1822,10 @@ class Sweeper:
                 if on_round is not None:
                     on_round(round_no, list(candidates))
                 exhausted = getattr(sampler, "exhausted", False)
-                if unique_this_round < round_target or exhausted:
+                # Bounded searches count rejected suggestions too. A round of
+                # failures must not discard the branch's remaining trial budget.
+                stalled = unique_this_round < round_target and (state.budget is None or trial_attempts == 0)
+                if stalled or exhausted:
                     state.stalled = True
                     if exhausted and state.budget is not None:
                         unused = state.budget - state.attempts

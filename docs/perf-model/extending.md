@@ -193,6 +193,7 @@ head and the transposed key weight. Contiguous substitutes are rejected.
 | `key.role` | `query_nope`, `output_prefill`, or `output_decode`; each selects its exact measured kernel and stride contract. |
 | `key.local_heads` | Per-rank attention heads, currently 4/8/16. |
 | `key.execution_mode` | Exact `eager` or `graph` execution. |
+| `key.active_experts` | Optional active-expert count for an explicitly supplied workload. Interpolates the single-expert and balanced measured curves at the same received-token count. Omission preserves the synthetic distribution curve. |
 | `token_multiple` | Round physical input rows up to this multiple; use 1 for unpadded prefill and the configured capture multiple for decode. |
 
 Only measured token brackets interpolate. The declared decode collection axis
@@ -237,6 +238,25 @@ one observation with two explicit profile rows. Zero received rows have no
 qualified chain timing yet; nonzero out-of-range requests fail. Synthetic
 distribution curves enable functional modeling but do not qualify routing skew,
 MoE communication overlap, resident runtime overhead or whole-forward accuracy.
+
+With `key.distribution = "balanced"`, an explicit `key.active_experts` selects
+an active-weight working-set estimate. For fixed receive volume, the
+single-expert curve supplies the fixed component and the balanced curve supplies
+the endpoint with `min(received_tokens, local_experts)` active experts. Intermediate
+counts linearly interpolate between these endpoints in Rust and report an
+estimated source. Counts must be positive and cannot exceed either received
+tokens or resident experts. Both curves must have matching table provenance.
+The resident weight inventory continues to include every local expert.
+
+The operation JSON accepts an omitted active count for existing callers.
+EngineSpec schema 37 gates the added positional key field in compiled payloads.
+Schema 38 additionally carries the optional Decode routing workload and the
+bound request-count vector used by synchronized attention DP.
+Ordinary model composition continues to use its supplied routing assumptions.
+Workload-aware callers must obtain active counts from their routing model or
+qualified observations. Per-layer and per-rank distribution binding requires
+separate whole-model validation. Independent Decode distribution measurements
+are recorded under `benchmarks/evidence/`.
 
 The `AscendVector` primitive uses `vector/sglang/<version>/ascend_vector_perf.parquet`.
 Its versioned boundary contract covers ModelSlim RMSNorm with bias, fused Q/K

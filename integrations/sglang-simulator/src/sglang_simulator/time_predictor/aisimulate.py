@@ -1,6 +1,3 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 """Whole-forward AISimulate estimates, isolated from the SGLang Python environment."""
 
 import atexit
@@ -83,9 +80,11 @@ def make_perf_config(model, hardware, scheduler, overrides):
         "moe_tp_size": scheduler.moe_tp_size,
         "moe_ep_size": scheduler.ep_size,
         "pp": scheduler.pp_size,
-        "worker_type": "aggregated",
+        "worker_type": getattr(scheduler, "worker_type", "aggregated"),
         "nextn": 0,
     }
+    if topology["worker_type"] not in {"aggregated", "prefill", "decode"}:
+        raise ValueError(f"Unsupported AISimulate worker_type: {topology['worker_type']}")
     for key, value in topology.items():
         if key in overrides and overrides[key] != value:
             raise ValueError(

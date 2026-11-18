@@ -58,7 +58,13 @@ def validated_rows(campaigns, runtime_identity):
         setup = current_protocol["serving_setup"]
         environment = current_protocol["runtime_environment"]
         options = current_protocol["hccl_group_options"]
-        if not isinstance(environment, dict) or environment.get("TASK_QUEUE_ENABLE") not in {"0", "1"}:
+        # None records an unset option. Its default belongs to the immutable
+        # runtime identity, and must stay distinct from explicitly setting0/1.
+        if (
+            not isinstance(environment, dict)
+            or "TASK_QUEUE_ENABLE" not in environment
+            or environment["TASK_QUEUE_ENABLE"] not in {None, "0", "1"}
+        ):
             raise ValueError("Missing actual serving task-queue policy")
         if not isinstance(options, dict) or not isinstance(options.get("hccl_buffer_size"), int):
             raise ValueError("Missing resolved SGLang HCCL group options")

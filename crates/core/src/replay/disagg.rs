@@ -364,6 +364,14 @@ impl DisaggFlowState {
         now_ms: f64,
         collector: &mut TraceCollector,
     ) -> Result<()> {
+        let completed_chunk = match fact {
+            HandoffFact::TransferCompleted { chunk_index, .. }
+                if self.state(uuid)?.terminal_status().is_none() =>
+            {
+                Some(chunk_index)
+            }
+            _ => None,
+        };
         let terminal_status = match fact {
             HandoffFact::Failed { .. } | HandoffFact::TimedOut { .. } => {
                 Some(ReplayTerminalStatus::Failed)
@@ -377,6 +385,9 @@ impl DisaggFlowState {
         }
         let actions = self.state_mut(uuid)?.coordinator.on_fact(fact)?;
         self.action_queues.enqueue_all(uuid, actions);
+        if let Some(chunk_index) = completed_chunk {
+            collector.on_kv_transfer_completed(uuid, chunk_index, now_ms);
+        }
         Ok(())
     }
 
@@ -753,12 +764,14 @@ impl DisaggFlowState {
             if pending.replace(chunk_index).is_some() {
                 bail!("handoff already has a scheduled chunk transfer");
             }
+            collector.on_kv_transfer_started(uuid, chunk_index, now_ms, delay_ms);
             return Ok(Some(ScheduledTransfer {
                 at_ms: now_ms + delay_ms,
                 handoff_id,
                 chunk_index,
             }));
         }
+        collector.on_kv_transfer_started(uuid, chunk_index, now_ms, 0.0);
         self.apply_handoff_fact(
             uuid,
             HandoffFact::TransferCompleted {
@@ -886,15 +899,17 @@ impl DisaggFlowState {
             ReplayTerminalStatus::Completed
         };
         collector.on_terminal(signal.uuid, now_ms, terminal_status);
-        self.requests
-            .get_mut(&signal.uuid)
-            .ok_or_else(|| {
-                anyhow!(
-                    "offline disagg replay missing request state for {}",
-                    signal.uuid
-                )
-            })?
-            .set_terminal_status(terminal_status);
+        let state = self.requests.get_mut(&signal.uuid).ok_or_else(|| {
+            anyhow!(
+                "offline disagg replay missing request state for {}",
+                signal.uuid
+            )
+        })?;
+        // A terminal rejection can overtake the gateway's buffered prebuilt
+        // first token. That token must not be delivered when source cleanup
+        // later completes the handoff and retires the request state.
+        state.pending_client_outputs.clear();
+        state.set_terminal_status(terminal_status);
         Ok(())
     }
 

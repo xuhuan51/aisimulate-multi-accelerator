@@ -277,6 +277,14 @@ impl GroupShape {
                 tokens
             }
             Op::AscendMoeChain(experts) => {
+                if experts.decode_workload.is_some() {
+                    if self.decode && self.graph && !self.mixed {
+                        experts.profile_request_counts = Some(self.request_counts.clone());
+                    } else {
+                        experts.decode_workload = None;
+                        experts.profile_request_counts = None;
+                    }
+                }
                 let dp = self.local_tokens.len() as u32;
                 if experts.token_numerator % dp != 0 {
                     return Err(invalid("invalid Ascend DP expert routing multiplier"));

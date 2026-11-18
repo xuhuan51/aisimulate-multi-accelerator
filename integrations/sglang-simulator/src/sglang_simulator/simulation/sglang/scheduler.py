@@ -1,6 +1,3 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 import heapq
 import importlib
 import json
@@ -352,9 +349,18 @@ class C_SchedulerHook(BaseHook):
             logger.debug(
                 f"Overlap schedule simulation mode: {C_SchedulerHook.OVERLAP_SCHEDULE}."
             )
+            pd_context = getattr(ConfigManager, "_native_pd_context", None)
+            if pd_context is not None:
+                from sglang_simulator.simulation.sglang.pd_transfer import install_native_pd_backend
+
+                install_native_pd_backend(pd_context)
             original_init(self, *args, **kwargs)
             if get_client() is not None:
                 get_client().scheduler = self
+            if pd_context is not None:
+                from sglang_simulator.simulation.sglang.pd_transfer import observe_native_pd_outputs
+
+                observe_native_pd_outputs(self, pd_context["role"])
             validate_required_class_hooks()
             if original_recv_requests is None and not is_class_hook_matched(
                 C_SchedulerRequestReceiver
@@ -395,8 +401,15 @@ class C_SchedulerHook(BaseHook):
                     )
 
                     p = get_parallel()
+                    from sglang_simulator.simulation.sglang.runtime_adapter import (
+                        recurrent_state_pool_info,
+                        recurrent_state_transfer_info,
+                    )
+
                     info = dict(
                         SGLangRuntimeAdapter.validate(),
+                        recurrent_state_pool=recurrent_state_pool_info(self.req_to_token_pool),
+                        recurrent_state_transfer=recurrent_state_transfer_info(self.req_to_token_pool),
                         tp_rank=p.tp_rank,
                         attn_dp_rank=p.attn_dp_rank,
                         attn_tp_rank=p.attn_tp_rank,
@@ -404,6 +417,7 @@ class C_SchedulerHook(BaseHook):
                         attn_tp_group=p.attn_tp_group.ranks,
                         ep_group=p.moe_ep_group.ranks,
                         max_total_tokens=self.max_total_num_tokens,
+                        max_running_requests_per_dp=self.max_running_requests,
                     )
                     get_client().coordinator.register(
                         p.tp_rank, info, model, hw, sched_config

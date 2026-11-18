@@ -12,7 +12,9 @@ use crate::common::enums::{
 };
 use crate::config::PerfSource;
 use crate::operators::Op;
-use crate::operators::fpm_forward::{FpmForwardOp, FpmInterpolation, FpmPhase};
+#[cfg(test)]
+use crate::operators::fpm_forward::FpmInterpolation;
+use crate::operators::fpm_forward::{FpmForwardOp, FpmPhase};
 use crate::perf_database::moe::MoeKernel;
 use crate::perf_database::{PerfDatabase, kernel_source_ok, parquet_loader::PerfReader};
 
@@ -53,7 +55,7 @@ pub(super) fn validate_fpm(db: &PerfDatabase, fpm: &FpmForwardOp) -> Result<(), 
     let cell = db
         .fpm_forward
         .select_cell(&fpm.match_identity, &fpm.model_path, fpm.dcp_size)?;
-    if fpm.interpolation == FpmInterpolation::Direct
+    if fpm.interpolation.is_direct()
         && match fpm.phase {
             FpmPhase::Prefill => cell.direct_prefill.is_empty(),
             FpmPhase::Decode => cell.direct_decode.is_empty(),
@@ -611,6 +613,7 @@ impl Availability<'_> {
             AscendBmm(bmm) => bmm.ensure_ready(self.db),
             AscendVector(vector) => vector.ensure_ready(self.db),
             AscendQwen(qwen) => qwen.ensure_ready(self.db),
+            AscendNormalTransport(transport) => transport.ensure_ready(self.db),
             AscendMoeChain(moe) => moe.ensure_ready(self.db),
             AscendMoeTensor(moe) => moe.ensure_ready(self.db),
             AscendDeepEp(transport) => transport.ensure_ready(self.db),

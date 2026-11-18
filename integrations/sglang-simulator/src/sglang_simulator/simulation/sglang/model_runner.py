@@ -1,6 +1,3 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 import torch
 
 from sglang_simulator.hook import BaseHook
@@ -52,6 +49,15 @@ class C_ModelRunnerHook(BaseHook):
 
             install_model_runner(target)
             return
+
+        original_transfer_init = getattr(target, "init_shared_mooncake_transfer_engine", None)
+        if original_transfer_init is not None:
+            def initialize_transfer(self):
+                # Paired CPU PD uses the shared logical transfer service.
+                if getattr(ConfigManager, "_native_pd_context", None) is None:
+                    return original_transfer_init(self)
+
+            target.init_shared_mooncake_transfer_engine = initialize_transfer
 
         def override_load_model(self):
             from sglang.srt.model_executor.model_runner import (

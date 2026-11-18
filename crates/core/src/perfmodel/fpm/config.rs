@@ -330,7 +330,7 @@ impl ForwardPassPerfModelConfig {
             .fpm_interpolation
             .method
             .resolve(registered)?;
-        if self.estimator_config.fpm_interpolation.method == super::FpmInterpolationMethod::Direct
+        if self.estimator_config.fpm_interpolation.method.is_direct()
             && self.database_mode != DatabaseMode::Silicon
         {
             return Err(invalid_config(
@@ -385,11 +385,10 @@ impl ForwardPassPerfModelConfig {
         if self.estimator_config.fpm_interpolation.collect_coverage
             && (self.estimation_mode != EstimationMode::FpmInterpolation
                 || self.fallback_policy != ForwardPassFallbackPolicy::Deny
-                || self.estimator_config.fpm_interpolation.method
-                    != super::FpmInterpolationMethod::Direct)
+                || !self.estimator_config.fpm_interpolation.method.is_direct())
         {
             return Err(invalid_config(
-                "collect_coverage requires estimation_mode='fpm_interpolation', method='direct', and fallback_policy='deny'",
+                "collect_coverage requires estimation_mode='fpm_interpolation', a direct method, and fallback_policy='deny'",
             ));
         }
         if self.model.trim().is_empty() {
@@ -628,7 +627,7 @@ mod tests {
 
     #[test]
     fn interpolation_controls_are_typed_and_resolved_before_candidates() {
-        use super::super::FpmInterpolationMethod::{Auto, Direct, Sol};
+        use super::super::FpmInterpolationMethod::{Auto, Direct, DirectSimplex, Sol};
         for (requested, registered, expected) in [
             (Auto, None, Sol),
             (Auto, Some(true), Sol),
@@ -637,10 +636,13 @@ mod tests {
             (Sol, Some(true), Sol),
             (Direct, Some(true), Direct),
             (Direct, Some(false), Direct),
+            (DirectSimplex, Some(true), DirectSimplex),
+            (DirectSimplex, Some(false), DirectSimplex),
         ] {
             assert_eq!(requested.resolve(registered).unwrap(), expected);
         }
         assert!(Direct.resolve(None).is_err());
+        assert!(DirectSimplex.resolve(None).is_err());
         assert!(Sol.resolve(Some(false)).is_err());
         let cfg = config(serde_json::json!({})).resolve().unwrap();
         assert_eq!(cfg.estimator_config.fpm_interpolation.method, Sol);
@@ -673,6 +675,13 @@ mod tests {
         let reloaded: ForwardPassPerfModelConfig =
             serde_json::from_value(serde_json::to_value(&cfg).unwrap()).unwrap();
         assert_eq!(cfg, reloaded);
+        let mut simplex = cfg.clone();
+        simplex.estimator_config.fpm_interpolation.method =
+            super::super::FpmInterpolationMethod::DirectSimplex;
+        simplex.validate().unwrap();
+        let saved: ForwardPassPerfModelConfig =
+            serde_json::from_str(&serde_json::to_string(&simplex).unwrap()).unwrap();
+        assert_eq!(saved, simplex);
         for mode in [
             EstimationMode::Auto,
             EstimationMode::OpLevel,

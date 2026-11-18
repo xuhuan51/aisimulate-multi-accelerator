@@ -158,6 +158,7 @@ pub(crate) enum KvTransferTimingMode {
 #[derive(Debug, Clone, Default)]
 pub(crate) struct SglangArgs {
     pub schedule_policy: Option<String>,
+    pub recurrent_state: Option<crate::engine::config::SglangRecurrentStateConfig>,
     pub page_size: Option<usize>,
     pub max_prefill_tokens: Option<usize>,
     pub chunked_prefill_size: Option<usize>,

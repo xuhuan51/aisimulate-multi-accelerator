@@ -810,7 +810,59 @@ fn phase_evidence_from_entries(
     ValidatedTimingPhase::from_operations(operations)
 }
 
+fn exact_prefill_metrics(requests: &[(usize, usize)]) -> Result<crate::ForwardPassMetrics> {
+    let mut scheduled = crate::ScheduledRequestMetrics::default();
+    for &(new_tokens, prefix) in requests.iter().filter(|&&(new_tokens, _)| new_tokens > 0) {
+        scheduled.num_prefill_requests = scheduled
+            .num_prefill_requests
+            .checked_add(1)
+            .context("prefill batch size overflow")?;
+        scheduled.sum_prefill_tokens = scheduled
+            .sum_prefill_tokens
+            .checked_add(checked_u32(new_tokens, "prefill new tokens")?)
+            .context("prefill new token total overflow")?;
+        scheduled.sum_prefill_kv_tokens = scheduled
+            .sum_prefill_kv_tokens
+            .checked_add(checked_u32(prefix, "prefill cached prefix")?)
+            .context("prefill prefix token total overflow")?;
+    }
+    Ok(crate::ForwardPassMetrics {
+        scheduled_requests: scheduled,
+        ..Default::default()
+    })
+}
+
 impl TimingModel for AicTimingModel {
+    fn predict_prefill_batch_ms(&self, requests: &[(usize, usize)]) -> Result<f64> {
+        if !self.use_fpm_decode_totals {
+            let (batch_size, mean_input, mean_prefix) =
+                crate::engine::mean_prefill_geometry(requests)?;
+            return self.predict_prefill_ms(batch_size, mean_input, mean_prefix);
+        }
+        let metrics = exact_prefill_metrics(requests)?;
+        let scheduled = &metrics.scheduled_requests;
+        if scheduled.num_prefill_requests == 0 {
+            return Ok(0.0);
+        }
+        if let Some(model) = &self.diagnostic_model {
+            return self.record_fpm_estimate(
+                (
+                    true,
+                    scheduled.num_prefill_requests,
+                    scheduled.sum_prefill_tokens,
+                    scheduled.sum_prefill_kv_tokens,
+                ),
+                model.static_prefill_batch_detailed(&metrics)?,
+            );
+        }
+        self.fpm_model
+            .as_ref()
+            .context("canonical FPM timing model is missing")?
+            .static_prefill_batch_detailed(&metrics)?
+            .latency_ms
+            .context("native FPM returned no estimate")
+    }
+
     fn supports_group_timing(&self) -> bool {
         self.group_model.is_some()
     }
@@ -1376,7 +1428,9 @@ fn resolve_role_timing(
     );
     let mut config: AicTimingConfig =
         serde_json::from_value(config).context("invalid AIC timing provider configuration")?;
-    let resources = if config.backend == "vllm" && config.pp == 1 {
+    let resources = if config.pp == 1
+        && (config.backend == "vllm" || (config.backend == "sglang" && !capacity_is_explicit))
+    {
         config.estimator_request(worker_type)?.fpm_resources()?
     } else {
         None
@@ -4817,6 +4871,33 @@ mod tests {
         assert_eq!(defaults.database_mode, crate::DatabaseMode::default());
         assert!(defaults.enable_shared_layer.is_none());
         assert!(!defaults.strict_provenance);
+    }
+
+    #[test]
+    fn fpm_prefill_metrics_retain_exact_heterogeneous_totals() {
+        // Three page-128 requests compute 128 + 128 + 7936 tokens and
+        // reuse 256 tokens. Dividing each total by three first would query
+        // 8193 new / 255 cached tokens instead of the actual 8192 / 256.
+        let metrics = exact_prefill_metrics(&[(128, 256), (128, 0), (7936, 0)]).unwrap();
+        let scheduled = &metrics.scheduled_requests;
+        assert_eq!(scheduled.num_prefill_requests, 3);
+        assert_eq!(scheduled.sum_prefill_tokens, 8192);
+        assert_eq!(scheduled.sum_prefill_kv_tokens, 256);
+        let with_cache_only =
+            exact_prefill_metrics(&[(128, 256), (0, 32704), (128, 0), (7936, 0)]).unwrap();
+        assert_eq!(
+            with_cache_only.scheduled_requests,
+            metrics.scheduled_requests
+        );
+        assert_eq!(
+            exact_prefill_metrics(&[(0, 128)])
+                .unwrap()
+                .scheduled_requests
+                .num_prefill_requests,
+            0
+        );
+        assert!(exact_prefill_metrics(&[(u32::MAX as usize, 0), (1, 0)]).is_err());
+        assert!(exact_prefill_metrics(&[(1, u32::MAX as usize), (1, 1)]).is_err());
     }
 
     #[test]

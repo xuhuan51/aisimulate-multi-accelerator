@@ -302,6 +302,26 @@ def test_profile_rejects_unrepresented_recorded_dcp(profile_dict, monkeypatch, d
         entry_point(_request(profile_dict, dcp=dcp, estimation_mode="auto", fallback_policy="allow"))
 
 
+def test_explicit_simplex_method_survives_canonical_round_trip_and_compilation(profile_dict, direct_compile):
+    request = _request(profile_dict, "direct_simplex")
+    request["estimator_config"]["fpm_interpolation"]["collect_coverage"] = True
+    normalized = _normalize(request)
+    restored = ForwardPassPerfModelConfig(**json.loads(json.dumps(normalized)))
+    assert _normalize(restored) == normalized
+    assert normalized["estimator_config"]["fpm_interpolation"]["method"] == "direct_simplex"
+    spec = direct_compile(profile_dict, fpm_interpolation="direct_simplex")
+    controls = json.loads(spec["engine"]["extra"]["estimator_config"])["fpm_interpolation"]
+    assert controls["method"] == "direct_simplex"
+    for key in ("context_ops", "generation_ops"):
+        operation = spec[key][0]["FpmForward"]
+        assert operation["interpolation"] == "direct_simplex"
+        assert operation["sol_ops"] == []
+    with pytest.raises(ValueError, match="requires an fpm_profile"):
+        _normalize(_request(None, "direct_simplex"))
+    with pytest.raises(ValueError, match="SILICON"):
+        direct_compile(profile_dict, fpm_interpolation="direct_simplex", database_mode="SOL")
+
+
 def test_direct_compilation_preserves_external_data_controls(profile_dict, direct_compile):
     options = {"text_only": False, "fpm_parquet_path": "/external/profile.parquet"}
     spec = json.loads(

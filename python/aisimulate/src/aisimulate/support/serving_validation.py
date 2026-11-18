@@ -183,7 +183,8 @@ def _scope(prediction: dict[str, Any], trace: Path) -> dict[str, Any]:
         timing.get("type") != "default"
         or timing.get("estimation_mode") != "fpm_interpolation"
         or timing.get("fallback_policy") != "deny"
-        or timing.get("estimator_config", {}).get("fpm_interpolation", {}).get("method") != "direct"
+        or timing.get("estimator_config", {}).get("fpm_interpolation", {}).get("method")
+        not in ("direct", "direct_simplex")
     ):
         raise ValueError("serving validation requires ordinary strict direct-FPM prediction")
     return {

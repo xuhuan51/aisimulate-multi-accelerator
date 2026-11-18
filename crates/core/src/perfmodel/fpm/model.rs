@@ -1037,6 +1037,21 @@ impl ForwardPassPerfModel {
         }
     }
 
+    /// Preserve exact scheduler totals under the existing uncorrected static
+    /// timing policy. Uniform static callers retain `static_prefill_detailed`.
+    pub(crate) fn static_prefill_batch_detailed(
+        &self,
+        metrics: &ForwardPassMetrics,
+    ) -> Result<crate::ForwardPassEstimate, AicError> {
+        let engine = self.require_native_engine()?;
+        let mut coverage = self
+            .query_coverage
+            .as_ref()
+            .map(FpmCoverageState::lock)
+            .transpose()?;
+        engine.forward_pass_estimate(std::slice::from_ref(metrics), true, coverage.as_deref_mut())
+    }
+
     pub(crate) fn static_prefill_detailed(
         &self,
         batch_size: u32,

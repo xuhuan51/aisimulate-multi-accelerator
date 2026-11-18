@@ -1,6 +1,3 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 import json
 from pathlib import Path
 
@@ -183,6 +180,8 @@ class ConfigManager:
     @classmethod
     def _parse_server_args(cls, server_args: dict, backend: str) -> SchedulerConfig:
         if backend == "sglang":
+            from sglang_simulator.simulation.sglang.runtime_adapter import canonical_worker_type
+
             return SchedulerConfig(
                 tp_size=server_args.get("tp_size", 1),
                 ep_size=server_args.get("ep_size", 1),
@@ -192,6 +191,7 @@ class ConfigManager:
                 cp_style=server_args.get("cp_style", "none"),
                 mem_fraction_static=server_args.get("mem_fraction_static"),
                 backend_name="sglang",
+                worker_type=canonical_worker_type(server_args.get("disaggregation_mode")),
             )
         else:
             raise RuntimeError(f"Unsupported backend[{backend}] server args parser.")

@@ -590,3 +590,43 @@ def test_exhausted_random_branch_releases_unused_global_budget(monkeypatch):
     assert result.counts.cache_hits == 0
     assert [c.config["deployment_mode"] for c in result.candidates].count("agg") == 1
     assert [c.config["deployment_mode"] for c in result.candidates].count("disagg") == 3
+
+
+def test_bounded_search_continues_after_a_round_of_rejected_candidates(monkeypatch):
+    from aisimulate.sweeper.sampler import make_branch_sampler
+
+    _Runner.runs = 0
+    branch = _branches()[0]
+    branch.knob_choices["agg_max_num_seqs"] = list(range(1, 17))
+    monkeypatch.setattr(search_module, "enumerate_branches", lambda *args, **kwargs: [branch])
+    monkeypatch.setattr(search_module, "resolve_backend_version", lambda *args, **kwargs: "test")
+
+    class LateSuccessRunner(_Runner):
+        def run(self, spec):
+            report = super().run(spec)
+            if _Runner.runs <= 11:
+                raise RuntimeError("candidate has unsupported timing coordinates")
+            return report
+
+    monkeypatch.setattr(_Factory, "create", lambda *args: LateSuccessRunner())
+    config = SmartSearchConfig.model_validate(
+        {
+            "search_space": {"model_name": "model", "hardware_sku": "hardware", "deployment_mode": ["agg"]},
+            "workload": {"isl": 8, "osl": 2, "concurrency": 1, "num_request_ratio": 1},
+            "sweep": {
+                "max_rounds": 16,
+                "parallel_evals": 1,
+                "max_eval_seconds": None,
+                "max_trials": 16,
+                "algorithm": "random",
+                "seed": 1,
+            },
+        }
+    )
+    result = search_module.Sweeper(
+        runner_factory=_Factory(), sampler_factory=make_branch_sampler, show_progress=False
+    ).run(config)
+    assert result.counts.evaluated == 16
+    assert result.counts.failed == 11
+    assert result.counts.feasible == 5
+    assert len(result.selected_candidates) > 0

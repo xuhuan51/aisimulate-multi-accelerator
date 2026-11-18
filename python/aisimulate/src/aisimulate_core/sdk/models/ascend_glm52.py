@@ -135,12 +135,32 @@ def configure_ascend_glm52(model, raw_config):
     if config.op_level_config is None:
         config.op_level_config = OpLevelCompileConfig(None, system=config.system, backend=model._backend_name)
     settings = config.op_level_config.options["ascend"]
+    if settings["qwen_eager_host_cpu_bound"]:
+        raise InvalidEngineConfigurationError("qwen_eager_host_cpu_bound is only supported by the Qwen composition")
+    if settings["qwen_graph_small_ops"]:
+        raise InvalidEngineConfigurationError("qwen_graph_small_ops is only supported by the Qwen composition")
+    if settings["qwen_prefill_current_roles"]:
+        raise InvalidEngineConfigurationError("qwen_prefill_current_roles is only supported by the Qwen composition")
+    if settings.get("qwen_runtime_contract") not in (None, "historical"):
+        raise InvalidEngineConfigurationError("qwen_runtime_contract is only supported by the Qwen composition")
     expert_workload = settings.get("prefill_expert_workload")
-    if expert_workload is not None and (
-        tensor_moe or expert_workload["quantization_sha256"] != raw_config["modelslim_metadata"]["source_sha256"]
+    decode_workload = settings.get("decode_expert_workload")
+    if decode_workload is not None and (
+        (local_tp, attention_dp, experts_parallel, dcp) != (4, 4, 16, 1)
+        or decode_workload["quantization_sha256"] != raw_config["modelslim_metadata"]["source_sha256"]
     ):
         raise InvalidEngineConfigurationError(
-            "Observed prefill expert workload requires DeepEP and the observed ModelSlim descriptor"
+            "Observed Decode expert workload requires its matching GLM ModelSlim descriptor and TP4/DP4/EP16/DCP1"
+        )
+    if expert_workload is not None and (
+        tensor_moe
+        or expert_workload["quantization_sha256"] != raw_config["modelslim_metadata"]["source_sha256"]
+        or len(expert_workload["layer_expert_counts"]) != 75
+        or any(len(counts) != 256 for counts in expert_workload["layer_expert_counts"])
+    ):
+        raise InvalidEngineConfigurationError(
+            "Observed prefill expert workload requires DeepEP, the observed ModelSlim descriptor "
+            "and GLM75-layer256-expert geometry"
         )
     decode_mode = settings["decode_execution_mode"]
     runtime_layers = settings["decode_timing_scope"] == "runtime_layers"
@@ -175,6 +195,20 @@ def configure_ascend_glm52(model, raw_config):
         "routing": settings["routing"],
         "decode_routing": "captured_model_selected_top8" if runtime_layers else settings["routing"],
         "prefill_expert_workload": expert_workload,
+        "decode_expert_workload": None
+        if decode_workload is None
+        else {
+            key: decode_workload[key]
+            for key in (
+                "observation_id",
+                "samples_sha256",
+                "framework_commit",
+                "history_policy",
+                "input_tokens",
+                "graph_bucket",
+            )
+        },
+        "decode_workload_unmatched_shapes": "balanced baseline",
         "prefill_expert_compute_shape": "observed_peak_rank" if expert_workload is not None else "balanced_mean_rank",
         "prefill_expert_workload_limit": (
             "Per-rank compute volume only; within-rank kernel distribution "
@@ -494,6 +528,8 @@ def configure_ascend_glm52(model, raw_config):
                     "token_numerator": 8 * attention_dp,
                     "token_denominator": experts_parallel,
                     "input_token_multiple": padding,
+                    "decode_workload": None if context else decode_workload,
+                    "profile_request_counts": None,
                 }
             },
             transport("combine"),

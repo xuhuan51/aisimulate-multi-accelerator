@@ -337,6 +337,7 @@ def freeze_repeatability_plan(
             cell_dir / "raw",
             expected_plan_sha256=source_plan.sha256,
             expected_attempt_id=entry["attempt_id"],
+            expected_backend=source_plan.backend,
         )
         _validate_points_receipts(source_plan, cell, cell_dir / "raw", entry["attempt_id"])
         selected = _select_points(
@@ -489,6 +490,7 @@ def _sample_evidence(plan: FPMCollectionPlan, selected: dict[str, Any], director
         root / "raw",
         expected_plan_sha256=plan.sha256,
         expected_attempt_id=entry["attempt_id"],
+        expected_backend=plan.backend,
     )
     _validate_points_receipts(plan, cell, root / "raw", entry["attempt_id"])
     canonical = select_native_measurements(collection, cell_id=cell.cell_id)

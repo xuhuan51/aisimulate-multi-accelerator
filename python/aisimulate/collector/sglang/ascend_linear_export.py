@@ -156,6 +156,9 @@ def main():
     package = Path(__file__).resolve().parents[2]
     source_hash = hashlib.sha256(Path(__file__).with_name("ascend_linear.py").read_bytes()).hexdigest()
     identity = report["identity"]["runtime"]
+    from collector.sglang.ascend_vector import runtime_version
+
+    version = runtime_version(identity["framework_commit"])
     if source_hash != identity["collector_source_sha256"]:
         raise ValueError("Publish from the exact measured collector source checkout")
     plan = json.loads(args.plan.read_text())
@@ -180,7 +183,7 @@ def main():
         args.output_dir,
         {
             "framework": "sglang",
-            "version": "0.5.22",
+            "version": version,
             "image_digest": identity["image_digest"],
             "source_commit": identity["framework_commit"],
             "abi": {key: identity[key] for key in ("torch", "torch_npu", "driver_version_info")},

@@ -63,6 +63,28 @@ impl PerfModel {
         Ok(())
     }
 
+    /// Retain scheduler-local per-request geometry for aggregate-aware timing.
+    pub fn predict_prefill_batch_time(&self, requests: &[(usize, usize)]) -> Result<f64> {
+        if requests.iter().all(|&(new_tokens, _)| new_tokens == 0) {
+            return Ok(0.0);
+        }
+        let time = match self {
+            Self::External { timing } => timing
+                .predict_prefill_batch_ms(requests)
+                .context("external prefill prediction failed")?,
+            Self::Polynomial => {
+                let (batch_size, mean_input, mean_prefix) =
+                    crate::engine::timing::mean_prefill_geometry(requests)?;
+                return self.predict_prefill_time(batch_size, mean_input, mean_prefix);
+            }
+        };
+        ensure!(
+            time.is_finite(),
+            "prefill timing provider returned non-finite duration {time}ms"
+        );
+        Ok(time.max(0.0))
+    }
+
     /// Predict prefill time in milliseconds.
     ///
     /// Callers always pass all parameters; each variant uses what it needs:

@@ -1675,3 +1675,394 @@ The AISimulate Ascend hardware specification, original silicon tables and
 base Ascend operators retain their history from
 https://github.com/yaleyoou/aisimulate-910c/tree/252051a8114c2e9ef4f2458b4da0070b77264c35.
 The local calibration and workload integration changes extend that work.
+
+## NPU20 SGLang runtime audit and collector alignment
+
+The native76 compatibility and CPU-thread settings in
+`python/aisimulate/collector/sglang/ascend_linear.py` and `ascend_bmm.py`,
+their runtime-aware `_export.py` metadata publishers and frozen copies in
+`benchmarks/evidence/ascend910c-paired-serving-20261112/node20-primitive-plans-r0/`
+and `per-operator-analysis-20261113/node20-primitive-results-r0/`,
+with their independent regression tests, adapt the installed API contracts in
+SGLang revision `76f9213a411018547f4fd6a75f36feaa4d6bed58`.
+The source paths are `python/sglang/srt/hardware_backend/npu/quantization/linear_method_npu.py`,
+`layers/quantization/modelslim/schemes/modelslim_w8a8_int8.py`,
+`hardware_backend/npu/modules/deepseek_v2_attention_mla_npu.py`, and
+`model_executor/model_runner.py` under that revision's `python/sglang/srt/`.
+These are modified, independently written collector adapters.
+The runtime inspection and generated source excerpts under
+`benchmarks/evidence/ascend910c-paired-serving-20261112/node20-inspect-runtime-boundaries.py`
+and `per-operator-analysis-20261113/node20-native76-collector-boundaries-r0.json`
+retain the same attribution. The immutable inspected image is
+`sha256:773ac29170d2dc4943f035bff2be2250e9c782555bd16ff72ff9ec891c66dfab`.
+File hashes in the inspection identify the installed source.
+The independently written `node20-inspect-deepep-mode.py` under the same evidence
+directory and its `per-operator-analysis-20261113/node20-native76-deepep-mode-r0.json`
+source excerpts inspect `layers/moe/token_dispatcher/deepep.py`, `layers/moe/utils.py`,
+`model_executor/forward_batch_info.py`, and `layers/moe/fused_moe_triton/layer.py`
+under the same immutable revision and retain this attribution.
+The companion `node20-inspect-deepep-dispatch.py` and its generated
+`per-operator-analysis-20261113/node20-native76-deepep-dispatch-r0.json`
+inspect the private dispatcher methods in the same `deepep.py` and retain
+the same immutable-source attribution.
+The native76 low-latency compatibility and single-thread worker alignment in
+`python/aisimulate/collector/sglang/ascend_deepep.py` and its regression test in
+`python/aisimulate/tests/unit/collector/test_ascend_deepep_cases.py` are modified,
+independently written adapters to those dispatcher contracts. Native76 Normal
+payload validation remains pending in that collector.
+The `pd-native76-headroom-source-r0.json` evidence excerpts inspect the same
+revision's `arg_groups/fields/disagg.py` and `disaggregation/decode.py`. They
+retain the512-token decode reservation default and whole-page preallocation
+contract used by the independently written PD replay experiments.
+Copyright 2023-2026 SGLang Team and contributors, licensed under Apache-2.0.
+Upstream source https://github.com/sgl-project/sglang/tree/76f9213a411018547f4fd6a75f36feaa4d6bed58/python/sglang/srt
+Upstream license https://github.com/sgl-project/sglang/blob/76f9213a411018547f4fd6a75f36feaa4d6bed58/LICENSE
+
+## NPU20 Qwen Graph operator boundary measurements
+
+Under `benchmarks/evidence/ascend910c-paired-serving-20261112/`,
+`node20-inspect-qwen-runtime-r0.py`, `node20-qwen-vectors-worker-r0.py`,
+the `prepare-node20-qwen-*.py` campaign adapters, their frozen
+`node20-qwen-*.tar.gz` workers, and the archived `probe_qwen_*.py` workers in
+`graph-completion/campaign-r1/probes/`, `campaign-r2/probes/`, and
+`campaign-r3/probes/` invoke and adapt the installed SGLang API contracts at
+commit `a6b542813ff46de8ba3856e0236f1af35f4fca54`.
+The source paths under `python/sglang/srt/` include
+`hardware_backend/npu/utils.py`,
+`hardware_backend/npu/quantization/linear_method_npu.py`,
+`layers/attention/linear/kernels/gdn_triton.py`, `layers/layernorm.py`,
+`layers/moe/token_dispatcher/deepep.py`, `layers/logits_processor.py`,
+`layers/vocab_parallel_embedding.py`, and `mem_cache/memory_pool.py`.
+The gated normalization contract is in
+`python/sglang/kernels/ops/attention/fla/layernorm_gated.py`.
+The evidence directory's `probe-qwen-prefill-native-gqa-r0.py` and its
+`prepare-node20-qwen-prefill-native-gqa-r0.py` / generated runner independently
+adapt `hardware_backend/npu/attention/ascend_torch_native_backend.py` at this
+same revision. The probe calls the installed API with NPU sequence metadata,
+uses a separately written sampled causal-attention oracle, and records API
+wall and stream intervals separately. The `prefill_cpu_profile_r0.py` observer
+profiles bounded `ModelRunner.forward` calls without copying tensor payloads.
+`probe-qwen-prefill-normal-ep-r0.py` and its packaging/runner adapters invoke
+the same revision's `layers/moe/token_dispatcher/deepep.py` Normal dispatcher
+and `layers/moe/moe_runner/ascend.py` group-list preparation APIs. Their signed
+payload, local-expert-ID and round-trip checks are independently written.
+The follow-on Normal EP r1/r2/r3 packaging and runner adapters retain this
+attribution and add serving-environment matching, per-expert packed-row checks,
+and CPU-quota observations. `probe-qwen-prefill-vectors-r0.py` and its packaging
+adapter independently reproduce the same revision's Prefill normalization,
+router, shared merge and strided GQA gate boundaries from
+`models/qwen3_5.py`, `models/qwen2_moe.py`, and the gated-normalization API.
+`prefill_normal_counts_r0.py` and its paired-workload packaging adapter observe
+the same revision's Normal dispatcher return contract and `ModelRunner.forward`.
+They copy existing CPU expert-count lists into bounded asynchronous JSON records
+and preserve separate calibration and heldout forward identities.
+`prepare-node20-qwen-prefill-conv-r0.py` and its generated worker independently
+adapt the same revision's direct Prefill convolution and state-copy boundary.
+The explicit FP32-state eager runtime mapping and regression tests in
+`python/aisimulate/src/aisimulate_core/sdk/models/ascend_qwen35.py`,
+`crates/core/src/perfmodel/fpm/estimator.rs`,
+`crates/core/src/perfmodel/operators/ascend_qwen.rs`, and
+`crates/core/src/perfmodel/perf_database/ascend_qwen.rs` independently adapt the
+same revision's `models/qwen3_5.py`, `models/qwen3_next.py`, and
+`layers/communicator.py` contracts. The companion
+`node20-inspect-qwen-scatter-r0.py` and its generated source excerpts record
+installed file hashes. The model mapping uses FP32 recurrent state and
+TP-scattered Decode MoE inputs with separate eager/Graph measurement contracts.
+The Prefill stateless-boundary reuse checks in `ascend_qwen.rs` independently
+adapt this revision's replicated `VocabParallelEmbedding` and H4096
+`GemmaRMSNorm` contracts. Their BF16 inputs and weights share measured signatures
+across the recurrent-state precision change.
+The shared-SwiGLU Prefill reuse additionally adapts the same revision's
+`models/qwen2_moe.py` and `layers/activation.py` BF16 `SiluAndMul.forward_npu`
+boundary. The installed API call is `torch_npu.npu_swiglu`, with each measured
+producer applying the Prefill TP token split before the contiguous width2048
+input. The adjacent source-and-measurement audit retains original row hashes.
+`prepare-qwen-prefill-layout-r0.py` and
+`graph-completion/campaign-r20/probes/probe_prefill_layout.py` independently
+adapt the same revision's packed-convolution Q/K/V split/view boundary in
+`hardware_backend/npu/attention/ascend_gdn_backend.py`. The modified experiment
+adds equal-value contiguous controls and a separate state gather/scatter scope.
+Its adjacent source audit pins the installed chunk-kernel hash and preserves
+the source identity of the reused project-owned recurrence oracle and checks.
+The follow-on `campaign-r21/probes/probe_prefill_layout.py` and its
+`prepare-qwen-prefill-layout-r1.py` / `node20-run-qwen-prefill-layout-r1.py`
+and the portable-path retry adapters `prepare-qwen-prefill-layout-r2.py` /
+`node20-run-qwen-prefill-layout-r2.py`
+adapters retain this attribution and add an independently measured FP32 state
+gather/scatter boundary for the same revision and source-pinned NPU API.
+The same evidence directory's `prepare-node20-qwen-ep-stages-r1.py`, generated
+`node20-run-qwen-ep-stages-r1.py`, and `prepare-node20-qwen-expert-receive-curves-r0.py`
+with its generated driver retain the existing EP/expert producer attribution.
+These modified experiment adapters add repeated native Graph-stage sampling and
+receive-volume/active-expert endpoint plans for the same pinned Qwen API.
+`prepare-node20-qwen-prefill-expert-quant-r0.py`, its generated
+`node20-run-qwen-prefill-expert-quant-r0.py`, the packaged
+`node20-qwen-prefill-expert-quant-r0.tar.gz` probe and
+`validate-qwen-prefill-expert-quant-probe-r0.py` retain that producer attribution.
+These modified experiments independently adapt the same SGLang revision's
+`hardware_backend/npu/quantization/moe_methods.py`, `hardware_backend/npu/moe/quant.py`
+and `hardware_backend/npu/moe/activation.py` contracts. They add observed Prefill
+count vectors, BF16 initial dynamic quantization, paired INT8 controls, eager
+execution checks and a CPU-only protocol test. The immutable SGLang source is
+https://github.com/sgl-project/sglang/tree/a6b542813ff46de8ba3856e0236f1af35f4fca54/python/sglang/srt.
+Copyright remains with the SGLang Team and contributors under Apache-2.0.
+The Qwen additions in `crates/core/src/perfmodel/perf_database/ascend_moe_chain.rs`,
+`crates/core/src/perfmodel/operators/ascend_moe_chain.rs`, and
+`crates/core/src/perfmodel/engine/runtime.rs` independently adapt the same
+revision's `hardware_backend/npu/quantization/moe_methods.py` and low-latency
+dispatcher contracts. They preserve H4096/I1024,32local experts, EP16 cap16,
+top10 and the observed padded routing assignment count. Existing GLM contracts
+remain separately identified by their matrix and capture geometry.
+The Prefill workload geometry checks in
+`crates/core/src/perfmodel/fpm/estimator.rs` and the model mappings in
+`ascend_qwen35.py` and `ascend_glm52.py` independently adapt contiguous expert
+placement and top10 routing from the same revision's Normal dispatcher and
+`models/qwen2_moe.py`. Qwen's historical global-token cost axis is audited
+against this project's archived `gdn_expert_bench.py` producer and INT8-input
+collector. The runtime's separate Normal BF16 input quantization remains
+explicitly identified as an uncovered boundary.
+The explicit current-Prefill role selection in the same estimator and Qwen
+composition, and the EP16 Normal-dispatch contract reuse in
+`crates/core/src/perfmodel/perf_database/ascend_qwen.rs`, independently adapt
+the pinned revision's packed GDN scan/state I/O, native GQA wrapper and BF16
+Normal dispatch boundaries. The adjacent NPU20 qualification receipts identify
+the installed APIs, input layouts, source hashes and independent measurements.
+The independent `node20-inspect-qwen-prefill-r0.py` and `-r1.py` audits and
+their generated `node20-qwen-prefill-source-r0.json` and `-r1.json` excerpts
+under the same evidence directory inspect `layers/attention/linear/gdn_backend.py`,
+`layers/attention/linear/kernels/gdn_triton.py`, `gdn_cutedsl.py`,
+`gdn_flashinfer.py`, `hardware_backend/npu/attention/ascend_gdn_backend.py`,
+`ascend_kda_backend.py`, and `hardware_backend/npu/memory_pool_npu.py`.
+These source excerpts retain the same revision, ownership and Apache-2.0
+attribution. Installed file hashes distinguish the inspected sources.
+The frozen `node20-qwen-graph-state-r0.tar.gz` observer and its
+`prepare-node20-qwen-graph-state-r0.py` adapter reuse the project's
+`collector/sglang/ascend_state_capture.py` and adapt this same revision's
+`hardware_backend/npu/quantization/moe_methods.py` and low-latency dispatcher
+contracts. The modified diagnostic observer copies actual routing IDs and
+expert counts during Graph capture and records bounded replay state.
+`sglang-a6b-native-source-r0.tar.gz` preserves an unmodified Git archive of
+`python/sglang`, `python/pyproject.toml`, and the upstream `LICENSE` at the same
+revision. Its adjacent manifest records the archive SHA-256. The isolated CPU
+staging adapter normalizes Python CRLF line endings to LF and records the
+normalization and source hashes matching the measured runtime.
+These are modified, independently written measurement adapters and CPU
+references. They call the installed upstream kernels. The immutable image
+`sha256:ed48c44e8da49820e3f935d38a8cdb623e184b27361afdf2d1e6e3ecd4e741e0`
+and adjacent runtime receipts identify the installed source files and packages.
+Copyright 2023-2026 SGLang Team and contributors, licensed under Apache-2.0.
+Upstream source https://github.com/sgl-project/sglang/tree/a6b542813ff46de8ba3856e0236f1af35f4fca54/python/sglang
+Upstream license https://github.com/sgl-project/sglang/blob/a6b542813ff46de8ba3856e0236f1af35f4fca54/LICENSE
+
+
+## Qwen3.5 SGLang recurrent-state pool geometry
+
+`src/aisimulate_core/sdk/memory/state.py` adapts the physical state shapes and
+GQA KV head replication rules from SGLang at commit
+`a6b542813ff46de8ba3856e0236f1af35f4fca54`. The implementation resolves CPU-only
+rank-local byte geometry and identifies separate request-slot allocation.
+Original paths are `python/sglang/srt/configs/mamba_utils.py`,
+`python/sglang/srt/configs/qwen3_5.py`,
+`python/sglang/srt/configs/qwen3_next.py`, and
+`python/sglang/srt/disaggregation/mooncake/conn.py`.
+
+Copyright 2023-2026 SGLang Team and contributors, licensed under Apache-2.0.
+Upstream source https://github.com/sgl-project/sglang/tree/a6b542813ff46de8ba3856e0236f1af35f4fca54/python/sglang/srt
+Upstream license https://github.com/sgl-project/sglang/blob/a6b542813ff46de8ba3856e0236f1af35f4fca54/LICENSE
+
+
+The native simulator bridge in
+`integrations/sglang-simulator/src/sglang_simulator/aisimulate_runner.py`,
+`native_replay.py`, `simulation/sglang/runtime_adapter.py`,
+`simulation/sglang/scheduler.py`, `simulation/parallel/client.py`, and
+`simulation/parallel/coordinator.py` adapts the same pinned revision's
+`mem_cache/memory_pool.py` and `mem_cache/kv_cache_configurator.py` APIs.
+It passes resolved request-slot capacity and temporal dtype, observes native
+allocation and release, and verifies physical meta-tensor geometry. Native
+scheduler and state-slot allocation algorithms remain in upstream SGLang.
+
+The same bridge's `simulation/sglang/parallel_hooks.py`,
+`simulation/sglang/utils.py`, `simulation/manager/config.py`, `simulation/types.py`,
+`time_predictor/aisimulate.py`, and the queue observation in
+`simulation/parallel/client.py` independently adapt native disaggregation
+roles, per-role batch boundaries and pending request queues from that commit's
+`server_args.py`, `managers/scheduler.py`, `disaggregation/prefill.py` and
+`disaggregation/decode.py`. The shared CPU event clock is independently written
+simulator code. Runtime scheduling algorithms remain in upstream SGLang.
+
+The native PD interface adapter at
+`integrations/sglang-simulator/src/sglang_simulator/simulation/sglang/pd_transfer.py`
+independently adapts the same pinned revision's
+`disaggregation/base/conn.py`, `disaggregation/fake/conn.py`,
+`disaggregation/utils.py`, `disaggregation/prefill.py`, and
+`disaggregation/decode.py`. Its CPU-only auxiliary row copies preserve the
+registered buffer sizes and native bootstrap-room validation. The paired
+launcher at `integrations/sglang-simulator/src/sglang_simulator/native_pd_replay.py`
+and output observation also use `entrypoints/engine.py`,
+`model_executor/model_runner.py` (CPU virtual transport initialization), and
+`arg_groups/pd_disaggregation_hook.py`, and `distributed/bootstrap.py`
+(CPU-only shared-host memory-check configuration). These are modified interface adapters
+under the same SGLang ownership, immutable source revision and Apache-2.0 license.
+The same launcher uses the native module-filter setting in `models/registry.py`
+to retain the selected Qwen3.5 architecture during CPU replay. That registry's
+pinned source retains its vLLM contributor copyright and Apache-2.0 notice.
+
+The same native fleet adapters use the pinned revision's
+`managers/data_parallel_controller.py` external `routed_dp_rank` request field
+and bootstrap-room DP selection API. The simulator independently assigns each
+request to a P/D cohort and its local DP rank, then passes that assignment to
+the native controller. Request admission and shared event-clock code remain
+independently written. The interface adaptations in `native_pd_replay.py` and
+`simulation/parallel/coordinator.py` are modified under the SGLang ownership,
+immutable source revision and Apache-2.0 license identified above.
+
+
+The additional current-runtime calibration probes in
+`benchmarks/evidence/ascend910c-qwen-pd-20261116/probe-qwen-eager-ep-r2.py`,
+`run-node20-offline-repair-r0.py`, `run-node20-ep-warmup-r1.py`,
+`run-node20-ep-average-r2.py`, `run-node20-eager-completion-r3.py`, and the archived
+`node20-chunk-cost-snapshot-r0/ep16384-r0/probes/probe_ep.py` independently adapt
+SGLang contributor-owned interfaces from the same Apache-2.0 revision
+`a6b542813ff46de8ba3856e0236f1af35f4fca54`. Their serving sources are
+`python/sglang/srt/layers/moe/token_dispatcher/deepep.py`,
+`python/sglang/srt/hardware_backend/npu/quantization/moe_methods.py`, and
+`python/sglang/srt/hardware_backend/npu/attention/ascend_torch_native_backend.py` at
+https://github.com/sgl-project/sglang/tree/a6b542813ff46de8ba3856e0236f1af35f4fca54 .
+These modified interface adaptations add eager profiling, independent signed
+payload checks, collision-free token IDs, and declared timing warmup and
+averaging protocols. Serving algorithms remain in the installed SGLang source.
+
+The same attribution also covers the modified interface probes and their
+archived source copies in the following November16 evidence paths
+`run-node20-eager-retry-r4.py`, `run-node20-prefill-expert-curve-r5.py`,
+`run-node20-prefill-expert-curve-r6.py`, `run-node20-prefill-expert-curve-r7.py`,
+`run-node20-eager-shape-completion-r8.py`, `run-node20-eager-stage-events-r9.py`,
+`node20-operator-cost-snapshot-r5/`, and `node20-eager-compact-r11/`, all under
+`benchmarks/evidence/ascend910c-qwen-pd-20261116/`. The archived
+`node20-prefill-expert-r7-qualified.tar.gz` also contains modified copies of
+those probes. These adaptations retain SGLang contributor ownership and the
+Apache-2.0 license at immutable revision
+`a6b542813ff46de8ba3856e0236f1af35f4fca54`. Changes add explicit shape coverage,
+retained sampling windows, and paired eager timing diagnostics. The NumPy and
+CPU numerical oracles and evidence publication code are independently written.
+
+The unchanged producer copies under `qwen-expert-lower-domain-r53/probes/`
+and `qwen-expert-order-control-r54/probes/`, in the same November16 evidence
+directory, retain this attribution. Their independently written launch plans
+add lower-domain points and a case-order control. Producer source bytes,
+SGLang revision, contributor ownership and Apache-2.0 license are preserved.
+The modified copy under `qwen-expert-profiler-control-r56/probes/` retains the
+same source ownership and license. Its diagnostic change defers profiling until
+all independent timing samples have finished, preserving the arithmetic and
+numeric checks. Its manifest records both original and modified source hashes.
+The modified observer copies in `qwen-native-decode-r57/` under the same evidence
+directory reuse the attributed SGLang interfaces at the immutable revision
+above. The diagnostic launch selects TP8/DP2 and bounded unprofiled Decode
+observations. Existing SGLang algorithm ownership and Apache-2.0 license apply.
+The producer copies in `qwen-expert-clean-curve-r58/probes/` retain the R56
+modification and the same immutable SGLang attribution and Apache-2.0 license.
+The independently written plan extends its verified timing order over the full
+expert-work domain. Producer hashes and original plans remain in its manifest.
+The modified observer copies in `qwen-eager-decode-phases-r60/` retain the same
+immutable SGLang attribution and Apache-2.0 license. Diagnostic changes select
+LowLatency expert interfaces and layers 0, 29 and 59 for two eager Decode rounds,
+with surrounding unprofiled controls. Serving algorithms remain upstream-owned.
+The `qwen-eager-decode-phases-r60-r1/` retry retains identical observer source.
+Its independent launcher tolerates transient HTTP readiness socket timeouts.
+The `graph-capture-control-r69/{control,capture,capture-r1}/ready-package/` observer copies
+under `benchmarks/evidence/ascend910c-qwen-pd-20261116/` retain the same SGLang
+revision, ownership, Apache-2.0 license and modification status as the
+`qwen-native-decode-r57/` copies. The experiment changes startup profiler flags
+while retaining the original native graph-capture entry point.
+The `qwen-clean-formal-r73-tp8/` and `qwen-clean-formal-r73-tp8-r1/` observer copies under the same evidence root
+retain this attribution and run with startup capture profiling disabled.
+The `qwen-clean-formal-r77-tp8/` copies retain the same attribution. Its launcher
+adapts the historical client's service-info endpoint and startup profiling
+preflight. The SSE request loop and metric arithmetic are preserved.
+The `qwen-clean-formal-r81-tp2/` copies retain the same attribution and repeat
+the clean-startup comparison with the historical TP2 client and workload.
+The `qwen-clean-formal-r81-r1-tp2/` retry retains this attribution, discovers
+FPM rank count from native server metadata, and records host scheduler API
+intervals through the existing asynchronous observation sink.
+
+The `qwen-conv-batched-r72/probes/` copies under the same
+evidence root retain the source revision, ownership and licenses of the
+`qwen-conv-controlled-r38/probes/` originals. The modified sampling loop uses
+independent state slots and averages32 calls per Event timing window.
+
+The modified observer copies in `qwen-eager-cpu-r62/` retain the same immutable
+SGLang attribution and Apache-2.0 license. Changes record per-module and expert
+API CPU spans, retain whole-forward device Events, and add independent native
+functional checks and repeated timing windows. The serving algorithms remain
+unchanged upstream implementations.
+
+## Qwen2.5-72B-Instruct campaign metadata
+
+The unmodified `model-config.json` and `model.safetensors.index.json` under
+`benchmarks/evidence/qwen25-72b-pd-20261117/` come from `config.json` and
+`model.safetensors.index.json` in the
+[Qwen model repository](https://huggingface.co/Qwen/Qwen2.5-72B-Instruct/tree/495f39366efef23836d0cfae4fbe635880d2be31)
+at immutable revision `495f39366efef23836d0cfae4fbe635880d2be31`.
+These files retain Alibaba Cloud ownership and the Qwen LICENSE AGREEMENT.
+The upstream license is retained as `UPSTREAM_MODEL_LICENSE` beside them.
+Qwen is licensed under the Qwen LICENSE AGREEMENT, Copyright (c) Alibaba Cloud.
+All Rights Reserved. Campaign transport and inspection scripts are independently
+written or reuse this repository's existing experiment transport.
+
+
+## Ascend Normal transport core-work analysis
+
+`benchmarks/evidence/ascend910c-qwen-pd-20261116/analyze-transport-core-load-r48.py`
+independently reformulates the per-core block partition described by
+`csrc/deepep/ops/op_kernel/cam_moe_combine_normal_multi_round.h` and
+`csrc/deepep/ops/op_kernel/cam_moe_dispatch_normal.h` in
+https://github.com/sgl-project/sgl-kernel-npu/tree/0234a271453bb55eb395aa471ace1e815513e92a.
+The analysis is modified and independently implemented for retained Qwen
+observations. No upstream kernel implementation is bundled by this entry.
+Upstream ownership is Copyright (c) 2025 sgl-project, under the MIT License.
+The source algorithm is an explicit investigation hypothesis until checked
+against the installed kernel identity and measured execution boundaries.
+
+MIT License
+
+Copyright (c) 2025 sgl-project
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+The modified Normal transport probe at
+`benchmarks/evidence/ascend910c-qwen-pd-20261116/qwen-transport-core-surface-r49/probe_transport.py`
+and its `qwen-transport-core-surface-r49-r1/probe_transport.py` retry independently
+adapt the SGLang interfaces attributed above at immutable Apache-2.0 revision
+`a6b542813ff46de8ba3856e0236f1af35f4fca54`, owned by SGLang contributors.
+Changes separate dispatch-ready metadata and nonalias ready-input combine
+boundaries, retain numerical checks, and add physical concentration controls.
+The previous `qwen-transport-controls-r44/`, `qwen-transport-placement-r45/`,
+`qwen-transport-surface-r46/`, and `qwen-transport-placement-repeat-r47/` probe
+source copies use those same interfaces and attribution.
+
+`crates/core/src/perfmodel/operators/ascend_normal_transport.rs` independently
+reformulates the expert/source block partition in the sgl-kernel-npu source and
+immutable MIT revision identified in the preceding core-work analysis section.
+It is modified to compute expected receive-core work for a native cost query.
+The upstream Copyright (c) 2025 sgl-project and the MIT license retained above
+apply to that reformulated workload mapping. Native measurement interpolation
+and API integration are independently written repository code.
+
+The same modified SGLang Normal probe attribution also covers the timing-window retry copies `qwen-transport-core-surface-r49-r2/probe_transport.py` and `qwen-transport-core-surface-r49-r3/probe_transport.py` under the same November16 evidence directory. These copies change sampling windows and retained role coverage. Their serving APIs remain at the same SGLang contributor-owned Apache-2.0 revision identified above.

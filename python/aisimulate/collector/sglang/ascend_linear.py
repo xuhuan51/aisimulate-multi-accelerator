@@ -23,6 +23,15 @@ from pathlib import Path
 from types import SimpleNamespace
 
 
+def validate_runtime(revision, expected_revision=None):
+    audited = {
+        "baa9befa381511cd4d56f83980951e5a45fffc6d",
+        "76f9213a411018547f4fd6a75f36feaa4d6bed58",
+    }
+    if revision not in audited or (expected_revision is not None and revision != expected_revision):
+        raise ValueError("Reaudit linear dispatch for the installed framework")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--plan", type=Path, required=True)
@@ -79,11 +88,13 @@ def main():
     from sglang.srt.layers.quantization.modelslim.schemes.modelslim_w8a8_int8 import ModelSlimW8A8Int8
 
     revision = subprocess.check_output(["git", "-C", "/sgl-workspace/sglang", "rev-parse", "HEAD"], text=True).strip()
-    if revision != "baa9befa381511cd4d56f83980951e5a45fffc6d":
-        raise RuntimeError("Reaudit dispatch for another SGLang revision")
+    validate_runtime(revision, plan.get("framework_commit"))
     init_npu_backend()
     torch.npu.set_device(args.device)
-    torch.set_num_threads(8)
+    # ModelRunner.load_model uses one CPU thread on NPU in both audited builds.
+    # native76 model_executor/model_runner.py:1191-1195, pinned image
+    # sha256:773ac29170d2dc4943f035bff2be2250e9c782555bd16ff72ff9ec891c66dfab.
+    torch.set_num_threads(1)
     torch.manual_seed(910)
     result = {
         "schema": "aisimulate-ascend-linear-observations/v1",
@@ -104,6 +115,7 @@ def main():
             "driver_version_info": Path("/usr/local/Ascend/driver/version.info").read_text(),
             "host": socket.gethostname(),
             "cpu_affinity": sorted(os.sched_getaffinity(0)),
+            "torch_num_threads": torch.get_num_threads(),
             "serving_setup": setup,
         },
         "cases": [],
@@ -135,6 +147,9 @@ def main():
                 layer = RowParallelLinear.__new__(RowParallelLinear)
                 torch.nn.Module.__init__(layer)
                 layer.tp_group = SimpleNamespace(rank_in_group=0 if case["quant_bias"] else 1)
+                # native76 linear_method_npu.py:109-115 reads tp_rank directly.
+                # Both attributes describe the same rank for the audited paths.
+                layer.tp_rank = layer.tp_group.rank_in_group
                 scheme = ModelSlimW8A8Int8({"linear.weight": "W8A8" if quant == "w8a8" else "W8A8_DYNAMIC"}, "linear")
                 with torch.device("npu"):
                     scheme.create_weights(layer, input_width, [output_width], input_width, output_width, torch.bfloat16)

@@ -1,6 +1,3 @@
-# SPDX-License-Identifier: Apache-2.0
-# Modified for AISimulate multi-accelerator workload replay.
-# Upstream attribution is retained in LICENSE and source-manifest.json.
 """Isolated native SGLang process entry point for the AISimulate runner."""
 import dataclasses
 import hashlib
@@ -12,6 +9,22 @@ import random
 import socket
 import subprocess
 import sys
+
+
+def simulation_server_args(case_args, template_args, fields):
+    kwargs = {key: value for key, value in template_args.items() if key in fields}
+    kwargs.update({key: value for key, value in case_args.items() if value is not None})
+    kwargs.update(
+        load_format='dummy', device='cpu', dtype='bfloat16', quantization=None,
+        sampling_backend='pytorch', skip_tokenizer_init=True,
+        disable_custom_all_reduce=True, log_level='warning',
+    )
+    # Native replay submits token IDs. Resolve model-dependent paths from the
+    # selected case and use the runtime's language-only serving path.
+    kwargs['tokenizer_path'] = kwargs['model_path']
+    if 'language_model_only' in fields:
+        kwargs['language_model_only'] = True
+    return kwargs
 
 
 def reserve_port_span():
@@ -32,6 +45,18 @@ def reserve_port_span():
     raise RuntimeError('No free port span for native simulator')
 
 
+def native_runtime_info(server_args_type, identity):
+    from sglang_simulator.simulation.sglang.runtime_adapter import SGLangRuntimeAdapter
+
+    runtime = SGLangRuntimeAdapter.validate()
+    source_root = Path(inspect.getfile(server_args_type)).parent
+    runtime['source_hashes'] = {name: hashlib.sha256((source_root/name).read_bytes()).hexdigest()
+                               for name in ('server_args.py', 'managers/scheduler.py', 'managers/schedule_policy.py')}
+    runtime['predictor_backend_version'] = identity['backend_version']
+    runtime['version_match'] = runtime['sglang_version'] == identity['backend_version']
+    return runtime
+
+
 def run_replica(case_path, replica):
     case = json.loads(case_path.read_text())
     out = case_path.parent / f'replica-{replica}'
@@ -41,6 +66,7 @@ def run_replica(case_path, replica):
         'platform': {'accelerator': case['hardware'], 'num_device_per_node': case['devices_per_node']},
         'predictor': {'name': 'aisimulate', 'python_executable': os.environ['SGLANG_SIMULATOR_PREDICTOR_PYTHON'], 'timeout_seconds': 120, 'config': identity},
         'scheduler': {'tp_size': case['world_size'], 'dp_size': identity['attention_dp'], 'ep_size': identity['moe_ep_size'], 'backend_name': identity['backend'], 'backend_version': identity['backend_version']},
+        'request_timing': case.get('request_timing', {}),
     }
     config_path = out / 'sim-config.json'
     config_path.write_text(json.dumps(config, indent=2))
@@ -53,20 +79,14 @@ def run_replica(case_path, replica):
     os.environ.setdefault('SGLANG_SIMULATOR_RUNTIME', 'upstream')
     os.environ.setdefault('SGLANG_SIMULATOR_LEGACY_ATTENTION_DP', '1')
     from sglang_simulator.simulation.sglang.engine import SGLangSimulationEngine
-    from sglang_simulator.simulation.sglang.runtime_adapter import SGLangRuntimeAdapter, server_arg_values
+    from sglang_simulator.simulation.sglang.runtime_adapter import server_arg_fields, server_arg_values
     from sglang.srt.server_args import ServerArgs
 
     template = os.environ.get('SGLANG_SIMULATOR_NATIVE_ARGS')
-    kwargs = json.loads(Path(template).read_text()) if template else {}
-    fields = set(getattr(ServerArgs, '__struct_fields__', ()))
-    if not fields:
-        fields = {f.name for f in dataclasses.fields(ServerArgs)}
-    kwargs = {k: v for k, v in kwargs.items() if k in fields}
-    kwargs.update({k: v for k, v in case['server_args'].items() if v is not None})
+    fields = server_arg_fields(ServerArgs)
+    template_args = json.loads(Path(template).read_text()) if template else {}
+    kwargs = simulation_server_args(case['server_args'], template_args, fields)
     kwargs.update(
-        load_format='dummy', device='cpu', dtype='bfloat16', quantization=None,
-        sampling_backend='pytorch', skip_tokenizer_init=True,
-        disable_custom_all_reduce=True, log_level='warning',
         port=reserve_port_span(), nccl_port=None, dist_init_addr=None,
     )
     if 'cuda_graph_backend_decode' in fields:
@@ -122,11 +142,7 @@ def run_replica(case_path, replica):
             if effective[name] != case['server_args'][name]:
                 raise ValueError(f'Native resolution changed {name}: {effective[name]}')
         (out / 'resolved-args.json').write_text(json.dumps(effective, indent=2))
-        runtime = SGLangRuntimeAdapter.validate()
-        source_root = Path(inspect.getfile(ServerArgs)).parent
-        runtime['source_hashes'] = {name: hashlib.sha256((source_root/name).read_bytes()).hexdigest() for name in ('server_args.py', 'managers/scheduler.py', 'managers/schedule_policy.py')}
-        runtime['predictor_backend_version'] = identity['backend_version']
-        runtime['version_match'] = runtime['sglang_version'] == identity['backend_version']
+        runtime = native_runtime_info(ServerArgs, identity)
         (out / 'runtime.json').write_text(json.dumps(runtime, indent=2))
         engine.start_profile()
         responses = engine.generate(input_ids=corpus, sampling_params=params, rid=ids)
@@ -142,6 +158,21 @@ def run_replica(case_path, replica):
                 steps += 1
         if not steps:
             raise ValueError('Native replay produced no forward iterations')
+        requested_state = case.get('recurrent_state')
+        if requested_state is not None:
+            pools = json.loads((out / 'metrics.json').read_text()).get('recurrent_state_pools', {})
+            if len(pools) != case['world_size']:
+                raise ValueError('Native replay did not report every recurrent-state pool')
+            for rank, pool in pools.items():
+                if pool['slots'] != requested_state['max_requests']:
+                    raise ValueError(f'Native rank {rank} changed recurrent-state capacity')
+                if pool['bytes_per_request'] != requested_state['bytes_per_request']:
+                    raise ValueError(f'Native rank {rank} changed recurrent-state precision or shape')
+                if pool['available_slots'] != pool['slots']:
+                    raise ValueError(f'Native rank {rank} leaked recurrent-state slots')
+            (out / 'recurrent-state-verification.json').write_text(json.dumps(
+                {'status': 'passed', 'rank_count': len(pools), 'requested': requested_state,
+                 'observed': pools}, indent=2))
         (out / 'verification.json').write_text(json.dumps({'completed': len(responses), 'forward_iterations': steps, 'status': 'passed'}))
     finally:
         engine.shutdown()
@@ -153,15 +184,16 @@ def main():
         run_replica(case_path, int(sys.argv[2]))
         return
     case = json.loads(case_path.read_text())
-    rows, runtimes = [], []
+    rows, runtimes, predictors = [], [], []
     for replica in range(case['replicas']):
         subprocess.run([sys.executable, '-u', __file__, str(case_path), str(replica)], check=True)
         out = case_path.parent / f'replica-{replica}'
         rows.extend(json.loads(line) for line in (out/'request.jsonl').read_text().splitlines())
         runtimes.append(json.loads((out/'runtime.json').read_text()))
-    from sglang_simulator.aisimulate_runner import summarize_requests
+        predictors.append(json.loads((out/'metrics.json').read_text()).get('aisimulate', {}))
+    from sglang_simulator.aisimulate_runner import summarize_predictor_provenance, summarize_requests
     metrics = summarize_requests(rows, devices=case['world_size']*case['replicas'], expected=len(case['requests']))
-    report = {'metrics': metrics, 'metadata': {'executor': 'native_sglang_simulator', 'routing': case['routing'], 'capacity_source': case['capacity_source'], 'runtime': runtimes, 'hardware_accuracy': 'not_validated'}}
+    report = {'metrics': metrics, 'metadata': {'executor': 'native_sglang_simulator', 'routing': case['routing'], 'capacity_source': case['capacity_source'], 'runtime': runtimes, 'hardware_accuracy': 'not_validated', 'prediction_provenance': summarize_predictor_provenance(predictors)}}
     (case_path.parent/'report.json').write_text(json.dumps(report, indent=2))
     print(json.dumps(report), flush=True)
 

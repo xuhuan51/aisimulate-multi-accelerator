@@ -454,7 +454,7 @@ def test_disaggregated_profile_candidates_do_not_swap_roles(profile):
 
 def test_native_disaggregated_capacity_keeps_canonical_worker_role(profile, timing_systems, monkeypatch):
     from aisimulate.runner import EngineReplayRunnerFactory
-    from aisimulate_core.sdk import memory
+    from aisimulate_core.sdk.memory import kv_cache as memory
 
     prefill = deepcopy(profile["deployments"][0])
     decode = deepcopy(prefill)
@@ -498,6 +498,90 @@ def test_native_disaggregated_capacity_keeps_canonical_worker_role(profile, timi
         assert role["data_version"] == profile["model_revision"]
         assert role["data_identity"] == {"model": profile["model"], "model_revision": profile["model_revision"]}
         assert role["data_version_unavailable_reason"] is None
+
+
+@pytest.mark.parametrize("mode", ["aggregated", "disaggregated"])
+def test_sglang_prediction_uses_recorded_role_memory(profile, timing_systems, mode):
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from aisimulate.runner import EngineReplayRunnerFactory
+
+    roles = ["aggregated"] if mode == "aggregated" else ["prefill", "decode"]
+    deployments = []
+    capacities = {}
+    for index, role in enumerate(roles, 1):
+        deployment = deepcopy(profile["deployments"][0])
+        deployment.update(backend="sglang", worker_type=role)
+        resources = deployment["resources"]
+        for field in ("weights_bytes", "activations_bytes", "runtime_overhead_bytes", "comm_overhead_bytes"):
+            resources.pop(field)
+        capacities[role] = index * 1024**2
+        resources.update(
+            max_num_tokens=1024,
+            max_batch_size=4,
+            runtime_memory={
+                "kv_cache_bytes": capacities[role],
+                "gpu_memory_utilization": 0.9,
+                "max_model_len": 4096,
+                "provenance": "Synthetic observed role allocation, independent of device size.",
+            },
+        )
+        deployments.append(deployment)
+    profile["deployments"] = deployments
+    source = Path(timing_systems) / "data/h200_sxm/vllm/0.25.1/fpm_forward_perf.parquet"
+    rows = []
+    for row in pq.read_table(source).to_pylist():
+        if row["tp"] != 2:
+            continue
+        role = "aggregated" if mode == "aggregated" else row["workload_kind"]
+        rows.append({**row, "backend": "sglang", "worker_type": role})
+    path = Path(timing_systems) / "data/h200_sxm/sglang/0.25.1/fpm_forward_perf.parquet"
+    path.parent.mkdir(parents=True)
+    pq.write_table(pa.Table.from_pylist(rows), path)
+    metadata = json.loads(source.with_suffix(".metadata.json").read_text())
+    metadata.update(backend="sglang", row_count=len(rows), parquet_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    path.with_suffix(".metadata.json").write_text(json.dumps(metadata))
+    workers = {}
+    for role in roles:
+        worker = _worker()
+        worker["kv_cache"] = {"block_size": 64, "capacity": {"memory_fraction": 0.9}}
+        worker["scheduler"].update(chunked_prefill_size=1024, max_prefill_tokens=1024, ignore_eos=True)
+        workers[role] = worker
+    config = CorePredictionConfig.model_validate(
+        {
+            "engine": {
+                **_engine(profile),
+                "backend": "sglang",
+                "mode": mode,
+                "systems_paths": [timing_systems],
+                "workers": workers,
+            },
+            "traffic": {
+                "source": {"type": "synthetic", "input_tokens": 1, "output_tokens": 2},
+                "load": {"type": "concurrency", "concurrency": 1},
+                "stop": {"requests": 1},
+            },
+        }
+    )
+    restored = CorePredictionConfig.model_validate(config.model_dump(mode="json"))
+    spec = prediction_to_replay_spec(restored)
+    for role in roles:
+        field = "agg_engine_args" if role == "aggregated" else role + "_engine_args"
+        lowered = materialize_aic_num_gpu_blocks(getattr(spec.backend_deployment, field))
+        # Recorded bytes / 512 bytes per token / 64 tokens per block.
+        assert lowered["num_gpu_blocks"] == capacities[role] // (512 * 64)
+        canonical = lowered["timing_model"]["config"]
+        assert canonical["backend"] == "sglang" and canonical["worker_type"] == role
+    result = EngineReplayRunnerFactory().create(0).run(spec)
+    assert result.metrics["completed_requests"] == 1
+
+    changed = config.model_dump(mode="json")
+    changed["engine"]["workers"][roles[0]]["scheduler"]["max_sequences"] = 3
+    with pytest.raises(ValueError, match="exact recorded"):
+        changed_spec = prediction_to_replay_spec(CorePredictionConfig.model_validate(changed))
+        field = "agg_engine_args" if roles[0] == "aggregated" else "prefill_engine_args"
+        materialize_aic_num_gpu_blocks(getattr(changed_spec.backend_deployment, field))
 
 
 @pytest.mark.parametrize("mode,budget,expected", [("agg", 2, 2), ("disagg", 4, 4)])
