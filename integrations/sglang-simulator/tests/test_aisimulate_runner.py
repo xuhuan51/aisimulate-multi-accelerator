@@ -136,16 +136,16 @@ class MetricContractTests(unittest.TestCase):
 
 @unittest.skipUnless(importlib.util.find_spec('aisimulate'), 'Requires AISimulate contract package')
 class NativeContractTests(unittest.TestCase):
-    def spec(self, replicas=1, concurrency=32, count=64, ep=1):
+    def spec(self, replicas=1, concurrency=32, count=64, ep=1, attention_dp=4):
         from aisimulate.sweeper.replay import BackendDeploymentSpec, ForwardPassEstimatorSpec, ReplaySpec
         config = dict(model='/checkpoint',system='ascend910c',backend='sglang',backend_version='0.5.22',
-                      tp=4,attention_dp=4,moe_tp_size=16//ep,moe_ep_size=ep,pp=1,
+                      tp=4,attention_dp=attention_dp,moe_tp_size=4 * attention_dp // ep,moe_ep_size=ep,pp=1,
                       worker_type='aggregated',nextn=0,gemm_quant_mode='w8a8',
                       moe_quant_mode='w8a8_dynamic',kvcache_quant_mode='bfloat16',
                       fmha_quant_mode='bfloat16',comm_quant_mode='half',
                       estimation_mode='op_level',fallback_policy='deny',
                       estimator_config={'op_level':{'ascend':{'shape_policy':'anchored'}}})
-        args = dict(worker_type='aggregated',engine_type='sglang',tensor_parallel_size=4,dp_size=4,
+        args = dict(worker_type='aggregated',engine_type='sglang',tensor_parallel_size=4,dp_size=attention_dp,
                     max_num_batched_tokens=4096,max_num_seqs=32,block_size=128,num_gpu_blocks=256,
                     enable_prefix_caching=False,max_model_len=9218,
                     timing_model={'type':'external','provider':'aic','config':config})
@@ -167,6 +167,12 @@ class NativeContractTests(unittest.TestCase):
         self.assertEqual(case['server_args']['max_total_tokens'], 32768)
         self.assertEqual(case['server_args']['dp_size'], 4)
         self.assertEqual(len(case['requests']), 64)
+
+    def test_per_rank_request_limit_is_converted_for_sglang(self):
+        for attention_dp, expected_limit in [(1, 32), (4, 128)]:
+            with self.subTest(attention_dp=attention_dp):
+                case = self.compile(self.spec(attention_dp=attention_dp))
+                self.assertEqual(case['server_args']['max_running_requests'], expected_limit)
 
     def test_serial_scheduler_api_cost_uses_existing_host_stage(self):
         spec = self.spec()

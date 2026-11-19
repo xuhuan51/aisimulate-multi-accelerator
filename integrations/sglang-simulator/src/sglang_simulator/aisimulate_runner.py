@@ -96,7 +96,8 @@ def _compile_worker_case(spec, role, raw, replicas, workload=None):
         raise ValueError(f"Native {role} runner requires worker_type={expected_role} and PP1")
     if config.get("nextn", 0) or config.get("speculation"):
         raise ValueError("Native runner does not support speculative decoding")
-    width = int(config["tp"]) * int(config["attention_dp"])
+    attention_dp = int(config["attention_dp"])
+    width = int(config["tp"]) * attention_dp
     if not (
         (config["moe_ep_size"] == 1 and config["moe_tp_size"] == width)
         or (config["moe_ep_size"] == width and config["moe_tp_size"] == 1)
@@ -179,13 +180,17 @@ def _compile_worker_case(spec, role, raw, replicas, workload=None):
         "routing": "single_instance" if replicas == 1 else "symmetric_identical_replicas",
         "capacity_source": "explicit_blocks" if "num_gpu_blocks" in raw else "aisimulate_canonical_memory",
         "server_args": {
-            "model_path": config["model"], "tp_size": width,
-            "dp_size": config["attention_dp"], "ep_size": config["moe_ep_size"],
-            "enable_dp_attention": config["attention_dp"] > 1,
+            "model_path": config["model"],
+            "tp_size": width,
+            "dp_size": attention_dp,
+            "ep_size": config["moe_ep_size"],
+            "enable_dp_attention": attention_dp > 1,
             "moe_a2a_backend": "none" if config["moe_ep_size"] == 1 else "deepep",
-            "max_total_tokens": capacity, "page_size": page,
+            "max_total_tokens": capacity,
+            "page_size": page,
             "context_length": raw.get("max_model_len"),
-            "max_running_requests": raw["max_num_seqs"],
+            # AISimulate's limit is per rank; SGLang divides its global limit by attention DP.
+            "max_running_requests": raw["max_num_seqs"] * attention_dp,
             "chunked_prefill_size": scheduler.get("chunked_prefill_size", raw["max_num_batched_tokens"]),
             "max_prefill_tokens": scheduler.get("max_prefill_tokens", raw["max_num_batched_tokens"]),
             "disable_radix_cache": not raw.get("enable_prefix_caching", False),
