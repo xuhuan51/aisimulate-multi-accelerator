@@ -83,7 +83,7 @@ Use `source_tp` and `destination_tp` for the measured direction,
 and `same_host` and `cross_host` for matching prompt-token knots in
 milliseconds. Include `evidence_sha256` and set `estimate` to `median`
 or `observed_high`. Each node ID is in the range 0–7 and has capacity for
-16 runtime NPUs. The [9362 example profile](../../../benchmarks/evidence/qwen25-72b-pd-20261117/q72-9362-best-median-transfer-profile.json)
+16 runtime NPUs. The [9362 example profile](../../../benchmarks/evidence/qwen25-72b-pd-20261117/systems/ascend9362_qwen72_pd.json)
 records the median curve and placement for the 11P/5D TP8 configuration.
 
 Replay selects the curve using the two assigned replica IDs and rounds each

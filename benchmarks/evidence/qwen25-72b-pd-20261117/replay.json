@@ -1,0 +1,246 @@
+{
+  "traffic": {
+    "source": {
+      "type": "trace",
+      "format": "agentic_mooncake",
+      "paths": [
+        "./agentx-32k.jsonl"
+      ],
+      "block_size": 64
+    },
+    "load": {
+      "type": "trace_timestamps",
+      "speedup": 1.0
+    }
+  },
+  "engine": {
+    "mode": "disaggregated",
+    "model": "./model_metadata",
+    "fpm_profile": {
+      "schema_version": 1,
+      "model": "./model_metadata",
+      "model_revision": "495f39366efef23836d0cfae4fbe635880d2be31",
+      "architecture": "Qwen2ForCausalLM",
+      "context_length": 32768,
+      "num_experts": 0,
+      "provenance": "Pinned Qwen2.5-72B-Instruct model config and observed BF16 SGLang runtime on Ascend910_9362.",
+      "deployments": [
+        {
+          "system": "ascend910_9362",
+          "backend": "sglang",
+          "backend_version": "0.5.20.dev388+ga6b542813",
+          "tp": 4,
+          "pp": 1,
+          "dp": 1,
+          "moe_tp": 1,
+          "moe_ep": 1,
+          "cp": 1,
+          "gemm_quant_mode": "bfloat16",
+          "moe_quant_mode": "bfloat16",
+          "fmha_quant_mode": "bfloat16",
+          "comm_quant_mode": "half",
+          "kv_cache_dtype": "bfloat16",
+          "moe_backend": "auto",
+          "attention_backend": "ascend",
+          "enable_wideep": false,
+          "enable_eplb": false,
+          "worker_type": "prefill",
+          "resources": {
+            "runtime_memory": {
+              "kv_cache_bytes": 21862809600,
+              "gpu_memory_utilization": 0.9,
+              "max_model_len": 32768,
+              "provenance": "Fixed usable KV pool from initialized BF16 SGLang workers on the measured runtime."
+            },
+            "kv_bytes_per_token": 81920,
+            "cache_layout": "linear",
+            "max_num_tokens": 16384,
+            "max_batch_size": 32,
+            "provenance": "Rank-local KV geometry from the 80-layer model, eight KV heads and head dimension 128."
+          }
+        },
+        {
+          "system": "ascend910_9362",
+          "backend": "sglang",
+          "backend_version": "0.5.20.dev388+ga6b542813",
+          "tp": 4,
+          "pp": 1,
+          "dp": 1,
+          "moe_tp": 1,
+          "moe_ep": 1,
+          "cp": 1,
+          "gemm_quant_mode": "bfloat16",
+          "moe_quant_mode": "bfloat16",
+          "fmha_quant_mode": "bfloat16",
+          "comm_quant_mode": "half",
+          "kv_cache_dtype": "bfloat16",
+          "moe_backend": "auto",
+          "attention_backend": "ascend",
+          "enable_wideep": false,
+          "enable_eplb": false,
+          "worker_type": "decode",
+          "resources": {
+            "runtime_memory": {
+              "kv_cache_bytes": 21852323840,
+              "gpu_memory_utilization": 0.9,
+              "max_model_len": 32768,
+              "provenance": "Fixed usable KV pool from initialized BF16 SGLang workers on the measured runtime."
+            },
+            "kv_bytes_per_token": 81920,
+            "cache_layout": "linear",
+            "max_num_tokens": 8192,
+            "max_batch_size": 32,
+            "provenance": "Rank-local KV geometry from the 80-layer model, eight KV heads and head dimension 128."
+          }
+        },
+        {
+          "system": "ascend910_9362",
+          "backend": "sglang",
+          "backend_version": "0.5.20.dev388+ga6b542813",
+          "tp": 8,
+          "pp": 1,
+          "dp": 1,
+          "moe_tp": 1,
+          "moe_ep": 1,
+          "cp": 1,
+          "gemm_quant_mode": "bfloat16",
+          "moe_quant_mode": "bfloat16",
+          "fmha_quant_mode": "bfloat16",
+          "comm_quant_mode": "half",
+          "kv_cache_dtype": "bfloat16",
+          "moe_backend": "auto",
+          "attention_backend": "ascend",
+          "enable_wideep": false,
+          "enable_eplb": false,
+          "worker_type": "prefill",
+          "resources": {
+            "runtime_memory": {
+              "kv_cache_bytes": 40139489280,
+              "gpu_memory_utilization": 0.9,
+              "max_model_len": 32768,
+              "provenance": "Fixed usable KV pool from initialized BF16 SGLang workers on the measured runtime."
+            },
+            "kv_bytes_per_token": 40960,
+            "cache_layout": "linear",
+            "max_num_tokens": 16384,
+            "max_batch_size": 32,
+            "provenance": "Rank-local KV geometry from the 80-layer model, eight KV heads and head dimension 128."
+          }
+        },
+        {
+          "system": "ascend910_9362",
+          "backend": "sglang",
+          "backend_version": "0.5.20.dev388+ga6b542813",
+          "tp": 8,
+          "pp": 1,
+          "dp": 1,
+          "moe_tp": 1,
+          "moe_ep": 1,
+          "cp": 1,
+          "gemm_quant_mode": "bfloat16",
+          "moe_quant_mode": "bfloat16",
+          "fmha_quant_mode": "bfloat16",
+          "comm_quant_mode": "half",
+          "kv_cache_dtype": "bfloat16",
+          "moe_backend": "auto",
+          "attention_backend": "ascend",
+          "enable_wideep": false,
+          "enable_eplb": false,
+          "worker_type": "decode",
+          "resources": {
+            "runtime_memory": {
+              "kv_cache_bytes": 40134246400,
+              "gpu_memory_utilization": 0.9,
+              "max_model_len": 32768,
+              "provenance": "Fixed usable KV pool from initialized BF16 SGLang workers on the measured runtime."
+            },
+            "kv_bytes_per_token": 40960,
+            "cache_layout": "linear",
+            "max_num_tokens": 8192,
+            "max_batch_size": 32,
+            "provenance": "Rank-local KV geometry from the 80-layer model, eight KV heads and head dimension 128."
+          }
+        }
+      ]
+    },
+    "hardware": "ascend910_9362",
+    "backend": "sglang",
+    "backend_version": "0.5.20.dev388+ga6b542813",
+    "context_length": 32768,
+    "systems_paths": [
+      "./systems"
+    ],
+    "estimation_mode": "fpm_interpolation",
+    "fallback_policy": "deny",
+    "estimator_config": {
+      "fpm_interpolation": {
+        "method": "direct_simplex",
+        "fpm_parquet_path": "./fpm/chunk16384.parquet",
+        "collect_coverage": true
+      }
+    },
+    "pd_routing": "replica_round_robin",
+    "pd_response": "sglang_gateway",
+    "kv_transfer": {
+      "type": "measured",
+      "bytes_per_token": "auto",
+      "timing_mode": "full_prompt"
+    },
+    "workers": {
+      "prefill": {
+        "parallelism": {
+          "tensor": 8,
+          "replicas": 11
+        },
+        "scheduler": {
+          "max_batched_tokens": 16384,
+          "max_sequences": 32,
+          "chunked_prefill_size": 16384,
+          "max_prefill_tokens": 16384,
+          "ignore_eos": true
+        },
+        "kv_cache": {
+          "block_size": 128,
+          "prefix_caching": true,
+          "capacity": {
+            "memory_fraction": 0.9
+          }
+        },
+        "timing": {
+          "type": "default"
+        }
+      },
+      "decode": {
+        "parallelism": {
+          "tensor": 8,
+          "replicas": 5
+        },
+        "scheduler": {
+          "max_batched_tokens": 8192,
+          "max_sequences": 32,
+          "chunked_prefill_size": 8192,
+          "max_prefill_tokens": 8192,
+          "ignore_eos": true,
+          "decode_reserved_tokens": 512
+        },
+        "kv_cache": {
+          "block_size": 128,
+          "prefix_caching": false,
+          "capacity": {
+            "memory_fraction": 0.9
+          }
+        },
+        "timing": {
+          "type": "default"
+        }
+      }
+    }
+  },
+  "execution": {
+    "resources": {
+      "memory_limit_gb": 32.0,
+      "cpu_limit": 1,
+      "initialization_timeout_seconds": 300.0
+    }
+  }
+}
