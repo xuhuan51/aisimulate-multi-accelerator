@@ -1117,6 +1117,14 @@ impl ForwardPassPerfModel {
         })?;
         let source_config = &source.config;
         let target_config = &target.config;
+        if source_config.system == "ascend910_9362"
+            && source.selected_estimation_mode == EstimationMode::FpmInterpolation
+            && target.selected_estimation_mode == EstimationMode::FpmInterpolation
+            && source_config.worker_type == ForwardPassWorkerType::Prefill
+            && target_config.worker_type == ForwardPassWorkerType::Decode
+        {
+            return crate::KvTransferCurve::for_dense_gqa(source_config, target_config);
+        }
         if source.selected_estimation_mode != EstimationMode::OpLevel
             || target.selected_estimation_mode != EstimationMode::OpLevel
             || source_config.worker_type != ForwardPassWorkerType::Prefill

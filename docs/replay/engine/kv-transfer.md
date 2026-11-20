@@ -28,7 +28,7 @@ YAML above always resolves the bytes.
 
 | Knob | Default | Recommend | Rules |
 |---|---|---|---|
-| `engine.kv_transfer.type` | `bandwidth` | fixed | `bandwidth` uses the scalar bandwidth below; `measured` obtains a bounded curve from the canonical prefill/decode performance models. The native engine stack currently supports measured Ascend GLM ModelSlim transfers. |
+| `engine.kv_transfer.type` | `bandwidth` | fixed | `bandwidth` uses the scalar bandwidth below; `measured` obtains a curve from the canonical prefill/decode performance models. The native engine supports measured Ascend GLM ModelSlim and Qwen2.5-72B on Ascend910_9362. |
 | `engine.kv_transfer.bytes_per_token` | `auto` | fixed | Positive integer or `auto`. Bytes moved per prompt token. `auto` derives it from the model and the prefill role's TP/PP/MoE shape. It can differ from either worker's `kv_cache.bytes_per_token`. With `state_cache`, `auto` uses the prefill role's resolved `kv_cache.bytes_per_token`. |
 | `engine.kv_transfer.bandwidth_gb_per_second` | `null` | fixed | Positive, in decimal GB/s. `null` means no transfer delay, not a zero-bandwidth link. |
 | `engine.kv_transfer.timing_mode` | `destination_missing` | fixed | `destination_missing` charges only the prompt KV the chosen decode worker does not already hold in its cache. `full_prompt` charges the whole prompt. |
@@ -36,7 +36,7 @@ YAML above always resolves the bytes.
 All fields accept only concrete values; `recommend` does not search them.
 `kv_transfer` is rejected in `aggregated` and `afd` modes.
 
-With `type: measured`, keep `bytes_per_token: auto` and omit bandwidth. Both
+With `type: measured`, keep `bytes_per_token: auto` and omit bandwidth. For GLM, both
 language roles must use default canonical op-level timing on the same Ascend
 hardware, SGLang version and local GLM ModelSlim model. The source and
 destination attention TP select the actual sender/receiver mapping. The
@@ -67,6 +67,32 @@ Each curve retains one collection identity and timing protocol. Publications
 may select different complete curves from compatible campaigns to preserve
 coverage. The selection uses measured ranges and point counts, never the
 smallest latency; samples from different protocols are not spliced into a curve.
+
+### Qwen2.5-72B on Ascend910_9362
+
+Use the native engine with FPM interpolation on both roles, SGLang
+`0.5.20.dev388+ga6b542813`, and the local Qwen2.5-72B-Instruct config from
+revision `495f39366efef23836d0cfae4fbe635880d2be31`. Use TP4 or TP8,
+DP1/PP1/CP1/DCP1, BF16 KV, 128-token pages, and at most 32K context.
+With Decode prefix caching disabled, select `timing_mode: full_prompt`.
+
+Place `ascend9362_qwen72_pd.json` in the first resolved directory in
+`engine.systems_paths` for both roles. The profile schema is version 1.
+Use `source_tp` and `destination_tp` for the measured direction,
+`prefill_nodes` and `decode_nodes` for node IDs in replica-index order,
+and `same_host` and `cross_host` for matching prompt-token knots in
+milliseconds. Include `evidence_sha256` and set `estimate` to `median`
+or `observed_high`. Each node ID is in the range 0–7 and has capacity for
+16 runtime NPUs. The [9362 example profile](../../../benchmarks/evidence/qwen25-72b-pd-20261117/q72-9362-best-median-transfer-profile.json)
+records the median curve and placement for the 11P/5D TP8 configuration.
+
+Replay selects the curve using the two assigned replica IDs and rounds each
+transfer to a whole page. Above the last measurement, it extends the
+measured boundary by page work up to 32K tokens. With mixed TP,
+`serialize_same_destination: true` queues chunks from the same Prefill
+replica to the same Decode replica. The calibrated lane represents one
+destination session shard. Setup delays and contention shared across replica
+pairs still require separate calibration.
 
 For `type: bandwidth`, transfer time in seconds is
 

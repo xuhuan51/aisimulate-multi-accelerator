@@ -9,6 +9,8 @@ use super::axis_curve::AxisCurve;
 use super::parquet_loader::PerfReader;
 use crate::common::error::AicError;
 
+mod dense_gqa;
+
 pub const BASENAME: &str = "ascend_pd_perf.parquet";
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -41,9 +43,38 @@ pub struct KvTransferCurve {
     maximum: u32,
     identity: String,
     policy: super::ascend_shape::AscendShapePolicy,
+    dense_placement: Option<dense_gqa::DensePlacement>,
 }
 
 impl KvTransferCurve {
+    pub(crate) fn serializes_same_destination(&self) -> bool {
+        self.dense_placement
+            .as_ref()
+            .is_some_and(dense_gqa::DensePlacement::serializes_same_destination)
+    }
+
+    pub(crate) fn for_dense_gqa(
+        source: &crate::perfmodel::ForwardPassPerfModelConfig,
+        destination: &crate::perfmodel::ForwardPassPerfModelConfig,
+    ) -> Result<Arc<Self>, AicError> {
+        dense_gqa::load(source, destination)
+    }
+
+    pub(crate) fn validate_placement_counts(
+        &self,
+        prefill_workers: usize,
+        decode_workers: usize,
+    ) -> Result<(), AicError> {
+        if self.dense_placement.as_ref().is_some_and(|placement| {
+            !placement.matches_counts(prefill_workers, decode_workers)
+        }) {
+            return Err(AicError::InvalidEngineConfig(
+                "Qwen transfer placement does not match the replay replica counts".into(),
+            ));
+        }
+        Ok(())
+    }
+
     pub fn with_shape_policy(&self, policy: super::ascend_shape::AscendShapePolicy) -> Arc<Self> {
         let mut curve = self.clone();
         curve.policy = policy;
@@ -63,11 +94,29 @@ impl KvTransferCurve {
             maximum: 256,
             identity: "1".repeat(64),
             policy: Default::default(),
+            dense_placement: None,
         })
     }
     pub fn latency_ms(&self, tokens: usize) -> Result<f64, AicError> {
+        self.latency_ms_for_workers(tokens, None)
+    }
+
+    pub(crate) fn latency_ms_for_workers(
+        &self,
+        tokens: usize,
+        workers: Option<(usize, usize)>,
+    ) -> Result<f64, AicError> {
         if tokens == 0 {
             return Ok(0.0);
+        }
+        let values = match &self.dense_placement {
+            Some(placement) => placement.select(&self.values, workers)?,
+            None => &self.values,
+        };
+        if self.dense_placement.is_some() && tokens > 32768 {
+            return Err(AicError::InvalidEngineConfig(
+                "Qwen transfer exceeds the qualified 32K context".into(),
+            ));
         }
         let rounded = tokens
             .div_ceil(128)
@@ -80,7 +129,7 @@ impl KvTransferCurve {
                     rounded,
                     self.minimum,
                     self.maximum,
-                    &|value| self.values.query(f64::from(value), &|_| 1.0),
+                    &|value| values.query(f64::from(value), &|_| 1.0),
                     &|tokens| Ok(1.0 + tokens / 128.0),
                 )
                 .map(|value| value.latency_ms);
@@ -90,10 +139,20 @@ impl KvTransferCurve {
                 self.minimum, self.maximum, self.key
             )));
         }
-        self.values.query(f64::from(rounded), &|_| 1.0)
+        values.query(f64::from(rounded), &|_| 1.0)
     }
 
     pub fn metadata(&self) -> serde_json::Value {
+        if let Some(placement) = &self.dense_placement {
+            let mut metadata = placement.description();
+            metadata["key"] = serde_json::json!(self.key);
+            metadata["minimum_tokens"] = serde_json::json!(self.minimum);
+            metadata["maximum_measured_tokens"] = serde_json::json!(self.maximum);
+            metadata["extrapolation"] = serde_json::json!(
+                "boundary-anchored page work from the largest measured payload up to 32768"
+            );
+            return metadata;
+        }
         serde_json::json!({
             "source": "measured_ascend_memfabric",
             "key": self.key,
@@ -415,6 +474,7 @@ fn load(path: &Path) -> Result<Grids, AicError> {
                 values: AxisCurve::from_map("tokens", points),
                 identity: identities.remove(&key).unwrap(),
                 policy: Default::default(),
+                dense_placement: None,
             });
             (key, curve)
         })

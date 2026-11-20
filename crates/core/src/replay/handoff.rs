@@ -283,6 +283,7 @@ pub struct HandoffCoordinatorCore {
     completion: Option<HandoffCompletion>,
     fallback_transfer_delay_ms: f64,
     transfer_curve: Option<std::sync::Arc<crate::KvTransferCurve>>,
+    transfer_workers: Option<(usize, usize)>,
 }
 
 impl HandoffCoordinatorCore {
@@ -308,6 +309,7 @@ impl HandoffCoordinatorCore {
             completion: None,
             fallback_transfer_delay_ms,
             transfer_curve: None,
+            transfer_workers: None,
         }
     }
 
@@ -317,6 +319,10 @@ impl HandoffCoordinatorCore {
     ) {
         assert!(!self.actions.started);
         self.transfer_curve = curve;
+    }
+
+    pub(crate) fn set_transfer_workers(&mut self, workers: Option<(usize, usize)>) {
+        self.transfer_workers = workers;
     }
 
     pub fn start(&mut self) -> Result<Vec<IssuedHandoffAction>> {
@@ -572,7 +578,7 @@ impl HandoffCoordinatorCore {
                 continue;
             }
             let delay_ms = if let Some(curve) = &self.transfer_curve {
-                curve.latency_ms(tokens)?
+                curve.latency_ms_for_workers(tokens, self.transfer_workers)?
             } else {
                 HandoffTransferTiming {
                     mode: crate::engine::TransferTimingMode::FullPrompt,

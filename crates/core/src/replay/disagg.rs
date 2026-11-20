@@ -282,6 +282,7 @@ struct DisaggFlowState {
     handoff_order: HandoffOrder,
     handoff_latency_ms: f64,
     handoff_curve: Option<std::sync::Arc<crate::KvTransferCurve>>,
+    mixed_sender_ready_ms: HashMap<(usize, usize), f64>,
     action_queues: DisaggActionQueues,
     logical_in_flight: usize,
     stale_transfer_events: usize,
@@ -313,6 +314,7 @@ impl DisaggFlowState {
             handoff_order,
             handoff_latency_ms,
             handoff_curve: None,
+            mixed_sender_ready_ms: HashMap::new(),
             action_queues: DisaggActionQueues::default(),
             logical_in_flight: 0,
             stale_transfer_events: 0,
@@ -383,7 +385,10 @@ impl DisaggFlowState {
             collector.on_terminal(uuid, now_ms, status);
             self.state_mut(uuid)?.set_terminal_status(status);
         }
-        let actions = self.state_mut(uuid)?.coordinator.on_fact(fact)?;
+        let state = self.state_mut(uuid)?;
+        let workers = state.prefill_worker_idx().zip(state.decode_worker_idx());
+        state.coordinator.set_transfer_workers(workers);
+        let actions = state.coordinator.on_fact(fact)?;
         self.action_queues.enqueue_all(uuid, actions);
         if let Some(chunk_index) = completed_chunk {
             collector.on_kv_transfer_completed(uuid, chunk_index, now_ms);
@@ -764,9 +769,26 @@ impl DisaggFlowState {
             if pending.replace(chunk_index).is_some() {
                 bail!("handoff already has a scheduled chunk transfer");
             }
-            collector.on_kv_transfer_started(uuid, chunk_index, now_ms, delay_ms);
+            let mut started_at = now_ms;
+            if self
+                .handoff_curve
+                .as_ref()
+                .is_some_and(|curve| curve.serializes_same_destination())
+            {
+                let request = self.state(uuid)?;
+                let lane = request
+                    .prefill_worker_idx()
+                    .zip(request.decode_worker_idx())
+                    .context("serialized transfer needs assigned P/D replicas")?;
+                // SGLang hashes stable destination sessions to a source sender queue.
+                // Treat one observed P/D pair as one FIFO lane.
+                let available_at = self.mixed_sender_ready_ms.entry(lane).or_insert(now_ms);
+                started_at = now_ms.max(*available_at);
+                *available_at = started_at + delay_ms;
+            }
+            collector.on_kv_transfer_started(uuid, chunk_index, started_at, delay_ms);
             return Ok(Some(ScheduledTransfer {
-                at_ms: now_ms + delay_ms,
+                at_ms: started_at + delay_ms,
                 handoff_id,
                 chunk_index,
             }));

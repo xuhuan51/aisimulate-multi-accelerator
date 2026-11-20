@@ -2648,9 +2648,15 @@ fn execute_json(payload: &str, capture_artifacts: bool) -> Result<String> {
                 None
             };
             if let Some(curve) = &transfer_curve {
+                if let ReplayTopology::Disaggregated { prefill, decode, .. } = &spec.topology {
+                    curve.validate_placement_counts(prefill.initial_workers, decode.initial_workers)?;
+                }
+                let data_identity = curve.metadata();
+                let data_version = data_identity.get("backend_version").and_then(serde_json::Value::as_str)
+                    .unwrap_or("0.5.22");
                 prediction_provenance.insert("kv_transfer".into(), serde_json::json!({
                     "estimator": "measured", "timing_source": "ascend_memfabric",
-                    "data_version": "0.5.22", "data_identity": curve.metadata(),
+                    "data_version": data_version, "data_identity": data_identity,
                     "data_version_unavailable_reason": null
                 }));
             }
